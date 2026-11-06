@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.06-8';
+  var APP_VERSION = '2026.11.06-10';
   var store;
   try {
     store = new CGP.Store();
@@ -242,7 +242,10 @@
   }
   function gear() { return '<a class="gear" href="#rules" aria-label="設定">⚙️</a>'; }
   function plaque(title, sub) {
-    return '<div class="plaque"><h1>' + h(title) + '</h1>' + (sub ? '<div class="ribbon">' + h(sub) + '</div>' : '') + '</div>';
+    return '<div class="plaque"><h1>' + h(title) + '</h1>' + (sub ? '<div class="ribbon">' + sub.split('・').map(function (t, i, arr) {
+      // 只在「・」後面換行，避免把詞拆開
+      return '<span class="nb">' + h(t) + (i < arr.length - 1 ? '・' : '') + '</span>';
+    }).join('') + '</div>' : '') + '</div>';
   }
 
   /** 子頁面頂部：標題木牌＋孩子切換 */
@@ -384,7 +387,6 @@
       '<button class="btn primary" data-action="enter-adventure">進入今日冒險</button></section>';
   }
 
-  var ISLAND_ART = ART.GOLD_ISLAND;
   var CHEST = ART.CHEST;
 
   var ISLANDS = [['金島', '#ffd23f'], ['木島', '#5cbf4a'], ['水島', '#3fb6e8'], ['火島', '#ff6a3d'], ['土島', '#b07a4a']];
@@ -449,8 +451,9 @@
 
     // 5. 地圖關卡卡
     var map = '<section class="map-card">' +
-      '<div class="map-art">' + ISLAND_ART + '</div>' +
-      '<div class="map-info"><span class="map-title">金島</span>' +
+      '<div class="map-art"><picture><source srcset="images/gold-island.webp" type="image/webp">' +
+      '<img src="images/gold-island.jpg" alt="金島：齒輪、礦坑、礦車、金屬橋與發光礦石" width="1200" height="675" loading="lazy" decoding="async"></picture></div>' +
+      '<div class="map-info">' +
       '<p>擲骰子、走格子、開寶箱，即將展開！</p>' +
       '<span class="lock-pill">🔒 下一階段開放</span>' +
       '<button class="btn primary map-cta" disabled>開始冒險 ›</button></div>' +
@@ -461,10 +464,10 @@
 
     // 6. 快速入口
     var quick = '<nav class="quick-row" aria-label="快速入口">' +
-      '<a class="tile t-task" href="#child-' + h(child.id) + '"><span class="tile-icon">📋</span>今日任務 ›</a>' +
-      '<a class="tile t-challenge" href="#challenge-' + h(child.id) + '"><span class="tile-icon">🏆</span>挑戰 ›</a>' +
-      '<a class="tile t-shop" href="#shop-' + h(child.id) + '"><span class="tile-icon">🎁</span>兌換 ›</a>' +
-      '<button class="tile t-report" data-action="open-log"><span class="tile-icon">📜</span>結算紀錄 ›</button></nav>';
+      '<a class="tile t-task" href="#child-' + h(child.id) + '"><span class="tile-icon">📋</span>今日任務</a>' +
+      '<a class="tile t-challenge" href="#challenge-' + h(child.id) + '"><span class="tile-icon">🏆</span>挑戰</a>' +
+      '<a class="tile t-shop" href="#shop-' + h(child.id) + '"><span class="tile-icon">🎁</span>兌換</a>' +
+      '<button class="tile t-report" data-action="open-log"><span class="tile-icon">📜</span>結算紀錄</button></nav>';
 
     return hero + '<main class="page adventure">' + tabs + starCard + summary + log + map + quick + '</main>';
   }

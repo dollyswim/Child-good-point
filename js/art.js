@@ -31,103 +31,108 @@
   // ---------------------------------------------------------------
   var GOLD_ISLAND = '<svg class="island-art" viewBox="0 0 320 200" aria-hidden="true">' +
     '<defs>' +
-    '<linearGradient id="gi-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6cc6f7"/><stop offset=".7" stop-color="#c8ecff"/><stop offset="1" stop-color="#eaf8ff"/></linearGradient>' +
-    '<radialGradient id="gi-sun" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff9d6"/><stop offset=".45" stop-color="#ffe68a" stop-opacity=".9"/><stop offset="1" stop-color="#ffe68a" stop-opacity="0"/></radialGradient>' +
-    '<linearGradient id="gi-sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#47c3f0"/><stop offset=".5" stop-color="#2aa3dc"/><stop offset="1" stop-color="#1a7fbf"/></linearGradient>' +
-    '<linearGradient id="gi-sand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbe7b0"/><stop offset="1" stop-color="#e3be74"/></linearGradient>' +
-    '<linearGradient id="gi-rock" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c9b59a"/><stop offset=".6" stop-color="#9b8268"/><stop offset="1" stop-color="#76604b"/></linearGradient>' +
-    '<linearGradient id="gi-grass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9be36a"/><stop offset="1" stop-color="#46ad3c"/></linearGradient>' +
+    '<linearGradient id="gi-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6cc6f7"/><stop offset="1" stop-color="#d4f0ff"/></linearGradient>' +
+    '<radialGradient id="gi-sun" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff9d6"/><stop offset=".45" stop-color="#ffe68a" stop-opacity=".85"/><stop offset="1" stop-color="#ffe68a" stop-opacity="0"/></radialGradient>' +
+    '<linearGradient id="gi-sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5ccff5"/><stop offset=".5" stop-color="#2eaee3"/><stop offset="1" stop-color="#1b86c6"/></linearGradient>' +
+    '<radialGradient id="gi-shallow" cx="0.5" cy="0.5" r="0.5"><stop offset=".6" stop-color="#8be6f5"/><stop offset="1" stop-color="#8be6f5" stop-opacity="0"/></radialGradient>' +
+    '<linearGradient id="gi-sand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0c4"/><stop offset="1" stop-color="#ecc77e"/></linearGradient>' +
+    '<linearGradient id="gi-grass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a6ea6e"/><stop offset=".6" stop-color="#6cc94a"/><stop offset="1" stop-color="#46ad3c"/></linearGradient>' +
+    '<linearGradient id="gi-earth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b98457"/><stop offset="1" stop-color="#7d5233"/></linearGradient>' +
+    '<linearGradient id="gi-rock" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c8b9a6"/><stop offset="1" stop-color="#857261"/></linearGradient>' +
     '<linearGradient id="gi-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3a6"/><stop offset=".45" stop-color="#ffc83a"/><stop offset="1" stop-color="#d98c00"/></linearGradient>' +
     '<linearGradient id="gi-metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1f5fa"/><stop offset=".5" stop-color="#b4c2d1"/><stop offset="1" stop-color="#7f8fa1"/></linearGradient>' +
     '<linearGradient id="gi-wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d4924f"/><stop offset="1" stop-color="#8f5323"/></linearGradient>' +
     '<radialGradient id="gi-glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fffbe0"/><stop offset=".4" stop-color="#ffe680" stop-opacity=".8"/><stop offset="1" stop-color="#ffe680" stop-opacity="0"/></radialGradient>' +
     '<linearGradient id="gi-crys" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fffbe0"/><stop offset=".5" stop-color="#ffd84a"/><stop offset="1" stop-color="#f0a000"/></linearGradient>' +
     '</defs>' +
-    // 天空、太陽、雲
+    // 天空、太陽、雲、遠方小島
     '<rect width="320" height="200" fill="url(#gi-sky)"/>' +
-    '<circle cx="270" cy="34" r="40" fill="url(#gi-sun)"/><circle cx="270" cy="34" r="13" fill="#fff6c2"/>' +
-    '<g fill="#fff"><ellipse cx="52" cy="36" rx="28" ry="9"/><ellipse cx="66" cy="29" rx="15" ry="11"/><ellipse cx="44" cy="31" rx="11" ry="8"/></g>' +
-    '<g fill="#fff" opacity=".85"><ellipse cx="190" cy="22" rx="20" ry="6"/><ellipse cx="200" cy="18" rx="10" ry="7"/></g>' +
-    '<g fill="#dff2fc"><ellipse cx="52" cy="41" rx="24" ry="3"/></g>' +
-    // 遠方小島
-    '<path d="M8 128 q14 -18 30 -4 q8 -6 14 4 z" fill="#8fcfb8" opacity=".7"/>' +
-    '<path d="M268 128 q10 -14 24 -2 q6 -4 12 2 z" fill="#8fcfb8" opacity=".6"/>' +
+    '<circle cx="278" cy="26" r="34" fill="url(#gi-sun)"/><circle cx="278" cy="26" r="11" fill="#fff6c2"/>' +
+    '<g fill="#fff"><ellipse cx="48" cy="26" rx="26" ry="8"/><ellipse cx="62" cy="20" rx="14" ry="10"/><ellipse cx="40" cy="22" rx="10" ry="7"/>' +
+    '<ellipse cx="196" cy="18" rx="18" ry="5" opacity=".85"/><ellipse cx="205" cy="14" rx="9" ry="6" opacity=".85"/></g>' +
+    '<path d="M0 62 q14 -10 28 -2 q10 -6 20 2 z" fill="#86c9a8" opacity=".55"/><path d="M262 62 q12 -9 26 -1 q8 -4 16 1 z" fill="#86c9a8" opacity=".5"/>' +
     // 海
-    '<rect y="126" width="320" height="74" fill="url(#gi-sea)"/>' +
-    '<g stroke="#c9efff" stroke-width="2" fill="none" stroke-linecap="round" opacity=".8">' +
-    '<path d="M14 150 q8 -4 16 0 t16 0"/><path d="M262 160 q8 -4 16 0 t16 0"/><path d="M40 182 q8 -4 16 0 t16 0"/><path d="M220 188 q8 -4 16 0"/></g>' +
-    '<g fill="#fff"><path d="M70 168 l1.5 3.5 3.5 1.5 -3.5 1.5 -1.5 3.5 -1.5 -3.5 -3.5 -1.5 3.5 -1.5z"/><path d="M286 142 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z"/></g>' +
-    // 沙灘與倒影
-    '<ellipse cx="150" cy="152" rx="116" ry="20" fill="#1f8ccb" opacity=".35"/>' +
-    '<path d="M36 146 Q60 128 150 126 Q240 128 262 146 Q238 162 150 164 Q62 162 36 146 Z" fill="url(#gi-sand)"/>' +
-    '<path d="M50 150 Q80 158 150 159 Q220 158 250 150" stroke="#f9f0d0" stroke-width="2" fill="none" opacity=".9"/>' +
-    // 岩山本體
-    '<path d="M62 142 C 66 108, 92 78, 128 66 C 150 58, 176 60, 196 72 C 224 88, 238 116, 240 142 Z" fill="url(#gi-rock)"/>' +
-    '<path d="M96 142 C 100 120, 112 104, 126 96" stroke="#e0d1bb" stroke-width="3" fill="none" opacity=".6" stroke-linecap="round"/>' +
-    '<path d="M200 92 l10 14 -6 2z M170 112 l12 10 -8 2z M110 118 l-8 12 7 0z" fill="#6c5642" opacity=".5"/>' +
-    // 草地頂
-    '<path d="M98 82 C 112 66, 136 56, 160 56 C 186 56, 206 66, 218 82 C 206 78, 196 82, 186 78 C 174 74, 166 80, 152 76 C 138 72, 126 80, 114 78 C 108 78, 102 80, 98 82 Z" fill="url(#gi-grass)"/>' +
-    '<path d="M120 66 C 134 59, 150 57, 166 58" stroke="#c8f59c" stroke-width="2.5" fill="none" stroke-linecap="round"/>' +
-    // 大齒輪（山頂）
-    '<g>' + gear(140, 50, 20, 12, 'url(#gi-gold)', 0.18) + '</g>' +
-    '<g>' + gear(166, 40, 11, 9, 'url(#gi-gold)', 0.22) + '</g>' +
-    // 小工廠＋煙囪
-    '<g transform="translate(182 50)">' +
-    '<rect x="0" y="12" width="30" height="20" rx="2" fill="#e7d3b5" stroke="#8a6a45" stroke-width="1.5"/>' +
-    '<path d="M0 12 l10 -8 0 8 10 -8 0 8 10 -8 0 8z" fill="#c4522f" stroke="#8a3a20" stroke-width="1.2" stroke-linejoin="round"/>' +
-    '<rect x="22" y="-10" width="6" height="16" fill="#9aa9b8" stroke="#64748b" stroke-width="1"/>' +
-    '<rect x="5" y="18" width="7" height="6" rx="1" fill="#ffe680"/><rect x="17" y="18" width="7" height="6" rx="1" fill="#ffe680"/>' +
-    '<g fill="#fff" opacity=".85"><circle cx="26" cy="-15" r="4"/><circle cx="31" cy="-22" r="5"/><circle cx="38" cy="-28" r="6"/></g></g>' +
-    // 礦洞入口
-    '<path d="M88 142 L88 118 Q88 102 104 102 Q120 102 120 118 L120 142 Z" fill="#3a2a1d"/>' +
-    '<path d="M84 142 L84 116 Q84 98 104 98 Q124 98 124 116 L124 142" fill="none" stroke="url(#gi-wood)" stroke-width="6" stroke-linejoin="round"/>' +
-    '<rect x="80" y="96" width="48" height="6" rx="2" fill="url(#gi-wood)"/>' +
-    '<circle cx="104" cy="114" r="10" fill="url(#gi-glow)"/>' +
-    // 軌道與礦車
-    '<g stroke="#7f8fa1" stroke-width="2"><path d="M96 144 L142 156"/><path d="M110 140 L156 152"/></g>' +
-    '<g stroke="#8f5323" stroke-width="3"><path d="M104 146 l6 -3"/><path d="M118 150 l6 -3"/><path d="M132 154 l6 -3"/></g>' +
-    '<g transform="translate(124 128) rotate(14)">' +
-    '<path d="M0 6 L28 6 L24 20 L4 20 Z" fill="url(#gi-metal)" stroke="#5b6b7c" stroke-width="1.5" stroke-linejoin="round"/>' +
-    '<rect x="2" y="10" width="24" height="2.5" fill="#5b6b7c" opacity=".6"/>' +
-    '<g fill="url(#gi-gold)" stroke="#c98a00" stroke-width="1"><circle cx="8" cy="5" r="5"/><circle cx="16" cy="3" r="6"/><circle cx="23" cy="6" r="4.5"/></g>' +
-    '<path d="M14 0 l1 2.5 2.5 1 -2.5 1 -1 2.5 -1 -2.5 -2.5 -1 2.5 -1z" fill="#fff"/>' +
-    '<circle cx="8" cy="22" r="3.5" fill="#4a5563"/><circle cx="21" cy="22" r="3.5" fill="#4a5563"/>' +
-    '<circle cx="8" cy="22" r="1.2" fill="#c7d2de"/><circle cx="21" cy="22" r="1.2" fill="#c7d2de"/></g>' +
-    // 發光礦石
-    '<circle cx="216" cy="124" r="18" fill="url(#gi-glow)"/>' +
-    '<g stroke="#c98a00" stroke-width="1" stroke-linejoin="round">' +
-    '<path d="M210 136 L214 116 L220 136 Z" fill="url(#gi-crys)"/>' +
-    '<path d="M202 138 L204 124 L210 138 Z" fill="url(#gi-crys)"/>' +
-    '<path d="M219 138 L224 122 L229 138 Z" fill="url(#gi-crys)"/></g>' +
-    '<path d="M214 118 l1 8" stroke="#fff" stroke-width="1.5" opacity=".9"/>' +
-    '<g fill="#fff"><path d="M232 112 l1 2.5 2.5 1 -2.5 1 -1 2.5 -1 -2.5 -2.5 -1 2.5 -1z"/><path d="M198 116 l.8 2 2 .8 -2 .8 -.8 2 -.8 -2 -2 -.8 2 -.8z"/></g>' +
-    // 金屬橋＋右側小礁
-    '<path d="M250 150 q12 -10 30 -6 q8 4 6 10 q-18 6 -36 -4z" fill="url(#gi-rock)"/>' +
-    '<path d="M268 144 q6 -6 14 -4" stroke="url(#gi-grass)" stroke-width="5" fill="none" stroke-linecap="round"/>' +
-    '<g stroke="url(#gi-metal)" stroke-width="2.5" fill="none" stroke-linecap="round">' +
-    '<path d="M234 140 Q252 124 272 140"/><path d="M234 140 L272 140"/>' +
-    '<path d="M241 140 L244 132 M253 140 L253 127 M265 140 L262 132"/></g>' +
-    '<path d="M234 140 L272 140" stroke="#5b6b7c" stroke-width="1"/>' +
-    // 椰子樹
-    '<g transform="translate(58 104)">' +
-    '<path d="M14 40 C 16 26, 12 14, 18 2" stroke="#8f5323" stroke-width="5" fill="none" stroke-linecap="round"/>' +
-    '<path d="M14 40 C 16 26, 12 14, 18 2" stroke="#c98a4a" stroke-width="1.5" fill="none" stroke-dasharray="2 3"/>' +
-    '<g fill="#3fa63a" stroke="#2c7d28" stroke-width="1">' +
-    '<path d="M18 2 C 4 -4, -6 4, -8 12 C 2 4, 10 4, 18 2 Z"/><path d="M18 2 C 30 -6, 42 0, 44 8 C 34 2, 26 2, 18 2 Z"/>' +
-    '<path d="M18 2 C 12 -12, 22 -20, 30 -18 C 22 -12, 20 -6, 18 2 Z"/><path d="M18 2 C 26 8, 30 18, 28 24 C 24 14, 20 8, 18 2 Z"/></g>' +
-    '<g fill="#8f5323"><circle cx="16" cy="5" r="2.5"/><circle cx="21" cy="5" r="2.5"/></g></g>' +
+    '<rect y="60" width="320" height="140" fill="url(#gi-sea)"/>' +
+    '<g stroke="#d4f3ff" stroke-width="2" fill="none" stroke-linecap="round" opacity=".75">' +
+    '<path d="M16 80 q7 -3 14 0 t14 0"/><path d="M274 86 q7 -3 14 0 t14 0"/><path d="M20 182 q8 -4 16 0 t16 0"/><path d="M250 190 q8 -4 16 0"/><path d="M120 190 q8 -4 16 0"/></g>' +
+    // 島的倒影與淺水
+    '<ellipse cx="156" cy="146" rx="146" ry="46" fill="url(#gi-shallow)" opacity=".8"/>' +
+    '<ellipse cx="156" cy="154" rx="128" ry="30" fill="#1a7fbf" opacity=".25"/>' +
+    // 浪花圈與沙灘
+    '<ellipse cx="156" cy="140" rx="132" ry="38" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="10 6" opacity=".9"/>' +
+    '<ellipse cx="156" cy="138" rx="126" ry="34" fill="url(#gi-sand)"/>' +
+    '<path d="M44 146 Q100 166 156 167 Q212 166 268 146" stroke="#fff6d8" stroke-width="2" fill="none" opacity=".9"/>' +
+    // 島的側面厚度（土層）
+    '<path d="M46 126 Q60 146 156 150 Q252 146 266 126 L266 132 Q252 154 156 158 Q60 154 46 132 Z" fill="url(#gi-earth)"/>' +
+    // 草地與兩座小丘
+    '<path d="M46 126 C 48 108, 70 98, 92 96 C 104 74, 140 66, 158 82 C 170 62, 212 58, 228 84 C 250 88, 268 104, 266 126 Q252 146 156 150 Q60 146 46 126 Z" fill="url(#gi-grass)"/>' +
+    '<path d="M100 92 C 112 78, 136 74, 150 84 M172 76 C 186 66, 208 66, 220 80" stroke="#cdf7a0" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+    // 灌木
+    '<g fill="#3d9a35"><circle cx="70" cy="118" r="7"/><circle cx="78" cy="116" r="6"/><circle cx="236" cy="114" r="7"/><circle cx="244" cy="118" r="5"/><circle cx="160" cy="126" r="5"/><circle cx="166" cy="124" r="4"/></g>' +
+    '<g fill="#6cc94a"><circle cx="68" cy="116" r="3"/><circle cx="234" cy="112" r="3"/></g>' +
+    // 左丘：礦洞岩壁
+    '<path d="M96 120 C 96 100, 106 88, 122 86 C 138 86, 148 100, 148 120 Z" fill="url(#gi-rock)"/>' +
+    '<path d="M104 102 l6 -4 M136 98 l6 4" stroke="#efe6d8" stroke-width="2" stroke-linecap="round" opacity=".7"/>' +
+    '<path d="M112 120 L112 108 Q112 98 122 98 Q132 98 132 108 L132 120 Z" fill="#3a2a1d"/>' +
+    '<path d="M109 121 L109 106 Q109 95 122 95 Q135 95 135 106 L135 121" fill="none" stroke="url(#gi-wood)" stroke-width="4"/>' +
+    '<circle cx="122" cy="110" r="8" fill="url(#gi-glow)"/>' +
+    // 右丘：齒輪與小工廠
+    '<g>' + gear(198, 58, 15, 12, 'url(#gi-gold)', 0.18) + '</g>' +
+    '<g>' + gear(217, 48, 8.5, 9, 'url(#gi-gold)', 0.22) + '</g>' +
+    '<g transform="translate(212 82)">' +
+    '<rect x="0" y="8" width="24" height="15" rx="2" fill="#f1e1c6" stroke="#8a6a45" stroke-width="1.2"/>' +
+    '<path d="M0 8 l8 -6 0 6 8 -6 0 6 8 -6 0 6z" fill="#d45a35" stroke="#8a3a20" stroke-width="1" stroke-linejoin="round"/>' +
+    '<rect x="18" y="-8" width="4.5" height="12" fill="#9aa9b8" stroke="#64748b" stroke-width=".8"/>' +
+    '<rect x="4" y="13" width="5" height="5" rx="1" fill="#ffe680"/><rect x="14" y="13" width="5" height="5" rx="1" fill="#ffe680"/>' +
+    '<g fill="#fff" opacity=".9"><circle cx="21" cy="-12" r="3"/><circle cx="25" cy="-18" r="4"/><circle cx="31" cy="-23" r="5"/></g></g>' +
     // 旗子
-    '<line x1="120" y1="62" x2="120" y2="30" stroke="#6b4a2b" stroke-width="2.5"/>' +
-    '<path d="M120 30 q12 4 24 0 q-6 6 0 12 q-12 4 -24 0z" fill="#ff5a4e" stroke="#c4322a" stroke-width="1"/>' +
-    '<circle cx="120" cy="29" r="2.5" fill="#ffd23f"/>' +
-    // 小寶箱在沙灘
-    '<g transform="translate(150 140)">' +
-    '<rect x="0" y="6" width="22" height="12" rx="2" fill="url(#gi-wood)" stroke="#6b3d16" stroke-width="1.2"/>' +
-    '<path d="M0 6 Q0 -2 11 -2 Q22 -2 22 6 Z" fill="#c77d3a" stroke="#6b3d16" stroke-width="1.2"/>' +
-    '<rect x="0" y="6" width="22" height="2.5" fill="url(#gi-gold)"/><rect x="8.5" y="4" width="5" height="7" rx="1" fill="url(#gi-gold)" stroke="#a86b00" stroke-width=".8"/></g>' +
-    // 海鷗
-    '<g stroke="#5a6b7c" stroke-width="1.5" fill="none" stroke-linecap="round"><path d="M226 54 q4 -4 8 0 q4 -4 8 0"/><path d="M246 66 q3 -3 6 0 q3 -3 6 0"/></g>' +
+    '<line x1="140" y1="74" x2="140" y2="52" stroke="#6b4a2b" stroke-width="2"/>' +
+    '<path d="M140 52 q10 3 20 0 q-5 5 0 10 q-10 3 -20 0z" fill="#ff5a4e" stroke="#c4322a" stroke-width="1"/>' +
+    // 發光礦石
+    '<circle cx="168" cy="112" r="15" fill="url(#gi-glow)"/>' +
+    '<g stroke="#c98a00" stroke-width="1" stroke-linejoin="round">' +
+    '<path d="M164 122 L168 104 L173 122 Z" fill="url(#gi-crys)"/><path d="M157 123 L159 111 L164 123 Z" fill="url(#gi-crys)"/><path d="M172 123 L176 110 L180 123 Z" fill="url(#gi-crys)"/></g>' +
+    '<g fill="#fff"><path d="M184 104 l1 2.5 2.5 1 -2.5 1 -1 2.5 -1 -2.5 -2.5 -1 2.5 -1z"/></g>' +
+    // 軌道與礦車（沿沙灘）
+    '<path d="M122 124 Q128 142 160 146 Q196 148 214 140" stroke="#7f8fa1" stroke-width="2" fill="none"/>' +
+    '<path d="M118 128 Q126 148 160 151 Q198 153 218 144" stroke="#7f8fa1" stroke-width="2" fill="none"/>' +
+    '<g stroke="#8f5323" stroke-width="2.5"><path d="M124 132 l-4 2"/><path d="M134 141 l-3 4"/><path d="M148 145 l-1 5"/><path d="M164 147 l0 5"/><path d="M182 147 l1 5"/><path d="M200 144 l2 5"/></g>' +
+    '<g transform="translate(132 128)">' +
+    '<path d="M0 6 L24 6 L21 18 L3 18 Z" fill="url(#gi-metal)" stroke="#5b6b7c" stroke-width="1.3" stroke-linejoin="round"/>' +
+    '<g fill="url(#gi-gold)" stroke="#c98a00" stroke-width="1"><circle cx="7" cy="5" r="4.5"/><circle cx="14" cy="3" r="5"/><circle cx="20" cy="5.5" r="4"/></g>' +
+    '<circle cx="7" cy="19.5" r="3" fill="#4a5563"/><circle cx="18" cy="19.5" r="3" fill="#4a5563"/></g>' +
+    // 椰子樹（左右各一）
+    palm(52, 92, 1) + palm(250, 88, 0.9) +
+    // 木棧橋
+    '<g transform="translate(234 146) rotate(18)">' +
+    '<rect x="0" y="0" width="52" height="10" rx="2" fill="url(#gi-wood)" stroke="#6b3d16" stroke-width="1"/>' +
+    '<g stroke="#6b3d16" stroke-width="1" opacity=".7"><path d="M10 0 v10 M20 0 v10 M30 0 v10 M40 0 v10"/></g>' +
+    '<g fill="#7a4520"><rect x="4" y="9" width="3.5" height="10"/><rect x="44" y="9" width="3.5" height="12"/></g></g>' +
+    // 小寶箱
+    '<g transform="translate(84 136)">' +
+    '<rect x="0" y="5" width="18" height="10" rx="2" fill="url(#gi-wood)" stroke="#6b3d16" stroke-width="1"/>' +
+    '<path d="M0 5 Q0 -1 9 -1 Q18 -1 18 5 Z" fill="#c77d3a" stroke="#6b3d16" stroke-width="1"/>' +
+    '<rect x="0" y="5" width="18" height="2" fill="url(#gi-gold)"/><rect x="7" y="3.5" width="4" height="6" rx="1" fill="url(#gi-gold)"/></g>' +
+    // 金屬橋＋小礁
+    '<ellipse cx="300" cy="126" rx="16" ry="6" fill="url(#gi-sand)"/><ellipse cx="300" cy="123" rx="11" ry="4" fill="url(#gi-grass)"/>' +
+    '<g stroke="url(#gi-metal)" stroke-width="2.2" fill="none" stroke-linecap="round">' +
+    '<path d="M262 122 Q276 108 290 122"/><path d="M262 122 L290 122"/><path d="M269 122 L270 115 M276 122 L276 112 M283 122 L282 115"/></g>' +
+    // 海鷗與海面閃光
+    '<g stroke="#5a6b7c" stroke-width="1.5" fill="none" stroke-linecap="round"><path d="M100 36 q4 -4 8 0 q4 -4 8 0"/><path d="M118 46 q3 -3 6 0 q3 -3 6 0"/></g>' +
+    '<g fill="#fff"><path d="M40 160 l1.5 3.5 3.5 1.5 -3.5 1.5 -1.5 3.5 -1.5 -3.5 -3.5 -1.5 3.5 -1.5z"/><path d="M290 160 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z"/></g>' +
     '</svg>';
+
+  /** 椰子樹（x,y 為樹頂葉子中心，s 縮放） */
+  function palm(x, y, s) {
+    return '<g transform="translate(' + x + ' ' + y + ') scale(' + s + ')">' +
+      '<path d="M2 40 C 4 26, 0 14, 4 0" stroke="#8f5323" stroke-width="4.5" fill="none" stroke-linecap="round"/>' +
+      '<path d="M2 40 C 4 26, 0 14, 4 0" stroke="#c98a4a" stroke-width="1.3" fill="none" stroke-dasharray="2 3"/>' +
+      '<g fill="#3fa63a" stroke="#2c7d28" stroke-width="1">' +
+      '<path d="M4 0 C -10 -6, -20 2, -22 10 C -12 2, -4 2, 4 0 Z"/><path d="M4 0 C 16 -8, 28 -2, 30 6 C 20 0, 12 0, 4 0 Z"/>' +
+      '<path d="M4 0 C -2 -14, 8 -22, 16 -20 C 8 -14, 6 -8, 4 0 Z"/><path d="M4 0 C 12 6, 16 16, 14 22 C 10 12, 6 6, 4 0 Z"/>' +
+      '<path d="M4 0 C -4 4, -10 14, -8 20 C -4 12, 0 6, 4 0 Z"/></g>' +
+      '<g fill="#8f5323"><circle cx="2" cy="3" r="2.3"/><circle cx="7" cy="3" r="2.3"/></g></g>';
+  }
 
   // ---------------------------------------------------------------
   // 吉祥物：圓頭小機器貓

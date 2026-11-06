@@ -851,3 +851,26 @@ body {
 .map-info .lock-pill { grid-column: 2; justify-self: start; }
 .map-info .map-cta { grid-column: 1 / -1; }
 .compass { top: -12px; right: -8px; font-size: 2rem; }
+/* 窄螢幕修正：文字不重疊、不截斷 */
+.adv-hero .ribbon, .hero .ribbon { white-space: normal; text-align: center; line-height: 1.3; overflow: visible; }
+.star-card { grid-template-columns: auto minmax(0, 1fr); }
+.star-main { padding-right: 0; }
+.star-label { padding-right: 56px; }
+.chest-deco { top: 8px; right: 8px; bottom: auto; transform: none; display: grid; justify-items: center; gap: 0; }
+.chest-deco .chest-art { width: 50px; height: 44px; }
+.chest-deco small { order: 2; margin: -2px 0 0; transform: rotate(-4deg); }
+.quick-row .tile { white-space: nowrap; }
+@media (max-width: 400px) {
+  .chest-deco small { display: none; }
+  .star-label { padding-right: 48px; }
+  .hero-tab { padding: 6px 8px; gap: 6px; }
+  .hero-tab .avatar.md { width: 42px; height: 42px; font-size: 1.4rem; }
+  .quick-row .tile { font-size: .74rem; }
+}
+/* 金島關卡圖（使用者提供的插畫） */
+.map-art picture, .map-art img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
+.map-art { background: #6cc6f7; }
+.map-info { grid-template-columns: minmax(0, 1fr) auto; }
+.map-info p { grid-column: 1; }
+.map-info .lock-pill { grid-column: 2; grid-row: 1; justify-self: end; align-self: center; white-space: nowrap; }
+.ribbon .nb { white-space: nowrap; }
