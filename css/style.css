@@ -657,3 +657,46 @@ body {
 .level-row small { grid-column: 1 / -1; justify-self: end; margin-top: -4px; }
 .summary { justify-content: stretch; align-items: stretch; }
 .summary-top .today { margin-left: auto; }
+
+/* ---- 冒險（Phase 2） ---- */
+.coin { font-size: .62em; width: 2em; height: 2em; font-weight: 900; }
+.adv-banner {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 10px;
+  padding: 12px 14px; border-radius: 22px; border: 3px solid #fff; box-shadow: var(--card-shadow);
+}
+.adv-banner .btn { grid-column: 1 / -1; min-height: 50px; font-size: 1.05rem; }
+.adv-banner.is-ready { background: linear-gradient(135deg, #fff7c9, #ffd977); animation: glow 1.8s ease-in-out infinite; }
+.adv-banner.is-locked { background: linear-gradient(135deg, #f3eee8, #e4dcd2); }
+.adv-banner.is-locked .btn { background: #d9cfc4; color: #8d7f70; border-color: #d0c4b7; }
+.adv-banner.is-settled { background: linear-gradient(135deg, #e6f6ff, #c5e6ff); }
+.adv-icon { font-size: 2.2rem; }
+.adv-text { display: grid; min-width: 0; }
+.adv-text b { font-size: 1.1rem; font-weight: 900; }
+.adv-text small { color: var(--muted); font-weight: 700; }
+.lobby {
+  display: grid; justify-items: center; gap: 10px; padding: 18px 14px; text-align: center;
+  border-radius: 26px; border: 3px solid #fff; box-shadow: var(--card-shadow);
+  background: radial-gradient(circle at 50% 0, #fff 0, color-mix(in srgb, var(--c, #ffd166) 40%, #e9f6ff) 100%);
+}
+.hero-slot { display: grid; justify-items: center; gap: 6px; }
+.hero-ring {
+  width: 120px; height: 120px; display: grid; place-items: center; font-size: 4rem; border-radius: 50%;
+  background: rgba(255,255,255,.7); border: 4px dashed color-mix(in srgb, var(--c, #ffd166) 80%, #000 10%);
+  animation: bob 3s ease-in-out infinite;
+}
+.hero-tag { font-size: .8rem; font-weight: 800; color: var(--muted); background: #fff; padding: 2px 10px; border-radius: 99px; }
+.star-bank { display: grid; gap: 2px; }
+.star-bank .label { font-weight: 800; color: var(--muted); }
+.star-value { font-size: 2.4rem; font-weight: 900; color: #e69500; text-shadow: 0 2px 0 #fff3c4; }
+.adv-status { display: grid; gap: 6px; padding: 12px; border-radius: 16px; }
+.adv-status.ok { background: #eaf8ee; }
+.adv-status.ready { background: #fff8d6; }
+.adv-status.locked { background: #f3eee8; }
+.adv-status span { color: var(--muted); font-weight: 700; }
+.map-slot { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 12px; padding: 12px; border-radius: 16px; background: linear-gradient(135deg, #fff7e0, #ffe9b8); border: 2px dashed #e8c37a; }
+.map-slot .btn { grid-column: 1 / -1; }
+.map-slot > div { display: grid; }
+.map-icon { font-size: 2.6rem; }
+.pts.star { color: #e69500; font-weight: 900; }
+.adventure > .btn.block { margin-bottom: 14px; }
+@media (prefers-reduced-motion: reduce) { .adv-banner.is-ready, .hero-ring { animation: none; } }

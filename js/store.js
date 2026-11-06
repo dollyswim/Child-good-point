@@ -23,6 +23,8 @@
  * - child.title：頭銜（例如「小小店長」）；child.badge：代表圖示；child.weeklyGoal：每週目標點數（0 = 不設定）
  * - data.challenges：本週挑戰 [{ id, name, childIds, metric: 'item'|'net', itemId, target, rewardPoints, rewardStars, createdAt }]
  *   領取紀錄為 type 'bonus'、refId = 挑戰 id，同一週只能領一次
+ * - data.adventure.settlements：能量星星每日結算 [{ id, childId, date, net, baseStars, bonusStars, stars, paidRecordIds, ts }]
+ *   （Phase 2）能量星星與生活點數完全分開保存；星星餘額 = 所有結算星星總和
  * - 等級：依累積「賺到的加分」（加分、每日任務、挑戰獎勵的正數點數）計算，扣分與兌換不會降級
  *
  * 規則：
@@ -69,7 +71,7 @@
 
   // ---------- 預設資料 ----------
   function emptyData() {
-    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [] };
+    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], adventure: { settlements: [] } };
   }
 
   function defaultData() {
@@ -200,6 +202,28 @@
       };
     }).sort(function (a, b) { return a.ts - b.ts; });
 
+    var adv = d.adventure && typeof d.adventure === 'object' ? d.adventure : {};
+    var seenSettle = {};
+    d.adventure = {
+      settlements: (Array.isArray(adv.settlements) ? adv.settlements : []).filter(function (x) {
+        if (!x || !x.id || !childIdSet.has(String(x.childId)) || !/^\d{4}-\d{2}-\d{2}$/.test(x.date)) return false;
+        var key = x.childId + '|' + x.date;   // 同一孩子同一天只保留一筆，防止重複發放
+        if (seenSettle[key]) return false;
+        seenSettle[key] = true;
+        return true;
+      }).map(function (x) {
+        return {
+          id: String(x.id), childId: String(x.childId), date: x.date,
+          net: toInt(x.net, 0),
+          baseStars: Math.max(0, toInt(x.baseStars, 0)),
+          bonusStars: Math.max(0, toInt(x.bonusStars, 0)),
+          stars: Math.max(0, toInt(x.stars, 0)),
+          paidRecordIds: Array.isArray(x.paidRecordIds) ? x.paidRecordIds.map(String) : [],
+          ts: toInt(x.ts, Date.now())
+        };
+      })
+    };
+
     var itemIdSet = new Set(d.items.map(function (i) { return i.id; }));
     var challenges = Array.isArray(d.challenges) ? d.challenges : [];
     d.challenges = challenges.filter(function (c) { return c && c.id; }).map(function (c) {
@@ -325,6 +349,7 @@
   Store.prototype.deleteChild = function (id) {
     this.data.children = this.data.children.filter(function (c) { return c.id !== id; });
     this.data.records = this.data.records.filter(function (r) { return r.childId !== id; });
+    this.data.adventure.settlements = this.data.adventure.settlements.filter(function (x) { return x.childId !== id; });
     this.data.items.concat(this.data.challenges).forEach(function (i) {
       if (Array.isArray(i.childIds)) i.childIds = i.childIds.filter(function (cid) { return cid !== id; });
     });
@@ -733,6 +758,73 @@
     return data;
   };
 
+  // ----- 冒險解鎖與能量星星（Phase 2） -----
+  /** 能量星星 = ceil(今日淨得分 / 5)；淨得分 ≤ 0 時為 0 */
+  function starsForNet(net) { return net > 0 ? Math.ceil(net / 5) : 0; }
+
+  Store.prototype.getSettlement = function (childId, key) {
+    key = key || this.today();
+    return this.data.adventure.settlements.find(function (x) { return x.childId === childId && x.date === key; }) || null;
+  };
+
+  /** 尚未發放的額外星星紀錄（規則、挑戰上的 ⭐）；結算後才記的會留到下次結算 */
+  Store.prototype._unpaidStarRecords = function (childId) {
+    var paid = new Set();
+    this.data.adventure.settlements.forEach(function (x) {
+      if (x.childId === childId) x.paidRecordIds.forEach(function (id) { paid.add(id); });
+    });
+    return this.data.records.filter(function (r) { return r.childId === childId && r.stars > 0 && !paid.has(r.id); });
+  };
+
+  /** 星星餘額（Phase 3 起扣除商店花費） */
+  Store.prototype.getStarBalance = function (childId) {
+    return this.data.adventure.settlements.reduce(function (sum, x) { return x.childId === childId ? sum + x.stars : sum; }, 0);
+  };
+
+  /**
+   * 今日冒險狀態
+   * @returns {{ unlocked, settled, settlement, net, previewBase, previewBonus, previewStars, balance }}
+   */
+  Store.prototype.getAdventureStatus = function (childId) {
+    var net = this.getTodayNet(childId);
+    var settlement = this.getSettlement(childId);
+    var bonus = this._unpaidStarRecords(childId).reduce(function (sum, r) { return sum + r.stars; }, 0);
+    return {
+      unlocked: !!settlement || net > 0,     // 今天結算過就維持解鎖
+      settled: !!settlement,
+      settlement: settlement,
+      net: net,
+      previewBase: starsForNet(net),
+      previewBonus: bonus,
+      previewStars: starsForNet(net) + bonus,
+      balance: this.getStarBalance(childId)
+    };
+  };
+
+  /**
+   * 進入今日冒險：依當下的今日淨得分結算能量星星。
+   * 同一孩子同一天只結算一次，重複呼叫回傳同一筆結算，不會重複發放。
+   */
+  Store.prototype.settleToday = function (childId) {
+    if (!this.getChild(childId)) throw new Error('找不到孩子');
+    var existing = this.getSettlement(childId);
+    if (existing) return existing;
+    var net = this.getTodayNet(childId);
+    if (net <= 0) throw new Error('今日冒險尚未解鎖：今日淨得分要大於 0');
+    var unpaid = this._unpaidStarRecords(childId);
+    var base = starsForNet(net);
+    var bonus = unpaid.reduce(function (sum, r) { return sum + r.stars; }, 0);
+    var x = {
+      id: uid(), childId: childId, date: this.today(), net: net,
+      baseStars: base, bonusStars: bonus, stars: base + bonus,
+      paidRecordIds: unpaid.map(function (r) { return r.id; }),
+      ts: this.now().getTime()
+    };
+    this.data.adventure.settlements.push(x);
+    this.save();
+    return x;
+  };
+
   // ----- 等級 -----
   /** 升到 Lv.n 需要的累積加分：每 1000 點 1 級，Lv.1 從 0 開始，Lv.2 = 2000、Lv.3 = 3000…Lv.10 = 10000 */
   function levelThreshold(n) { return n <= 1 ? 0 : 1000 * n; }
@@ -969,6 +1061,7 @@
     defaultData: defaultData,
     SCHEMA_VERSION: SCHEMA_VERSION,
     levelThreshold: levelThreshold,
+    starsForNet: starsForNet,
     STORAGE_KEY: STORAGE_KEY
   };
 

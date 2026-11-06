@@ -87,7 +87,7 @@
       return { name: parts[0] || 'home', arg: parts[1] || null };
     }
     if (hs === 'report') return { name: 'report', arg: null };
-    var m = hs.match(/^(child|rules|challenge|shop)(?:-(.+))?$/);
+    var m = hs.match(/^(child|rules|challenge|shop|adventure)(?:-(.+))?$/);
     if (!m) return { name: 'home', arg: null };
     return { name: m[1] === 'rules' ? 'settings' : m[1], arg: m[2] || null };
   }
@@ -210,11 +210,12 @@
   function render() {
     var r = route();
     var html;
-    if (r.name === 'child' || r.name === 'challenge' || r.name === 'shop') {
+    if (r.name === 'child' || r.name === 'challenge' || r.name === 'shop' || r.name === 'adventure') {
       var child = store.getChild(r.arg);
       if (!child) { location.replace('#home'); return; }
       setCurrent(child.id);
-      html = r.name === 'child' ? renderChild(child) : (r.name === 'challenge' ? renderChallenge(child) : renderShop(child));
+      html = r.name === 'child' ? renderChild(child) : r.name === 'challenge' ? renderChallenge(child)
+        : r.name === 'shop' ? renderShop(child) : renderAdventure(child);
     } else if (r.name === 'settings') {
       html = renderSettings(r.arg || 'children');
     } else if (r.name === 'report') {
@@ -222,7 +223,7 @@
     } else {
       html = renderHome();
     }
-    if (r.name !== 'settings') html += bottomNav(r.name);
+    if (r.name !== 'settings') html += bottomNav(r.name === 'adventure' ? 'child' : r.name);
     app.innerHTML = html;
     app.dataset.view = r.name;
     if (ui.pulse) {
@@ -286,7 +287,7 @@
       return '<button class="child-card" data-action="open-child" data-id="' + h(c.id) + '" style="--c:' + h(c.color) + '">' +
         avatar(c, 'lg') +
         '<span class="child-card-body"><span class="child-name">' + h(c.name) + '</span>' + titlePill(c) + '</span>' +
-        '<span class="points-box"><span class="child-total"><i class="coin">★</i><b>' + num(store.getTotal(c.id)) + '</b> 點</span>' +
+        '<span class="points-box"><span class="child-total"><i class="coin" aria-hidden="true">點</i><b>' + num(store.getTotal(c.id)) + '</b> 點</span>' +
         '<span class="child-today ' + signClass(net) + '">' + (net > 0 ? '⬆ ' : '') + '今日 ' + signed(net) + '</span></span>' +
         (c.badge ? '<span class="card-deco" aria-hidden="true">' + h(c.badge) + '</span>' : '') +
         '</button>';
@@ -353,6 +354,7 @@
 
     return pageHeader('今日任務', child, 'child') +
       '<main class="page has-undo">' +
+      adventureBanner(child) +
       summaryCard(child) +
       '<section class="panel"><h2>📌 常用・今日任務' + (tasks.length ? ' <small>' + doneCount + '/' + tasks.length + '</small>' : '') + '</h2><div class="tasks">' + taskHtml + '</div></section>' +
       '<section class="panel scorer"><h2>✏️ 加分・扣分</h2>' +
@@ -366,6 +368,76 @@
       '<div class="undo-bar"><button class="btn undo" data-action="undo"' + (last ? '' : ' disabled') + '>' +
       '↶ 撤銷上一筆' + (last ? '<small>' + h(last.name) + ' ' + signed(last.points) + '</small>' : '') +
       '</button></div>';
+  }
+
+  // ---------- 冒險（Phase 2） ----------
+  /** 孩子任務頁最上方的冒險入口 */
+  function adventureBanner(child) {
+    var st = store.getAdventureStatus(child.id);
+    if (st.settled) {
+      var x = st.settlement;
+      return '<section class="adv-banner is-settled" data-testid="adventure">' +
+        '<span class="adv-icon">🗺️</span><div class="adv-text"><b>今日冒險已出發</b>' +
+        '<small>今天得到 ⭐' + x.stars + ' 能量星星' + (x.bonusStars ? '（含額外 ⭐' + x.bonusStars + '）' : '') + '</small></div>' +
+        '<a class="btn primary" href="#adventure-' + h(child.id) + '">進入冒險大廳</a></section>';
+    }
+    if (!st.unlocked) {
+      return '<section class="adv-banner is-locked" data-testid="adventure">' +
+        '<span class="adv-icon">🔒</span><div class="adv-text"><b>今日冒險尚未解鎖</b>' +
+        '<small>今日淨得分 ' + signed(st.net) + '，大於 0 就能出發' + (st.previewBonus ? '・待發額外 ⭐' + st.previewBonus : '') + '</small></div>' +
+        '<button class="btn" disabled>進入今日冒險</button></section>';
+    }
+    return '<section class="adv-banner is-ready" data-testid="adventure">' +
+      '<span class="adv-icon">🔓</span><div class="adv-text"><b>今日冒險已解鎖！</b>' +
+      '<small>現在出發可得 ⭐' + st.previewStars + (st.previewBonus ? '（今日 ⭐' + st.previewBase + '＋額外 ⭐' + st.previewBonus + '）' : '') + '</small></div>' +
+      '<button class="btn primary" data-action="enter-adventure">進入今日冒險</button></section>';
+  }
+
+  function renderAdventure(child) {
+    var st = store.getAdventureStatus(child.id);
+    var x = st.settlement;
+    var status = x
+      ? '<div class="adv-status ok"><b>✅ 今日已結算</b><span>今日淨得分 ' + signed(x.net) + ' → ⭐' + x.baseStars +
+        (x.bonusStars ? '，額外 ⭐' + x.bonusStars : '') + '，共 <b>⭐' + x.stars + '</b></span></div>'
+      : st.unlocked
+        ? '<div class="adv-status ready"><b>🔓 今日冒險已解鎖</b><span>還沒結算，出發可得 ⭐' + st.previewStars + '</span>' +
+          '<button class="btn primary" data-action="enter-adventure">結算並出發</button></div>'
+        : '<div class="adv-status locked"><b>🔒 今日冒險尚未解鎖</b><span>今日淨得分大於 0 就能出發（目前 ' + signed(st.net) + '）</span></div>';
+    var history = store.data.adventure.settlements.filter(function (s) { return s.childId === child.id; })
+      .slice().sort(function (a, b) { return b.date < a.date ? -1 : 1; }).slice(0, 7);
+    var histHtml = history.length ? '<ul class="records">' + history.map(function (s) {
+      return '<li class="rec"><span class="rec-time">' + h(dateLabel(s.date)) + '</span>' +
+        '<span class="rec-name">淨得分 ' + signed(s.net) + (s.bonusStars ? ' <small class="tag tag-star">額外 ⭐' + s.bonusStars + '</small>' : '') + '</span>' +
+        '<span class="pts star">⭐' + s.stars + '</span></li>';
+    }).join('') + '</ul>' : '<p class="muted small">還沒有結算紀錄</p>';
+    return pageHeader('冒險大廳', child, 'adventure') +
+      '<main class="page adventure">' +
+      '<section class="lobby" style="--c:' + h(child.color) + '">' +
+      '<div class="hero-slot"><div class="hero-ring">' + h(child.avatar) + '</div><span class="hero-tag">冒險夥伴即將登場</span></div>' +
+      '<div class="star-bank"><span class="label">' + h(child.name) + ' 的能量星星</span>' +
+      '<b class="star-value" data-testid="stars">⭐ ' + num(st.balance) + '</b>' +
+      '<small class="muted">能量星星只在冒險裡使用，和生活點數分開計算</small></div></section>' +
+      '<section class="panel"><h2>🧭 今日冒險狀態</h2>' + status + '</section>' +
+      '<section class="panel"><h2>🗺️ 冒險地圖</h2>' +
+      '<div class="map-slot"><span class="map-icon">🏝️</span><div><b>金島</b><small class="muted">擲骰子、走格子、開寶箱，即將開放</small></div>' +
+      '<button class="btn" disabled>🔒 敬請期待</button></div></section>' +
+      '<section class="panel"><h2>📜 星星結算紀錄</h2>' + histHtml + '</section>' +
+      '<a class="btn block" href="#child-' + h(child.id) + '">‹ 回到今日任務</a>' +
+      '</main>';
+  }
+
+  function enterAdventure(childId) {
+    var st = store.getAdventureStatus(childId);
+    if (st.settled) { go('#adventure-' + childId); return; }
+    askConfirm('現在出發會用今日淨得分 ' + signed(st.net) + ' 結算，得到 ⭐' + st.previewStars + ' 能量星星。\n' +
+      '結算後，今天再加的分不會再增加星星（一天只結算一次）。\n確定要出發嗎？', '出發！', false).then(function (ok) {
+      if (!ok) return;
+      try {
+        var x = store.settleToday(childId);
+        toast('🎉 得到 ⭐' + x.stars + ' 能量星星！', 'pos');
+        go('#adventure-' + childId);
+      } catch (err) { toast(err.message, 'neg'); render(); }
+    });
   }
 
   function renderChallenge(child) {
@@ -404,7 +476,7 @@
     var cards = rewards.length ? '<div class="shop-grid">' + rewards.map(function (r) {
       var ok = total >= r.cost;
       return '<div class="shop-item ' + (ok ? 'can' : '') + '"><span class="shop-icon">🎁</span><b class="shop-name">' + h(r.name) + '</b>' +
-        '<span class="shop-cost"><i class="coin">★</i>' + num(r.cost) + ' 點</span>' +
+        '<span class="shop-cost"><i class="coin" aria-hidden="true">點</i>' + num(r.cost) + ' 點</span>' +
         (ok ? '<button class="btn primary small" data-action="redeem" data-id="' + h(r.id) + '">兌換</button>'
           : progressBar(total, r.cost) + '<small class="muted">還差 ' + num(r.cost - total) + ' 點</small>') + '</div>';
     }).join('') + '</div>' : '<div class="empty card"><p class="big-emoji">🎁</p><p>還沒有獎勵</p><a class="btn primary" href="#rules-reward">到設定新增獎勵</a></div>';
@@ -416,7 +488,7 @@
     return pageHeader('獎勵兌換', child, 'shop') +
       '<main class="page">' +
       '<section class="wallet" style="--c:' + h(child.color) + '">' + avatar(child, 'md') +
-      '<div><div class="label">' + h(child.name) + ' 可以用的點數</div><div class="wallet-value" data-testid="total"><i class="coin">★</i>' + num(total) + '</div></div></section>' +
+      '<div><div class="label">' + h(child.name) + ' 可以用的點數</div><div class="wallet-value" data-testid="total"><i class="coin" aria-hidden="true">點</i>' + num(total) + '</div></div></section>' +
       '<section class="panel"><h2>🎁 可兌換的獎勵</h2>' + cards +
       '<p class="muted small">兌換會扣除總點數，不影響今日淨得分與等級。</p></section>' +
       '<section class="panel"><h2>🧾 兌換紀錄</h2>' + histHtml + '</section></main>';
@@ -1170,6 +1242,7 @@
         }
         case 'export': exportData(); break;
         case 'pick-child': pickChild(el.getAttribute('data-kind')); break;
+        case 'enter-adventure': enterAdventure(childId); break;
         case 'claim': {
           var cr = store.claimChallenge(childId, id);
           toast('🎉 挑戰達成！' + recText(cr), 'pos');

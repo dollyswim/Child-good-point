@@ -634,3 +634,113 @@ test('預設資料含範例挑戰，備份還原包含挑戰', () => {
   other.importJSON(s.exportJSON());
   assert.equal(other.getChallenges().length, 2);
 });
+
+// ---------- Phase 2：冒險解鎖與能量星星 ----------
+const { starsForNet } = require('../js/store.js');
+
+test('能量星星換算：ceil(淨得分 / 5)', () => {
+  assert.deepEqual([1, 5, 6, 10, 35, 50, 100].map(starsForNet), [1, 1, 2, 2, 7, 10, 20]);
+  assert.equal(starsForNet(0), 0);
+  assert.equal(starsForNet(-7), 0);
+});
+
+function p2Store() {
+  const ctx = makeStore('2026-11-06T10:00:00');
+  const a = ctx.store.addChild({ name: 'A' });
+  const b20 = ctx.store.addItem({ kind: 'bonus', name: '+20', points: 20 });
+  const b50 = ctx.store.addItem({ kind: 'bonus', name: '+50', points: 50 });
+  const m20 = ctx.store.addItem({ kind: 'penalty', name: '-20', points: 20 });
+  const m15 = ctx.store.addItem({ kind: 'penalty', name: '-15', points: 15 });
+  return Object.assign(ctx, { a, b20, b50, m20, m15 });
+}
+
+test('Phase 2 案例 A：今日 +20 → 解鎖、取得 4 星', () => {
+  const { store, a, b20 } = p2Store();
+  store.recordItem(a.id, b20.id);
+  const st = store.getAdventureStatus(a.id);
+  assert.equal(st.unlocked, true);
+  assert.equal(st.previewStars, 4);
+  assert.equal(store.settleToday(a.id).stars, 4);
+  assert.equal(store.getStarBalance(a.id), 4);
+});
+
+test('Phase 2 案例 B：+20、-20 淨得分 0 → 不解鎖、不得星', () => {
+  const { store, a, b20, m20 } = p2Store();
+  store.recordItem(a.id, b20.id);
+  store.recordItem(a.id, m20.id);
+  const st = store.getAdventureStatus(a.id);
+  assert.equal(st.unlocked, false);
+  assert.equal(st.previewStars, 0);
+  assert.throws(() => store.settleToday(a.id), /尚未解鎖/);
+  assert.equal(store.getStarBalance(a.id), 0);
+});
+
+test('Phase 2 案例 C：+50、-15 淨得分 35 → 7 星', () => {
+  const { store, a, b50, m15 } = p2Store();
+  store.recordItem(a.id, b50.id);
+  store.recordItem(a.id, m15.id);
+  assert.equal(store.settleToday(a.id).stars, 7);
+});
+
+test('Phase 2 案例 D：取得 7 星後重新載入、重複進入，不得再次增加', () => {
+  const storage = memoryStorage();
+  const now = () => new Date('2026-11-06T10:00:00');
+  const s1 = new Store({ storage, seed: false, now });
+  const a = s1.addChild({ name: 'A' });
+  const b = s1.addItem({ kind: 'bonus', name: 'b', points: 50 });
+  const m = s1.addItem({ kind: 'penalty', name: 'm', points: 15 });
+  s1.recordItem(a.id, b.id);
+  s1.recordItem(a.id, m.id);
+  s1.settleToday(a.id);
+  const s2 = new Store({ storage, seed: false, now }); // 重新整理／重新開啟
+  assert.equal(s2.settleToday(a.id).stars, 7);
+  s2.settleToday(a.id);
+  assert.equal(s2.getStarBalance(a.id), 7);
+  assert.equal(s2.data.adventure.settlements.length, 1);
+  // 結算後再加分，今天不會再發星
+  s2.recordItem(a.id, b.id);
+  assert.equal(s2.settleToday(a.id).stars, 7);
+  assert.equal(s2.getStarBalance(a.id), 7);
+  // 匯入含重複結算的資料也只保留一筆
+  const raw = JSON.parse(s2.exportJSON());
+  raw.adventure.settlements.push(Object.assign({}, raw.adventure.settlements[0], { id: 'dup' }));
+  s2.importJSON(JSON.stringify(raw));
+  assert.equal(s2.getStarBalance(a.id), 7);
+});
+
+test('Phase 2：每個孩子獨立；結算後淨得分變 0 仍維持今日解鎖；隔天重新判斷；過去未結算不補', () => {
+  const { store, setDate, a, b20, m20 } = p2Store();
+  const c = store.addChild({ name: 'C' });
+  store.recordItem(a.id, b20.id);
+  store.settleToday(a.id);
+  assert.equal(store.getAdventureStatus(c.id).unlocked, false, '孩子各自判斷');
+  assert.equal(store.getStarBalance(c.id), 0);
+  store.recordItem(a.id, m20.id);
+  assert.equal(store.getAdventureStatus(a.id).unlocked, true, '今天已結算維持解鎖');
+  store.recordItem(c.id, b20.id); // C 今天沒結算
+  setDate('2026-11-07T09:00:00');
+  assert.equal(store.getAdventureStatus(a.id).unlocked, false, '隔天重新判斷');
+  assert.equal(store.getAdventureStatus(c.id).previewStars, 0, '昨天沒結算就沒了');
+  store.addRecordOn(c.id, b20.id, '2026-11-06'); // 補登昨天也不會給星
+  assert.equal(store.getAdventureStatus(c.id).previewStars, 0);
+  assert.equal(store.getStarBalance(a.id), 4);
+});
+
+test('Phase 2：額外星星結算時一併發放；結算後才記的留到下次結算', () => {
+  const { store, setDate, a, b20 } = p2Store();
+  const help = store.addItem({ kind: 'bonus', name: '幫忙', points: 5, stars: 5 });
+  const feel = store.addItem({ kind: 'bonus', name: '表達心情', points: 0, stars: 10 });
+  store.recordItem(a.id, help.id);       // +5 點、⭐5
+  const st = store.getAdventureStatus(a.id);
+  assert.deepEqual([st.previewBase, st.previewBonus, st.previewStars], [1, 5, 6]);
+  const x = store.settleToday(a.id);
+  assert.deepEqual([x.baseStars, x.bonusStars, x.stars], [1, 5, 6]);
+  store.recordItem(a.id, feel.id);       // 結算後才記：⭐10 留到明天
+  assert.equal(store.getAdventureStatus(a.id).previewBonus, 10);
+  setDate('2026-11-07T09:00:00');
+  store.recordItem(a.id, b20.id);
+  const y = store.settleToday(a.id);
+  assert.deepEqual([y.baseStars, y.bonusStars], [4, 10]);
+  assert.equal(store.getStarBalance(a.id), 20);
+  assert.equal(store.getTotal(a.id), 25, '星星不影響生活點數');
+});
