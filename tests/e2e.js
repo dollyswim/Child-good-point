@@ -257,10 +257,69 @@ async function main() {
   assert.equal(await page.evaluate(() => window.__cgpStore.getItems('penalty').find(i => i.sourceId === 'R055').points), -15);
   console.log('✔ CSV 匯入（Big5）與修改後更新');
 
+  // 記分總覽：統計、排行、完成率、修改、刪除、補登
+  await page.goto(url + '#home');
+  await page.click('a[href="#report"]');
+  await page.waitForSelector('.stat-card');
+  const kidsCount = await page.evaluate(() => window.__cgpStore.getChildren().length);
+  assert.equal(await page.locator('.stat-card').count(), kidsCount, '全部：每個孩子一張統計卡');
+  const first = await page.evaluate(() => window.__cgpStore.getChildren()[0]);
+  await page.click('[data-action=report-child][data-id="' + first.id + '"]');
+  assert.equal(await page.locator('.stat-card').count(), 1);
+  await page.click('[data-action=report-period][data-kind=day]');
+  const netToday = await page.evaluate((id) => window.__cgpStore.getTodayNet(id), first.id);
+  assert.equal(await page.locator('.stat .big').innerText(), (netToday > 0 ? '+' : '') + netToday);
+  await shot('10-report');
+  await noHScroll('總覽頁');
+
+  // 修改一筆紀錄的點數
+  const totalA = await page.evaluate((id) => window.__cgpStore.getTotal(id), first.id);
+  const target = await page.evaluate((id) => window.__cgpStore.getRecords(id).find(r => r.type === 'bonus' && r.points > 0), first.id);
+  await page.click('.rec[data-id="' + target.id + '"]');
+  await page.fill('#rec-points', String(target.points + 7));
+  await page.click('#modal-form button[type="submit"]');
+  assert.equal(await page.evaluate((id) => window.__cgpStore.getTotal(id), first.id), totalA + 7);
+  // 改到昨天
+  await page.click('.rec[data-id="' + target.id + '"]');
+  const yesterday = await page.evaluate(() => window.CGPReport.addDays(window.__cgpStore.today(), -1));
+  await page.fill('#rec-date', yesterday);
+  await page.click('#modal-form button[type="submit"]');
+  assert.equal(await page.locator('.rec[data-id="' + target.id + '"]').count(), 0, '移到昨天後今天的明細不再顯示');
+  assert.equal(await page.evaluate((id) => window.__cgpStore.getTodayNet(id), first.id), netToday - target.points);
+  // 刪除
+  await page.click('[data-action=report-nav] >> nth=0'); // 前一天
+  await page.click('.rec[data-id="' + target.id + '"]');
+  await page.click('#rec-delete');
+  await page.click('#confirm [data-yes]');
+  assert.equal(await page.evaluate((id) => window.__cgpStore.getRecord(id), target.id), null);
+  assert.equal(await page.evaluate((id) => window.__cgpStore.getTotal(id), first.id), totalA - target.points);
+  // 補登（目前在昨天，預設日期就是昨天）
+  await page.click('[data-action=backfill]');
+  assert.equal(await page.inputValue('#bf-date'), yesterday);
+  const opt = await page.evaluate((id) => window.__cgpStore.getItemsFor(id, 'bonus').find(i => !i.custom && i.points > 0), first.id);
+  await page.selectOption('#bf-item', opt.id);
+  assert.equal(await page.inputValue('#bf-points'), String(opt.points));
+  await shot('11-backfill');
+  await page.click('#modal-form button[type="submit"]');
+  assert.ok(await page.locator('.rec >> text=' + opt.name).first().isVisible());
+  assert.match(await text('.records'), /補登/);
+  await page.click('[data-action=report-period][data-kind=month]');
+  assert.ok(await page.locator('.comp li').count() > 0, '月份有任務完成率');
+  await noHScroll('總覽月');
+  await shot('12-report-month');
+  console.log('✔ 記分總覽、修改、刪除、補登');
+
+  // 孩子頁的紀錄也能點開修改
+  await page.goto(url + '#child-' + first.id);
+  await page.click('.records .rec >> nth=0');
+  assert.ok(await page.locator('#rec-delete').isVisible());
+  await page.click('#modal-form [data-close]');
+  const afterCustom2 = await text('[data-testid=total]');
+
   // 舊版網址格式仍可使用
   const cid = await page.evaluate(() => window.__cgpStore.getChildren()[0].id);
   await page.goto(url + '#/child/' + cid);
-  assert.equal(await text('[data-testid=total]'), afterCustom);
+  assert.equal(await text('[data-testid=total]'), afterCustom2);
   console.log('✔ 相容舊版網址格式');
 
   assert.deepEqual(errors, [], '頁面不得出現 JS 錯誤或原生對話框');

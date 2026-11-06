@@ -19,6 +19,7 @@
  * - item.stars：額外能量星星數（Phase 1 只記錄，Phase 2 才發放）
  * - item.sourceId：外部規則表的規則ID（例如 CSV 的 R001），用於匯入時對應更新
  * - record.stars：記錄當下的額外星星快照
+ * - record.backfill：true 表示事後補登
  *
  * 規則：
  * - 扣分以負數保存；加分、任務以正數保存；兌換獎勵以負數保存。
@@ -182,6 +183,7 @@
         points: toInt(r.points, 0),
         date: r.date,
         stars: Math.max(0, toInt(r.stars, 0)),
+        backfill: !!r.backfill,
         ts: toInt(r.ts, Date.now())
       };
     }).sort(function (a, b) { return a.ts - b.ts; });
@@ -534,6 +536,114 @@
     this.data.records = this.data.records.filter(function (r) { return r.id !== last.id; });
     this.save();
     return last;
+  };
+
+  Store.prototype.getRecord = function (id) {
+    return this.data.records.find(function (r) { return r.id === id; }) || null;
+  };
+
+  /** 依時間排序紀錄（修改日期或補登後呼叫，讓「上一筆」維持時間順序） */
+  Store.prototype._sortRecords = function () {
+    this.data.records.sort(function (a, b) { return a.ts - b.ts; });
+  };
+
+  /** 指定日期的時間戳：沿用原本的時分；同一毫秒則往後錯開，保證順序唯一 */
+  Store.prototype._tsOn = function (key, timeFrom) {
+    var d = parseDateKey(key);
+    var t = new Date(timeFrom);
+    d.setHours(t.getHours(), t.getMinutes(), t.getSeconds(), t.getMilliseconds());
+    var ts = d.getTime();
+    var used = new Set(this.data.records.map(function (r) { return r.ts; }));
+    while (used.has(ts)) ts++;
+    return ts;
+  };
+
+  Store.prototype._checkDate = function (key) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(key)) || dateKey(parseDateKey(key)) !== key) throw new Error('日期格式不正確');
+    if (key > this.today()) throw new Error('不能記錄未來的日期');
+  };
+
+  /** 同一孩子同一天同一任務只能完成一次 */
+  Store.prototype._checkTaskDup = function (childId, taskId, key, exceptId) {
+    var dup = this.data.records.some(function (r) {
+      return r.id !== exceptId && r.type === 'task' && r.refId === taskId && r.childId === childId && r.date === key;
+    });
+    if (dup) throw new Error('這一天已經完成過此任務');
+  };
+
+  /** 依紀錄類型把輸入的點數轉成正確正負號（扣分、兌換為負數） */
+  function signedFor(type, points) {
+    var p = Math.abs(toInt(points, 0));
+    return (type === 'penalty' || type === 'reward') ? -p : p;
+  }
+
+  /**
+   * 修改任一筆紀錄
+   * @param {object} patch { childId?, date?, points?（輸入正數即可，扣分與兌換自動轉負數） }
+   */
+  Store.prototype.updateRecord = function (id, patch) {
+    var r = this.getRecord(id);
+    if (!r) throw new Error('找不到這筆紀錄');
+    var childId = patch.childId != null ? String(patch.childId) : r.childId;
+    var date = patch.date != null ? String(patch.date) : r.date;
+    if (!this.getChild(childId)) throw new Error('找不到孩子');
+    this._checkDate(date);
+    if (r.type === 'task') this._checkTaskDup(childId, r.refId, date, r.id);
+    if (patch.points != null) {
+      if (patch.points === '' || !Number.isFinite(Number(patch.points))) throw new Error('請輸入點數');
+      r.points = signedFor(r.type, patch.points);
+    }
+    r.childId = childId;
+    if (date !== r.date) {
+      r.date = date;
+      r.ts = this._tsOn(date, r.ts);
+      this._sortRecords();
+    }
+    this.save();
+    return r;
+  };
+
+  Store.prototype.deleteRecord = function (id) {
+    var r = this.getRecord(id);
+    if (!r) return null;
+    this.data.records = this.data.records.filter(function (x) { return x.id !== id; });
+    this.save();
+    return r;
+  };
+
+  /**
+   * 補登過去日期的紀錄（加分、扣分或任務）
+   * @param {number} [points] 不填則用規則點數；輸入正數即可
+   */
+  Store.prototype.addRecordOn = function (childId, itemId, key, points) {
+    var item = this.getItem(itemId);
+    if (!item) throw new Error('找不到規則');
+    if (!this.getChild(childId)) throw new Error('找不到孩子');
+    this._checkDate(key);
+    if (item.kind === 'task') this._checkTaskDup(childId, item.id, key);
+    var p = (points === '' || points == null) ? item.points : signedFor(item.kind, points);
+    if (item.custom && (points === '' || points == null)) throw new Error('請輸入點數');
+    var now = this.now();
+    var rec = {
+      id: uid(), childId: childId, type: item.kind, refId: item.id, name: item.name,
+      points: toInt(p, 0), stars: item.stars || 0, date: key, backfill: true,
+      ts: key === dateKey(now) ? Math.max(now.getTime(), this._lastTs() + 1) : this._tsOn(key, new Date(2000, 0, 1, 20, 0, 0).getTime())
+    };
+    this.data.records.push(rec);
+    this._sortRecords();
+    this.save();
+    return rec;
+  };
+
+  Store.prototype._lastTs = function () {
+    return this.data.records.length ? this.data.records[this.data.records.length - 1].ts : 0;
+  };
+
+  /** 期間內的紀錄（含頭尾日期），childId 省略時為全部孩子；新到舊排序 */
+  Store.prototype.getRecordsBetween = function (childId, startKey, endKey) {
+    return this.data.records.filter(function (r) {
+      return (!childId || r.childId === childId) && r.date >= startKey && r.date <= endKey;
+    }).slice().reverse();
   };
 
   Store.prototype.getRecords = function (childId, limit) {
