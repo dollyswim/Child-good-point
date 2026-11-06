@@ -549,3 +549,84 @@ test('加分與每日任務可互相切換；扣分不能改成加分；紀錄�
   const p = store.addItem({ kind: 'penalty', name: 'x', points: 3 });
   assert.throws(() => store.updateItem(p.id, { kind: 'bonus' }), /扣分/);
 });
+
+// ---------- 頭銜、等級、每週目標、本週挑戰 ----------
+test('孩子頭銜、代表圖示、每週目標；舊資料自動補預設值', () => {
+  const { store } = makeStore();
+  const a = store.addChild({ name: 'A', title: ' 小小店長 ', badge: '🏪', weeklyGoal: 500 });
+  assert.equal(a.title, '小小店長');
+  store.updateChild(a.id, { weeklyGoal: -3 });
+  assert.equal(store.getChild(a.id).weeklyGoal, 0);
+  const d = migrate({ children: [{ id: 'c', name: 'B' }] });
+  assert.deepEqual([d.children[0].title, d.children[0].badge, d.children[0].weeklyGoal], ['', '', 0]);
+  assert.deepEqual(d.challenges, []);
+});
+
+test('等級：依累積加分計算，扣分與兌換不降級', () => {
+  const { store } = makeStore();
+  const a = store.addChild({ name: 'A', startPoints: 5000 });
+  assert.equal(store.getLevel(a.id).level, 1, '起始點數不算等級');
+  const b = store.addItem({ kind: 'bonus', name: 'b', points: 100 });
+  const p = store.addItem({ kind: 'penalty', name: 'p', points: 100 });
+  store.recordItem(a.id, b.id);
+  assert.equal(store.getLevel(a.id).level, 2);
+  for (let i = 0; i < 9; i++) store.recordItem(a.id, b.id);
+  const lv = store.getLevel(a.id);
+  assert.deepEqual([lv.level, lv.earned, lv.current, lv.next], [5, 1000, 1000, 1500]);
+  store.recordItem(a.id, p.id);
+  assert.equal(store.getLevel(a.id).level, 5);
+});
+
+test('每週淨得分：週一開始，不含上週', () => {
+  const { store, setDate } = makeStore('2026-11-01T10:00:00'); // 週日
+  const a = store.addChild({ name: 'A' });
+  const b = store.addItem({ kind: 'bonus', name: 'b', points: 10 });
+  store.recordItem(a.id, b.id);
+  setDate('2026-11-03T10:00:00');
+  store.recordItem(a.id, b.id);
+  store.recordItem(a.id, b.id);
+  assert.equal(store.getWeekNet(a.id), 20);
+});
+
+test('本週挑戰：規則次數、每日任務以天數計、淨得分；達成才能領、一週一次、撤銷可重領', () => {
+  const { store, setDate } = makeStore('2026-11-02T10:00:00'); // 週一
+  const a = store.addChild({ name: 'A' });
+  const b = store.addChild({ name: 'B' });
+  const help = store.addItem({ kind: 'bonus', name: '幫忙', points: 5 });
+  const brush = store.addItem({ kind: 'task', name: '刷牙', points: 2 });
+  const pen = store.addItem({ kind: 'penalty', name: 'x', points: 5 });
+  assert.throws(() => store.addChallenge({ name: 'bad', metric: 'item', itemId: pen.id, target: 1 }), /加分/);
+  const c1 = store.addChallenge({ name: '幫忙 2 次', metric: 'item', itemId: help.id, target: 2, rewardPoints: 20, rewardStars: 3 });
+  const c2 = store.addChallenge({ name: '刷牙 2 天', metric: 'item', itemId: brush.id, target: 2, rewardPoints: 10, childIds: [a.id] });
+  const c3 = store.addChallenge({ name: '淨得分 12', metric: 'net', target: 12, rewardPoints: 50 });
+  assert.equal(store.getChallengesFor(b.id).length, 2);
+
+  store.recordItem(a.id, help.id);
+  assert.throws(() => store.claimChallenge(a.id, c1.id), /還沒達成/);
+  store.recordItem(a.id, help.id);
+  assert.equal(store.getChallengeStatus(b.id, c1).progress, 0, '孩子各自計算');
+  const rec = store.claimChallenge(a.id, c1.id);
+  assert.deepEqual([rec.points, rec.stars, rec.type], [20, 3, 'bonus']);
+  assert.throws(() => store.claimChallenge(a.id, c1.id), /已經領取/);
+  // 淨得分挑戰不含自己的獎勵，但含其他挑戰獎勵：5+5+20 = 30 ≥ 12
+  assert.equal(store.getChallengeStatus(a.id, c3).progress, 30);
+  store.undoLast(a.id);
+  assert.equal(store.getChallengeStatus(a.id, c1).claimed, false, '撤銷後可重領');
+
+  store.completeTask(a.id, brush.id);
+  setDate('2026-11-03T10:00:00');
+  store.completeTask(a.id, brush.id);
+  assert.equal(store.getChallengeStatus(a.id, c2).progress, 2);
+  setDate('2026-11-09T10:00:00'); // 下週一
+  assert.equal(store.getChallengeStatus(a.id, c2).progress, 0, '每週重新計算');
+  store.deleteItem(help.id);
+  assert.equal(store.getChallenge(c1.id).itemId, null);
+});
+
+test('預設資料含範例挑戰，備份還原包含挑戰', () => {
+  const s = new Store({ storage: memoryStorage() });
+  assert.equal(s.getChallenges().length, 2);
+  const other = new Store({ storage: memoryStorage(), seed: false });
+  other.importJSON(s.exportJSON());
+  assert.equal(other.getChallenges().length, 2);
+});

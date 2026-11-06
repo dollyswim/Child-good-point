@@ -20,6 +20,10 @@
  * - item.sourceId：外部規則表的規則ID（例如 CSV 的 R001），用於匯入時對應更新
  * - record.stars：記錄當下的額外星星快照
  * - record.backfill：true 表示事後補登
+ * - child.title：頭銜（例如「小小店長」）；child.badge：代表圖示；child.weeklyGoal：每週目標點數（0 = 不設定）
+ * - data.challenges：本週挑戰 [{ id, name, childIds, metric: 'item'|'net', itemId, target, rewardPoints, rewardStars, createdAt }]
+ *   領取紀錄為 type 'bonus'、refId = 挑戰 id，同一週只能領一次
+ * - 等級：依累積「賺到的加分」（加分、每日任務、挑戰獎勵的正數點數）計算，扣分與兌換不會降級
  *
  * 規則：
  * - 扣分以負數保存；加分、任務以正數保存；兌換獎勵以負數保存。
@@ -65,7 +69,7 @@
 
   // ---------- 預設資料 ----------
   function emptyData() {
-    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [] };
+    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [] };
   }
 
   function defaultData() {
@@ -83,6 +87,11 @@
       mk('bonus', '自己收玩具', 3),
       mk('penalty', '違反約定', -5),
       mk('penalty', '發脾氣', -3)
+    );
+    var help = d.items.find(function (i) { return i.name === '主動幫忙'; });
+    d.challenges.push(
+      { id: uid(), name: '本週主動幫忙 3 次', childIds: 'all', metric: 'item', itemId: help.id, target: 3, rewardPoints: 20, rewardStars: 0, createdAt: t },
+      { id: uid(), name: '本週淨得分 100 點', childIds: 'all', metric: 'net', itemId: null, target: 100, rewardPoints: 30, rewardStars: 0, createdAt: t }
     );
     d.rewards.push(
       { id: uid(), name: '看卡通 30 分鐘', cost: 30, createdAt: t },
@@ -136,6 +145,9 @@
         avatar: String(c.avatar || '🙂'),
         color: String(c.color || '#ffd166'),
         startPoints: toInt(c.startPoints, 0),
+        title: String(c.title || ''),
+        badge: String(c.badge || ''),
+        weeklyGoal: Math.max(0, toInt(c.weeklyGoal, 0)),
         createdAt: toInt(c.createdAt, Date.now())
       };
     });
@@ -187,6 +199,24 @@
         ts: toInt(r.ts, Date.now())
       };
     }).sort(function (a, b) { return a.ts - b.ts; });
+
+    var itemIdSet = new Set(d.items.map(function (i) { return i.id; }));
+    var challenges = Array.isArray(d.challenges) ? d.challenges : [];
+    d.challenges = challenges.filter(function (c) { return c && c.id; }).map(function (c) {
+      var metric = c.metric === 'net' ? 'net' : 'item';
+      return {
+        id: String(c.id),
+        name: String(c.name || '未命名挑戰'),
+        childIds: c.childIds === 'all' || !Array.isArray(c.childIds) ? 'all'
+          : c.childIds.map(String).filter(function (id) { return childIdSet.has(id); }),
+        metric: metric,
+        itemId: metric === 'item' && c.itemId && itemIdSet.has(String(c.itemId)) ? String(c.itemId) : null,
+        target: Math.max(1, toInt(c.target, 1)),
+        rewardPoints: Math.max(0, toInt(c.rewardPoints, 0)),
+        rewardStars: Math.max(0, toInt(c.rewardStars, 0)),
+        createdAt: toInt(c.createdAt, Date.now())
+      };
+    });
 
     return d;
   }
@@ -264,6 +294,9 @@
       avatar: input.avatar || '🙂',
       color: input.color || '#ffd166',
       startPoints: toInt(input.startPoints, 0),
+      title: String(input.title || '').trim(),
+      badge: String(input.badge || ''),
+      weeklyGoal: Math.max(0, toInt(input.weeklyGoal, 0)),
       createdAt: this.now().getTime()
     };
     this.data.children.push(c);
@@ -282,6 +315,9 @@
     if (patch.avatar != null) c.avatar = patch.avatar;
     if (patch.color != null) c.color = patch.color;
     if (patch.startPoints != null) c.startPoints = toInt(patch.startPoints, 0);
+    if (patch.title != null) c.title = String(patch.title).trim();
+    if (patch.badge != null) c.badge = String(patch.badge);
+    if (patch.weeklyGoal != null) c.weeklyGoal = Math.max(0, toInt(patch.weeklyGoal, 0));
     this.save();
     return c;
   };
@@ -289,7 +325,7 @@
   Store.prototype.deleteChild = function (id) {
     this.data.children = this.data.children.filter(function (c) { return c.id !== id; });
     this.data.records = this.data.records.filter(function (r) { return r.childId !== id; });
-    this.data.items.forEach(function (i) {
+    this.data.items.concat(this.data.challenges).forEach(function (i) {
       if (Array.isArray(i.childIds)) i.childIds = i.childIds.filter(function (cid) { return cid !== id; });
     });
     this.save();
@@ -352,6 +388,7 @@
   Store.prototype.deleteItem = function (id) {
     // 歷史紀錄保留名稱快照，不受刪除影響
     this.data.items = this.data.items.filter(function (i) { return i.id !== id; });
+    this.data.challenges.forEach(function (c) { if (c.itemId === id) c.itemId = null; });
     this.save();
   };
 
@@ -696,6 +733,120 @@
     return data;
   };
 
+  // ----- 等級 -----
+  /** 升到 Lv.n 需要的累積加分：Lv.2 = 100、Lv.3 = 300、Lv.4 = 600、Lv.5 = 1000…（每級多 100） */
+  function levelThreshold(n) { return 50 * (n - 1) * n; }
+
+  /** 累積賺到的加分（不含起始點數；扣分、兌換不扣） */
+  Store.prototype.getEarned = function (childId) {
+    return this.data.records.reduce(function (sum, r) {
+      return (r.childId === childId && (r.type === 'bonus' || r.type === 'task') && r.points > 0) ? sum + r.points : sum;
+    }, 0);
+  };
+
+  /** @returns {{level, earned, current, next, progress}} progress 為 0～1 */
+  Store.prototype.getLevel = function (childId) {
+    var earned = this.getEarned(childId);
+    var level = 1;
+    while (earned >= levelThreshold(level + 1)) level++;
+    var cur = levelThreshold(level), next = levelThreshold(level + 1);
+    return { level: level, earned: earned, current: cur, next: next, progress: (earned - cur) / (next - cur) };
+  };
+
+  // ----- 每週目標 -----
+  Store.prototype.getWeekNet = function (childId, date) {
+    date = date || this.now();
+    var ws = weekStartKey(date), today = dateKey(date);
+    return this.data.records.reduce(function (sum, r) {
+      return (r.childId === childId && r.date >= ws && r.date <= today && SCORE_TYPES.indexOf(r.type) >= 0) ? sum + r.points : sum;
+    }, 0);
+  };
+
+  // ----- 本週挑戰 -----
+  Store.prototype.getChallenges = function () { return this.data.challenges.slice(); };
+  Store.prototype.getChallenge = function (id) {
+    return this.data.challenges.find(function (c) { return c.id === id; }) || null;
+  };
+  Store.prototype.getChallengesFor = function (childId) {
+    return this.data.challenges.filter(function (c) {
+      return c.childIds === 'all' || c.childIds.indexOf(childId) >= 0;
+    });
+  };
+
+  Store.prototype._normChallenge = function (input, base) {
+    var c = base || {};
+    if (input.name != null) {
+      var name = String(input.name).trim();
+      if (!name) throw new Error('請輸入挑戰名稱');
+      c.name = name;
+    }
+    if (input.childIds != null) c.childIds = this._normalizeChildIds(input.childIds);
+    if (input.metric != null) c.metric = input.metric === 'net' ? 'net' : 'item';
+    if (input.itemId !== undefined) c.itemId = input.itemId ? String(input.itemId) : null;
+    if (input.target != null) c.target = Math.max(1, toInt(input.target, 1));
+    if (input.rewardPoints != null) c.rewardPoints = Math.max(0, toInt(input.rewardPoints, 0));
+    if (input.rewardStars != null) c.rewardStars = Math.max(0, toInt(input.rewardStars, 0));
+    if (c.metric === 'item') {
+      if (!c.itemId || !this.getItem(c.itemId)) throw new Error('請選擇要達成的規則');
+      if (this.getItem(c.itemId).kind === 'penalty') throw new Error('挑戰請選擇加分項目');
+    } else c.itemId = null;
+    return c;
+  };
+
+  Store.prototype.addChallenge = function (input) {
+    var c = this._normChallenge(Object.assign({ childIds: 'all', metric: 'item', target: 1, rewardPoints: 0, rewardStars: 0 }, input),
+      { id: uid(), createdAt: this.now().getTime() });
+    if (!c.name) throw new Error('請輸入挑戰名稱');
+    this.data.challenges.push(c);
+    this.save();
+    return c;
+  };
+  Store.prototype.updateChallenge = function (id, patch) {
+    var c = this.getChallenge(id);
+    if (!c) throw new Error('找不到挑戰');
+    var copy = this._normChallenge(patch, clone(c));
+    Object.assign(c, copy);
+    this.save();
+    return c;
+  };
+  Store.prototype.deleteChallenge = function (id) {
+    this.data.challenges = this.data.challenges.filter(function (c) { return c.id !== id; });
+    this.save();
+  };
+
+  /** 本週進度：{ progress, target, done, claimed, claimRecord } */
+  Store.prototype.getChallengeStatus = function (childId, ch, date) {
+    date = date || this.now();
+    var ws = weekStartKey(date), today = dateKey(date);
+    var inWeek = function (r) { return r.childId === childId && r.date >= ws && r.date <= today; };
+    var progress;
+    if (ch.metric === 'net') {
+      // 淨得分不含本挑戰自己的獎勵
+      progress = this.data.records.reduce(function (sum, r) {
+        return inWeek(r) && SCORE_TYPES.indexOf(r.type) >= 0 && r.refId !== ch.id ? sum + r.points : sum;
+      }, 0);
+    } else {
+      var days = {}, count = 0;
+      this.data.records.forEach(function (r) {
+        if (inWeek(r) && r.refId === ch.itemId) { count++; days[r.date] = true; }
+      });
+      var item = this.getItem(ch.itemId);
+      // 每日任務一天最多一次，以天數計；一般加分以次數計
+      progress = item && item.kind === 'task' ? Object.keys(days).length : count;
+    }
+    var claimRecord = this.data.records.find(function (r) { return inWeek(r) && r.refId === ch.id; }) || null;
+    return { progress: progress, target: ch.target, done: progress >= ch.target, claimed: !!claimRecord, claimRecord: claimRecord };
+  };
+
+  Store.prototype.claimChallenge = function (childId, chId) {
+    var ch = this.getChallenge(chId);
+    if (!ch) throw new Error('找不到挑戰');
+    var st = this.getChallengeStatus(childId, ch);
+    if (st.claimed) throw new Error('本週已經領取過了');
+    if (!st.done) throw new Error('還沒達成挑戰');
+    return this._addRecord(childId, 'bonus', ch.id, '🏆 ' + ch.name, ch.rewardPoints, ch.rewardStars);
+  };
+
   /**
    * 匯入規則（新增＋更新）：保留現有孩子、紀錄與兌換歷史。
    * - 檔案中的孩子依「名稱」對應到現有孩子；找不到同名孩子時新增
@@ -817,6 +968,7 @@
     memoryStorage: memoryStorage,
     defaultData: defaultData,
     SCHEMA_VERSION: SCHEMA_VERSION,
+    levelThreshold: levelThreshold,
     STORAGE_KEY: STORAGE_KEY
   };
 
