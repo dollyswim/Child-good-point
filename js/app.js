@@ -13,6 +13,7 @@
   }
 
   var AVATARS = ['🐻', '🐰', '🐱', '🐶', '🦊', '🐼', '🐯', '🐨', '🦁', '🐸', '🐵', '🐧', '🦄', '🐲', '🐳', '⭐'];
+  var BADGES = ['🏪', '🚜', '🎨', '⚽', '🎹', '🚀', '🦖', '🌸', '📚', '🧪', '🍳', '🏰'];
   var COLORS = ['#ffd166', '#ffadad', '#9bd5ff', '#b8f2a8', '#d7b8ff', '#ffc58f'];
   var WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
   var FREQ_LABELS = {
@@ -23,7 +24,7 @@
   var KIND_LABELS = { bonus: '加分項目', penalty: '扣分項目', task: '加分項目' };
   var SETTINGS_TABS = [
     ['children', '孩子'], ['bonus', '加分'],
-    ['penalty', '扣分'], ['reward', '獎勵'], ['backup', '備份']
+    ['penalty', '扣分'], ['challenge', '挑戰'], ['reward', '獎勵'], ['backup', '備份']
   ];
 
   var app = document.getElementById('app');
@@ -40,8 +41,18 @@
     query: '',            // 孩子頁搜尋文字
     settingsQuery: '',    // 設定頁搜尋文字
     report: { childId: 'all', period: 'week', anchor: store.today() },
+    current: loadCurrent(),  // 底部導覽列「任務／挑戰／兌換」目前選定的孩子
     lastDate: store.today()
   };
+  function loadCurrent() { try { return localStorage.getItem('cgp-ui-current'); } catch (e) { return null; } }
+  function setCurrent(id) {
+    ui.current = id;
+    try { localStorage.setItem('cgp-ui-current', id); } catch (e) { /* 僅為方便功能 */ }
+  }
+  /** 目前選定的孩子；沒有或已刪除時用第一位 */
+  function currentChild() {
+    return store.getChild(ui.current) || store.getChildren()[0] || null;
+  }
 
   // ---------- 工具 ----------
   function h(s) {
@@ -64,7 +75,7 @@
     return (d.getMonth() + 1) + '/' + d.getDate() + '（' + WEEKDAYS[d.getDay()] + '）';
   }
   /**
-   * 路由格式：#home、#child-<id>、#rules、#rules-<分頁>
+   * 路由格式：#home、#child-<id>（任務）、#challenge-<id>、#shop-<id>（兌換）、#report（紀錄）、#rules、#rules-<分頁>
    * （只用英數與連字號，在各種嵌入環境都能正常運作；仍相容舊版 #/child/<id> 格式）
    */
   function route() {
@@ -74,9 +85,9 @@
       return { name: parts[0] || 'home', arg: parts[1] || null };
     }
     if (hs === 'report') return { name: 'report', arg: null };
-    var m = hs.match(/^(child|rules)(?:-(.+))?$/);
+    var m = hs.match(/^(child|rules|challenge|shop)(?:-(.+))?$/);
     if (!m) return { name: 'home', arg: null };
-    return { name: m[1] === 'rules' ? 'settings' : 'child', arg: m[2] || null };
+    return { name: m[1] === 'rules' ? 'settings' : m[1], arg: m[2] || null };
   }
   function go(hash) {
     if (location.hash === hash) render();
@@ -136,7 +147,15 @@
   }
 
   function avatar(child, size) {
-    return '<span class="avatar ' + (size || '') + '" style="background:' + h(child.color) + '">' + h(child.avatar) + '</span>';
+    return '<span class="avatar ' + (size || '') + '" style="--c:' + h(child.color) + '">' + h(child.avatar) + '</span>';
+  }
+  /** 千分位，例如 3,409 */
+  function num(n) { return Number(n).toLocaleString('en-US'); }
+  /** 頭銜＋等級膠囊，例如「🏪 小小店長 Lv.5」 */
+  function titlePill(child) {
+    var lv = store.getLevel(child.id);
+    return '<span class="title-pill">' + (child.badge ? '<i>' + h(child.badge) + '</i>' : '') +
+      (child.title ? h(child.title) + ' ' : '') + '<b>Lv.' + lv.level + '</b></span>';
   }
   function freqText(f) {
     if (f.type === 'days') return '每週' + f.days.map(function (d) { return WEEKDAYS[d]; }).join('、');
@@ -189,10 +208,11 @@
   function render() {
     var r = route();
     var html;
-    if (r.name === 'child') {
+    if (r.name === 'child' || r.name === 'challenge' || r.name === 'shop') {
       var child = store.getChild(r.arg);
       if (!child) { location.replace('#home'); return; }
-      html = renderChild(child);
+      setCurrent(child.id);
+      html = r.name === 'child' ? renderChild(child) : (r.name === 'challenge' ? renderChallenge(child) : renderShop(child));
     } else if (r.name === 'settings') {
       html = renderSettings(r.arg || 'children');
     } else if (r.name === 'report') {
@@ -200,6 +220,7 @@
     } else {
       html = renderHome();
     }
+    if (r.name !== 'settings') html += bottomNav(r.name);
     app.innerHTML = html;
     app.dataset.view = r.name;
     if (ui.pulse) {
@@ -209,76 +230,194 @@
     }
   }
 
+  /** 原創吉祥物：圓頭小機器貓（簡化向量圖） */
+  var MASCOT = '<svg class="mascot" viewBox="0 0 120 120" aria-hidden="true">' +
+    '<path d="M28 34 L22 8 L48 24 Z" fill="#eef4fb" stroke="#7a8da3" stroke-width="3" stroke-linejoin="round"/>' +
+    '<path d="M92 34 L98 8 L72 24 Z" fill="#eef4fb" stroke="#7a8da3" stroke-width="3" stroke-linejoin="round"/>' +
+    '<path d="M30 30 L27 16 L40 24 Z" fill="#7fd3ff"/><path d="M90 30 L93 16 L80 24 Z" fill="#7fd3ff"/>' +
+    '<rect x="16" y="22" width="88" height="72" rx="34" fill="#f7fbff" stroke="#7a8da3" stroke-width="3"/>' +
+    '<rect x="27" y="38" width="66" height="40" rx="20" fill="#1f2b45"/>' +
+    '<ellipse cx="46" cy="56" rx="6" ry="8" fill="#5fe0ff"/><ellipse cx="74" cy="56" rx="6" ry="8" fill="#5fe0ff"/>' +
+    '<path d="M54 66 q6 6 12 0" fill="none" stroke="#5fe0ff" stroke-width="3" stroke-linecap="round"/>' +
+    '<circle cx="35" cy="70" r="4" fill="#ff9bb3" opacity=".7"/><circle cx="85" cy="70" r="4" fill="#ff9bb3" opacity=".7"/>' +
+    '<rect x="40" y="94" width="40" height="18" rx="9" fill="#f7fbff" stroke="#7a8da3" stroke-width="3"/>' +
+    '<circle cx="60" cy="103" r="4" fill="#5fe0ff"/></svg>';
+
+  function sky(inner, small) {
+    return '<header class="sky ' + (small ? 'sky-sm' : '') + '"><span class="cloud c1"></span><span class="cloud c2"></span>' + inner + '</header>';
+  }
+  function gear() { return '<a class="gear" href="#rules" aria-label="設定">⚙️</a>'; }
+  function plaque(title, sub) {
+    return '<div class="plaque"><h1>' + h(title) + '</h1>' + (sub ? '<div class="ribbon">' + h(sub) + '</div>' : '') + '</div>';
+  }
+
+  /** 子頁面頂部：標題木牌＋孩子切換 */
+  function pageHeader(title, child, tab) {
+    var kids = store.getChildren();
+    var sw = kids.length > 1 ? '<nav class="kid-switch" aria-label="切換孩子">' + kids.map(function (c) {
+      return '<a class="kid ' + (c.id === child.id ? 'active' : '') + '" href="#' + tab + '-' + h(c.id) + '" style="--c:' + h(c.color) + '">' +
+        avatar(c, 'xs') + h(c.name) + '</a>';
+    }).join('') + '</nav>' : '';
+    return sky('<a class="icon-btn back" href="#home" aria-label="回首頁">‹</a>' + plaque(title) + gear() + sw, true);
+  }
+
+  var NAV = [['home', '🏠', '首頁'], ['child', '📋', '任務'], ['challenge', '🏆', '挑戰'], ['shop', '🎁', '兌換'], ['report', '📊', '紀錄']];
+  function bottomNav(active) {
+    var c = currentChild();
+    return '<nav class="bottom-nav" aria-label="主要分頁">' + NAV.map(function (n) {
+      var href = n[0] === 'home' ? '#home' : n[0] === 'report' ? '#report' : (c ? '#' + n[0] + '-' + c.id : '#home');
+      return '<a class="nav-item ' + (active === n[0] ? 'active' : '') + '" href="' + href + '"' + (active === n[0] ? ' aria-current="page"' : '') + '>' +
+        '<span class="nav-icon">' + n[1] + '</span><span>' + n[2] + '</span></a>';
+    }).join('') + '</nav>';
+  }
+
+  function progressBar(value, max, cls) {
+    var pct = max > 0 ? Math.max(0, Math.min(100, Math.round(value / max * 100))) : 0;
+    return '<span class="bar ' + (cls || '') + '"><i style="width:' + pct + '%"></i></span>';
+  }
+
   function renderHome() {
     var children = store.getChildren();
+    var range = window.CGPReport.periodRange('week', store.today());
     var cards = children.map(function (c) {
       var net = store.getTodayNet(c.id);
-      return '<button class="child-card" data-action="open-child" data-id="' + h(c.id) + '">' +
+      return '<button class="child-card" data-action="open-child" data-id="' + h(c.id) + '" style="--c:' + h(c.color) + '">' +
         avatar(c, 'lg') +
-        '<span class="child-card-body">' +
-        '<span class="child-name">' + h(c.name) + '</span>' +
-        '<span class="child-total">目前 <b>' + store.getTotal(c.id) + '</b> 點</span>' +
-        '<span class="child-today ' + signClass(net) + '">今日 ' + signed(net) + '</span>' +
-        '</span><span class="chev" aria-hidden="true">›</span></button>';
+        '<span class="child-card-body"><span class="child-name">' + h(c.name) + '</span>' + titlePill(c) + '</span>' +
+        '<span class="points-box"><span class="child-total"><i class="coin">★</i><b>' + num(store.getTotal(c.id)) + '</b> 點</span>' +
+        '<span class="child-today ' + signClass(net) + '">' + (net > 0 ? '⬆ ' : '') + '今日 ' + signed(net) + '</span></span>' +
+        (c.badge ? '<span class="card-deco" aria-hidden="true">' + h(c.badge) + '</span>' : '') +
+        '</button>';
     }).join('');
 
-    return '<header class="topbar"><h1>🌟 親子集點</h1>' +
-      '<a class="icon-btn" href="#rules" aria-label="設定">⚙️</a></header>' +
-      '<main class="page">' +
+    var left = children.reduce(function (n, c) {
+      return n + store.getTodayTasks(c.id).filter(function (t) { return t.status.canComplete; }).length;
+    }, 0);
+    var tiles = children.length ? '<div class="tiles">' +
+      '<button class="tile t-task" data-action="pick-child" data-kind="child"><span class="tile-icon">📋</span>今日任務' + (left ? '<span class="badge-num">' + left + '</span>' : '') + '</button>' +
+      '<button class="tile t-challenge" data-action="pick-child" data-kind="challenge"><span class="tile-icon">🏆</span>本週挑戰</button>' +
+      '<button class="tile t-shop" data-action="pick-child" data-kind="shop"><span class="tile-icon">🎁</span>獎勵兌換</button>' +
+      '<a class="tile t-report" href="#report"><span class="tile-icon">📊</span>記分總覽</a></div>' : '';
+
+    var goals = children.filter(function (c) { return c.weeklyGoal > 0; });
+    var week = children.length ? '<section class="week-card"><div class="week-head"><h2>📅 本週進度 <small>（' + h(range.label.replace(/（.）/g, '')) + '）</small></h2></div>' +
+      (goals.length ? goals.map(function (c) {
+        var wn = store.getWeekNet(c.id);
+        var leftPts = Math.max(0, c.weeklyGoal - wn);
+        return '<div class="goal-row">' + avatar(c, 'sm') + '<b class="goal-name">' + h(c.name) + '</b>' +
+          '<span class="goal-bar">' + progressBar(wn, c.weeklyGoal) + '<span class="goal-text">' + num(Math.max(0, wn)) + ' / ' + num(c.weeklyGoal) + ' 點</span></span>' +
+          '<span class="goal-left">' + (leftPts ? '還差 ' + num(leftPts) : '🎉 達成') + '</span></div>';
+      }).join('') : '<p class="muted small">到 ⚙️ 設定 → 孩子，設定「每週目標點數」就會在這裡顯示進度。</p>') +
+      '</section>' : '';
+
+    return sky('<div class="hero">' + MASCOT + plaque('親子集點冒險', '完成任務・累積點數・解鎖獎勵') +
+        '<span class="island" aria-hidden="true">🏰</span></div>' + gear()) +
+      '<main class="page home">' +
       (children.length
         ? '<div class="child-list">' + cards + '</div>'
-        : '<div class="empty"><p>還沒有孩子資料</p><p class="muted">先新增孩子，就可以開始記錄生活積分。</p></div>') +
-      (children.length ? '<a class="btn block report-link" href="#report">📊 記分總覽・更正紀錄</a>' : '') +
+        : '<div class="empty card"><p class="big-emoji">👋</p><p><b>還沒有孩子資料</b></p><p class="muted">先新增孩子，就可以開始記錄生活積分。</p></div>') +
+      tiles + week +
       '<button class="btn add-child" data-action="add-child">＋ 新增孩子</button>' +
       '</main>';
   }
 
+  /** 孩子頁上方的點數與等級卡 */
+  function summaryCard(child) {
+    var total = store.getTotal(child.id);
+    var net = store.getTodayNet(child.id);
+    var lv = store.getLevel(child.id);
+    return '<section class="summary" style="--c:' + h(child.color) + '">' +
+      '<div class="summary-top">' + avatar(child, 'md') +
+      '<div class="summary-main"><div class="label">目前總點數</div><div class="total-value" data-testid="total">' + num(total) + '</div></div>' +
+      '<div class="today"><div class="label">今日淨得分</div><div class="today-value ' + signClass(net) + '" data-testid="today">' + signed(net) + '</div></div></div>' +
+      '<div class="level-row">' + titlePill(child) + progressBar(lv.earned - lv.current, lv.next - lv.current, 'lv') +
+      '<small>再 ' + num(lv.next - lv.earned) + ' 點升 Lv.' + (lv.level + 1) + '</small></div>' +
+      '</section>';
+  }
+
   function renderChild(child) {
     var id = child.id;
-    var total = store.getTotal(id);
-    var net = store.getTodayNet(id);
     var tasks = store.getTodayTasks(id);
-    var rewards = store.getRewards();
     var last = store.getLastRecord(id);
     var records = store.getRecords(id, ui.showAllRecords ? 0 : 8);
     var allCount = store.getRecords(id).length;
+    var doneCount = tasks.filter(function (t) { return t.status.doneToday; }).length;
 
     var taskHtml = tasks.length ? tasks.map(taskButton).join('') : '<p class="muted small">今天沒有每日任務。可在設定的加分項目勾選「📋 每日任務」。</p>';
-
-    var rewardHtml = rewards.length ? rewards.map(function (r) {
-      var ok = total >= r.cost;
-      return '<div class="reward-row"><span>🎁 ' + h(r.name) + '</span>' +
-        '<button class="btn small ' + (ok ? 'primary' : '') + '" data-action="redeem" data-id="' + h(r.id) + '"' +
-        (ok ? '' : ' disabled') + '>' + r.cost + ' 點兌換</button></div>';
-    }).join('') : '<p class="muted small">尚未設定獎勵</p>';
 
     var recHtml = records.length ? '<ul class="records">' + groupByDate(records).map(function (g) {
       return '<li class="rec-date">' + h(dateLabel(g.date)) + '</li>' + g.items.map(function (x) { return recordRow(x); }).join('');
     }).join('') + '</ul>' : '<p class="muted small">還沒有紀錄</p>';
 
-    return '<header class="topbar">' +
-      '<a class="icon-btn" href="#home" aria-label="回首頁">‹</a>' +
-      '<h1 class="child-title">' + avatar(child, 'sm') + h(child.name) + '</h1>' +
-      '<a class="icon-btn" href="#rules" aria-label="設定">⚙️</a></header>' +
+    return pageHeader('今日任務', child, 'child') +
       '<main class="page has-undo">' +
-      '<section class="summary" style="--accent:' + h(child.color) + '">' +
-      '<div><div class="label">目前總點數</div><div class="total-value" data-testid="total">' + total + '</div></div>' +
-      '<div class="today"><div class="label">今日淨得分</div><div class="today-value ' + signClass(net) + '" data-testid="today">' + signed(net) + '</div></div>' +
-      '</section>' +
-      '<section><h2>📌 常用・今日任務</h2><div class="tasks">' + taskHtml + '</div></section>' +
-      '<section class="scorer"><h2>✏️ 加分・扣分</h2>' +
+      summaryCard(child) +
+      '<section class="panel"><h2>📌 常用・今日任務' + (tasks.length ? ' <small>' + doneCount + '/' + tasks.length + '</small>' : '') + '</h2><div class="tasks">' + taskHtml + '</div></section>' +
+      '<section class="panel scorer"><h2>✏️ 加分・扣分</h2>' +
       '<input type="search" id="score-search" class="search" data-search="score" placeholder="🔍 搜尋規定，例如：功課" ' +
       'autocomplete="off" enterkeyhint="search" value="' + h(ui.query) + '">' +
       '<div id="score-list">' + renderScoreList(id) + '</div></section>' +
-      '<section><details class="rewards"><summary><h2>🎁 兌換現實獎勵</h2></summary>' +
-      '<p class="muted small">兌換會扣除總點數，不影響今日淨得分。</p>' + rewardHtml + '</details></section>' +
-      '<section><h2>🕘 最近紀錄</h2>' + recHtml +
+      '<section class="panel"><h2>🕘 最近紀錄</h2>' + recHtml +
       (allCount > 8 ? '<button class="btn link" data-action="toggle-history">' +
         (ui.showAllRecords ? '只顯示最近幾筆' : '顯示全部 ' + allCount + ' 筆') + '</button>' : '') +
       '</section></main>' +
       '<div class="undo-bar"><button class="btn undo" data-action="undo"' + (last ? '' : ' disabled') + '>' +
       '↶ 撤銷上一筆' + (last ? '<small>' + h(last.name) + ' ' + signed(last.points) + '</small>' : '') +
       '</button></div>';
+  }
+
+  function renderChallenge(child) {
+    var range = window.CGPReport.periodRange('week', store.today());
+    var list = store.getChallengesFor(child.id);
+    var wn = store.getWeekNet(child.id);
+    var goal = child.weeklyGoal > 0
+      ? '<section class="panel goal-panel"><h2>🎯 本週目標</h2><div class="goal-big"><b>' + num(Math.max(0, wn)) + '</b> / ' + num(child.weeklyGoal) + ' 點</div>' +
+        progressBar(wn, child.weeklyGoal, 'big') +
+        '<p class="muted small">' + (wn >= child.weeklyGoal ? '🎉 本週目標達成！' : '還差 ' + num(child.weeklyGoal - wn) + ' 點') + '</p></section>'
+      : '';
+    var cards = list.length ? list.map(function (ch) {
+      var st = store.getChallengeStatus(child.id, ch);
+      var item = ch.itemId ? store.getItem(ch.itemId) : null;
+      var unit = ch.metric === 'net' ? ' 點' : (item && item.kind === 'task' ? ' 天' : ' 次');
+      var reward = (ch.rewardPoints ? '+' + ch.rewardPoints + ' 點' : '') + (ch.rewardStars ? ' ⭐' + ch.rewardStars : '');
+      var btn = st.claimed ? '<span class="claimed">✓ 已領取</span>'
+        : st.done ? '<button class="btn primary claim" data-action="claim" data-id="' + h(ch.id) + '">🎁 領取 ' + h(reward) + '</button>'
+          : '<span class="muted small">還差 ' + (st.target - Math.max(0, st.progress)) + unit + '</span>';
+      return '<div class="challenge ' + (st.claimed ? 'is-claimed' : st.done ? 'is-done' : '') + '">' +
+        '<div class="ch-head"><span class="ch-icon">' + (st.claimed ? '🏅' : st.done ? '🎉' : '🏆') + '</span>' +
+        '<div class="ch-main"><b>' + h(ch.name) + '</b><small class="muted">' +
+        (ch.metric === 'net' ? '本週淨得分' : '「' + h(item ? item.name : '（規則已刪除）') + '」') + '・獎勵 ' + h(reward || '無') + '</small></div></div>' +
+        '<div class="ch-progress">' + progressBar(st.progress, st.target) + '<span class="ch-val">' + Math.max(0, Math.min(st.progress, st.target)) + '/' + st.target + unit + '</span></div>' +
+        '<div class="ch-foot">' + btn + '</div></div>';
+    }).join('') : '<div class="empty card"><p class="big-emoji">🏆</p><p>還沒有本週挑戰</p><a class="btn primary" href="#rules-challenge">到設定新增挑戰</a></div>';
+    return pageHeader('本週挑戰', child, 'challenge') +
+      '<main class="page">' + summaryCard(child) + goal +
+      '<section class="panel"><h2>🏆 本週挑戰 <small>' + h(range.label) + '</small></h2><div class="challenges">' + cards + '</div>' +
+      '<p class="muted small">每週一重新開始。達成後按「領取」，獎勵會記成一筆加分。</p></section></main>';
+  }
+
+  function renderShop(child) {
+    var total = store.getTotal(child.id);
+    var rewards = store.getRewards().slice().sort(function (a, b) { return a.cost - b.cost; });
+    var cards = rewards.length ? '<div class="shop-grid">' + rewards.map(function (r) {
+      var ok = total >= r.cost;
+      return '<div class="shop-item ' + (ok ? 'can' : '') + '"><span class="shop-icon">🎁</span><b class="shop-name">' + h(r.name) + '</b>' +
+        '<span class="shop-cost"><i class="coin">★</i>' + num(r.cost) + ' 點</span>' +
+        (ok ? '<button class="btn primary small" data-action="redeem" data-id="' + h(r.id) + '">兌換</button>'
+          : progressBar(total, r.cost) + '<small class="muted">還差 ' + num(r.cost - total) + ' 點</small>') + '</div>';
+    }).join('') + '</div>' : '<div class="empty card"><p class="big-emoji">🎁</p><p>還沒有獎勵</p><a class="btn primary" href="#rules-reward">到設定新增獎勵</a></div>';
+    var history = store.getRecords(child.id).filter(function (r) { return r.type === 'reward'; }).slice(0, 20);
+    var histHtml = history.length ? '<ul class="records">' + history.map(function (r) {
+      return '<li class="rec" data-action="edit-record" data-id="' + h(r.id) + '" role="button" tabindex="0"><span class="rec-time">' + h(dateLabel(r.date)) + '</span>' +
+        '<span class="rec-name">🎁 ' + h(r.name) + '</span><span class="pts neg">' + signed(r.points) + '</span></li>';
+    }).join('') + '</ul>' : '<p class="muted small">還沒有兌換紀錄</p>';
+    return pageHeader('獎勵兌換', child, 'shop') +
+      '<main class="page">' +
+      '<section class="wallet" style="--c:' + h(child.color) + '">' + avatar(child, 'md') +
+      '<div><div class="label">' + h(child.name) + ' 可以用的點數</div><div class="wallet-value" data-testid="total"><i class="coin">★</i>' + num(total) + '</div></div></section>' +
+      '<section class="panel"><h2>🎁 可兌換的獎勵</h2>' + cards +
+      '<p class="muted small">兌換會扣除總點數，不影響今日淨得分與等級。</p></section>' +
+      '<section class="panel"><h2>🧾 兌換紀錄</h2>' + histHtml + '</section></main>';
   }
 
   /** 每日任務按鈕（一天一次打勾，再點一次取消） */
@@ -406,7 +545,7 @@
       var s = R.summarize(store, c.id, range.start, range.end);
       function cell(label, v, cls) { return '<div class="stat"><span>' + label + '</span><b class="' + cls + '">' + v + '</b></div>'; }
       return '<div class="stat-card"><div class="stat-head">' + avatar(c, 'sm') + '<b>' + h(c.name) + '</b>' +
-        '<span class="muted small">目前 ' + store.getTotal(c.id) + ' 點</span></div>' +
+        '<span class="muted small">目前 ' + num(store.getTotal(c.id)) + ' 點</span></div>' +
         '<div class="stat-grid">' +
         cell('淨得分', signed(s.net), signClass(s.net) + ' big') +
         cell('加分', signed(s.bonus), 'pos') +
@@ -449,9 +588,7 @@
         g.items.map(function (r) { return recordRow(r, !cid); }).join('');
     }).join('') + '</ul>' : '<p class="muted small">這段期間沒有紀錄</p>';
 
-    return '<header class="topbar">' +
-      '<a class="icon-btn" href="#home" aria-label="回首頁">‹</a>' +
-      '<h1>記分總覽</h1><a class="icon-btn" href="#rules" aria-label="設定">⚙️</a></header>' +
+    return sky('<a class="icon-btn back" href="#home" aria-label="回首頁">‹</a>' + plaque('記分總覽') + gear(), true) +
       '<main class="page report">' +
       '<div class="report-controls">' + chips + seg + nav + '</div>' +
       '<section><h2>📈 統計</h2><div class="stat-cards">' + cards + '</div></section>' +
@@ -470,6 +607,7 @@
     var body;
     if (tab === 'children') body = settingsChildren();
     else if (tab === 'reward') body = settingsRewards();
+    else if (tab === 'challenge') body = settingsChallenges();
     else if (tab === 'backup') body = settingsBackup();
     else if (tab === 'task') { tab = 'bonus'; body = settingsItems('bonus'); } // 舊網址相容
     else if (KIND_LABELS[tab]) body = settingsItems(tab);
@@ -485,7 +623,8 @@
   function settingsChildren() {
     var list = store.getChildren().map(function (c) {
       return '<li class="row">' + avatar(c, 'sm') +
-        '<span class="row-main"><b>' + h(c.name) + '</b><small>起始 ' + c.startPoints + ' 點・目前 ' + store.getTotal(c.id) + ' 點</small></span>' +
+        '<span class="row-main"><b>' + h(c.name) + ' ' + (c.badge ? h(c.badge) : '') + '</b><small>' + h((c.title ? c.title + ' ' : '') + 'Lv.' + store.getLevel(c.id).level) +
+        '・目前 ' + num(store.getTotal(c.id)) + ' 點' + (c.weeklyGoal ? '・每週目標 ' + num(c.weeklyGoal) : '') + '・起始 ' + c.startPoints + '</small></span>' +
         '<button class="btn small" data-action="edit-child" data-id="' + h(c.id) + '">編輯</button>' +
         '<button class="btn small danger" data-action="delete-child" data-id="' + h(c.id) + '">刪除</button></li>';
     }).join('');
@@ -537,6 +676,69 @@
         '<button class="btn small danger" data-action="delete-item" data-id="' + h(i.id) + '">刪除</button></li>';
     }).join('');
     return '<ul class="rows">' + list + '</ul>';
+  }
+
+  function settingsChallenges() {
+    var list = store.getChallenges().map(function (ch) {
+      var item = ch.itemId ? store.getItem(ch.itemId) : null;
+      var what = ch.metric === 'net' ? '本週淨得分達 ' + ch.target + ' 點' : '「' + (item ? item.name : '規則已刪除') + '」' + ch.target + (item && item.kind === 'task' ? ' 天' : ' 次');
+      var reward = (ch.rewardPoints ? '+' + ch.rewardPoints + ' 點' : '') + (ch.rewardStars ? ' ⭐' + ch.rewardStars : '');
+      return '<li class="row"><span class="row-main"><b>🏆 ' + h(ch.name) + '</b><small>' + h(what + '・獎勵 ' + (reward || '無') + '・' + childIdsText(ch.childIds)) + '</small></span>' +
+        '<button class="btn small" data-action="edit-challenge" data-id="' + h(ch.id) + '">編輯</button>' +
+        '<button class="btn small danger" data-action="delete-challenge" data-id="' + h(ch.id) + '">刪除</button></li>';
+    }).join('');
+    return '<p class="muted small">每週一重新計算。孩子達成後，在「挑戰」分頁按「領取」，獎勵會記成一筆加分。</p>' +
+      '<ul class="rows">' + (list || '<li class="muted">尚未建立</li>') + '</ul>' +
+      '<button class="btn primary block" data-action="add-challenge">＋ 新增挑戰</button>';
+  }
+
+  function openChallengeForm(ch) {
+    var c = ch || { name: '', childIds: 'all', metric: 'item', itemId: null, target: 3, rewardPoints: 20, rewardStars: 0 };
+    var opts = [['task', '📋 每日任務（以天數計）'], ['bonus', '加分（以次數計）']].map(function (k) {
+      var items = store.getItems(k[0]).slice().sort(byPoints);
+      if (!items.length) return '';
+      return '<optgroup label="' + k[1] + '">' + items.map(function (i) {
+        return '<option value="' + h(i.id) + '"' + (i.id === c.itemId ? ' selected' : '') + '>' + h(i.name) + '</option>';
+      }).join('') + '</optgroup>';
+    }).join('');
+    var fields =
+      '<label class="field">挑戰名稱<input type="text" name="name" maxlength="30" required placeholder="例如：本週主動幫忙 3 次" value="' + h(c.name) + '"></label>' +
+      '<label class="field">挑戰類型<select name="metric">' +
+      '<option value="item"' + (c.metric === 'item' ? ' selected' : '') + '>某條規則本週達成 N 次／天</option>' +
+      '<option value="net"' + (c.metric === 'net' ? ' selected' : '') + '>本週淨得分達到 N 點</option></select></label>' +
+      '<label class="field" data-show-when="metric=item">要達成的規則<select name="itemId">' + opts + '</select></label>' +
+      '<label class="field">目標 N<input type="number" name="target" min="1" step="1" inputmode="numeric" required value="' + c.target + '"></label>' +
+      '<label class="field">獎勵點數<input type="number" name="rewardPoints" min="0" step="1" inputmode="numeric" value="' + c.rewardPoints + '"></label>' +
+      '<label class="field">獎勵能量星星<input type="number" name="rewardStars" min="0" step="1" inputmode="numeric" value="' + c.rewardStars + '">' +
+      '<small class="muted">Phase 1 只記錄，冒險功能推出後才會發放。</small></label>' +
+      childPicker(c.childIds);
+    openModal(ch ? '編輯挑戰' : '新增挑戰', fields, function (fd) {
+      var data = {
+        name: fd.get('name'), metric: fd.get('metric'), itemId: fd.get('itemId') || null,
+        target: fd.get('target'), rewardPoints: fd.get('rewardPoints'), rewardStars: fd.get('rewardStars'),
+        childIds: fd.get('scope') === 'all' ? 'all' : fd.getAll('childIds')
+      };
+      if (ch) store.updateChallenge(ch.id, data);
+      else store.addChallenge(data);
+      toast('已儲存');
+    });
+    syncConditional();
+  }
+
+  /** 首頁大按鈕：先選孩子再進入 */
+  function pickChild(tab) {
+    var kids = store.getChildren();
+    if (kids.length === 1) { go('#' + tab + '-' + kids[0].id); return; }
+    var title = { child: '今日任務', challenge: '本週挑戰', shop: '獎勵兌換' }[tab];
+    confirmEl.innerHTML = '<div class="confirm-box"><h2>' + h(title) + '：要看誰的？</h2><div class="pick-kids">' +
+      kids.map(function (c) {
+        return '<a class="pick-kid" href="#' + tab + '-' + h(c.id) + '" style="--c:' + h(c.color) + '">' + avatar(c, 'lg') + '<b>' + h(c.name) + '</b></a>';
+      }).join('') + '</div><div class="modal-actions"><button type="button" class="btn" data-no>取消</button></div></div>';
+    confirmEl.querySelector('[data-no]').onclick = function () { confirmEl.close(); };
+    confirmEl.querySelectorAll('.pick-kid').forEach(function (a) { a.onclick = function () { confirmEl.close(); }; });
+    confirmEl.oncancel = null;
+    if (typeof confirmEl.showModal === 'function') confirmEl.showModal();
+    else confirmEl.setAttribute('open', '');
   }
 
   function settingsRewards() {
@@ -592,7 +794,7 @@
   }
 
   function openChildForm(child) {
-    var c = child || { name: '', avatar: AVATARS[store.getChildren().length % AVATARS.length], color: COLORS[store.getChildren().length % COLORS.length], startPoints: 0 };
+    var c = child || { name: '', avatar: AVATARS[store.getChildren().length % AVATARS.length], color: COLORS[store.getChildren().length % COLORS.length], startPoints: 0, title: '', badge: '', weeklyGoal: 0 };
     var fields =
       '<label class="field">名稱<input type="text" name="name" maxlength="20" required value="' + h(c.name) + '"></label>' +
       '<fieldset class="field"><legend>頭像</legend><div class="pick">' + AVATARS.map(function (a) {
@@ -601,10 +803,20 @@
       '<fieldset class="field"><legend>代表色</legend><div class="pick">' + COLORS.map(function (col) {
         return '<label class="pick-item color"><input type="radio" name="color" value="' + col + '"' + (col === c.color ? ' checked' : '') + '><span style="background:' + col + '"></span></label>';
       }).join('') + '</div></fieldset>' +
+      '<label class="field">頭銜<input type="text" name="title" maxlength="12" placeholder="例如：小小店長、小小工程師" value="' + h(c.title || '') + '">' +
+      '<small class="muted">會和等級一起顯示，例如「小小店長 Lv.5」。等級依累積加分自動升級。</small></label>' +
+      '<fieldset class="field"><legend>代表圖示</legend><div class="pick">' +
+      '<label class="pick-item"><input type="radio" name="badge" value=""' + (!c.badge ? ' checked' : '') + '><span class="none">無</span></label>' +
+      BADGES.map(function (b) {
+        return '<label class="pick-item"><input type="radio" name="badge" value="' + b + '"' + (b === c.badge ? ' checked' : '') + '><span>' + b + '</span></label>';
+      }).join('') + '</div></fieldset>' +
+      '<label class="field">每週目標點數<input type="number" name="weeklyGoal" min="0" step="10" inputmode="numeric" value="' + (c.weeklyGoal || 0) + '">' +
+      '<small class="muted">以本週（週一～週日）淨得分計算，0 表示不設定。</small></label>' +
       '<label class="field">起始點數<input type="number" name="startPoints" inputmode="numeric" step="1" value="' + c.startPoints + '">' +
-      '<small class="muted">起始點數會加入總點數，但不算今日得分。</small></label>';
+      '<small class="muted">起始點數會加入總點數，但不算今日得分與等級。</small></label>';
     openModal(child ? '編輯孩子' : '新增孩子', fields, function (fd) {
-      var data = { name: fd.get('name'), avatar: fd.get('avatar'), color: fd.get('color'), startPoints: fd.get('startPoints') };
+      var data = { name: fd.get('name'), avatar: fd.get('avatar'), color: fd.get('color'), startPoints: fd.get('startPoints'),
+        title: fd.get('title'), badge: fd.get('badge') || '', weeklyGoal: fd.get('weeklyGoal') };
       if (child) store.updateChild(child.id, data);
       else store.addChild(data);
       toast(child ? '已更新' : '已新增 ' + String(data.name).trim());
@@ -954,6 +1166,20 @@
           break;
         }
         case 'export': exportData(); break;
+        case 'pick-child': pickChild(el.getAttribute('data-kind')); break;
+        case 'claim': {
+          var cr = store.claimChallenge(childId, id);
+          toast('🎉 挑戰達成！' + recText(cr), 'pos');
+          render();
+          break;
+        }
+        case 'add-challenge': openChallengeForm(); break;
+        case 'edit-challenge': openChallengeForm(store.getChallenge(id)); break;
+        case 'delete-challenge': {
+          var dc = store.getChallenge(id);
+          confirmThen('確定刪除挑戰「' + dc.name + '」？\n已領取的獎勵紀錄會保留。', '刪除', true, function () { store.deleteChallenge(id); });
+          break;
+        }
         case 'edit-record': { var er = store.getRecord(id); if (er) openRecordForm(er); break; }
         case 'backfill': openBackfill(); break;
         case 'report-child': ui.report.childId = id; render(); break;

@@ -54,7 +54,7 @@ async function main() {
   await addChild('端端', 100);
   await addChild('波妞', 0);
   assert.equal(await page.locator('.child-card').count(), 2);
-  assert.match(await text('.child-card >> nth=0'), /目前 100 點/);
+  assert.match(await text('.child-card >> nth=0'), /100 點/);
   assert.match(await text('.child-card >> nth=0'), /今日 0/);
   await shot('02-home');
 
@@ -105,7 +105,7 @@ async function main() {
   await shot('05-child-page');
   await noHScroll('孩子頁');
   await page.click('a[aria-label="回首頁"]');
-  assert.match(await text('.child-card >> nth=0'), /目前 123 點[\s\S]*今日 \+23/);
+  assert.match(await text('.child-card >> nth=0'), /123 點[\s\S]*今日 \+23/);
   await page.click('.child-card >> text=波妞');
   assert.equal(await page.locator('.task.done >> text=共同閱讀').count(), 0);
   assert.equal(await text('[data-testid=today]'), '0');
@@ -132,9 +132,15 @@ async function main() {
   console.log('✔ 案例 C：撤銷後總點數、今日得分、紀錄皆恢復');
 
   // 兌換獎勵
-  await page.click('.rewards summary');
+  await page.click('.bottom-nav a >> text=兌換');
+  await page.waitForSelector('.shop-grid');
+  await shot('05b-shop');
   await page.click('[data-action=redeem] >> nth=0');
   await page.click('#confirm [data-yes]');
+  assert.match(await text('[data-testid=total]'), new RegExp(String(Number(before[0]) - 30) + '$'));
+  assert.match(await text('.records'), /看卡通 30 分鐘[\s\S]*-30/, '兌換紀錄');
+  await page.click('.bottom-nav a >> text=任務');
+  await page.waitForSelector('.summary');
   assert.equal(await text('[data-testid=total]'), String(Number(before[0]) - 30));
   assert.equal(await text('[data-testid=today]'), before[1], '兌換不影響今日淨得分');
   assert.match(await text('.records'), /看卡通 30 分鐘[\s\S]*-30/);
@@ -164,7 +170,7 @@ async function main() {
   await page.waitForSelector('.toast >> text=匯入完成');
   await page.goto(url + '#home');
   assert.equal(await page.locator('.child-card').count(), 2);
-  assert.match(await text('.child-card >> nth=0'), new RegExp('目前 ' + afterRedeem + ' 點'));
+  assert.match(await text('.child-card >> nth=0'), new RegExp(afterRedeem + ' 點'));
   console.log('✔ 備份匯出與匯入還原');
 
   // 編輯與刪除孩子
@@ -322,10 +328,61 @@ async function main() {
   await page.click('#modal-form [data-close]');
   const afterCustom2 = await text('[data-testid=total]');
 
+  // 介面改版：頭銜、等級、每週目標、首頁選孩子、本週挑戰、底部導覽列
+  await page.goto(url + '#rules-children');
+  await page.click('[data-action=edit-child] >> nth=0');
+  await page.fill('input[name="title"]', '小小店長');
+  await page.check('input[name="badge"][value="🏪"]', { force: true });
+  await page.fill('input[name="weeklyGoal"]', '500');
+  await page.click('#modal-form button[type="submit"]');
+  await page.goto(url + '#home');
+  assert.match(await text('.child-card >> nth=0'), /小小店長\s*Lv\.\d+/);
+  assert.match(await text('.week-card'), /\/ 500 點/);
+  await shot('13-home-new');
+  await noHScroll('新首頁');
+  await page.click('.tile >> text=本週挑戰');
+  await page.waitForSelector('#confirm .pick-kid');
+  await page.click('#confirm .pick-kid >> nth=0');
+  await page.waitForSelector('.challenges');
+  assert.ok(await page.locator('.bottom-nav .nav-item.active >> text=挑戰').isVisible());
+  // 新增一個容易達成的挑戰並領取
+  await page.goto(url + '#rules-challenge');
+  await page.click('[data-action=add-challenge]');
+  await page.fill('input[name="name"]', '測試挑戰');
+  await page.selectOption('select[name="metric"]', 'net');
+  assert.ok(await page.locator('select[name="itemId"]').isHidden());
+  await page.fill('input[name="target"]', '1');
+  await page.fill('input[name="rewardPoints"]', '15');
+  await page.click('#modal-form button[type="submit"]');
+  await page.goto(url + '#challenge-' + first.id);
+  const beforeClaim = await page.evaluate((id) => window.__cgpStore.getTotal(id), first.id);
+  const claimBtn = page.locator('.challenge:has-text("測試挑戰") [data-action=claim]');
+  await claimBtn.click();
+  assert.ok(await page.locator('.challenge:has-text("測試挑戰") .claimed').isVisible());
+  assert.equal(await page.evaluate((id) => window.__cgpStore.getTotal(id), first.id), beforeClaim + 15);
+  await shot('14-challenge');
+  await noHScroll('挑戰頁');
+  // 孩子切換
+  const kids = await page.evaluate(() => window.__cgpStore.getChildren().map(c => c.id));
+  if (kids.length > 1) {
+    await page.click('.kid-switch a[href="#challenge-' + kids[1] + '"]');
+    await page.waitForFunction((h) => location.hash === h, '#challenge-' + kids[1]);
+    assert.equal(await page.evaluate(() => location.hash), '#challenge-' + kids[1]);
+    await page.waitForSelector('.kid.active[href="#challenge-' + kids[1] + '"]');
+    await page.click('.bottom-nav a >> text=任務');
+    await page.waitForSelector('.summary');
+    assert.equal(await page.evaluate(() => location.hash), '#child-' + kids[1], '導覽列記得目前的孩子');
+  }
+  await page.click('.bottom-nav a >> text=紀錄');
+  await page.waitForSelector('.stat-card');
+  console.log('✔ 頭銜等級、每週目標、選孩子、本週挑戰、底部導覽列');
+  await page.goto(url + '#child-' + first.id);
+  const afterCustom2b = await text('[data-testid=total]');
+
   // 舊版網址格式仍可使用
   const cid = await page.evaluate(() => window.__cgpStore.getChildren()[0].id);
   await page.goto(url + '#/child/' + cid);
-  assert.equal(await text('[data-testid=total]'), afterCustom2);
+  assert.equal(await text('[data-testid=total]'), afterCustom2b);
   console.log('✔ 相容舊版網址格式');
 
   assert.deepEqual(errors, [], '頁面不得出現 JS 錯誤或原生對話框');
