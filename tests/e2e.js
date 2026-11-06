@@ -219,7 +219,8 @@ async function main() {
   const recordsBefore = await page.evaluate(() => window.__cgpStore.data.records.length);
   await page.goto(url + '#rules-backup');
   await page.setInputFiles('input[data-action=import-rules]', rulesFile);
-  await page.waitForSelector('.toast >> text=新增 2 條規則');
+  await page.waitForSelector('#confirm >> text=新增 2 條');
+  await page.click('#confirm [data-yes]');
   assert.equal(await page.evaluate(() => window.__cgpStore.data.records.length), recordsBefore, '紀錄保留');
   await page.goto(url + '#home');
   await page.click('.child-card >> nth=0');
@@ -238,6 +239,23 @@ async function main() {
   assert.match(await text('.records'), /好好表達心情[\s\S]*⭐10/);
   console.log('✔ 只匯入規則、自填點數、額外星星紀錄');
   const afterCustom = await text('[data-testid=total]');
+
+  // CSV 匯入（Excel 中文版 Big5 編碼）＋ 修改後再匯入會更新
+  await page.goto(url + '#rules-backup');
+  await page.setInputFiles('input[data-action=import-rules]', path.join(__dirname, 'fixtures/sample-rules-big5.csv'));
+  await page.waitForSelector('#confirm >> text=新增 16 條');
+  assert.match(await text('#confirm'), /新增孩子：小美、小明/);
+  assert.match(await text('#confirm'), /第 19 列/);
+  await shot('09-csv-result');
+  await page.click('#confirm [data-yes]');
+  const editedCsv = path.join(require('os').tmpdir(), 'cgp-edited-' + Date.now() + '.csv');
+  fs.writeFileSync(editedCsv, fs.readFileSync(path.join(__dirname, 'fixtures/sample-rules.csv'), 'utf8')
+    .replace('大吼大叫,-20', '大吼大叫,-15'));
+  await page.setInputFiles('input[data-action=import-rules]', editedCsv);
+  await page.waitForSelector('#confirm >> text=更新 1 條');
+  await page.click('#confirm [data-yes]');
+  assert.equal(await page.evaluate(() => window.__cgpStore.getItems('penalty').find(i => i.sourceId === 'R055').points), -15);
+  console.log('✔ CSV 匯入（Big5）與修改後更新');
 
   // 舊版網址格式仍可使用
   const cid = await page.evaluate(() => window.__cgpStore.getChildren()[0].id);

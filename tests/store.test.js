@@ -275,7 +275,7 @@ test('舊資料沒有 custom / stars 欄位時自動補預設值', () => {
   assert.equal(d.records[0].stars, 0);
 });
 
-test('只匯入規則：保留現有資料、孩子依名稱對應、重複略過、新孩子自動新增', () => {
+test('匯入規則：保留現有資料、孩子依名稱對應、相同規則不重複、新孩子自動新增', () => {
   const { store } = makeStore();
   const a = store.addChild({ name: '端端', startPoints: 50 });
   const p = store.addItem({ kind: 'bonus', name: '主動幫忙', points: 5 });
@@ -291,7 +291,8 @@ test('只匯入規則：保留現有資料、孩子依名稱對應、重複略�
     records: [{ id: 'z', childId: 'x1', type: 'bonus', points: 999, date: '2026-11-06', ts: 1 }]
   });
   const r = store.mergeRules(file);
-  assert.deepEqual(r, { childrenAdded: 1, itemsAdded: 2, itemsSkipped: 1, rewardsAdded: 1, rewardsSkipped: 0 });
+  assert.deepEqual(r, { childrenAdded: ['波妞'], itemsAdded: 2, itemsUpdated: 0, itemsUnchanged: 1, itemsSkipped: 0,
+    rewardsAdded: 1, rewardsUpdated: 0, rewardsUnchanged: 0 });
   assert.equal(store.getTotal(a.id), 55, '原本的紀錄保留，檔案紀錄不匯入');
   const bo = store.getChildren().find(c => c.name === '波妞');
   assert.deepEqual(store.getTodayTasks(a.id).map(t => t.task.points), [10]);
@@ -299,6 +300,122 @@ test('只匯入規則：保留現有資料、孩子依名稱對應、重複略�
   // 再匯入一次全部略過
   const again = store.mergeRules(file);
   assert.equal(again.itemsAdded, 0);
-  assert.equal(again.rewardsSkipped, 1);
+  assert.equal(again.itemsUnchanged, 3);
+  assert.equal(again.rewardsUnchanged, 1);
   assert.throws(() => store.mergeRules('{"children":[]}'), /沒有規則/);
+});
+
+// ---------- CSV 規則表 ----------
+const { csvToRules, parseCSV, parseFrequency } = require('../js/rules-csv.js');
+const fsT = require('node:fs');
+const pathT = require('node:path');
+
+test('CSV 解析：引號、逗號、換行、BOM', () => {
+  const rows = parseCSV('﻿a,b\r\n"x,1","he said ""hi"""\n"多\n行",3\n\n');
+  assert.deepEqual(rows, [['a', 'b'], ['x,1', 'he said "hi"'], ['多\n行', '3']]);
+});
+
+test('頻率文字對應', () => {
+  assert.deepEqual(parseFrequency('每天（上學日）'), { type: 'weekdays' });
+  assert.deepEqual(parseFrequency('每天'), { type: 'daily' });
+  assert.deepEqual(parseFrequency('每次／每天'), { type: 'daily' });
+  assert.deepEqual(parseFrequency('每週'), { type: 'weeklyN', n: 1 });
+  assert.deepEqual(parseFrequency('每週3次'), { type: 'weeklyN', n: 3 });
+  assert.deepEqual(parseFrequency('每週三次'), { type: 'weeklyN', n: 3 });
+  assert.deepEqual(parseFrequency('每週一三五'), { type: 'days', days: [1, 3, 5] });
+  assert.deepEqual(parseFrequency('達成一次'), { type: 'once' });
+  assert.equal(parseFrequency('每餐'), null);
+  assert.equal(parseFrequency('每次（30分鐘）'), null);
+  assert.equal(parseFrequency('每頁'), null);
+});
+
+test('CSV 轉規則：類型、對象、自填、星星、另扣錢、競賽冠軍、警告', () => {
+  const text = fsT.readFileSync(pathT.join(__dirname, 'fixtures/sample-rules.csv'), 'utf8');
+  const { data, warnings } = csvToRules(text);
+  const by = (sid) => data.items.find(i => i.sourceId === sid);
+  assert.equal(by('R001').kind, 'bonus');
+  assert.equal(by('R001').childIds, 'all');
+  assert.deepEqual(by('R009').frequency, { type: 'weekdays' });
+  assert.equal(by('R016').kind, 'bonus');
+  assert.deepEqual(by('R029').frequency, { type: 'daily' });
+  assert.deepEqual(by('R032').frequency, { type: 'daily' });
+  assert.equal(by('R033').stars, 5);
+  assert.equal(by('R038').points, 0);
+  assert.equal(by('R038').stars, 10);
+  assert.deepEqual(by('R044').frequency, { type: 'once' });
+  assert.equal(by('R047').custom, true);
+  assert.deepEqual(by('R053').frequency, { type: 'weeklyN', n: 1 });
+  assert.equal(by('R055').points, -20);
+  assert.equal(by('R061').name, '破壞家裡物品（另扣錢）');
+  assert.equal(by('R067').kind, 'bonus', '競賽冠軍是加分按鈕');
+  assert.equal(by('R090').name, '練習3次,每次10分鐘');
+  assert.equal(by('R090').childIds.length, 2);
+  assert.deepEqual(by('R091').frequency, { type: 'days', days: [1, 3, 5] });
+  assert.deepEqual(data.children.map(c => c.name), ['小美', '小明']);
+  assert.equal(data.items.length, 16, '空名稱與錯誤類型的列略過');
+  assert.ok(warnings.some(w => w.includes('第 19 列') && w.includes('奇怪類型')));
+});
+
+test('CSV 匯入後再修改：依規則ID更新分數、改名、改適用孩子，紀錄保留', () => {
+  const { store } = makeStore();
+  const ming = store.addChild({ name: '小明' });
+  store.addChild({ name: '小美' });
+  const text = fsT.readFileSync(pathT.join(__dirname, 'fixtures/sample-rules.csv'), 'utf8');
+  const r1 = store.mergeRules(csvToRules(text).data);
+  assert.equal(r1.itemsAdded, 16);
+  assert.deepEqual(r1.childrenAdded, []);
+  const helpMing = store.getItemsFor(ming.id, 'bonus').filter(i => i.name === '主動幫忙');
+  assert.equal(helpMing.length, 1, '每個孩子只看到自己的主動幫忙');
+  store.recordItem(ming.id, helpMing[0].id);
+
+  const edited = text
+    .replace('R001,加分,用餐,兩位孩子,30分鐘內吃完,3', 'R001,加分,用餐,兩位孩子,20分鐘內吃完,4')
+    .replace('R055,扣分,改正,兩位孩子,大吼大叫,-20', 'R055,扣分,改正,小明,大吼大叫,-15');
+  const r2 = store.mergeRules(csvToRules(edited).data);
+  assert.equal(r2.itemsAdded, 0);
+  assert.equal(r2.itemsUpdated, 2);
+  assert.equal(r2.itemsUnchanged, 14);
+  const eat = store.getItems('bonus').find(i => i.sourceId === 'R001');
+  assert.equal(eat.name, '20分鐘內吃完');
+  assert.equal(eat.points, 4);
+  const yell = store.getItems('penalty').find(i => i.sourceId === 'R055');
+  assert.equal(yell.points, -15);
+  assert.deepEqual(yell.childIds, [ming.id]);
+  assert.equal(store.getTotal(ming.id), 5, '紀錄保留');
+});
+
+test('先用 JSON 匯入合併規則（無規則ID），之後改用 CSV 匯入不會重複', () => {
+  const { store } = makeStore();
+  const ming = store.addChild({ name: '小明' });
+  const mei = store.addChild({ name: '小美' });
+  store.addItem({ kind: 'bonus', name: '主動幫忙', points: 5, stars: 5, childIds: 'all' });
+  const text = fsT.readFileSync(pathT.join(__dirname, 'fixtures/sample-rules.csv'), 'utf8');
+  store.mergeRules(csvToRules(text).data);
+  const help = (cid) => store.getItemsFor(cid, 'bonus').filter(i => i.name === '主動幫忙');
+  assert.equal(help(ming.id).length, 1);
+  assert.equal(help(mei.id).length, 1);
+  assert.equal(store.getItems('bonus').filter(i => i.name === '主動幫忙').length, 2);
+});
+
+test('使用者實際規則表可完整轉換（若有提供）', { skip: !process.env.FAMILY_CSV }, () => {
+  const { data, warnings } = csvToRules(fsT.readFileSync(process.env.FAMILY_CSV, 'utf8'));
+  console.log('  items:', data.items.length, 'warnings:', warnings);
+  assert.equal(data.items.length, 48);
+});
+
+test('CSV 只指定部分孩子的同名規則，不會把原本給全部孩子的規則搶走', () => {
+  const { store } = makeStore();
+  const a = store.addChild({ name: '端端' });
+  const b = store.addChild({ name: '波妞' });
+  store.addItem({ kind: 'bonus', name: '主動幫忙', points: 5, childIds: 'all' });
+  const csv = '規則ID,規則類型,適用對象,任務或行為,點數變動,計算頻率\nR1,加分,小美,主動幫忙,8,每次\n';
+  const r = store.mergeRules(csvToRules(csv).data);
+  assert.equal(r.itemsAdded, 1);
+  const mei = store.getChildren().find(c => c.name === '小美');
+  for (const c of [a, b]) {
+    const it = store.getItemsFor(c.id, 'bonus').filter(i => i.name === '主動幫忙');
+    assert.equal(it.length, 1); assert.equal(it[0].points, 5);
+  }
+  const m = store.getItemsFor(mei.id, 'bonus').filter(i => i.name === '主動幫忙');
+  assert.equal(m.length, 1); assert.equal(m[0].points, 8);
 });

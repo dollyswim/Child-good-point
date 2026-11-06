@@ -17,6 +17,7 @@
  * 選填欄位（舊資料沒有時自動補預設值，向後相容）：
  * - item.custom：true 表示點數由家長每次自填（item.points 為預設建議值）
  * - item.stars：額外能量星星數（Phase 1 只記錄，Phase 2 才發放）
+ * - item.sourceId：外部規則表的規則ID（例如 CSV 的 R001），用於匯入時對應更新
  * - record.stars：記錄當下的額外星星快照
  *
  * 規則：
@@ -153,6 +154,7 @@
           frequency: normalizeFrequency(i.frequency),
           custom: !!i.custom,
           stars: Math.max(0, toInt(i.stars, 0)),
+          sourceId: i.sourceId ? String(i.sourceId) : null,
           createdAt: toInt(i.createdAt, Date.now())
         };
       });
@@ -313,6 +315,7 @@
       frequency: normalizeFrequency(input.frequency),
       custom: !!input.custom,
       stars: Math.max(0, toInt(input.stars, 0)),
+      sourceId: input.sourceId ? String(input.sourceId) : null,
       createdAt: this.now().getTime()
     };
     this.data.items.push(item);
@@ -577,22 +580,30 @@
   };
 
   /**
-   * 只匯入規則（新增模式）：保留現有孩子、紀錄與設定。
+   * 匯入規則（新增＋更新）：保留現有孩子、紀錄與兌換歷史。
    * - 檔案中的孩子依「名稱」對應到現有孩子；找不到同名孩子時新增
-   * - 種類、名稱、適用孩子都相同的項目視為重複，略過
-   * - 同名獎勵略過；檔案中的紀錄不匯入
-   * @returns {{childrenAdded, itemsAdded, itemsSkipped, rewardsAdded, rewardsSkipped}}
+   * - 規則對應方式：先比對規則ID（sourceId），沒有時比對「種類＋名稱＋適用孩子有交集」
+   * - 對應到的規則會更新分數、頻率、適用孩子等；沒對應到的新增
+   * - 只靠名稱對應、且原規則適用範圍較大時，原規則保留給其他孩子，不會被縮小範圍
+   * - 檔案中沒有的規則不會刪除；檔案中的紀錄不匯入
+   * - 獎勵依名稱對應，名稱相同時更新所需點數
+   * @param {string|object} input JSON 文字，或已解析的 { children, items, rewards }（例如 CSV 轉換結果）
    */
-  Store.prototype.mergeRules = function (text) {
-    var parsed;
-    try { parsed = JSON.parse(text); } catch (e) { throw new Error('檔案不是有效的 JSON'); }
+  Store.prototype.mergeRules = function (input) {
+    var parsed = input;
+    if (typeof input === 'string') {
+      try { parsed = JSON.parse(input); } catch (e) { throw new Error('檔案不是有效的 JSON'); }
+    }
     if (!parsed || typeof parsed !== 'object' || (!Array.isArray(parsed.items) && !Array.isArray(parsed.rewards))) {
       throw new Error('檔案裡沒有規則（items）或獎勵（rewards）');
     }
-    var src = migrate(parsed);
+    var src = migrate(Object.assign({ children: [] }, parsed));
     var next = clone(this.data);
     var t = this.now().getTime();
-    var result = { childrenAdded: 0, itemsAdded: 0, itemsSkipped: 0, rewardsAdded: 0, rewardsSkipped: 0 };
+    var result = {
+      childrenAdded: [], itemsAdded: 0, itemsUpdated: 0, itemsUnchanged: 0, itemsSkipped: 0,
+      rewardsAdded: 0, rewardsUpdated: 0, rewardsUnchanged: 0
+    };
 
     var idMap = {};
     src.children.forEach(function (c) {
@@ -600,32 +611,72 @@
       if (!found) {
         found = { id: uid(), name: c.name, avatar: c.avatar, color: c.color, startPoints: c.startPoints, createdAt: t };
         next.children.push(found);
-        result.childrenAdded++;
+        result.childrenAdded.push(c.name);
       }
       idMap[c.id] = found.id;
     });
 
     function scopeKey(ids) { return ids === 'all' ? 'all' : ids.slice().sort().join(','); }
+    function overlaps(a, b) {
+      if (a === 'all' || b === 'all') return true;
+      return a.some(function (id) { return b.indexOf(id) >= 0; });
+    }
+    var FIELDS = ['kind', 'name', 'points', 'childIds', 'frequency', 'custom', 'stars', 'sourceId'];
+    var claimed = {};
+
     src.items.forEach(function (i) {
       var childIds = i.childIds === 'all' ? 'all'
         : Array.from(new Set(i.childIds.map(function (id) { return idMap[id]; }).filter(Boolean)));
       if (childIds !== 'all' && !childIds.length) { result.itemsSkipped++; return; }
-      var dup = next.items.some(function (x) {
-        return x.kind === i.kind && x.name === i.name && scopeKey(x.childIds) === scopeKey(childIds);
-      });
-      if (dup) { result.itemsSkipped++; return; }
-      var item = clone(i);
+      var free = next.items.filter(function (x) { return !claimed[x.id]; });
+      var match = i.sourceId && free.find(function (x) { return x.sourceId === i.sourceId; });
+      var byName = false;
+      if (!match) {
+        byName = true;
+        var cands = free.filter(function (x) {
+          return x.kind === i.kind && x.name === i.name && overlaps(x.childIds, childIds) &&
+            !(x.sourceId && i.sourceId && x.sourceId !== i.sourceId);
+        });
+        match = cands.find(function (x) { return scopeKey(x.childIds) === scopeKey(childIds); }) || cands[0];
+      }
+      var incoming = {
+        kind: i.kind, name: i.name, points: i.points, childIds: childIds, frequency: i.frequency,
+        custom: i.custom, stars: i.stars, sourceId: i.sourceId || (match && match.sourceId) || null
+      };
+      // 名稱對應到的規則適用範圍比檔案大：拆開，原規則留給其他孩子，檔案的規則另外新增
+      if (match && byName) {
+        var expand = function (ids) { return ids === 'all' ? next.children.map(function (c) { return c.id; }) : ids; };
+        var incomingIds = expand(childIds);
+        var remainder = expand(match.childIds).filter(function (id) { return incomingIds.indexOf(id) < 0; });
+        if (remainder.length) {
+          match.childIds = remainder;
+          match = null;
+        }
+      }
+      if (match) {
+        claimed[match.id] = true;
+        var changed = FIELDS.some(function (f) { return JSON.stringify(match[f]) !== JSON.stringify(incoming[f]); });
+        if (changed) { FIELDS.forEach(function (f) { match[f] = clone(incoming[f]); }); result.itemsUpdated++; }
+        else result.itemsUnchanged++;
+        return;
+      }
+      var item = clone(incoming);
       item.id = uid();
-      item.childIds = childIds;
       item.createdAt = t;
       next.items.push(item);
+      claimed[item.id] = true;
       result.itemsAdded++;
     });
 
     src.rewards.forEach(function (r) {
-      if (next.rewards.some(function (x) { return x.name === r.name; })) { result.rewardsSkipped++; return; }
-      next.rewards.push({ id: uid(), name: r.name, cost: r.cost, createdAt: t });
-      result.rewardsAdded++;
+      var found = next.rewards.find(function (x) { return x.name === r.name; });
+      if (!found) {
+        next.rewards.push({ id: uid(), name: r.name, cost: r.cost, createdAt: t });
+        result.rewardsAdded++;
+      } else if (found.cost !== r.cost) {
+        found.cost = r.cost;
+        result.rewardsUpdated++;
+      } else result.rewardsUnchanged++;
     });
 
     this.data = next;

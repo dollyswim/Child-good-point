@@ -107,6 +107,16 @@
       else confirmEl.setAttribute('open', '');
     });
   }
+  /** 只有「知道了」按鈕的訊息框 */
+  function showInfo(title, message) {
+    confirmEl.innerHTML = '<div class="confirm-box"><h2>' + h(title) + '</h2><p class="confirm-msg info-msg">' + h(message).replace(/\n/g, '<br>') + '</p>' +
+      '<div class="modal-actions"><button type="button" class="btn primary" data-yes>知道了</button></div></div>';
+    confirmEl.querySelector('[data-yes]').onclick = function () { confirmEl.close(); };
+    confirmEl.oncancel = null;
+    if (typeof confirmEl.showModal === 'function') confirmEl.showModal();
+    else confirmEl.setAttribute('open', '');
+  }
+
   /** 確認後執行，錯誤以提示顯示 */
   function confirmThen(message, okLabel, danger, fn) {
     askConfirm(message, okLabel, danger).then(function (ok) {
@@ -114,6 +124,12 @@
       try { fn(); } catch (err) { toast(err.message, 'neg'); }
       render();
     });
+  }
+
+  /** 記錄後提示文字，例如「主動幫忙 +5 ⭐5」「好好表達心情 ⭐10」 */
+  function recText(rec) {
+    var p = (rec.points || !rec.stars) ? ' ' + signed(rec.points) : '';
+    return rec.name + p + (rec.stars ? ' ⭐' + rec.stars : '');
   }
 
   function avatar(child, size) {
@@ -423,10 +439,11 @@
     return '<div class="card">' +
       '<h2>📤 匯出備份</h2><p class="muted small">下載包含所有孩子、規則、獎勵與紀錄的 JSON 檔。</p>' +
       '<button class="btn primary block" data-action="export">匯出 JSON</button></div>' +
-      '<div class="card"><h2>➕ 只匯入規則</h2>' +
-      '<p class="muted small">把檔案裡的任務、加分、扣分、獎勵<b>新增</b>進來，保留目前的孩子與紀錄。' +
-      '孩子依名稱對應；名稱與適用孩子都相同的規則會略過，不會重複。</p>' +
-      '<label class="btn primary block file-btn">選擇規則 JSON 檔<input type="file" accept="application/json,.json" data-action="import-rules" hidden></label></div>' +
+      '<div class="card"><h2>📋 匯入規則表（CSV／JSON）</h2>' +
+      '<p class="muted small">用 Excel 或 Google 試算表整理規則，存成 CSV 後在這裡匯入。' +
+      '<b>點數紀錄全部保留</b>；已有的規則會依「規則ID」更新分數、頻率、適用孩子，新的規則會新增。' +
+      '孩子依名稱對應。檔案裡沒有的規則不會被刪除。</p>' +
+      '<label class="btn primary block file-btn">選擇 CSV 或 JSON 檔<input type="file" accept=".csv,text/csv,application/json,.json,text/plain" data-action="import-rules" hidden></label></div>' +
       '<div class="card"><h2>📥 完整還原</h2>' +
       '<p class="muted small">用備份檔<b>取代</b>目前所有資料（含紀錄），建議先匯出備份。</p>' +
       '<label class="btn block file-btn">選擇備份 JSON 檔<input type="file" accept="application/json,.json" data-action="import" hidden></label></div>' +
@@ -563,7 +580,7 @@
       var rec = store.recordItem(childId, item.id, fd.get('points'));
       ui.query = '';
       ui.pulse = true;
-      toast(rec.name + ' ' + signed(rec.points), rec.points < 0 ? 'neg' : 'pos');
+      toast(recText(rec), rec.points < 0 ? 'neg' : 'pos');
     }, '記錄');
     var input = document.getElementById('custom-points');
     input.focus();
@@ -597,22 +614,48 @@
     toast('已匯出備份');
   }
 
-  function importRules(file) {
+  /** 讀取文字檔：先試 UTF-8，失敗時改用 Big5（Excel 中文版預設存檔編碼） */
+  function readTextFile(file, cb) {
     var reader = new FileReader();
     reader.onload = function () {
-      try {
-        var r = store.mergeRules(String(reader.result));
-        var parts = ['新增 ' + r.itemsAdded + ' 條規則'];
-        if (r.itemsSkipped) parts.push('略過重複 ' + r.itemsSkipped + ' 條');
-        if (r.rewardsAdded) parts.push('獎勵 ' + r.rewardsAdded + ' 個');
-        if (r.childrenAdded) parts.push('新增孩子 ' + r.childrenAdded + ' 位');
-        toast(parts.join('・'), 'pos');
-        render();
-      } catch (e) {
-        toast('匯入失敗：' + e.message, 'neg');
+      var buf = reader.result;
+      var text;
+      try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+      catch (e) {
+        try { text = new TextDecoder('big5').decode(buf); }
+        catch (e2) { text = new TextDecoder('utf-8').decode(buf); }
       }
+      cb(text);
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
+  }
+
+  /** 匯入規則（JSON 或 CSV）：新增＋更新，保留紀錄 */
+  function importRules(file) {
+    readTextFile(file, function (text) {
+      var warnings = [];
+      try {
+        var isCsv = /\.csv$/i.test(file.name) || !/^\s*[\[{]/.test(text.replace(/^\uFEFF/, ''));
+        var input = text;
+        if (isCsv) {
+          var conv = window.CGPCsv.csvToRules(text);
+          input = conv.data;
+          warnings = conv.warnings;
+        }
+        var r = store.mergeRules(input);
+        var lines = [];
+        lines.push('新增 ' + r.itemsAdded + ' 條、更新 ' + r.itemsUpdated + ' 條、沒變 ' + r.itemsUnchanged + ' 條規則');
+        if (r.itemsSkipped) lines.push('略過 ' + r.itemsSkipped + ' 條（找不到適用的孩子）');
+        if (r.rewardsAdded || r.rewardsUpdated) lines.push('獎勵：新增 ' + r.rewardsAdded + ' 個、更新 ' + r.rewardsUpdated + ' 個');
+        if (r.childrenAdded.length) lines.push('新增孩子：' + r.childrenAdded.join('、') + '（名稱和 App 裡不同時會新增，請確認）');
+        lines.push('點數紀錄全部保留。');
+        if (warnings.length) lines.push('', '⚠️ 請檢查：', warnings.join('\n'));
+        render();
+        showInfo('匯入完成', lines.join('\n'));
+      } catch (e) {
+        showInfo('匯入失敗', e.message + (warnings.length ? '\n\n' + warnings.join('\n') : ''));
+      }
+    });
   }
 
   function importData(file) {
@@ -662,7 +705,7 @@
           var rec = store.recordItem(childId, id);
           ui.query = ''; // 記錄後清除搜尋，方便下一筆
           ui.pulse = true;
-          toast(rec.name + ' ' + signed(rec.points), rec.points < 0 ? 'neg' : 'pos');
+          toast(recText(rec), rec.points < 0 ? 'neg' : 'pos');
           render();
           break;
         }
@@ -674,7 +717,7 @@
             toast('已取消「' + task.name + '」');
           } else {
             var tr = store.completeTask(childId, id);
-            toast('完成 ' + tr.name + ' ' + signed(tr.points), 'pos');
+            toast('完成 ' + recText(tr), 'pos');
           }
           ui.pulse = true;
           render();
