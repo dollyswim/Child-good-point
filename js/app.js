@@ -3,6 +3,8 @@
   'use strict';
 
   var CGP = window.CGP;
+  /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
+  var APP_VERSION = '2026.11.06-5';
   var store;
   try {
     store = new CGP.Store();
@@ -764,6 +766,7 @@
       '<div class="card"><h2>📥 完整還原</h2>' +
       '<p class="muted small">用備份檔<b>取代</b>目前所有資料（含紀錄），建議先匯出備份。</p>' +
       '<label class="btn block file-btn">選擇備份 JSON 檔<input type="file" accept="application/json,.json" data-action="import" hidden></label></div>' +
+      '<p class="muted small center">App 版本：' + APP_VERSION + '</p>' +
       '<p class="muted small center">目前資料：' + d.children.length + ' 位孩子・' + d.items.length + ' 個規則・' +
       d.rewards.length + ' 個獎勵・' + d.records.length + ' 筆紀錄</p>';
   }
@@ -1233,9 +1236,19 @@
   document.addEventListener('visibilitychange', function () { if (!document.hidden) checkDay(); });
   setInterval(checkDay, 30000);
 
+  // 離線功能：每次打開都檢查新版；新版接手後自動重新載入一次
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    var hadController = !!navigator.serviceWorker.controller;
+    var reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (!hadController || reloaded) return;
+      reloaded = true;
+      location.reload();
+    });
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('sw.js').catch(function () { /* 離線功能非必要 */ });
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) reg.update().catch(function () {}); });
+      }).catch(function () { /* 離線功能非必要 */ });
     });
   }
 
