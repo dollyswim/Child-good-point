@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.06-5';
+  var APP_VERSION = '2026.11.06-6';
   var store;
   try {
     store = new CGP.Store();
@@ -398,7 +398,7 @@
     var x = st.settlement;
     var status = x
       ? '<div class="adv-status ok"><b>✅ 今日已結算</b><span>今日淨得分 ' + signed(x.net) + ' → ⭐' + x.baseStars +
-        (x.bonusStars ? '，額外 ⭐' + x.bonusStars : '') + '，共 <b>⭐' + x.stars + '</b></span></div>'
+        (x.bonusStars ? '，額外 ⭐' + x.bonusStars + '，共 <b>⭐' + x.stars + '</b>' : '') + '</span></div>'
       : st.unlocked
         ? '<div class="adv-status ready"><b>🔓 今日冒險已解鎖</b><span>還沒結算，出發可得 ⭐' + st.previewStars + '</span>' +
           '<button class="btn primary" data-action="enter-adventure">結算並出發</button></div>'
