@@ -385,6 +385,72 @@ async function main() {
   assert.equal(await text('[data-testid=total]'), afterCustom2b);
   console.log('✔ 相容舊版網址格式');
 
+  // ---------- Phase 2 驗收（全新資料） ----------
+  {
+    const c2 = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block' });
+    const q = await c2.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
+    await q.goto(url);
+    const ids = await q.evaluate(() => {
+      const s = window.__cgpStore;
+      const mk = (n) => s.addChild({ name: n }).id;
+      const add = (kind, name, points) => s.addItem({ kind, name, points }).id;
+      return { A: mk('甲'), B: mk('乙'), C: mk('丙'), p20: add('bonus', '加二十', 20), p50: add('bonus', '加五十', 50),
+        m20: add('penalty', '扣二十', 20), m15: add('penalty', '扣十五', 15) };
+    });
+    const tap = async (child, name, kind) => {
+      await q.goto(url + '#child-' + child);
+      await q.click('.seg-btn.' + (kind || 'bonus'));
+      await q.click('.score-btn >> text=' + name);
+    };
+    const stars = (id) => q.evaluate((i) => window.__cgpStore.getStarBalance(i), id);
+
+    // 案例 A：+20 → 解鎖、4 星
+    await tap(ids.A, '加二十');
+    assert.match(await q.locator('[data-testid=adventure]').innerText(), /今日冒險已解鎖[\s\S]*⭐4/);
+    await q.click('[data-action=enter-adventure]');
+    await q.click('#confirm [data-yes]');
+    await q.waitForSelector('[data-testid=stars]');
+    assert.equal(await q.locator('[data-testid=stars]').innerText(), '⭐ 4');
+    await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, '15-lobby.png') : path.join(require('os').tmpdir(), 'lobby.png'), fullPage: true });
+    console.log('✔ Phase 2 案例 A：+20 解鎖並取得 4 星');
+
+    // 案例 B：+20、-20 → 不解鎖
+    await tap(ids.B, '加二十');
+    await tap(ids.B, '扣二十', 'penalty');
+    assert.match(await q.locator('[data-testid=adventure]').innerText(), /🔒[\s\S]*今日冒險尚未解鎖/);
+    assert.ok(await q.locator('[data-testid=adventure] button').isDisabled(), '未解鎖不可進入');
+    assert.equal(await stars(ids.B), 0);
+    await q.goto(url + '#adventure-' + ids.B);
+    assert.match(await q.locator('.adv-status').innerText(), /尚未解鎖/);
+    assert.equal(await stars(ids.B), 0, '直接打開大廳也不會發星');
+    console.log('✔ Phase 2 案例 B：淨得分 0 不解鎖、不得星');
+
+    // 案例 C：+50、-15 → 7 星
+    await tap(ids.C, '加五十');
+    await tap(ids.C, '扣十五', 'penalty');
+    await q.click('[data-action=enter-adventure]');
+    await q.click('#confirm [data-yes]');
+    await q.waitForSelector('[data-testid=stars]');
+    assert.equal(await stars(ids.C), 7);
+    console.log('✔ Phase 2 案例 C：淨得分 35 取得 7 星');
+
+    // 案例 D：重新整理、重新開啟、再按一次都不會再加 7 星
+    await q.reload();
+    await q.goto(url + '#child-' + ids.C);
+    assert.match(await q.locator('[data-testid=adventure]').innerText(), /已出發[\s\S]*⭐7/);
+    assert.equal(await q.locator('[data-action=enter-adventure]').count(), 0);
+    const q2 = await c2.newPage();
+    await q2.goto(url + '#adventure-' + ids.C);
+    assert.equal(await q2.locator('[data-testid=stars]').innerText(), '⭐ 7');
+    await tap(ids.C, '加五十'); // 結算後再加分
+    assert.equal(await stars(ids.C), 7);
+    console.log('✔ Phase 2 案例 D：重新整理、重新開啟後不重複發星');
+    assert.equal(await stars(ids.A), 4, '孩子各自獨立');
+    await c2.close();
+  }
+
   assert.deepEqual(errors, [], '頁面不得出現 JS 錯誤或原生對話框');
   await browser.close();
   server.close();

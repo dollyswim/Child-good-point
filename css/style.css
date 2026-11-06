@@ -657,3 +657,220 @@ body {
 .level-row small { grid-column: 1 / -1; justify-self: end; margin-top: -4px; }
 .summary { justify-content: stretch; align-items: stretch; }
 .summary-top .today { margin-left: auto; }
+
+/* ---- 冒險（Phase 2） ---- */
+.coin { font-size: .62em; width: 2em; height: 2em; font-weight: 900; }
+.adv-banner {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 10px;
+  padding: 12px 14px; border-radius: 22px; border: 3px solid #fff; box-shadow: var(--card-shadow);
+}
+.adv-banner .btn { grid-column: 1 / -1; min-height: 50px; font-size: 1.05rem; }
+.adv-banner.is-ready { background: linear-gradient(135deg, #fff7c9, #ffd977); animation: glow 1.8s ease-in-out infinite; }
+.adv-banner.is-locked { background: linear-gradient(135deg, #f3eee8, #e4dcd2); }
+.adv-banner.is-locked .btn { background: #d9cfc4; color: #8d7f70; border-color: #d0c4b7; }
+.adv-banner.is-settled { background: linear-gradient(135deg, #e6f6ff, #c5e6ff); }
+.adv-icon { font-size: 2.2rem; }
+.adv-text { display: grid; min-width: 0; }
+.adv-text b { font-size: 1.1rem; font-weight: 900; }
+.adv-text small { color: var(--muted); font-weight: 700; }
+.lobby {
+  display: grid; justify-items: center; gap: 10px; padding: 18px 14px; text-align: center;
+  border-radius: 26px; border: 3px solid #fff; box-shadow: var(--card-shadow);
+  background: radial-gradient(circle at 50% 0, #fff 0, color-mix(in srgb, var(--c, #ffd166) 40%, #e9f6ff) 100%);
+}
+.hero-slot { display: grid; justify-items: center; gap: 6px; }
+.hero-ring {
+  width: 120px; height: 120px; display: grid; place-items: center; font-size: 4rem; border-radius: 50%;
+  background: rgba(255,255,255,.7); border: 4px dashed color-mix(in srgb, var(--c, #ffd166) 80%, #000 10%);
+  animation: bob 3s ease-in-out infinite;
+}
+.hero-tag { font-size: .8rem; font-weight: 800; color: var(--muted); background: #fff; padding: 2px 10px; border-radius: 99px; }
+.star-bank { display: grid; gap: 2px; }
+.star-bank .label { font-weight: 800; color: var(--muted); }
+.star-value { font-size: 2.4rem; font-weight: 900; color: #e69500; text-shadow: 0 2px 0 #fff3c4; }
+.adv-status { display: grid; gap: 6px; padding: 12px; border-radius: 16px; }
+.adv-status.ok { background: #eaf8ee; }
+.adv-status.ready { background: #fff8d6; }
+.adv-status.locked { background: #f3eee8; }
+.adv-status span { color: var(--muted); font-weight: 700; }
+.map-slot { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 12px; padding: 12px; border-radius: 16px; background: linear-gradient(135deg, #fff7e0, #ffe9b8); border: 2px dashed #e8c37a; }
+.map-slot .btn { grid-column: 1 / -1; }
+.map-slot > div { display: grid; }
+.map-icon { font-size: 2.6rem; }
+.pts.star { color: #e69500; font-weight: 900; }
+.adventure > .btn.block { margin-bottom: 14px; }
+@media (prefers-reduced-motion: reduce) { .adv-banner.is-ready, .hero-ring { animation: none; } }
+
+/* =====================================================================
+   冒險大廳改版：遊戲首頁風格
+   ===================================================================== */
+.app[data-view="adventure"] { background: linear-gradient(#bfe7fd 0, #fff6e8 420px) no-repeat; }
+.adv-hero { min-height: 150px; padding-bottom: 46px; align-items: flex-start; }
+.adv-hero::after { /* 遠方漂浮小島 */
+  content: ""; position: absolute; left: 30%; bottom: 18px; width: 70px; height: 16px; border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 30%, #7ccc5a 0 55%, #b98b5a 56% 100%); opacity: .7;
+}
+.round-btn {
+  position: relative; z-index: 2; flex: none; width: 44px; height: 44px; display: grid; place-items: center;
+  border-radius: 50%; background: linear-gradient(#5aa7e8, #2f73c4); border: 3px solid #fff; color: #fff;
+  font-size: 1.6rem; font-weight: 900; line-height: 1; box-shadow: 0 3px 0 rgba(0,0,0,.18);
+}
+.adv-hero-main { position: relative; z-index: 1; flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 2px; margin-right: 44px; }
+.adv-hero-main .mascot { width: 60px; height: 60px; }
+.adv-hero .plaque h1 { font-size: 1.45rem; }
+.float-island {
+  position: absolute; z-index: 0; right: 54px; top: calc(env(safe-area-inset-top) + 58px); display: grid; place-items: center;
+  width: 66px; height: 40px; border-radius: 50% 50% 46% 46%; background: radial-gradient(ellipse at 50% 20%, #7ccc5a 0 45%, #b98b5a 46% 100%);
+  box-shadow: 0 6px 0 rgba(120, 80, 40, .15); animation: bob 4s ease-in-out infinite;
+}
+.float-island i { font-style: normal; font-size: 1.9rem; transform: translateY(-16px); }
+
+.adventure { margin-top: -38px; position: relative; z-index: 3; display: grid; gap: 12px; }
+.adventure > * { margin: 0; }
+
+/* 角色切換 tab */
+.hero-tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 10px; }
+.hero-tab {
+  display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px 10px; border-radius: 22px;
+  background: rgba(255,255,255,.85); border: 3px solid #fff; box-shadow: var(--card-shadow);
+  transition: transform .2s ease, box-shadow .2s ease; opacity: .8;
+}
+.hero-tab.active {
+  opacity: 1; transform: scale(1.04); border-color: #ffd23f;
+  background: linear-gradient(135deg, #fffbe9, color-mix(in srgb, var(--c) 35%, #fff4cc));
+  box-shadow: 0 0 0 3px rgba(255, 210, 63, .45), var(--card-shadow);
+}
+.hero-tab .avatar.md { width: 48px; height: 48px; font-size: 1.6rem; }
+.hero-tab-text { display: grid; min-width: 0; }
+.hero-tab-text b { font-size: 1.1rem; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero-tab-text small { color: var(--muted); font-weight: 700; font-size: .78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 夥伴＋能量星星主卡 */
+.star-card {
+  position: relative; overflow: hidden; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px;
+  padding: 14px; border-radius: 26px; border: 3px solid #fff; box-shadow: var(--card-shadow);
+  background: linear-gradient(135deg, #e3f5ff 0%, #fdfcf6 55%, #fff3cf 100%);
+}
+.partner { display: grid; justify-items: center; gap: 4px; }
+.partner-ring {
+  width: 84px; height: 84px; display: grid; place-items: center; font-size: 3rem; border-radius: 50%;
+  background: radial-gradient(circle at 40% 30%, #fff, color-mix(in srgb, var(--c, #9bd5ff) 60%, #bfe7fd));
+  border: 3px solid #fff; box-shadow: 0 4px 0 rgba(60, 120, 170, .18); animation: bob 3s ease-in-out infinite;
+}
+.partner-tag { font-size: .68rem; font-weight: 800; color: #2f73c4; background: #fff; padding: 1px 8px; border-radius: 99px; white-space: nowrap; }
+.star-main { position: relative; z-index: 1; display: grid; gap: 4px; min-width: 0; padding-right: 30px; }
+.star-label { font-weight: 900; color: var(--text); font-size: .95rem; }
+.star-value { font-size: 2.6rem; line-height: 1.05; font-weight: 900; color: #e69500; text-shadow: 0 2px 0 #fff3c4; font-variant-numeric: tabular-nums; }
+.big-star { font-size: .85em; }
+.star-hint { font-size: .85rem; font-weight: 700; color: var(--muted); }
+.star-hint b { color: #e69500; }
+.bar.star i { background: linear-gradient(#ffe27a, #ffb21f); }
+.chest-deco { position: absolute; right: 6px; bottom: 6px; display: grid; justify-items: center; font-size: 2.2rem; line-height: 1; transform: rotate(6deg); }
+.chest-deco small { font-size: .62rem; font-weight: 800; color: var(--wood-3); background: #fff8e0; padding: 1px 6px; border-radius: 6px; margin-bottom: 2px; transform: rotate(-10deg); }
+
+/* 精簡結算摘要 */
+.adv-status {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px 0; padding: 10px 12px; border-radius: 20px;
+  background: #fff; border: 3px solid #fff; box-shadow: var(--card-shadow);
+}
+.adv-status > span + span { border-left: 2px solid var(--line); }
+.sum-state { flex: 1 1 auto; display: flex; align-items: center; gap: 6px; font-weight: 900; padding-right: 10px; }
+.sum-state i { font-style: normal; font-size: 1.4rem; }
+.sum-cell { display: grid; justify-items: center; padding: 0 12px; line-height: 1.2; }
+.sum-cell small { color: var(--muted); font-weight: 700; font-size: .72rem; }
+.sum-cell b { font-size: 1.2rem; font-weight: 900; }
+.sum-cell b.gold { color: #e69500; }
+.sum-note { padding-left: 12px; color: var(--muted); font-weight: 700; font-size: .85rem; }
+.sum-cta { flex-basis: 100%; margin-top: 4px; }
+.adv-status.ready { background: linear-gradient(135deg, #fffbe6, #fff0c2); }
+.adv-status.locked { background: #f6f1ea; }
+.settle-log { margin-top: -4px; }
+.settle-log summary {
+  list-style: none; cursor: pointer; display: flex; justify-content: center; gap: 6px; padding: 8px;
+  font-weight: 800; color: var(--wood-2); border-radius: 14px;
+}
+.settle-log summary::-webkit-details-marker { display: none; }
+.settle-log summary span { color: var(--muted); font-weight: 600; }
+.settle-log[open] summary { margin-bottom: 6px; }
+
+/* 地圖關卡卡 */
+.map-card {
+  position: relative; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 12px; align-items: center;
+  padding: 10px; border-radius: 24px; border: 4px solid #e9cf9c;
+  background: repeating-linear-gradient(-45deg, #fbf0d6 0 12px, #f7e8c6 12px 24px);
+  box-shadow: 0 5px 0 #d2b07a, var(--card-shadow);
+}
+.map-art { border-radius: 16px; overflow: hidden; border: 4px solid #fff; transform: rotate(-2deg); box-shadow: 0 4px 10px rgba(0,0,0,.15); }
+.island-art { display: block; width: 100%; height: auto; }
+.map-info { display: grid; gap: 6px; justify-items: start; min-width: 0; }
+.map-title {
+  padding: 4px 16px; font-size: 1.4rem; font-weight: 900; color: #fff; border-radius: 12px;
+  background: linear-gradient(var(--wood-1), var(--wood-2)); border: 3px solid var(--wood-3); text-shadow: 0 2px 0 var(--wood-3);
+}
+.map-info p { margin: 0; font-size: .88rem; font-weight: 700; line-height: 1.45; }
+.lock-pill { font-size: .75rem; font-weight: 800; color: #fff; background: #9a8b7c; padding: 2px 10px; border-radius: 99px; }
+.map-cta { width: 100%; min-height: 46px; }
+.map-cta:disabled { opacity: .75; filter: grayscale(.3); }
+.compass { position: absolute; top: -10px; right: -6px; font-size: 1.8rem; transform: rotate(12deg); }
+.island-dots { display: flex; justify-content: center; gap: 8px; margin-top: -4px; }
+.island-dots .dot { width: 10px; height: 10px; border-radius: 50%; background: #e2d6c4; }
+.island-dots .dot.active { background: var(--d); box-shadow: 0 0 0 3px color-mix(in srgb, var(--d) 30%, transparent); }
+
+/* 快速入口 */
+.quick-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.quick-row .tile { font-size: .82rem; padding: 10px 2px 8px; }
+.quick-row .tile-icon { font-size: 1.7rem; }
+
+@media (max-width: 379px) {
+  .map-card { grid-template-columns: 1fr; }
+  .star-value { font-size: 2.2rem; }
+  .sum-cell { padding: 0 8px; }
+}
+@media (prefers-reduced-motion: reduce) { .partner-ring, .float-island { animation: none; } }
+/* 冒險大廳微調 */
+.adv-hero .ribbon { font-size: .7rem; padding: 3px 10px; }
+.adv-hero-main .mascot { width: 52px; height: 52px; }
+.float-island { right: 10px; top: calc(env(safe-area-inset-top) + 64px); width: 56px; height: 34px; }
+.float-island i { font-size: 1.6rem; transform: translateY(-14px); }
+.star-main { padding-right: 52px; }
+.chest-deco { right: 8px; bottom: 10px; filter: drop-shadow(0 0 6px rgba(255, 210, 63, .8)); }
+@media (max-width: 379px) { .float-island { display: none; } }
+/* 精緻插圖尺寸 */
+.island { width: 70px; flex: none; }
+.island svg, .float-island svg { width: 100%; height: auto; display: block; }
+.float-island { background: none; box-shadow: none; width: 64px; height: auto; right: 8px; top: calc(env(safe-area-inset-top) + 56px); }
+.adv-hero-main .mascot { width: 58px; height: 62px; }
+.mascot { height: auto; }
+.chest-deco { bottom: 6px; }
+/* 關卡卡：插圖放大為整張卡寬 */
+.map-card { grid-template-columns: 1fr; padding: 10px 10px 14px; }
+.map-art { transform: rotate(-1deg); }
+.map-info { grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 10px; padding: 0 4px; }
+.map-info .map-title { grid-row: span 2; }
+.map-info p { grid-column: 2; }
+.map-info .lock-pill { grid-column: 2; justify-self: start; }
+.map-info .map-cta { grid-column: 1 / -1; }
+.compass { top: -12px; right: -8px; font-size: 2rem; }
+/* 窄螢幕修正：文字不重疊、不截斷 */
+.adv-hero .ribbon, .hero .ribbon { white-space: normal; text-align: center; line-height: 1.3; overflow: visible; }
+.star-card { grid-template-columns: auto minmax(0, 1fr); }
+.star-main { padding-right: 0; }
+.star-label { padding-right: 56px; }
+.chest-deco { top: 8px; right: 8px; bottom: auto; transform: none; display: grid; justify-items: center; gap: 0; }
+.chest-deco .chest-art { width: 50px; height: 44px; }
+.chest-deco small { order: 2; margin: -2px 0 0; transform: rotate(-4deg); }
+.quick-row .tile { white-space: nowrap; }
+@media (max-width: 400px) {
+  .chest-deco small { display: none; }
+  .star-label { padding-right: 48px; }
+  .hero-tab { padding: 6px 8px; gap: 6px; }
+  .hero-tab .avatar.md { width: 42px; height: 42px; font-size: 1.4rem; }
+  .quick-row .tile { font-size: .74rem; }
+}
+/* 金島關卡圖（使用者提供的插畫） */
+.map-art picture, .map-art img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
+.map-art { background: #6cc6f7; }
+.map-info { grid-template-columns: minmax(0, 1fr) auto; }
+.map-info p { grid-column: 1; }
+.map-info .lock-pill { grid-column: 2; grid-row: 1; justify-self: end; align-self: center; white-space: nowrap; }
+.ribbon .nb { white-space: nowrap; }
