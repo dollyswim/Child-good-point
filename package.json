@@ -1,0 +1,11 @@
+{
+  "name": "child-good-point",
+  "version": "0.1.0",
+  "private": true,
+  "description": "親子集點養成冒險 App",
+  "scripts": {
+    "test": "node --test tests/store.test.js",
+    "test:e2e": "node tests/e2e.js",
+    "start": "python3 -m http.server 8080"
+  }
+}
