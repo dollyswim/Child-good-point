@@ -1,8 +1,10 @@
 /* 親子集點 Service Worker：離線可用。資料存在 localStorage，不受快取影響。 */
-var CACHE = 'cgp-shell-v10';
+var CACHE = 'cgp-shell-v14';
 var SHELL = [
-  './', 'index.html', 'css/style.css', 'js/store.js', 'js/rules-csv.js', 'js/report.js', 'js/art.js', 'js/app.js',
-  'manifest.webmanifest', 'images/gold-island.webp', 'images/gold-island.jpg', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'
+  './', 'index.html', 'css/style.css', 'js/store.js', 'js/rules-csv.js', 'js/report.js', 'js/game.js', 'js/art.js', 'js/app.js',
+  'manifest.webmanifest', 'images/gold-island.webp', 'images/gold-island.jpg', 'images/mascot.webp', 'images/float-castle.webp', 'images/chest.webp',
+  'images/characters/roundear.webp', 'images/characters/longear.webp', 'images/characters/horn.webp', 'images/characters/wing.webp',
+  'images/characters/drop.webp', 'images/characters/sprout.webp', 'images/characters/flame.webp', 'images/characters/stone.webp', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'
 ];
 
 self.addEventListener('install', function (e) {

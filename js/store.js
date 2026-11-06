@@ -6,7 +6,7 @@
  * 資料格式（schemaVersion 1）：
  * {
  *   schemaVersion: 1,
- *   children: [{ id, name, avatar, color, startPoints, createdAt }],
+ *   children: [{ id, name, avatar, color, startPoints, createdAt }],   // avatar = 冒險夥伴代號（舊版為表情符號，載入時自動轉換）
  *   items:    [{ id, kind: 'bonus'|'penalty'|'task', name, points, childIds: 'all'|[id],
  *                frequency: { type, days?, n? }, custom, stars, createdAt }],
  *   rewards:  [{ id, name, cost, createdAt }],
@@ -24,7 +24,9 @@
  * - data.challenges：本週挑戰 [{ id, name, childIds, metric: 'item'|'net', itemId, target, rewardPoints, rewardStars, createdAt }]
  *   領取紀錄為 type 'bonus'、refId = 挑戰 id，同一週只能領一次
  * - data.adventure.settlements：能量星星每日結算 [{ id, childId, date, net, baseStars, bonusStars, stars, paidRecordIds, ts }]
- *   （Phase 2）能量星星與生活點數完全分開保存；星星餘額 = 所有結算星星總和
+ *   （Phase 2）能量星星與生活點數完全分開保存
+ * - data.adventure.ledger：星星帳（Phase 3 購買扣星、寶箱與機會格加星）；星星餘額 = 結算總和 + 星星帳
+ * - data.adventure.rolls：擲骰紀錄；data.adventure.players[childId]：{ island, pos, character, bag: { d6, d12, skates } }
  * - 等級：依累積「賺到的加分」（加分、每日任務、挑戰獎勵的正數點數）計算，扣分與兌換不會降級
  *
  * 規則：
@@ -42,6 +44,9 @@
   var FREQUENCY_TYPES = ['daily', 'weekdays', 'weekends', 'days', 'weeklyN', 'once'];
   var ITEM_KINDS = ['bonus', 'penalty', 'task'];
   var SCORE_TYPES = ['bonus', 'penalty', 'task']; // 計入今日淨得分的紀錄類型
+  /** 8 種冒險夥伴代號：孩子的頭像與冒險棋子共用（child.avatar） */
+  var CHARACTER_IDS = ['roundear', 'longear', 'horn', 'wing', 'drop', 'sprout', 'flame', 'stone'];
+  function isCharacter(id) { return CHARACTER_IDS.indexOf(id) >= 0; }
 
   // ---------- 工具 ----------
   function uid() {
@@ -71,7 +76,7 @@
 
   // ---------- 預設資料 ----------
   function emptyData() {
-    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], adventure: { settlements: [] } };
+    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], adventure: { settlements: [], ledger: [], rolls: [], players: {} } };
   }
 
   function defaultData() {
@@ -221,8 +226,46 @@
           paidRecordIds: Array.isArray(x.paidRecordIds) ? x.paidRecordIds.map(String) : [],
           ts: toInt(x.ts, Date.now())
         };
-      })
+      }),
+      // Phase 3：星星帳（購買為負、寶箱／機會為正）
+      ledger: (Array.isArray(adv.ledger) ? adv.ledger : []).filter(function (x) {
+        return x && x.id && childIdSet.has(String(x.childId));
+      }).map(function (x) {
+        return { id: String(x.id), childId: String(x.childId), date: String(x.date || ''), delta: toInt(x.delta, 0),
+          reason: String(x.reason || ''), ts: toInt(x.ts, Date.now()) };
+      }),
+      // Phase 3：擲骰紀錄（每日上限依此計算）
+      rolls: (Array.isArray(adv.rolls) ? adv.rolls : []).filter(function (x) {
+        return x && x.id && childIdSet.has(String(x.childId)) && /^\d{4}-\d{2}-\d{2}$/.test(x.date);
+      }).map(function (x) {
+        return { id: String(x.id), childId: String(x.childId), date: x.date, die: x.die === 'd12' ? 'd12' : 'd6',
+          value: toInt(x.value, 0), from: toInt(x.from, 0), to: toInt(x.to, 0), ts: toInt(x.ts, Date.now()) };
+      }),
+      // Phase 3：每個孩子的棋子位置、角色、背包
+      players: (function () {
+        var src = adv.players && typeof adv.players === 'object' ? adv.players : {};
+        var out = {};
+        Object.keys(src).forEach(function (cid) {
+          if (!childIdSet.has(cid)) return;
+          var p = src[cid] || {};
+          var bag = p.bag && typeof p.bag === 'object' ? p.bag : {};
+          out[cid] = {
+            island: String(p.island || 'gold'),
+            pos: Math.max(0, toInt(p.pos, 0)),
+            character: String(p.character || ''),
+            bag: { d6: Math.max(0, toInt(bag.d6, 0)), d12: Math.max(0, toInt(bag.d12, 0)), skates: Math.max(0, toInt(bag.skates, 0)) }
+          };
+        });
+        return out;
+      })()
     };
+
+    // 頭像統一為 8 種冒險夥伴：舊版表情符號頭像 → 已選的冒險夥伴，否則依順序分配；並同步到冒險棋子
+    d.children.forEach(function (c, idx) {
+      var p = d.adventure.players[c.id];
+      if (!isCharacter(c.avatar)) c.avatar = p && isCharacter(p.character) ? p.character : CHARACTER_IDS[idx % CHARACTER_IDS.length];
+      if (p) p.character = c.avatar;
+    });
 
     var itemIdSet = new Set(d.items.map(function (i) { return i.id; }));
     var challenges = Array.isArray(d.challenges) ? d.challenges : [];
@@ -266,6 +309,7 @@
     opts = opts || {};
     this.storage = opts.storage || (typeof localStorage !== 'undefined' ? localStorage : memoryStorage());
     this.now = opts.now || function () { return new Date(); };
+    this.random = opts.random || Math.random; // 遊戲隨機數（測試時可注入）
     this.seed = opts.seed !== false;
     this.listeners = [];
     this.load();
@@ -315,7 +359,7 @@
     var c = {
       id: uid(),
       name: name,
-      avatar: input.avatar || '🙂',
+      avatar: isCharacter(input.avatar) ? input.avatar : this._nextCharacter(),
       color: input.color || '#ffd166',
       startPoints: toInt(input.startPoints, 0),
       title: String(input.title || '').trim(),
@@ -336,7 +380,12 @@
       if (!name) throw new Error('請輸入孩子名稱');
       c.name = name;
     }
-    if (patch.avatar != null) c.avatar = patch.avatar;
+    if (patch.avatar != null) {
+      if (!isCharacter(patch.avatar)) throw new Error('請選擇一個冒險夥伴當頭像');
+      c.avatar = patch.avatar;
+      var pl = this.data.adventure.players[id];
+      if (pl) pl.character = c.avatar;
+    }
     if (patch.color != null) c.color = patch.color;
     if (patch.startPoints != null) c.startPoints = toInt(patch.startPoints, 0);
     if (patch.title != null) c.title = String(patch.title).trim();
@@ -346,10 +395,20 @@
     return c;
   };
 
+  /** 新孩子的預設頭像：還沒被用過的第一隻夥伴 */
+  Store.prototype._nextCharacter = function () {
+    var used = this.data.children.map(function (c) { return c.avatar; });
+    return CHARACTER_IDS.find(function (id) { return used.indexOf(id) < 0; }) || CHARACTER_IDS[this.data.children.length % CHARACTER_IDS.length];
+  };
+
   Store.prototype.deleteChild = function (id) {
     this.data.children = this.data.children.filter(function (c) { return c.id !== id; });
     this.data.records = this.data.records.filter(function (r) { return r.childId !== id; });
-    this.data.adventure.settlements = this.data.adventure.settlements.filter(function (x) { return x.childId !== id; });
+    var adv = this.data.adventure;
+    adv.settlements = adv.settlements.filter(function (x) { return x.childId !== id; });
+    adv.ledger = adv.ledger.filter(function (x) { return x.childId !== id; });
+    adv.rolls = adv.rolls.filter(function (x) { return x.childId !== id; });
+    delete adv.players[id];
     this.data.items.concat(this.data.challenges).forEach(function (i) {
       if (Array.isArray(i.childIds)) i.childIds = i.childIds.filter(function (cid) { return cid !== id; });
     });
@@ -778,7 +837,10 @@
 
   /** 星星餘額（Phase 3 起扣除商店花費） */
   Store.prototype.getStarBalance = function (childId) {
-    return this.data.adventure.settlements.reduce(function (sum, x) { return x.childId === childId ? sum + x.stars : sum; }, 0);
+    var adv = this.data.adventure;
+    var fromSettle = adv.settlements.reduce(function (sum, x) { return x.childId === childId ? sum + x.stars : sum; }, 0);
+    var fromLedger = adv.ledger.reduce(function (sum, x) { return x.childId === childId ? sum + x.delta : sum; }, 0);
+    return fromSettle + fromLedger;
   };
 
   /**
@@ -969,7 +1031,7 @@
     src.children.forEach(function (c) {
       var found = next.children.find(function (x) { return x.name === c.name; });
       if (!found) {
-        found = { id: uid(), name: c.name, avatar: c.avatar, color: c.color, startPoints: c.startPoints, createdAt: t };
+        found = { id: uid(), name: c.name, avatar: c.avatar, color: c.color, startPoints: c.startPoints, title: c.title, badge: c.badge, weeklyGoal: c.weeklyGoal, createdAt: t };
         next.children.push(found);
         result.childrenAdded.push(c.name);
       }
@@ -1061,6 +1123,7 @@
     defaultData: defaultData,
     SCHEMA_VERSION: SCHEMA_VERSION,
     levelThreshold: levelThreshold,
+    CHARACTER_IDS: CHARACTER_IDS,
     starsForNet: starsForNet,
     STORAGE_KEY: STORAGE_KEY
   };

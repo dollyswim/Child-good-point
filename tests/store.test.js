@@ -744,3 +744,168 @@ test('Phase 2：額外星星結算時一併發放；結算後才記的留到下�
   assert.equal(store.getStarBalance(a.id), 20);
   assert.equal(store.getTotal(a.id), 25, '星星不影響生活點數');
 });
+
+// ---------- Phase 3：最小可玩金島 ----------
+const G = require('../js/game.js');
+
+/** 可控制骰子結果的 Store：rolls 依序給 random() 的值 */
+function p3Store(randoms, dateStr = '2026-11-06T10:00:00') {
+  const ctx = makeStore(dateStr);
+  const seq = randoms ? randoms.slice() : [];
+  ctx.store.random = () => (seq.length ? seq.shift() : 0);
+  const a = ctx.store.addChild({ name: 'A' });
+  const big = ctx.store.addItem({ kind: 'bonus', name: '大', points: 100 });
+  ctx.store.recordItem(a.id, big.id);   // 淨得分 100 → 20 星
+  ctx.store.settleToday(a.id);
+  return Object.assign(ctx, { a, big, push: (...v) => seq.push(...v) });
+}
+/** 讓 rint(1,6) 回傳 n 的 random 值 */
+const face = (n, sides = 6) => (n - 1 + 0.5) / sides;
+
+test('金島資料：30 格、起點與終點、可擴充', () => {
+  const b = G.BOARDS.gold;
+  assert.equal(b.tiles.length, 31, '0 = 起點，1～30 共 30 格');
+  assert.equal(b.tiles[0].type, 'start');
+  assert.equal(b.tiles[30].type, 'end');
+  assert.ok(['chest', 'chance', 'minigame', 'normal'].every(t => b.tiles.some(x => x.type === t)));
+  const keys = new Set(b.tiles.map(t => t.gx + ',' + t.gy));
+  assert.equal(keys.size, 31, '格子不重疊');
+});
+
+test('Phase 3 案例 A：購買 6 面骰扣 5 星、進背包', () => {
+  const { store, a } = p3Store();
+  assert.equal(store.getStarBalance(a.id), 20);
+  store.buyItem(a.id, 'd6');
+  assert.equal(store.getStarBalance(a.id), 15);
+  assert.equal(store.getPlayer(a.id).bag.d6, 1);
+  store.buyItem(a.id, 'd12');
+  store.buyItem(a.id, 'skates');
+  assert.equal(store.getStarBalance(a.id), 1);
+  assert.throws(() => store.buyItem(a.id, 'd6'), /不夠/);
+  assert.equal(store.getTotal(a.id), 100, '生活點數不受影響');
+});
+
+test('Phase 3 案例 B：擲出 4 逐格移動 1→2→3→4', () => {
+  const { store, a, push } = p3Store();
+  store.buyItem(a.id, 'd6');
+  push(face(4));
+  const r = store.rollDice(a.id, 'd6');
+  assert.equal(r.value, 4);
+  assert.deepEqual(r.path, [1, 2, 3, 4]);
+  assert.equal(store.getPlayer(a.id).pos >= 4, true);
+});
+
+test('Phase 3 案例 C：每天最多 3 次骰子（6 面、12 面都算），溜冰鞋不算', () => {
+  const { store, a } = p3Store();
+  store.random = () => 0; // 都擲 1，停在一般格或事件格皆可
+  store.buyItem(a.id, 'd6'); store.buyItem(a.id, 'd6'); store.buyItem(a.id, 'd6');
+  store.getPlayer(a.id).bag.d12 = 2;
+  store.rollDice(a.id, 'd6');
+  store.rollDice(a.id, 'd12');
+  store.rollDice(a.id, 'd6');
+  assert.equal(store.getRollsToday(a.id), 3);
+  assert.throws(() => store.rollDice(a.id, 'd6'), /今天已經擲了 3 次/);
+  assert.throws(() => store.rollDice(a.id, 'd12'), /今天已經擲了 3 次/);
+  store.getPlayer(a.id).bag.skates = 1;
+  assert.doesNotThrow(() => store.useSkates(a.id), '溜冰鞋不受擲骰上限限制');
+});
+
+test('Phase 3 案例 D：剩餘骰子隔天仍存在；隔天擲骰次數重新計算；未出發不能玩', () => {
+  const storage = memoryStorage();
+  let t = new Date('2026-11-06T10:00:00').getTime();
+  const s1 = new Store({ storage, seed: false, now: () => new Date(t) });
+  s1.random = () => 0;
+  const a = s1.addChild({ name: 'A' });
+  const b = s1.addItem({ kind: 'bonus', name: 'b', points: 100 });
+  s1.recordItem(a.id, b.id); s1.settleToday(a.id);
+  for (let i = 0; i < 4; i++) s1.buyItem(a.id, 'd6');
+  for (let i = 0; i < 3; i++) s1.rollDice(a.id, 'd6');
+  assert.equal(s1.getPlayer(a.id).bag.d6, 1);
+  t = new Date('2026-11-07T09:00:00').getTime();
+  const s2 = new Store({ storage, seed: false, now: () => new Date(t) }); // 隔天重新開啟
+  assert.equal(s2.getPlayer(a.id).bag.d6, 1, '剩餘骰子保留');
+  assert.throws(() => s2.rollDice(a.id, 'd6'), /尚未出發/, '當天沒出發不能玩');
+  assert.throws(() => s2.buyItem(a.id, 'd6'), /尚未出發/);
+  s2.recordItem(a.id, b.id); s2.settleToday(a.id);
+  assert.equal(s2.getRollsToday(a.id), 0, '隔天重新計算');
+  s2.random = () => 0;
+  assert.doesNotThrow(() => s2.rollDice(a.id, 'd6'));
+});
+
+test('終點：停在第 30 格，多的步數不走；在終點不能再擲、不扣骰子', () => {
+  const { store, a } = p3Store();
+  store.getPlayer(a.id).pos = 27;
+  store.getPlayer(a.id).bag.d12 = 2;
+  store.random = () => 0.99; // 擲 12
+  const r = store.rollDice(a.id, 'd12');
+  assert.deepEqual(r.path, [28, 29, 30]);
+  assert.equal(r.event.type, 'end');
+  assert.throws(() => store.rollDice(a.id, 'd12'), /終點/);
+  assert.equal(store.getPlayer(a.id).bag.d12, 1);
+  assert.equal(store.getRollsToday(a.id), 1);
+});
+
+test('寶箱格：星星或道具；機會格：前進 2 格、得 2 星、得 6 面骰', () => {
+  const { store, a, push } = p3Store();
+  const bag = store.getPlayer(a.id).bag;
+  bag.d6 = 10;
+  // 寶箱在第 5 格：擲 5，寶箱給星（roll<0.55，再擲 1～3 → 3）
+  push(face(5), 0.1, 0.99);
+  let r = store.rollDice(a.id, 'd6');
+  assert.equal(r.event.type, 'chest');
+  assert.equal(r.event.stars, 3);
+  assert.equal(store.getStarBalance(a.id), 23);
+  // 機會在第 9 格：擲 4，機會選 1（得 2 星）
+  push(face(4), 0.5);
+  r = store.rollDice(a.id, 'd6');
+  assert.equal(r.event.type, 'chance');
+  assert.equal(r.event.stars, 2);
+  // 機會「前進 2 格」：放在第 3 格前一格
+  store.getPlayer(a.id).pos = 0;
+  store.getPlayer(a.id).bag.skates = 1;
+  push(0.0, 0.0);           // 溜冰鞋到 3（機會），選 0 → 前進 2 到 5（寶箱，roll 0 → 星 1）
+  r = store.useSkates(a.id);
+  assert.deepEqual(r.path, [1, 2, 3]);
+  assert.deepEqual(r.event.extraPath, [4, 5]);
+  assert.equal(r.event.then.type, 'chest');
+  assert.equal(store.getPlayer(a.id).pos, 5);
+});
+
+test('角色：8 種冒險夥伴可選，每個孩子獨立；匯出入保留遊戲進度', () => {
+  const { store, a } = p3Store();
+  const b2 = store.addChild({ name: 'B' });
+  store.setCharacter(a.id, 'horn');
+  store.setCharacter(b2.id, 'flame');
+  assert.throws(() => store.setCharacter(a.id, 'dragon'));
+  assert.equal(G.CHARACTERS.length, 8, '8 種冒險夥伴');
+  assert.deepEqual(G.CHARACTERS.map(c => c.name), ['圓耳獸', '長耳獸', '小角龍獸', '小翼獸', '水滴獸', '葉芽獸', '火苗獸', '石球獸']);
+  store.buyItem(a.id, 'd6');
+  const other = makeStore().store;
+  other.importJSON(store.exportJSON());
+  assert.equal(other.getPlayer(a.id).character, 'horn');
+  assert.equal(other.getPlayer(b2.id).character, 'flame');
+  assert.equal(other.getPlayer(a.id).bag.d6, 1);
+  assert.equal(other.getStarBalance(a.id), 15);
+});
+
+test('頭像改為 8 種冒險夥伴：舊版表情符號自動轉換、與冒險棋子同步', () => {
+  // 舊資料：表情符號頭像；第二位孩子已選過冒險夥伴
+  const d = migrate({
+    children: [{ id: 'a', name: 'A', avatar: '🐻' }, { id: 'b', name: 'B', avatar: '🐰' }, { id: 'c', name: 'C', avatar: 'flame' }],
+    adventure: { players: { b: { pos: 3, character: 'stone', bag: {} } } }
+  });
+  assert.equal(d.children[0].avatar, 'roundear', '沒選過 → 依順序分配');
+  assert.equal(d.children[1].avatar, 'stone', '已選過的冒險夥伴當頭像');
+  assert.equal(d.children[2].avatar, 'flame', '已是夥伴代號就保留');
+  assert.equal(d.adventure.players.b.character, 'stone');
+
+  const { store } = makeStore();
+  const x = store.addChild({ name: 'X' });
+  const y = store.addChild({ name: 'Y' });
+  assert.notEqual(x.avatar, y.avatar, '新孩子預設不同夥伴');
+  store.setCharacter(x.id, 'wing');
+  assert.equal(store.getChild(x.id).avatar, 'wing', '換冒險夥伴 → 頭像同步');
+  store.updateChild(y.id, { avatar: 'drop' });
+  assert.equal(store.getPlayer(y.id).character, 'drop', '換頭像 → 冒險夥伴同步');
+  assert.throws(() => store.updateChild(y.id, { avatar: '🐶' }), /冒險夥伴/);
+});

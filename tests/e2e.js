@@ -451,6 +451,86 @@ async function main() {
     await c2.close();
   }
 
+  // ---------- Phase 3 驗收（全新資料、可控時間） ----------
+  {
+    const c3 = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block' });
+    const q = await c3.newPage();
+    await q.clock.setFixedTime(new Date('2026-11-06T10:00:00'));
+    q.on('pageerror', (e) => errors.push(e.message));
+    q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
+    await q.goto(url);
+    const id = await q.evaluate(() => {
+      const s = window.__cgpStore;
+      const a = s.addChild({ name: '甲' });
+      const b = s.addItem({ kind: 'bonus', name: '大加分', points: 100 });
+      s.recordItem(a.id, b.id);
+      return a.id;
+    });
+    // 未出發：地圖不能玩
+    await q.goto(url + '#map-' + id);
+    assert.match(await q.locator('.map-hint').innerText(), /還沒出發/);
+    assert.ok(await q.locator('[data-action=open-shop]').isDisabled());
+    // 出發後從大廳進入地圖
+    await q.goto(url + '#child-' + id);
+    await q.click('[data-action=enter-adventure]');
+    await q.click('#confirm [data-yes]');
+    await q.waitForSelector('.map-cta[href]');
+    await q.click('.map-cta[href]');
+    await q.waitForSelector('#pawn');
+    assert.equal(await q.locator('[data-testid=stars]').innerText(), '⭐ 20');
+
+    // 案例 A：購買 6 面骰扣 5 星、進背包
+    await q.click('[data-action=open-shop]');
+    await q.click('#confirm [data-buy=d6]');
+    assert.match(await q.locator('.shop-bal').innerText(), /⭐ 15/);
+    await q.click('#confirm [data-buy=d6]');
+    await q.click('#confirm [data-buy=d6]');
+    await q.click('#confirm [data-buy=d6]');
+    await q.click('#confirm [data-no]');
+    assert.equal(await q.locator('[data-testid=stars]').innerText(), '⭐ 0');
+    assert.match(await q.locator('.dice-btn.d6').innerText(), /×4/);
+    console.log('✔ Phase 3 案例 A：購買 6 面骰扣 5 星、進背包');
+
+    // 案例 B：擲出 4，棋子逐格 1→2→3→4
+    await q.evaluate(() => { const seq = [3.5 / 6]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0); });
+    const seen = [];
+    await q.exposeFunction('__seen', (v) => seen.push(Number(v)));
+    await q.evaluate(() => {
+      new MutationObserver(() => window.__seen(document.getElementById('pawn').dataset.pos))
+        .observe(document.getElementById('pawn'), { attributes: true, attributeFilter: ['data-pos'] });
+    });
+    await q.click('[data-action=roll][data-kind=d6]');
+    await q.waitForFunction(() => !document.getElementById('dice-overlay') || document.getElementById('dice-overlay').hidden, null, { timeout: 5000 });
+    await q.waitForFunction(() => document.querySelector('[data-testid=pos]').textContent.startsWith('4 '), null, { timeout: 8000 });
+    assert.deepEqual(seen.slice(0, 4), [1, 2, 3, 4], '逐格移動');
+    if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
+    console.log('✔ Phase 3 案例 B：擲出 4 逐格移動 1→2→3→4');
+
+    // 案例 C：3 次後不能第 4 次
+    await q.evaluate(() => { window.__cgpStore.random = () => 0; });
+    for (let i = 0; i < 2; i++) {
+      await q.click('[data-action=roll][data-kind=d6]');
+      await q.waitForFunction((n) => document.querySelector('[data-testid=rolls]').textContent.startsWith(n + ' '), i + 2, { timeout: 8000 });
+      await q.waitForFunction(() => !document.querySelector('.dice-btn.d6[disabled]') || document.querySelector('[data-testid=rolls]').textContent.startsWith('3'), null, { timeout: 8000 });
+      if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
+    }
+    await q.waitForTimeout(400);
+    assert.equal(await q.locator('[data-testid=rolls]').innerText(), '3 / 3');
+    assert.ok(await q.locator('.dice-btn.d6').isDisabled(), '第 4 次不能擲');
+    assert.match(await q.locator('.map-hint').innerText(), /3 次骰子用完/);
+    await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, '16-map.png') : path.join(require('os').tmpdir(), 'map.png'), fullPage: true });
+    console.log('✔ Phase 3 案例 C：每天最多 3 次骰子');
+
+    // 案例 D：隔天剩餘骰子仍在、次數重置
+    await q.clock.setFixedTime(new Date('2026-11-07T09:00:00'));
+    await q.reload();
+    await q.goto(url + '#map-' + id);
+    assert.match(await q.locator('.dice-btn.d6').innerText(), /×1/, '剩餘骰子隔天仍存在');
+    assert.equal(await q.locator('[data-testid=rolls]').innerText(), '0 / 3');
+    console.log('✔ Phase 3 案例 D：剩餘骰子隔天仍存在');
+    await c3.close();
+  }
+
   assert.deepEqual(errors, [], '頁面不得出現 JS 錯誤或原生對話框');
   await browser.close();
   server.close();
