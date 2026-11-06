@@ -734,8 +734,8 @@
   };
 
   // ----- 等級 -----
-  /** 升到 Lv.n 需要的累積加分：Lv.2 = 100、Lv.3 = 300、Lv.4 = 600、Lv.5 = 1000…（每級多 100） */
-  function levelThreshold(n) { return 50 * (n - 1) * n; }
+  /** 升到 Lv.n 需要的累積加分：每 1000 點 1 級，Lv.1 從 0 開始，Lv.2 = 2000、Lv.3 = 3000…Lv.10 = 10000 */
+  function levelThreshold(n) { return n <= 1 ? 0 : 1000 * n; }
 
   /** 累積賺到的加分（不含起始點數；扣分、兌換不扣） */
   Store.prototype.getEarned = function (childId) {

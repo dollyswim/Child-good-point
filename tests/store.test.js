@@ -562,19 +562,23 @@ test('孩子頭銜、代表圖示、每週目標；舊資料自動補預設值',
   assert.deepEqual(d.challenges, []);
 });
 
-test('等級：依累積加分計算，扣分與兌換不降級', () => {
+test('等級：每 1000 點 1 級（Lv.1 從 0 開始、Lv.10 = 10000），扣分與兌換不降級', () => {
   const { store } = makeStore();
-  const a = store.addChild({ name: 'A', startPoints: 5000 });
+  const a = store.addChild({ name: 'A', startPoints: 50000 });
   assert.equal(store.getLevel(a.id).level, 1, '起始點數不算等級');
-  const b = store.addItem({ kind: 'bonus', name: 'b', points: 100 });
-  const p = store.addItem({ kind: 'penalty', name: 'p', points: 100 });
+  const b = store.addItem({ kind: 'bonus', name: 'b', points: 1000 });
+  const p = store.addItem({ kind: 'penalty', name: 'p', points: 1000 });
   store.recordItem(a.id, b.id);
-  assert.equal(store.getLevel(a.id).level, 2);
-  for (let i = 0; i < 9; i++) store.recordItem(a.id, b.id);
+  assert.equal(store.getLevel(a.id).level, 1, '1000 點仍是 Lv.1');
+  store.recordItem(a.id, b.id);
+  assert.deepEqual([store.getLevel(a.id).level, store.getLevel(a.id).next], [2, 3000]);
+  for (let i = 0; i < 8; i++) store.recordItem(a.id, b.id);
   const lv = store.getLevel(a.id);
-  assert.deepEqual([lv.level, lv.earned, lv.current, lv.next], [5, 1000, 1000, 1500]);
+  assert.deepEqual([lv.level, lv.earned, lv.current, lv.next], [10, 10000, 10000, 11000]);
   store.recordItem(a.id, p.id);
-  assert.equal(store.getLevel(a.id).level, 5);
+  assert.equal(store.getLevel(a.id).level, 10);
+  const c = store.addChild({ name: 'C' });
+  assert.deepEqual([store.getLevel(c.id).level, store.getLevel(c.id).current, store.getLevel(c.id).next], [1, 0, 2000]);
 });
 
 test('每週淨得分：週一開始，不含上週', () => {
