@@ -85,7 +85,7 @@
     toastEl.className = 'toast ' + (kind || '');
     toastEl.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toastEl.hidden = true; }, 1800);
+    toastTimer = setTimeout(function () { toastEl.hidden = true; }, Math.max(1800, msg.length * 120));
   }
   /** App 內建確認對話框（取代瀏覽器原生 confirm，手機上較易閱讀，也能在嵌入環境運作） */
   function askConfirm(message, okLabel, danger) {
@@ -136,11 +136,22 @@
     var n = String(name).toLowerCase();
     return terms.every(function (t) { return n.indexOf(t) >= 0; });
   }
-  /** 分數排序：加分由小到大（+3、+5、+10），扣分由輕到重（-3、-5、-10） */
+  /** 分組用的分數鍵：自填點數的項目自成一組 */
+  function ptsKey(i) { return i.custom ? 'custom' : i.points; }
+  function ptsKeyLabel(key) { return key === 'custom' ? '自填' : signed(key); }
+  function ptsKeyClass(key, kind) { return key === 'custom' ? (kind === 'penalty' ? 'neg' : 'pos') : signClass(key); }
+  /** 按鈕上的點數文字，例如「+5」「自填」「+5 ⭐5」「⭐10」 */
+  function ptsLabel(i) {
+    var p = i.custom ? '自填' : ((i.points === 0 && i.stars) ? '' : signed(i.points));
+    return [p, i.stars ? '⭐' + i.stars : ''].filter(Boolean).join(' ');
+  }
+  /** 分數排序：加分由小到大（+3、+5、+10），扣分由輕到重（-3、-5、-10），自填排最後 */
   function byPoints(a, b) {
-    var sa = a.points < 0 ? 1 : 0, sb = b.points < 0 ? 1 : 0;
+    var sa = a.kind === 'penalty' ? 1 : 0, sb = b.kind === 'penalty' ? 1 : 0;
     if (sa !== sb) return sa - sb;
-    var d = Math.abs(a.points) - Math.abs(b.points);
+    var ca = a.custom ? 1 : 0, cb = b.custom ? 1 : 0;
+    if (ca !== cb) return ca - cb;
+    var d = ca ? 0 : Math.abs(a.points) - Math.abs(b.points);
     return d || String(a.name).localeCompare(String(b.name), 'zh-Hant');
   }
   /** 依分數分組 */
@@ -148,7 +159,8 @@
     var groups = [];
     items.slice().sort(byPoints).forEach(function (i) {
       var g = groups[groups.length - 1];
-      if (!g || g.points !== i.points) { g = { points: i.points, items: [] }; groups.push(g); }
+      var key = ptsKey(i);
+      if (!g || g.key !== key || g.kind !== i.kind) { g = { key: key, kind: i.kind, items: [] }; groups.push(g); }
       g.items.push(i);
     });
     return groups;
@@ -217,7 +229,7 @@
         '<span class="check" aria-hidden="true">' + (s.doneToday ? '✓' : '') + '</span>' +
         '<span class="task-name">' + h(t.task.name) +
         (s.label ? '<small>' + h(s.label) + '</small>' : '') + '</span>' +
-        '<span class="pts pos">' + signed(t.task.points) + '</span></button>';
+        '<span class="pts pos">' + h(ptsLabel(t.task)) + '</span></button>';
     }).join('') : '<p class="muted small">今天沒有任務</p>';
 
     var rewardHtml = rewards.length ? rewards.map(function (r) {
@@ -266,14 +278,14 @@
       return '<div class="grid">' + items.map(function (i) {
         return '<button class="score-btn ' + i.kind + '" data-action="record" data-id="' + h(i.id) + '">' +
           '<span class="score-name">' + h(i.name) + '</span>' +
-          '<span class="score-pts">' + signed(i.points) + '</span></button>';
+          '<span class="score-pts">' + h(ptsLabel(i)) + '</span></button>';
       }).join('') + '</div>';
     }
     function grouped(items) {
       var groups = groupByPoints(items);
       if (groups.length === 1) return btns(groups[0].items);
       return groups.map(function (g) {
-        return '<div class="pts-group"><div class="pts-head ' + signClass(g.points) + '">' + signed(g.points) +
+        return '<div class="pts-group"><div class="pts-head ' + ptsKeyClass(g.key, g.kind) + '">' + ptsKeyLabel(g.key) +
           '<span>' + g.items.length + ' 項</span></div>' + btns(g.items) + '</div>';
       }).join('');
     }
@@ -287,9 +299,9 @@
 
     var kind = ui.scoreKind === 'penalty' ? 'penalty' : 'bonus';
     var items = kind === 'bonus' ? bonus : penalty;
-    var values = groupByPoints(items).map(function (g) { return g.points; });
+    var values = groupByPoints(items).map(function (g) { return g.key; });
     if (values.indexOf(ui.scorePoints) < 0) ui.scorePoints = null;
-    var shown = ui.scorePoints == null ? items : items.filter(function (i) { return i.points === ui.scorePoints; });
+    var shown = ui.scorePoints == null ? items : items.filter(function (i) { return ptsKey(i) === ui.scorePoints; });
 
     var seg = '<div class="seg" role="tablist">' +
       '<button class="seg-btn bonus ' + (kind === 'bonus' ? 'active' : '') + '" data-action="score-kind" data-kind="bonus" role="tab" aria-selected="' + (kind === 'bonus') + '">👍 加分 <small>' + bonus.length + '</small></button>' +
@@ -298,7 +310,7 @@
     var chips = values.length > 1 ? '<div class="pts-chips">' +
       '<button class="pts-chip ' + (ui.scorePoints == null ? 'active' : '') + '" data-action="score-points" data-points="">全部</button>' +
       values.map(function (v) {
-        return '<button class="pts-chip ' + kind + ' ' + (ui.scorePoints === v ? 'active' : '') + '" data-action="score-points" data-points="' + v + '">' + signed(v) + '</button>';
+        return '<button class="pts-chip ' + kind + ' ' + (ui.scorePoints === v ? 'active' : '') + '" data-action="score-points" data-points="' + v + '">' + ptsKeyLabel(v) + '</button>';
       }).join('') + '</div>' : '';
 
     var list = items.length ? grouped(shown)
@@ -326,7 +338,8 @@
     var tag = { bonus: '加分', penalty: '扣分', task: '任務', reward: '兌換' }[r.type];
     return '<li class="rec"><span class="rec-time">' + timeOf(r.ts) + '</span>' +
       '<span class="rec-name">' + (r.type === 'reward' ? '🎁 ' : '') + h(r.name) +
-      ' <small class="tag tag-' + r.type + '">' + tag + '</small></span>' +
+      ' <small class="tag tag-' + r.type + '">' + tag + '</small>' +
+      (r.stars ? ' <small class="tag tag-star">⭐' + r.stars + '</small>' : '') + '</span>' +
       '<span class="pts ' + signClass(r.points) + '">' + signed(r.points) + '</span></li>';
   }
 
@@ -381,12 +394,13 @@
     var list = items.map(function (i) {
       var meta = childIdsText(i.childIds) + (kind === 'task' ? '・' + freqText(i.frequency) : '');
       var head = '';
-      if (kind !== 'task' && i.points !== lastPts) {
-        lastPts = i.points;
-        head = '<li class="rows-head ' + signClass(i.points) + '">' + signed(i.points) + '</li>';
+      var key = ptsKey(i);
+      if (kind !== 'task' && key !== lastPts) {
+        lastPts = key;
+        head = '<li class="rows-head ' + ptsKeyClass(key, i.kind) + '">' + ptsKeyLabel(key) + '</li>';
       }
       return head + '<li class="row"><span class="row-main"><b>' + h(i.name) +
-        ' <span class="pts ' + signClass(i.points) + '">' + signed(i.points) + '</span></b>' +
+        ' <span class="pts ' + ptsKeyClass(key, i.kind) + '">' + h(ptsLabel(i)) + '</span></b>' +
         '<small>' + h(meta) + '</small></span>' +
         '<button class="btn small" data-action="edit-item" data-id="' + h(i.id) + '">編輯</button>' +
         '<button class="btn small danger" data-action="delete-item" data-id="' + h(i.id) + '">刪除</button></li>';
@@ -409,19 +423,23 @@
     return '<div class="card">' +
       '<h2>📤 匯出備份</h2><p class="muted small">下載包含所有孩子、規則、獎勵與紀錄的 JSON 檔。</p>' +
       '<button class="btn primary block" data-action="export">匯出 JSON</button></div>' +
-      '<div class="card"><h2>📥 匯入還原</h2>' +
-      '<p class="muted small">匯入會<b>取代</b>目前所有資料，建議先匯出備份。</p>' +
-      '<label class="btn block file-btn">選擇 JSON 檔案<input type="file" accept="application/json,.json" data-action="import" hidden></label></div>' +
+      '<div class="card"><h2>➕ 只匯入規則</h2>' +
+      '<p class="muted small">把檔案裡的任務、加分、扣分、獎勵<b>新增</b>進來，保留目前的孩子與紀錄。' +
+      '孩子依名稱對應；名稱與適用孩子都相同的規則會略過，不會重複。</p>' +
+      '<label class="btn primary block file-btn">選擇規則 JSON 檔<input type="file" accept="application/json,.json" data-action="import-rules" hidden></label></div>' +
+      '<div class="card"><h2>📥 完整還原</h2>' +
+      '<p class="muted small">用備份檔<b>取代</b>目前所有資料（含紀錄），建議先匯出備份。</p>' +
+      '<label class="btn block file-btn">選擇備份 JSON 檔<input type="file" accept="application/json,.json" data-action="import" hidden></label></div>' +
       '<p class="muted small center">目前資料：' + d.children.length + ' 位孩子・' + d.items.length + ' 個規則・' +
       d.rewards.length + ' 個獎勵・' + d.records.length + ' 筆紀錄</p>';
   }
 
   // ---------- 表單 ----------
-  function openModal(title, fieldsHtml, onSubmit) {
+  function openModal(title, fieldsHtml, onSubmit, submitLabel) {
     modalForm.innerHTML = '<h2>' + h(title) + '</h2>' + fieldsHtml +
       '<p class="form-error" hidden></p>' +
       '<div class="modal-actions"><button type="button" class="btn" data-close>取消</button>' +
-      '<button type="submit" class="btn primary">儲存</button></div>';
+      '<button type="submit" class="btn primary">' + h(submitLabel || '儲存') + '</button></div>';
     modalForm.onsubmit = function (e) {
       e.preventDefault();
       try {
@@ -501,12 +519,15 @@
   modalForm.addEventListener('change', syncConditional);
 
   function openItemForm(kind, item) {
-    var it = item || { name: '', points: kind === 'penalty' ? -5 : 5, childIds: 'all', frequency: { type: 'daily' } };
+    var it = item || { name: '', points: kind === 'penalty' ? -5 : 5, childIds: 'all', frequency: { type: 'daily' }, custom: false, stars: 0 };
     var fields =
-      '<label class="field">名稱<input type="text" name="name" maxlength="30" required value="' + h(it.name) + '"></label>' +
+      '<label class="field">名稱<input type="text" name="name" maxlength="40" required value="' + h(it.name) + '"></label>' +
       '<label class="field">' + (kind === 'penalty' ? '扣除點數' : '點數') +
       '<input type="number" name="points" min="0" step="1" inputmode="numeric" required value="' + Math.abs(it.points) + '"></label>' +
+      (kind !== 'task' ? '<label class="radio"><input type="checkbox" name="custom" value="1"' + (it.custom ? ' checked' : '') + '> 每次由家長自填點數（上方數字為預設值）</label>' : '') +
       (kind === 'task' ? freqPicker(it.frequency) : '') +
+      '<label class="field">額外能量星星<input type="number" name="stars" min="0" step="1" inputmode="numeric" value="' + (it.stars || 0) + '">' +
+      '<small class="muted">Phase 1 只記錄，冒險功能（Phase 2）推出後才會發放。</small></label>' +
       childPicker(it.childIds);
     openModal((item ? '編輯' : '新增') + KIND_LABELS[kind], fields, function (fd) {
       var scope = fd.get('scope');
@@ -514,6 +535,8 @@
         kind: kind,
         name: fd.get('name'),
         points: fd.get('points'),
+        custom: kind !== 'task' && fd.get('custom') === '1',
+        stars: fd.get('stars'),
         childIds: scope === 'all' ? 'all' : fd.getAll('childIds')
       };
       if (kind === 'task') {
@@ -529,6 +552,22 @@
       toast('已儲存');
     });
     syncConditional();
+  }
+
+  /** 自填點數：輸入後記錄 */
+  function openCustomPoints(childId, item) {
+    var fields = '<p class="muted small">' + h(store.getChild(childId).name) + '・' + (item.kind === 'penalty' ? '扣分' : '加分') + '</p>' +
+      '<label class="field">' + (item.kind === 'penalty' ? '要扣幾點？' : '要加幾點？') +
+      '<input type="number" name="points" id="custom-points" min="0" step="1" inputmode="numeric" required value="' + Math.abs(item.points) + '"></label>';
+    openModal(item.name, fields, function (fd) {
+      var rec = store.recordItem(childId, item.id, fd.get('points'));
+      ui.query = '';
+      ui.pulse = true;
+      toast(rec.name + ' ' + signed(rec.points), rec.points < 0 ? 'neg' : 'pos');
+    }, '記錄');
+    var input = document.getElementById('custom-points');
+    input.focus();
+    input.select();
   }
 
   function openRewardForm(reward) {
@@ -556,6 +595,24 @@
     a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
     toast('已匯出備份');
+  }
+
+  function importRules(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var r = store.mergeRules(String(reader.result));
+        var parts = ['新增 ' + r.itemsAdded + ' 條規則'];
+        if (r.itemsSkipped) parts.push('略過重複 ' + r.itemsSkipped + ' 條');
+        if (r.rewardsAdded) parts.push('獎勵 ' + r.rewardsAdded + ' 個');
+        if (r.childrenAdded) parts.push('新增孩子 ' + r.childrenAdded + ' 位');
+        toast(parts.join('・'), 'pos');
+        render();
+      } catch (e) {
+        toast('匯入失敗：' + e.message, 'neg');
+      }
+    };
+    reader.readAsText(file);
   }
 
   function importData(file) {
@@ -594,12 +651,14 @@
           break;
         case 'score-points': {
           var pv = el.getAttribute('data-points');
-          ui.scorePoints = pv === '' ? null : Number(pv);
+          ui.scorePoints = pv === '' ? null : (pv === 'custom' ? 'custom' : Number(pv));
           updateScoreList();
           break;
         }
         case 'add-child': openChildForm(); break;
         case 'record': {
+          var recItem = store.getItem(id);
+          if (recItem && recItem.custom) { openCustomPoints(childId, recItem); break; }
           var rec = store.recordItem(childId, id);
           ui.query = ''; // 記錄後清除搜尋，方便下一筆
           ui.pulse = true;
@@ -684,6 +743,9 @@
   app.addEventListener('change', function (e) {
     if (e.target.matches('[data-action="import"]') && e.target.files[0]) {
       importData(e.target.files[0]);
+      e.target.value = '';
+    } else if (e.target.matches('[data-action="import-rules"]') && e.target.files[0]) {
+      importRules(e.target.files[0]);
       e.target.value = '';
     }
   });

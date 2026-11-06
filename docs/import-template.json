@@ -13,7 +13,8 @@
     { "id": "t6", "kind": "task", "name": "打預防針", "points": 20, "childIds": ["c2"], "frequency": { "type": "once" } },
 
     { "id": "b1", "kind": "bonus", "name": "整理書包", "points": 5, "childIds": "all" },
-    { "id": "b2", "kind": "bonus", "name": "主動幫忙", "points": 5, "childIds": "all" },
+    { "id": "b2", "kind": "bonus", "name": "主動幫忙", "points": 5, "stars": 5, "childIds": "all" },
+    { "id": "b3", "kind": "bonus", "name": "上英文課表現良好", "points": 10, "custom": true, "childIds": ["c1"] },
 
     { "id": "p1", "kind": "penalty", "name": "違反約定", "points": -5, "childIds": "all" },
     { "id": "p2", "kind": "penalty", "name": "發脾氣", "points": -3, "childIds": "all" }

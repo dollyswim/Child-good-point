@@ -245,3 +245,60 @@ test('首次使用會放入範例規則', () => {
   assert.ok(s.getItems('bonus').length > 0);
   assert.ok(s.getItems('penalty').every(i => i.points < 0));
 });
+
+test('自填點數：加分自填正數、扣分自動轉負數、未輸入會拒絕', () => {
+  const { store } = makeStore();
+  const c = store.addChild({ name: 'A' });
+  const b = store.addItem({ kind: 'bonus', name: '英文課', points: 0, custom: true });
+  const p = store.addItem({ kind: 'penalty', name: '其他', points: 5, custom: true });
+  assert.equal(store.recordItem(c.id, b.id, '12').points, 12);
+  assert.equal(store.recordItem(c.id, p.id, 7).points, -7);
+  assert.throws(() => store.recordItem(c.id, b.id, ''), /請輸入點數/);
+  assert.equal(store.getTodayNet(c.id), 5);
+});
+
+test('額外能量星星：記錄在規則與紀錄上，不影響生活點數', () => {
+  const { store } = makeStore();
+  const c = store.addChild({ name: 'A' });
+  const b = store.addItem({ kind: 'bonus', name: '表達心情', points: 0, stars: 10 });
+  const rec = store.recordItem(c.id, b.id);
+  assert.equal(rec.stars, 10);
+  assert.equal(rec.points, 0);
+  assert.equal(store.getTotal(c.id), 0);
+});
+
+test('舊資料沒有 custom / stars 欄位時自動補預設值', () => {
+  const d = migrate({ children: [{ id: 'c1', name: 'A' }], items: [{ id: 'i', kind: 'bonus', name: 'x', points: 3 }],
+    records: [{ id: 'r', childId: 'c1', type: 'bonus', points: 3, date: '2026-11-06', ts: 1 }] });
+  assert.equal(d.items[0].custom, false);
+  assert.equal(d.items[0].stars, 0);
+  assert.equal(d.records[0].stars, 0);
+});
+
+test('只匯入規則：保留現有資料、孩子依名稱對應、重複略過、新孩子自動新增', () => {
+  const { store } = makeStore();
+  const a = store.addChild({ name: '端端', startPoints: 50 });
+  const p = store.addItem({ kind: 'bonus', name: '主動幫忙', points: 5 });
+  store.recordItem(a.id, p.id);
+  const file = JSON.stringify({
+    children: [{ id: 'x1', name: '端端' }, { id: 'x2', name: '波妞' }],
+    items: [
+      { id: 'i1', kind: 'bonus', name: '主動幫忙', points: 5, childIds: 'all' },          // 重複
+      { id: 'i2', kind: 'task', name: '說好話', points: 10, childIds: ['x1'], frequency: { type: 'daily' } },
+      { id: 'i3', kind: 'task', name: '說好話', points: 5, childIds: ['x2'], frequency: { type: 'daily' } }
+    ],
+    rewards: [{ id: 'r1', name: '看卡通', cost: 30 }],
+    records: [{ id: 'z', childId: 'x1', type: 'bonus', points: 999, date: '2026-11-06', ts: 1 }]
+  });
+  const r = store.mergeRules(file);
+  assert.deepEqual(r, { childrenAdded: 1, itemsAdded: 2, itemsSkipped: 1, rewardsAdded: 1, rewardsSkipped: 0 });
+  assert.equal(store.getTotal(a.id), 55, '原本的紀錄保留，檔案紀錄不匯入');
+  const bo = store.getChildren().find(c => c.name === '波妞');
+  assert.deepEqual(store.getTodayTasks(a.id).map(t => t.task.points), [10]);
+  assert.deepEqual(store.getTodayTasks(bo.id).map(t => t.task.points), [5]);
+  // 再匯入一次全部略過
+  const again = store.mergeRules(file);
+  assert.equal(again.itemsAdded, 0);
+  assert.equal(again.rewardsSkipped, 1);
+  assert.throws(() => store.mergeRules('{"children":[]}'), /沒有規則/);
+});

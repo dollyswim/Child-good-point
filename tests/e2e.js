@@ -204,10 +204,45 @@ async function main() {
   await shot('07-settings-search');
   console.log('✔ 大量項目：加分／扣分切換、分數篩選、搜尋');
 
+  // 只匯入規則（新增模式）＋ 自填點數 ＋ 額外星星
+  const rulesFile = path.join(require('os').tmpdir(), 'cgp-rules-' + Date.now() + '.json');
+  const childNames = await page.evaluate(() => window.__cgpStore.getChildren().map(c => c.name));
+  fs.writeFileSync(rulesFile, JSON.stringify({
+    children: [{ id: 'k1', name: childNames[0] }],
+    items: [
+      { id: 'n1', kind: 'bonus', name: '上英文課表現良好', points: 0, custom: true, childIds: ['k1'] },
+      { id: 'n2', kind: 'bonus', name: '好好表達心情', points: 0, stars: 10, childIds: 'all' },
+      { id: 'n3', kind: 'bonus', name: '多做十分', points: 10, childIds: 'all' }
+    ],
+    rewards: [{ id: 'w1', name: '去公園', cost: 100 }]
+  }));
+  const recordsBefore = await page.evaluate(() => window.__cgpStore.data.records.length);
+  await page.goto(url + '#rules-backup');
+  await page.setInputFiles('input[data-action=import-rules]', rulesFile);
+  await page.waitForSelector('.toast >> text=新增 2 條規則');
+  assert.equal(await page.evaluate(() => window.__cgpStore.data.records.length), recordsBefore, '紀錄保留');
+  await page.goto(url + '#home');
+  await page.click('.child-card >> nth=0');
+  const totalBeforeCustom = Number(await text('[data-testid=total]'));
+  await page.fill('#score-search', '英文課');
+  assert.equal(await text('.score-btn .score-pts'), '自填');
+  await page.click('.score-btn >> text=上英文課表現良好');
+  await page.fill('#custom-points', '15');
+  await shot('08-custom-points');
+  await page.click('#modal-form button[type="submit"]');
+  assert.equal(Number(await text('[data-testid=total]')), totalBeforeCustom + 15);
+  await page.fill('#score-search', '表達心情');
+  assert.equal(await text('.score-btn .score-pts'), '⭐10');
+  await page.click('.score-btn >> text=好好表達心情');
+  assert.equal(Number(await text('[data-testid=total]')), totalBeforeCustom + 15, '星星不算生活點數');
+  assert.match(await text('.records'), /好好表達心情[\s\S]*⭐10/);
+  console.log('✔ 只匯入規則、自填點數、額外星星紀錄');
+  const afterCustom = await text('[data-testid=total]');
+
   // 舊版網址格式仍可使用
   const cid = await page.evaluate(() => window.__cgpStore.getChildren()[0].id);
   await page.goto(url + '#/child/' + cid);
-  assert.equal(await text('[data-testid=total]'), String(Number(before40) + 20));
+  assert.equal(await text('[data-testid=total]'), afterCustom);
   console.log('✔ 相容舊版網址格式');
 
   assert.deepEqual(errors, [], '頁面不得出現 JS 錯誤或原生對話框');

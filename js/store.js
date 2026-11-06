@@ -8,11 +8,16 @@
  *   schemaVersion: 1,
  *   children: [{ id, name, avatar, color, startPoints, createdAt }],
  *   items:    [{ id, kind: 'bonus'|'penalty'|'task', name, points, childIds: 'all'|[id],
- *                frequency: { type, days?, n? }, createdAt }],
+ *                frequency: { type, days?, n? }, custom, stars, createdAt }],
  *   rewards:  [{ id, name, cost, createdAt }],
  *   records:  [{ id, childId, type: 'bonus'|'penalty'|'task'|'reward', refId, name,
- *                points, date: 'YYYY-MM-DD', ts }]
+ *                points, stars, date: 'YYYY-MM-DD', ts }]
  * }
+ *
+ * 選填欄位（舊資料沒有時自動補預設值，向後相容）：
+ * - item.custom：true 表示點數由家長每次自填（item.points 為預設建議值）
+ * - item.stars：額外能量星星數（Phase 1 只記錄，Phase 2 才發放）
+ * - record.stars：記錄當下的額外星星快照
  *
  * 規則：
  * - 扣分以負數保存；加分、任務以正數保存；兌換獎勵以負數保存。
@@ -146,6 +151,8 @@
           points: normalizeItemPoints(i.kind, i.points),
           childIds: childIds,
           frequency: normalizeFrequency(i.frequency),
+          custom: !!i.custom,
+          stars: Math.max(0, toInt(i.stars, 0)),
           createdAt: toInt(i.createdAt, Date.now())
         };
       });
@@ -172,6 +179,7 @@
         name: String(r.name || ''),
         points: toInt(r.points, 0),
         date: r.date,
+        stars: Math.max(0, toInt(r.stars, 0)),
         ts: toInt(r.ts, Date.now())
       };
     }).sort(function (a, b) { return a.ts - b.ts; });
@@ -303,6 +311,8 @@
       points: normalizeItemPoints(input.kind, input.points),
       childIds: this._normalizeChildIds(input.childIds),
       frequency: normalizeFrequency(input.frequency),
+      custom: !!input.custom,
+      stars: Math.max(0, toInt(input.stars, 0)),
       createdAt: this.now().getTime()
     };
     this.data.items.push(item);
@@ -321,6 +331,8 @@
     if (patch.points != null) item.points = normalizeItemPoints(item.kind, patch.points);
     if (patch.childIds != null) item.childIds = this._normalizeChildIds(patch.childIds);
     if (patch.frequency != null) item.frequency = normalizeFrequency(patch.frequency);
+    if (patch.custom != null) item.custom = !!patch.custom;
+    if (patch.stars != null) item.stars = Math.max(0, toInt(patch.stars, 0));
     this.save();
     return item;
   };
@@ -379,7 +391,7 @@
   };
 
   // ----- 紀錄 -----
-  Store.prototype._addRecord = function (childId, type, refId, name, points) {
+  Store.prototype._addRecord = function (childId, type, refId, name, points, stars) {
     if (!this.getChild(childId)) throw new Error('找不到孩子');
     var now = this.now();
     var last = this.data.records.length ? this.data.records[this.data.records.length - 1].ts : 0;
@@ -390,6 +402,7 @@
       refId: refId,
       name: name,
       points: toInt(points, 0),
+      stars: Math.max(0, toInt(stars, 0)),
       date: dateKey(now),
       ts: Math.max(now.getTime(), last + 1) // 保證順序嚴格遞增
     };
@@ -398,12 +411,21 @@
     return rec;
   };
 
-  /** 點一下記錄加分或扣分項目 */
-  Store.prototype.recordItem = function (childId, itemId) {
+  /**
+   * 點一下記錄加分或扣分項目
+   * @param {number} [customPoints] 自填點數（item.custom 時必填，輸入正數即可，扣分自動轉負數）
+   */
+  Store.prototype.recordItem = function (childId, itemId, customPoints) {
     var item = this.getItem(itemId);
     if (!item || item.kind === 'task') throw new Error('找不到項目');
     if (!this.appliesTo(item, childId)) throw new Error('此項目不適用這位孩子');
-    return this._addRecord(childId, item.kind, item.id, item.name, item.points);
+    var points = item.points;
+    if (item.custom) {
+      var n = Number(customPoints);
+      if (customPoints === '' || customPoints == null || !Number.isFinite(n)) throw new Error('請輸入點數');
+      points = normalizeItemPoints(item.kind, n);
+    }
+    return this._addRecord(childId, item.kind, item.id, item.name, points, item.stars);
   };
 
   /** 判斷任務在某日是否排程（不含每週 N 次 / 單次的完成次數判斷） */
@@ -471,7 +493,7 @@
     if (!this.appliesTo(task, childId)) throw new Error('此任務不適用這位孩子');
     var s = this.getTaskStatus(childId, task);
     if (!s.canComplete) throw new Error(s.doneToday ? '今天已完成' : '目前無法完成此任務');
-    return this._addRecord(childId, 'task', task.id, task.name, task.points);
+    return this._addRecord(childId, 'task', task.id, task.name, task.points, task.stars);
   };
 
   /** 取消今天的任務完成（點已完成的任務時使用） */
@@ -552,6 +574,63 @@
     this.data = data;
     this.save();
     return data;
+  };
+
+  /**
+   * 只匯入規則（新增模式）：保留現有孩子、紀錄與設定。
+   * - 檔案中的孩子依「名稱」對應到現有孩子；找不到同名孩子時新增
+   * - 種類、名稱、適用孩子都相同的項目視為重複，略過
+   * - 同名獎勵略過；檔案中的紀錄不匯入
+   * @returns {{childrenAdded, itemsAdded, itemsSkipped, rewardsAdded, rewardsSkipped}}
+   */
+  Store.prototype.mergeRules = function (text) {
+    var parsed;
+    try { parsed = JSON.parse(text); } catch (e) { throw new Error('檔案不是有效的 JSON'); }
+    if (!parsed || typeof parsed !== 'object' || (!Array.isArray(parsed.items) && !Array.isArray(parsed.rewards))) {
+      throw new Error('檔案裡沒有規則（items）或獎勵（rewards）');
+    }
+    var src = migrate(parsed);
+    var next = clone(this.data);
+    var t = this.now().getTime();
+    var result = { childrenAdded: 0, itemsAdded: 0, itemsSkipped: 0, rewardsAdded: 0, rewardsSkipped: 0 };
+
+    var idMap = {};
+    src.children.forEach(function (c) {
+      var found = next.children.find(function (x) { return x.name === c.name; });
+      if (!found) {
+        found = { id: uid(), name: c.name, avatar: c.avatar, color: c.color, startPoints: c.startPoints, createdAt: t };
+        next.children.push(found);
+        result.childrenAdded++;
+      }
+      idMap[c.id] = found.id;
+    });
+
+    function scopeKey(ids) { return ids === 'all' ? 'all' : ids.slice().sort().join(','); }
+    src.items.forEach(function (i) {
+      var childIds = i.childIds === 'all' ? 'all'
+        : Array.from(new Set(i.childIds.map(function (id) { return idMap[id]; }).filter(Boolean)));
+      if (childIds !== 'all' && !childIds.length) { result.itemsSkipped++; return; }
+      var dup = next.items.some(function (x) {
+        return x.kind === i.kind && x.name === i.name && scopeKey(x.childIds) === scopeKey(childIds);
+      });
+      if (dup) { result.itemsSkipped++; return; }
+      var item = clone(i);
+      item.id = uid();
+      item.childIds = childIds;
+      item.createdAt = t;
+      next.items.push(item);
+      result.itemsAdded++;
+    });
+
+    src.rewards.forEach(function (r) {
+      if (next.rewards.some(function (x) { return x.name === r.name; })) { result.rewardsSkipped++; return; }
+      next.rewards.push({ id: uid(), name: r.name, cost: r.cost, createdAt: t });
+      result.rewardsAdded++;
+    });
+
+    this.data = next;
+    this.save();
+    return result;
   };
 
   /** 外部（其他分頁）修改後重新讀取 */
