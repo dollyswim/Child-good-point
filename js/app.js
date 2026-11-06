@@ -38,6 +38,7 @@
     scorePoints: null,    // 分數篩選（null = 全部）
     query: '',            // 孩子頁搜尋文字
     settingsQuery: '',    // 設定頁搜尋文字
+    report: { childId: 'all', period: 'week', anchor: store.today() },
     lastDate: store.today()
   };
 
@@ -71,6 +72,7 @@
       var parts = hs.split('/').filter(Boolean);
       return { name: parts[0] || 'home', arg: parts[1] || null };
     }
+    if (hs === 'report') return { name: 'report', arg: null };
     var m = hs.match(/^(child|rules)(?:-(.+))?$/);
     if (!m) return { name: 'home', arg: null };
     return { name: m[1] === 'rules' ? 'settings' : 'child', arg: m[2] || null };
@@ -192,6 +194,8 @@
       html = renderChild(child);
     } else if (r.name === 'settings') {
       html = renderSettings(r.arg || 'children');
+    } else if (r.name === 'report') {
+      html = renderReport();
     } else {
       html = renderHome();
     }
@@ -223,6 +227,7 @@
       (children.length
         ? '<div class="child-list">' + cards + '</div>'
         : '<div class="empty"><p>還沒有孩子資料</p><p class="muted">先新增孩子，就可以開始記錄生活積分。</p></div>') +
+      (children.length ? '<a class="btn block report-link" href="#report">📊 記分總覽・更正紀錄</a>' : '') +
       '<button class="btn add-child" data-action="add-child">＋ 新增孩子</button>' +
       '</main>';
   }
@@ -256,7 +261,7 @@
     }).join('') : '<p class="muted small">尚未設定獎勵</p>';
 
     var recHtml = records.length ? '<ul class="records">' + groupByDate(records).map(function (g) {
-      return '<li class="rec-date">' + h(dateLabel(g.date)) + '</li>' + g.items.map(recordRow).join('');
+      return '<li class="rec-date">' + h(dateLabel(g.date)) + '</li>' + g.items.map(function (x) { return recordRow(x); }).join('');
     }).join('') + '</ul>' : '<p class="muted small">還沒有紀錄</p>';
 
     return '<header class="topbar">' +
@@ -350,13 +355,105 @@
     return groups;
   }
 
-  function recordRow(r) {
+  /** 紀錄列（點一下可修改）；showChild 時在前面顯示孩子頭像 */
+  function recordRow(r, showChild) {
     var tag = { bonus: '加分', penalty: '扣分', task: '任務', reward: '兌換' }[r.type];
-    return '<li class="rec"><span class="rec-time">' + timeOf(r.ts) + '</span>' +
+    var child = showChild ? store.getChild(r.childId) : null;
+    return '<li class="rec" data-action="edit-record" data-id="' + h(r.id) + '" role="button" tabindex="0">' +
+      (child ? avatar(child, 'xs') : '') +
+      '<span class="rec-time">' + (r.backfill ? '補登' : timeOf(r.ts)) + '</span>' +
       '<span class="rec-name">' + (r.type === 'reward' ? '🎁 ' : '') + h(r.name) +
       ' <small class="tag tag-' + r.type + '">' + tag + '</small>' +
       (r.stars ? ' <small class="tag tag-star">⭐' + r.stars + '</small>' : '') + '</span>' +
       '<span class="pts ' + signClass(r.points) + '">' + signed(r.points) + '</span></li>';
+  }
+
+  // ---------- 記分總覽 ----------
+  function renderReport() {
+    var R = window.CGPReport;
+    var rp = ui.report;
+    var children = store.getChildren();
+    if (rp.childId !== 'all' && !store.getChild(rp.childId)) rp.childId = 'all';
+    var range = R.periodRange(rp.period, rp.anchor);
+    var today = store.today();
+    var isCurrent = range.start <= today && today <= range.end;
+    var picked = rp.childId === 'all' ? children : [store.getChild(rp.childId)];
+    var cid = rp.childId === 'all' ? null : rp.childId;
+
+    var chips = '<div class="pts-chips">' +
+      '<button class="pts-chip ' + (rp.childId === 'all' ? 'active' : '') + '" data-action="report-child" data-id="all">全部</button>' +
+      children.map(function (c) {
+        return '<button class="pts-chip ' + (rp.childId === c.id ? 'active' : '') + '" data-action="report-child" data-id="' + h(c.id) + '">' + h(c.avatar + ' ' + c.name) + '</button>';
+      }).join('') + '</div>';
+    var seg = '<div class="seg seg3">' + [['day', '日'], ['week', '週'], ['month', '月']].map(function (x) {
+      return '<button class="seg-btn ' + (rp.period === x[0] ? 'active' : '') + '" data-action="report-period" data-kind="' + x[0] + '">' + x[1] + '</button>';
+    }).join('') + '</div>';
+    var nav = '<div class="period-nav">' +
+      '<button class="icon-btn" data-action="report-nav" data-kind="' + range.prev + '" aria-label="上一期">‹</button>' +
+      '<div class="period-label"><b>' + h(range.label) + '</b>' +
+      (isCurrent ? '' : '<button class="btn link small" data-action="report-nav" data-kind="' + today + '">回到' + ({ day: '今天', week: '本週', month: '本月' }[rp.period]) + '</button>') + '</div>' +
+      '<button class="icon-btn" data-action="report-nav" data-kind="' + range.next + '" aria-label="下一期"' + (range.next > today ? ' disabled' : '') + '>›</button></div>';
+
+    // 統計卡
+    var cards = picked.map(function (c) {
+      var s = R.summarize(store, c.id, range.start, range.end);
+      function cell(label, v, cls) { return '<div class="stat"><span>' + label + '</span><b class="' + cls + '">' + v + '</b></div>'; }
+      return '<div class="stat-card"><div class="stat-head">' + avatar(c, 'sm') + '<b>' + h(c.name) + '</b>' +
+        '<span class="muted small">目前 ' + store.getTotal(c.id) + ' 點</span></div>' +
+        '<div class="stat-grid">' +
+        cell('淨得分', signed(s.net), signClass(s.net) + ' big') +
+        cell('加分', signed(s.bonus), 'pos') +
+        cell('任務', signed(s.task), 'pos') +
+        cell('扣分', String(s.penalty), s.penalty ? 'neg' : 'zero') +
+        cell('兌換', s.reward ? '-' + s.reward : '0', s.reward ? 'neg' : 'zero') +
+        cell('⭐ 星星', String(s.stars), 'zero') +
+        '</div>' + (rp.period !== 'day' ? '<p class="muted small">有記分的天數：' + s.days + ' 天</p>' : '') + '</div>';
+    }).join('');
+
+    // 規則排行
+    function rankList(kind) {
+      var rows = R.ranking(store, cid, range.start, range.end, kind, 5);
+      if (!rows.length) return '<p class="muted small">沒有紀錄</p>';
+      return '<ol class="rank">' + rows.map(function (x) {
+        return '<li><span class="rank-name">' + h(x.name) + '</span><span class="muted small">' + x.count + ' 次</span>' +
+          '<b class="' + signClass(x.points) + '">' + signed(x.points) + '</b></li>';
+      }).join('') + '</ol>';
+    }
+    var rank = '<div class="rank-wrap"><div><h3 class="pos">👍 加分最多</h3>' + rankList('bonus') + '</div>' +
+      '<div><h3 class="neg">⚠️ 扣分最多</h3>' + rankList('penalty') + '</div></div>';
+
+    // 任務完成率
+    var comp = picked.map(function (c) {
+      var rows = R.taskCompletion(store, c.id, range.start, range.end);
+      return '<div class="comp-child">' + (picked.length > 1 ? '<div class="stat-head">' + avatar(c, 'xs') + '<b>' + h(c.name) + '</b></div>' : '') +
+        (rows.length ? '<ul class="comp">' + rows.map(function (x) {
+          var pct = x.rate == null ? 0 : Math.round(x.rate * 100);
+          return '<li><span class="comp-name">' + h(x.task.name) + '</span><span class="comp-bar"><i style="width:' + pct + '%"></i></span>' +
+            '<span class="comp-val">' + h(x.label) + '</span></li>';
+        }).join('') + '</ul>' : '<p class="muted small">這段期間沒有任務</p>') + '</div>';
+    }).join('');
+
+    // 每日明細
+    var recs = store.getRecordsBetween(cid, range.start, range.end);
+    var detail = recs.length ? '<ul class="records">' + groupByDate(recs).map(function (g) {
+      var net = g.items.reduce(function (sum, r) { return r.type === 'reward' ? sum : sum + r.points; }, 0);
+      return '<li class="rec-date"><span>' + h(dateLabel(g.date)) + '</span>' +
+        (cid ? '<span class="' + signClass(net) + '">當日 ' + signed(net) + '</span>' : '') + '</li>' +
+        g.items.map(function (r) { return recordRow(r, !cid); }).join('');
+    }).join('') + '</ul>' : '<p class="muted small">這段期間沒有紀錄</p>';
+
+    return '<header class="topbar">' +
+      '<a class="icon-btn" href="#home" aria-label="回首頁">‹</a>' +
+      '<h1>記分總覽</h1><a class="icon-btn" href="#rules" aria-label="設定">⚙️</a></header>' +
+      '<main class="page report">' +
+      '<div class="report-controls">' + chips + seg + nav + '</div>' +
+      '<section><h2>📈 統計</h2><div class="stat-cards">' + cards + '</div></section>' +
+      '<section><h2>🏆 規則排行</h2>' + rank + '</section>' +
+      '<section><h2>✅ 任務完成率</h2>' + comp + '</section>' +
+      '<section><div class="section-head"><h2>🗓️ 每日明細</h2>' +
+      '<button class="btn small primary" data-action="backfill">＋ 補登</button></div>' +
+      '<p class="muted small">點任何一筆可以修改點數、日期、孩子或刪除。</p>' + detail + '</section>' +
+      '</main>';
   }
 
   function renderSettings(tab) {
@@ -587,6 +684,74 @@
     input.select();
   }
 
+  /** 修改或刪除一筆紀錄 */
+  function openRecordForm(rec) {
+    var typeLabel = { bonus: '加分', penalty: '扣分', task: '任務', reward: '兌換獎勵' }[rec.type];
+    var neg = rec.type === 'penalty' || rec.type === 'reward';
+    var fields =
+      '<p class="muted small">' + typeLabel + (rec.backfill ? '・補登' : '・記錄於 ' + timeOf(rec.ts)) + (rec.stars ? '・⭐' + rec.stars : '') + '</p>' +
+      '<label class="field">孩子<select name="childId" id="rec-child">' + store.getChildren().map(function (c) {
+        return '<option value="' + h(c.id) + '"' + (c.id === rec.childId ? ' selected' : '') + '>' + h(c.avatar + ' ' + c.name) + '</option>';
+      }).join('') + '</select></label>' +
+      '<label class="field">日期<input type="date" name="date" id="rec-date" max="' + store.today() + '" required value="' + rec.date + '"></label>' +
+      '<label class="field">' + (neg ? (rec.type === 'reward' ? '扣除點數' : '扣除點數') : '點數') +
+      '<input type="number" name="points" id="rec-points" min="0" step="1" inputmode="numeric" required value="' + Math.abs(rec.points) + '"></label>' +
+      '<button type="button" class="btn danger block" id="rec-delete">🗑 刪除這筆紀錄</button>';
+    openModal(rec.name, fields, function (fd) {
+      store.updateRecord(rec.id, { childId: fd.get('childId'), date: fd.get('date'), points: fd.get('points') });
+      toast('已更正：' + rec.name, 'pos');
+    });
+    document.getElementById('rec-delete').onclick = function () {
+      modal.close();
+      confirmThen('確定刪除「' + rec.name + ' ' + signed(rec.points) + '」這筆紀錄？\n總點數會一起更新。', '刪除', true, function () {
+        store.deleteRecord(rec.id);
+        toast('已刪除紀錄');
+      });
+    };
+  }
+
+  /** 補登過去日期 */
+  function openBackfill() {
+    var children = store.getChildren();
+    var rp = ui.report;
+    var childId = rp.childId !== 'all' ? rp.childId : children[0].id;
+    var today = store.today();
+    var defDate = rp.period === 'day' ? rp.anchor : window.CGPReport.addDays(today, -1);
+    if (defDate > today) defDate = today;
+    function ruleOptions(cid) {
+      return [['task', '任務'], ['bonus', '加分'], ['penalty', '扣分']].map(function (k) {
+        var items = store.getItemsFor(cid, k[0]).slice().sort(byPoints);
+        if (!items.length) return '';
+        return '<optgroup label="' + k[1] + '">' + items.map(function (i) {
+          return '<option value="' + h(i.id) + '">' + h(i.name + '（' + (i.custom ? '自填' : signed(i.points)) + '）') + '</option>';
+        }).join('') + '</optgroup>';
+      }).join('');
+    }
+    var fields =
+      '<label class="field">孩子<select name="childId" id="bf-child">' + children.map(function (c) {
+        return '<option value="' + h(c.id) + '"' + (c.id === childId ? ' selected' : '') + '>' + h(c.avatar + ' ' + c.name) + '</option>';
+      }).join('') + '</select></label>' +
+      '<label class="field">日期<input type="date" name="date" id="bf-date" max="' + today + '" required value="' + defDate + '"></label>' +
+      '<label class="field">規則<select name="itemId" id="bf-item">' + ruleOptions(childId) + '</select></label>' +
+      '<label class="field">點數<input type="number" name="points" id="bf-points" min="0" step="1" inputmode="numeric"></label>';
+    openModal('補登紀錄', fields, function (fd) {
+      if (!fd.get('itemId')) throw new Error('請選擇規則');
+      var rec = store.addRecordOn(fd.get('childId'), fd.get('itemId'), fd.get('date'), fd.get('points'));
+      toast('已補登 ' + dateLabel(rec.date) + '：' + recText(rec), 'pos');
+    }, '補登');
+    var childSel = document.getElementById('bf-child');
+    var itemSel = document.getElementById('bf-item');
+    var pts = document.getElementById('bf-points');
+    function syncPoints() {
+      var it = store.getItem(itemSel.value);
+      pts.value = it && !it.custom ? Math.abs(it.points) : '';
+      pts.placeholder = it && it.custom ? '自填點數' : '';
+    }
+    childSel.onchange = function () { itemSel.innerHTML = ruleOptions(childSel.value); syncPoints(); };
+    itemSel.onchange = syncPoints;
+    syncPoints();
+  }
+
   function openRewardForm(reward) {
     var r = reward || { name: '', cost: 30 };
     var fields =
@@ -765,6 +930,11 @@
           break;
         }
         case 'export': exportData(); break;
+        case 'edit-record': { var er = store.getRecord(id); if (er) openRecordForm(er); break; }
+        case 'backfill': openBackfill(); break;
+        case 'report-child': ui.report.childId = id; render(); break;
+        case 'report-period': ui.report.period = el.getAttribute('data-kind'); render(); break;
+        case 'report-nav': ui.report.anchor = el.getAttribute('data-kind'); render(); break;
       }
     } catch (err) {
       toast(err.message, 'neg');

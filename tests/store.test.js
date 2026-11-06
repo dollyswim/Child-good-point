@@ -419,3 +419,118 @@ test('CSV 只指定部分孩子的同名規則，不會把原本給全部孩子�
   const m = store.getItemsFor(mei.id, 'bonus').filter(i => i.name === '主動幫忙');
   assert.equal(m.length, 1); assert.equal(m[0].points, 8);
 });
+
+// ---------- 更正紀錄 ----------
+test('修改紀錄：點數（扣分自動負數）、日期、孩子；總點數與今日得分同步', () => {
+  const { store } = makeStore('2026-11-06T10:00:00');
+  const a = store.addChild({ name: 'A' });
+  const b = store.addChild({ name: 'B' });
+  const p = store.addItem({ kind: 'penalty', name: '大叫', points: 10 });
+  const r = store.recordItem(a.id, p.id);
+  store.updateRecord(r.id, { points: 5 });
+  assert.equal(store.getRecord(r.id).points, -5);
+  assert.equal(store.getTodayNet(a.id), -5);
+  store.updateRecord(r.id, { date: '2026-11-05' });
+  assert.equal(store.getTodayNet(a.id), 0);
+  assert.equal(store.getNetForDate(a.id, '2026-11-05'), -5);
+  assert.equal(store.getTotal(a.id), -5);
+  store.updateRecord(r.id, { childId: b.id });
+  assert.equal(store.getTotal(a.id), 0);
+  assert.equal(store.getTotal(b.id), -5);
+  assert.throws(() => store.updateRecord(r.id, { date: '2026-11-07' }), /未來/);
+  assert.throws(() => store.updateRecord(r.id, { date: '2026-02-30' }), /日期格式/);
+});
+
+test('修改日期後「撤銷上一筆」仍依時間順序', () => {
+  const { store, setDate } = makeStore('2026-11-06T09:00:00');
+  const a = store.addChild({ name: 'A' });
+  const p = store.addItem({ kind: 'bonus', name: 'p', points: 1 });
+  const first = store.recordItem(a.id, p.id);
+  setDate('2026-11-06T10:00:00');
+  const second = store.recordItem(a.id, p.id);
+  store.updateRecord(second.id, { date: '2026-11-01' });
+  assert.equal(store.getLastRecord(a.id).id, first.id);
+});
+
+test('刪除任一筆紀錄', () => {
+  const { store } = makeStore();
+  const a = store.addChild({ name: 'A', startPoints: 10 });
+  const p = store.addItem({ kind: 'bonus', name: 'p', points: 3 });
+  const r1 = store.recordItem(a.id, p.id);
+  store.recordItem(a.id, p.id);
+  store.deleteRecord(r1.id);
+  assert.equal(store.getTotal(a.id), 13);
+  assert.equal(store.getRecords(a.id).length, 1);
+});
+
+test('補登過去日期：加分、任務（不可同日重複）、自填需輸入點數', () => {
+  const { store } = makeStore('2026-11-06T10:00:00');
+  const a = store.addChild({ name: 'A' });
+  const b = store.addItem({ kind: 'bonus', name: '幫忙', points: 5 });
+  const t = store.addItem({ kind: 'task', name: '刷牙', points: 3 });
+  const c = store.addItem({ kind: 'penalty', name: '其他', points: 0, custom: true });
+  store.addRecordOn(a.id, b.id, '2026-11-04');
+  store.addRecordOn(a.id, b.id, '2026-11-04', 8);
+  store.addRecordOn(a.id, t.id, '2026-11-04');
+  assert.throws(() => store.addRecordOn(a.id, t.id, '2026-11-04'), /已經完成/);
+  assert.throws(() => store.addRecordOn(a.id, c.id, '2026-11-04'), /請輸入點數/);
+  assert.equal(store.addRecordOn(a.id, c.id, '2026-11-04', 4).points, -4);
+  assert.equal(store.getNetForDate(a.id, '2026-11-04'), 5 + 8 + 3 - 4);
+  assert.equal(store.getTodayNet(a.id), 0);
+  assert.equal(store.getTaskStatus(a.id, t).doneToday, false, '補登昨天不影響今天任務');
+  assert.throws(() => store.addRecordOn(a.id, b.id, '2026-11-10'), /未來/);
+  // 補登不會變成「上一筆」
+  const today = store.recordItem(a.id, b.id);
+  store.addRecordOn(a.id, b.id, '2026-11-01');
+  assert.equal(store.getLastRecord(a.id).id, today.id);
+});
+
+// ---------- 總覽統計 ----------
+const R = require('../js/report.js');
+
+test('期間範圍：日、週（週一開始）、月', () => {
+  assert.deepEqual([R.periodRange('day', '2026-11-06').start, R.periodRange('day', '2026-11-06').end], ['2026-11-06', '2026-11-06']);
+  const w = R.periodRange('week', '2026-11-06');
+  assert.deepEqual([w.start, w.end, w.prev, w.next], ['2026-11-02', '2026-11-08', '2026-10-26', '2026-11-09']);
+  const m = R.periodRange('month', '2026-02-15');
+  assert.deepEqual([m.start, m.end, m.prev, m.next], ['2026-02-01', '2026-02-28', '2026-01-01', '2026-03-01']);
+});
+
+test('期間合計與規則排行', () => {
+  const { store } = makeStore('2026-11-06T10:00:00');
+  const a = store.addChild({ name: 'A', startPoints: 100 });
+  const b = store.addItem({ kind: 'bonus', name: '幫忙', points: 5, stars: 2 });
+  const p = store.addItem({ kind: 'penalty', name: '大叫', points: 10 });
+  const t = store.addItem({ kind: 'task', name: '刷牙', points: 3 });
+  const rw = store.addReward({ name: '卡通', cost: 30 });
+  store.addRecordOn(a.id, b.id, '2026-11-02');
+  store.addRecordOn(a.id, b.id, '2026-11-03');
+  store.addRecordOn(a.id, p.id, '2026-11-03');
+  store.addRecordOn(a.id, t.id, '2026-11-04');
+  store.addRecordOn(a.id, b.id, '2026-10-30'); // 上週
+  store.redeemReward(a.id, rw.id);
+  const s = R.summarize(store, a.id, '2026-11-02', '2026-11-08');
+  assert.deepEqual([s.bonus, s.penalty, s.task, s.net, s.reward, s.stars, s.days], [10, -10, 3, 3, 30, 4, 3]);
+  const top = R.ranking(store, a.id, '2026-11-02', '2026-11-08', 'bonus');
+  assert.deepEqual(top, [{ name: '幫忙', count: 2, points: 10 }]);
+});
+
+test('任務完成率：每日、平日、每週 N 次，只算到今天且不算任務建立前', () => {
+  const { store, setDate } = makeStore('2026-11-01T08:00:00'); // 週日建立
+  const a = store.addChild({ name: 'A' });
+  const daily = store.addItem({ kind: 'task', name: '刷牙', points: 1 });
+  const wk = store.addItem({ kind: 'task', name: '上學', points: 1, frequency: { type: 'weekdays' } });
+  const n = store.addItem({ kind: 'task', name: '運動', points: 1, frequency: { type: 'weeklyN', n: 3 } });
+  setDate('2026-11-05T20:00:00'); // 週四
+  store.addRecordOn(a.id, daily.id, '2026-11-02');
+  store.addRecordOn(a.id, daily.id, '2026-11-03');
+  store.addRecordOn(a.id, wk.id, '2026-11-02');
+  store.addRecordOn(a.id, n.id, '2026-11-04');
+  const rows = R.taskCompletion(store, a.id, '2026-11-02', '2026-11-08');
+  const by = Object.fromEntries(rows.map(r => [r.task.name, r]));
+  assert.equal(by['刷牙'].label, '2/4 天');   // 一～四
+  assert.equal(by['上學'].label, '1/4 天');
+  assert.equal(by['運動'].label, '1/3 次');
+  const month = R.taskCompletion(store, a.id, '2026-11-01', '2026-11-30');
+  assert.equal(month.find(r => r.task.name === '刷牙').target, 5, '11/1～11/5');
+});

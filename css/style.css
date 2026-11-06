@@ -213,6 +213,53 @@ h2 { font-size: 1.05rem; margin: 0 0 8px; }
 .scorer .score-btn { min-height: 64px; }
 .scorer .score-pts { font-size: 1.15rem; }
 
+/* ---- 記分總覽 ---- */
+.avatar.xs { width: 24px; height: 24px; font-size: .85rem; }
+.report-link { margin-top: 14px; min-height: 52px; font-weight: 600; }
+.report-controls { display: grid; gap: 10px; margin-bottom: 16px; }
+.seg.seg3 { grid-template-columns: repeat(3, 1fr); }
+.seg.seg3 .seg-btn.active { color: var(--text); }
+.period-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.period-nav .icon-btn { border: 1px solid var(--line); background: var(--surface); cursor: pointer; }
+.period-nav .icon-btn:disabled { opacity: .35; cursor: not-allowed; }
+.period-label { flex: 1; display: grid; justify-items: center; text-align: center; min-width: 0; }
+.period-label .btn.link { min-height: 28px; padding: 0; width: auto; }
+.stat-cards { display: grid; gap: 10px; }
+.stat-card { background: var(--surface); border-radius: 14px; padding: 12px 14px; box-shadow: var(--shadow); display: grid; gap: 8px; min-width: 0; }
+.stat-card p { margin: 0; }
+.stat-head { display: flex; align-items: center; gap: 8px; }
+.stat-head .muted { margin-left: auto; }
+.stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.stat { display: grid; gap: 0; padding: 6px 8px; background: #faf5ee; border-radius: 10px; }
+.stat span { font-size: .75rem; color: var(--muted); }
+.stat b { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.stat b.big { font-size: 1.3rem; }
+.rank-wrap { display: grid; gap: 12px; }
+.rank-wrap h3 { margin: 0 0 6px; font-size: .95rem; }
+.rank { margin: 0; padding: 0; list-style: none; background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); counter-reset: rk; }
+.rank li { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-top: 1px solid var(--line); counter-increment: rk; }
+.rank li:first-child { border-top: none; }
+.rank li::before { content: counter(rk); width: 20px; color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
+.rank-name { flex: 1; min-width: 0; word-break: break-word; }
+.rank b { font-variant-numeric: tabular-nums; }
+.comp-child { display: grid; gap: 6px; margin-bottom: 10px; }
+.comp { margin: 0; padding: 0; list-style: none; background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); }
+.comp li { display: grid; grid-template-columns: minmax(0, 1fr) 72px auto; align-items: center; gap: 8px; padding: 8px 14px; border-top: 1px solid var(--line); }
+.comp li:first-child { border-top: none; }
+.comp-name { min-width: 0; word-break: break-word; font-size: .95rem; }
+.comp-bar { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.comp-bar i { display: block; height: 100%; background: var(--pos); border-radius: 99px; }
+.comp-val { font-size: .85rem; font-variant-numeric: tabular-nums; text-align: right; min-width: 52px; }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.section-head h2 { margin: 0; }
+.rec[data-action] { cursor: pointer; }
+.rec[data-action]:active { background: #faf5ee; }
+.rec-date { display: flex; justify-content: space-between; gap: 8px; }
+.rec-date span + span { font-weight: 700; }
+@media (min-width: 480px) {
+  .rank-wrap { grid-template-columns: 1fr 1fr; }
+}
+
 /* ---- 設定 ---- */
 .tabs {
   position: sticky; top: calc(env(safe-area-inset-top) + 65px); z-index: 9;
@@ -246,7 +293,7 @@ h2 { font-size: 1.05rem; margin: 0 0 8px; }
 .field { display: grid; gap: 6px; border: none; padding: 0; margin: 0; font-weight: 600; min-width: 0; }
 .field legend { padding: 0; margin-bottom: 6px; }
 .field small { font-weight: 400; }
-.field input[type=text], .field input[type=number], .field select {
+.field input[type=text], .field input[type=number], .field input[type=date], .field select {
   width: 100%; min-height: 46px; padding: 8px 12px;
   border: 1px solid #ddd2c4; border-radius: 12px; background: #fff; font-weight: 400;
 }
