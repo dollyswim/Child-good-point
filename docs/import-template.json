@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "children": [
+    { "id": "c1", "name": "端端", "avatar": "🐻", "color": "#ffd166", "startPoints": 100 },
+    { "id": "c2", "name": "波妞", "avatar": "🐰", "color": "#ffadad", "startPoints": 0 }
+  ],
+  "items": [
+    { "id": "t1", "kind": "task", "name": "刷牙", "points": 5, "childIds": "all", "frequency": { "type": "daily" } },
+    { "id": "t2", "kind": "task", "name": "完成功課", "points": 10, "childIds": "all", "frequency": { "type": "weekdays" } },
+    { "id": "t3", "kind": "task", "name": "練鋼琴", "points": 8, "childIds": ["c1"], "frequency": { "type": "days", "days": [1, 3, 5] } },
+    { "id": "t4", "kind": "task", "name": "運動 30 分鐘", "points": 10, "childIds": ["c1", "c2"], "frequency": { "type": "weeklyN", "n": 3 } },
+    { "id": "t5", "kind": "task", "name": "整理房間", "points": 15, "childIds": "all", "frequency": { "type": "weekends" } },
+    { "id": "t6", "kind": "task", "name": "打預防針", "points": 20, "childIds": ["c2"], "frequency": { "type": "once" } },
+
+    { "id": "b1", "kind": "bonus", "name": "整理書包", "points": 5, "childIds": "all" },
+    { "id": "b2", "kind": "bonus", "name": "主動幫忙", "points": 5, "childIds": "all" },
+
+    { "id": "p1", "kind": "penalty", "name": "違反約定", "points": -5, "childIds": "all" },
+    { "id": "p2", "kind": "penalty", "name": "發脾氣", "points": -3, "childIds": "all" }
+  ],
+  "rewards": [
+    { "id": "r1", "name": "看卡通 30 分鐘", "cost": 30 },
+    { "id": "r2", "name": "小點心", "cost": 50 },
+    { "id": "r3", "name": "週末去公園", "cost": 150 }
+  ],
+  "records": []
+}
