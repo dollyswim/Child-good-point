@@ -954,3 +954,16 @@ button.partner { border: none; background: none; padding: 0; cursor: pointer; fo
 .char-opt b { font-size: .78rem; white-space: nowrap; }
 .char-opt small { font-size: .66rem; color: var(--muted); white-space: nowrap; }
 @media (max-width: 380px) { .char-opt b { font-size: .7rem; } .char-opt small { display: none; } }
+/* 家長提供的點陣插圖：吉祥物、漂浮城堡、寶箱 */
+img.mascot { width: 64px; height: auto; object-fit: contain; flex: none; }
+.adv-hero-main img.mascot { width: 54px; height: auto; }
+.island img, .float-island img { display: block; width: 100%; height: auto; }
+.island { width: 76px; }
+.float-island { width: 70px; top: calc(env(safe-area-inset-top) + 50px); }
+.chest-deco img.chest-art { width: 56px; height: auto; }
+@media (max-width: 380px) { img.mascot { width: 52px; } .adv-hero-main img.mascot { width: 46px; } }
+/* 首頁頁首：城堡放在設定按鈕下方（寬度夠時顯示） */
+.hero .island { position: absolute; right: -2px; top: 40px; width: 58px; z-index: 0; }
+@media (max-width: 479px) and (min-width: 390px) { .hero .island { display: block; } }
+@media (max-width: 389px) { .hero .island { display: none; } }
+.hero .island { top: 30px; width: 52px; }
