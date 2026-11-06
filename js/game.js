@@ -10,6 +10,7 @@
  * - 背包道具沒用完隔天仍保留
  * - 金島測試版 30 格；走到第 30 格停在終點（多餘步數不走、骰子不浪費：在終點就不能再擲）
  * - 地圖資料結構可擴充為 100 格（tiles 陣列長度即格數）
+ * - 角色：8 種冒險夥伴，每個孩子各自選擇；未選或舊版角色代號時使用圓耳獸
  */
 (function (root) {
   'use strict';
@@ -26,11 +27,18 @@
     { id: 'skates', name: '溜冰鞋', icon: '🛼', price: 4, desc: '直接前進 3 格（不算擲骰次數）' }
   ];
 
+  /** 8 種原創冒險夥伴（家長提供的原創設計），圖檔在 images/characters/<id>.webp */
   var CHARACTERS = [
-    { id: 'robot', name: '機器貓' },
-    { id: 'deer', name: '小鹿' },
-    { id: 'boxcat', name: '小箱獸' }
+    { id: 'roundear', name: '圓耳獸', trait: '陽光・活力', icon: '🐾' },
+    { id: 'longear', name: '長耳獸', trait: '溫柔・親切', icon: '🌿' },
+    { id: 'horn', name: '小角龍獸', trait: '勇敢・探索', icon: '🪨' },
+    { id: 'wing', name: '小翼獸', trait: '自由・飛翔', icon: '🪽' },
+    { id: 'drop', name: '水滴獸', trait: '聰明・靈活', icon: '💧' },
+    { id: 'sprout', name: '葉芽獸', trait: '成長・療癒', icon: '🌱' },
+    { id: 'flame', name: '火苗獸', trait: '熱情・衝勁', icon: '🔥' },
+    { id: 'stone', name: '石球獸', trait: '穩重・守護', icon: '⛰️' }
   ];
+  var DEFAULT_CHARACTER = 'roundear';
 
   /**
    * 金島測試版：30 格（0 = 起點）。
@@ -192,7 +200,7 @@
     return { die: 'skates', value: 3, from: from, path: path, event: event };
   };
 
-  var api = { SHOP: SHOP, CHARACTERS: CHARACTERS, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { SHOP: SHOP, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

@@ -871,18 +871,19 @@ test('寶箱格：星星或道具；機會格：前進 2 格、得 2 星、得 6
   assert.equal(store.getPlayer(a.id).pos, 5);
 });
 
-test('角色：3 種可選，每個孩子獨立；匯出入保留遊戲進度', () => {
+test('角色：8 種冒險夥伴可選，每個孩子獨立；匯出入保留遊戲進度', () => {
   const { store, a } = p3Store();
   const b2 = store.addChild({ name: 'B' });
-  store.setCharacter(a.id, 'deer');
-  store.setCharacter(b2.id, 'boxcat');
+  store.setCharacter(a.id, 'horn');
+  store.setCharacter(b2.id, 'flame');
   assert.throws(() => store.setCharacter(a.id, 'dragon'));
-  assert.equal(G.CHARACTERS.length, 3);
+  assert.equal(G.CHARACTERS.length, 8, '8 種冒險夥伴');
+  assert.deepEqual(G.CHARACTERS.map(c => c.name), ['圓耳獸', '長耳獸', '小角龍獸', '小翼獸', '水滴獸', '葉芽獸', '火苗獸', '石球獸']);
   store.buyItem(a.id, 'd6');
   const other = makeStore().store;
   other.importJSON(store.exportJSON());
-  assert.equal(other.getPlayer(a.id).character, 'deer');
-  assert.equal(other.getPlayer(b2.id).character, 'boxcat');
+  assert.equal(other.getPlayer(a.id).character, 'horn');
+  assert.equal(other.getPlayer(b2.id).character, 'flame');
   assert.equal(other.getPlayer(a.id).bag.d6, 1);
   assert.equal(other.getStarBalance(a.id), 15);
 });

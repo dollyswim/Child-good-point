@@ -232,56 +232,6 @@
     '</svg>';
 
   // ---------------------------------------------------------------
-  // 角色棋子（Phase 3 測試角色）：腳底中心在 (30, 68)
-  // ---------------------------------------------------------------
-  var SHADOW = '<ellipse cx="30" cy="68" rx="16" ry="4" fill="#000" opacity=".18"/>';
-  var CHARACTERS = {
-    robot: '<svg viewBox="0 0 60 72" aria-hidden="true">' + SHADOW +
-      '<defs><linearGradient id="pc-rb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#d4e4f4"/></linearGradient></defs>' +
-      '<line x1="30" y1="10" x2="30" y2="4" stroke="#7a8da3" stroke-width="2"/><circle cx="30" cy="4" r="3.2" fill="#ffd23f" stroke="#c98a00"/>' +
-      '<path d="M12 22 L9 6 L24 15 Z M48 22 L51 6 L36 15 Z" fill="url(#pc-rb)" stroke="#7a8da3" stroke-width="2" stroke-linejoin="round"/>' +
-      '<path d="M14 18 L12 10 L20 15 Z M46 18 L48 10 L40 15 Z" fill="#7fd3ff"/>' +
-      '<path d="M19 50 Q18 66 30 66 Q42 66 41 50 Z" fill="url(#pc-rb)" stroke="#7a8da3" stroke-width="2"/>' +
-      '<circle cx="30" cy="57" r="3.2" fill="#5fe0ff"/>' +
-      '<rect x="6" y="10" width="48" height="42" rx="20" fill="url(#pc-rb)" stroke="#7a8da3" stroke-width="2"/>' +
-      '<rect x="12" y="20" width="36" height="23" rx="11.5" fill="#1b2747"/>' +
-      '<ellipse cx="23" cy="31" rx="3.6" ry="4.6" fill="#5fe0ff"/><ellipse cx="37" cy="31" rx="3.6" ry="4.6" fill="#5fe0ff"/>' +
-      '<circle cx="24" cy="29" r="1.2" fill="#fff"/><circle cx="38" cy="29" r="1.2" fill="#fff"/>' +
-      '<path d="M27 37 q3 3 6 0" stroke="#5fe0ff" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>',
-    deer: '<svg viewBox="0 0 60 72" aria-hidden="true">' + SHADOW +
-      '<defs><linearGradient id="pc-dr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e7a466"/><stop offset="1" stop-color="#b8743a"/></linearGradient></defs>' +
-      '<g stroke="#7a4a20" stroke-width="2.4" stroke-linecap="round" fill="none"><path d="M20 16 L14 4 M16 9 L10 8 M40 16 L46 4 M44 9 L50 8"/></g>' +
-      '<path d="M8 22 Q2 18 4 12 Q12 14 14 20 Z M52 22 Q58 18 56 12 Q48 14 46 20 Z" fill="url(#pc-dr)" stroke="#7a4a20" stroke-width="1.5"/>' +
-      '<path d="M7 20 Q5 16 6 14 Q10 16 11 19 Z M53 20 Q55 16 54 14 Q50 16 49 19 Z" fill="#ffc7d6"/>' +
-      '<path d="M19 50 Q18 66 30 66 Q42 66 41 50 Z" fill="url(#pc-dr)" stroke="#7a4a20" stroke-width="2"/>' +
-      '<path d="M24 54 Q30 62 36 54" fill="#fff4e6"/>' +
-      '<circle cx="30" cy="32" r="21" fill="url(#pc-dr)" stroke="#7a4a20" stroke-width="2"/>' +
-      '<ellipse cx="30" cy="41" rx="11" ry="8" fill="#fff4e6"/>' +
-      '<g fill="#fff4e6"><circle cx="17" cy="24" r="2"/><circle cx="43" cy="22" r="1.6"/><circle cx="40" cy="28" r="1.3"/></g>' +
-      '<ellipse cx="22" cy="31" rx="3.6" ry="4.4" fill="#2b1a10"/><ellipse cx="38" cy="31" rx="3.6" ry="4.4" fill="#2b1a10"/>' +
-      '<circle cx="23" cy="29" r="1.3" fill="#fff"/><circle cx="39" cy="29" r="1.3" fill="#fff"/>' +
-      '<ellipse cx="30" cy="38" rx="3" ry="2" fill="#5b3418"/><path d="M27 42 q3 2.5 6 0" stroke="#5b3418" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
-      '<ellipse cx="15" cy="38" rx="3" ry="2" fill="#ff9bb3" opacity=".7"/><ellipse cx="45" cy="38" rx="3" ry="2" fill="#ff9bb3" opacity=".7"/></svg>',
-    boxcat: '<svg viewBox="0 0 60 72" aria-hidden="true">' + SHADOW +
-      '<defs><linearGradient id="pc-bx" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9c48a"/><stop offset="1" stop-color="#c89552"/></linearGradient>' +
-      '<linearGradient id="pc-bf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b6a6ff"/><stop offset="1" stop-color="#8b74f0"/></linearGradient></defs>' +
-      // 從箱子探出頭的紫色小怪獸
-      '<path d="M16 22 L13 9 L24 17 Z M44 22 L47 9 L36 17 Z" fill="url(#pc-bf)" stroke="#5b47b8" stroke-width="1.8" stroke-linejoin="round"/>' +
-      '<ellipse cx="30" cy="30" rx="18" ry="15" fill="url(#pc-bf)" stroke="#5b47b8" stroke-width="2"/>' +
-      '<ellipse cx="23" cy="29" rx="3.4" ry="4.2" fill="#fff"/><ellipse cx="37" cy="29" rx="3.4" ry="4.2" fill="#fff"/>' +
-      '<circle cx="23.5" cy="30" r="2" fill="#2b1a40"/><circle cx="37.5" cy="30" r="2" fill="#2b1a40"/>' +
-      '<path d="M26 36 q4 3 8 0" stroke="#2b1a40" stroke-width="1.6" fill="none" stroke-linecap="round"/>' +
-      '<path d="M28 36 l1 2 1 -2" fill="#fff"/>' +
-      '<path d="M14 38 Q10 36 8 40" stroke="#5b47b8" stroke-width="4" stroke-linecap="round" fill="none"/>' +
-      '<path d="M46 38 Q50 36 52 40" stroke="#5b47b8" stroke-width="4" stroke-linecap="round" fill="none"/>' +
-      // 紙箱
-      '<path d="M10 40 L50 40 L48 66 L12 66 Z" fill="url(#pc-bx)" stroke="#8a5a26" stroke-width="2" stroke-linejoin="round"/>' +
-      '<path d="M10 40 L4 34 L22 34 L26 40 Z M50 40 L56 34 L38 34 L34 40 Z" fill="#f1d39f" stroke="#8a5a26" stroke-width="1.6" stroke-linejoin="round"/>' +
-      '<rect x="22" y="48" width="16" height="4" rx="1" fill="#8a5a26" opacity=".35"/>' +
-      '<path d="M30 54 l1.6 3.4 3.6.5 -2.6 2.5 .6 3.6 -3.2 -1.7 -3.2 1.7 .6 -3.6 -2.6 -2.5 3.6 -.5z" fill="#ffd23f" stroke="#c98a00" stroke-width=".8"/></svg>'
-  };
-
-  // ---------------------------------------------------------------
   // 棋盤裝飾（以螢幕座標放置，原點在物件底部中心）
   // ---------------------------------------------------------------
   function at(x, y, s, inner) { return '<g transform="translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ') scale(' + s + ')">' + inner + '</g>'; }
@@ -342,7 +292,7 @@
     FLOAT_CASTLE.match(/<defs>([\s\S]*?)<\/defs>/)[1];
 
   var api = { GOLD_ISLAND: GOLD_ISLAND, MASCOT: MASCOT, CHEST: CHEST, FLOAT_CASTLE: FLOAT_CASTLE, gearPath: gearPath,
-    CHARACTERS: CHARACTERS, DECO: DECO, BOARD_DEFS: BOARD_DEFS };
+    DECO: DECO, BOARD_DEFS: BOARD_DEFS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPArt = api;
 })(typeof self !== 'undefined' ? self : this);

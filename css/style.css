@@ -941,3 +941,16 @@ a.map-cta { text-decoration: none; }
 button.partner { border: none; background: none; padding: 0; cursor: pointer; font: inherit; }
 .partner-ring svg { width: 70%; height: auto; }
 @media (prefers-reduced-motion: reduce) { .pawn { transition: none; } .pawn.hop .pawn-inner, .die-face.spin { animation: none; } }
+/* 8 種冒險夥伴（點陣圖） */
+.char-img { display: block; width: 100%; height: auto; }
+.pawn { width: 13%; max-width: 70px; transform: translate(-50%, -90%); }
+.pawn::after { content: ""; position: absolute; left: 18%; right: 18%; bottom: -4%; height: 12%; border-radius: 50%; background: rgba(0,0,0,.22); z-index: -1; }
+.pawn-inner .char-img { filter: drop-shadow(0 1px 0 #fff) drop-shadow(0 0 2px rgba(255,255,255,.9)); }
+.partner-ring { overflow: hidden; }
+.partner-ring .char-img { width: 86%; margin-top: 8%; }
+.char-pick { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.char-opt { padding: 6px 2px 8px; gap: 2px; }
+.char-opt .char-img { width: 100%; max-width: 72px; }
+.char-opt b { font-size: .78rem; white-space: nowrap; }
+.char-opt small { font-size: .66rem; color: var(--muted); white-space: nowrap; }
+@media (max-width: 380px) { .char-opt b { font-size: .7rem; } .char-opt small { display: none; } }

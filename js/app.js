@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-1';
+  var APP_VERSION = '2026.11.07-2';
   var store;
   try {
     store = new CGP.Store();
@@ -414,9 +414,8 @@
     // 3. 夥伴＋能量星星主卡
     var bal = st.balance;
     var toNext = DICE_COST - (bal % DICE_COST);
-    var bagNow = store.getPlayer(child.id).bag;
     var hint = bal >= DICE_COST
-      ? '可以換 ' + Math.floor(bal / DICE_COST) + ' 顆 6 面骰 🎲・背包 🎲' + bagNow.d6 + ' 🎯' + bagNow.d12 + ' 🛼' + bagNow.skates
+      ? '可以換 ' + Math.floor(bal / DICE_COST) + ' 顆 6 面骰 🎲'
       : '再 <b>' + toNext + '</b> 顆星可以換一顆 6 面骰 🎲';
     var starCard = '<section class="star-card" style="--c:' + h(child.color) + '">' +
       '<button class="partner" data-action="pick-character" aria-label="選擇冒險夥伴"><span class="partner-ring">' + characterArt(child) + '</span>' +
@@ -477,8 +476,15 @@
 
   // ---------- 金島棋盤（Phase 3） ----------
   var GAME = window.CGPGame;
-  function characterId(child) { return store.getPlayer(child.id).character || 'robot'; }
-  function characterArt(child) { return ART.CHARACTERS[characterId(child)]; }
+  function characterId(child) {
+    var id = store.getPlayer(child.id).character;
+    return GAME.CHARACTERS.some(function (c) { return c.id === id; }) ? id : GAME.DEFAULT_CHARACTER;
+  }
+  function charImg(id, cls) {
+    var c = GAME.CHARACTERS.find(function (x) { return x.id === id; });
+    return '<img class="' + (cls || 'char-img') + '" src="images/characters/' + id + '.webp" alt="' + h(c.name) + '" width="300" height="310" decoding="async">';
+  }
+  function characterArt(child) { return charImg(characterId(child)); }
   function characterName(child) {
     var id = characterId(child);
     return GAME.CHARACTERS.find(function (c) { return c.id === id; }).name;
@@ -702,11 +708,12 @@
     var cur = characterId(child);
     confirmEl.innerHTML = '<div class="confirm-box"><h2>選擇 ' + h(child.name) + ' 的冒險夥伴</h2><div class="char-pick">' +
       GAME.CHARACTERS.map(function (c) {
-        return '<button class="char-opt ' + (c.id === cur ? 'active' : '') + '" data-char="' + c.id + '">' + ART.CHARACTERS[c.id] + '<b>' + h(c.name) + '</b></button>';
-      }).join('') + '</div><p class="muted small">測試角色，之後會有 8 種原創夥伴。每個孩子各自選擇。</p>' +
+        return '<button class="char-opt ' + (c.id === cur ? 'active' : '') + '" data-char="' + c.id + '" data-name="' + h(c.name) + '">' + charImg(c.id) +
+          '<b>' + h(c.icon + ' ' + c.name) + '</b><small>' + h(c.trait) + '</small></button>';
+      }).join('') + '</div><p class="muted small">每個孩子各自選擇，隨時可以更換。</p>' +
       '<div class="modal-actions"><button type="button" class="btn" data-no>取消</button></div></div>';
     confirmEl.querySelectorAll('[data-char]').forEach(function (b) {
-      b.onclick = function () { store.setCharacter(childId, b.getAttribute('data-char')); confirmEl.close(); toast('已選擇 ' + b.textContent.trim(), 'pos'); render(); };
+      b.onclick = function () { store.setCharacter(childId, b.getAttribute('data-char')); confirmEl.close(); toast('已選擇 ' + b.getAttribute('data-name'), 'pos'); render(); };
     });
     confirmEl.querySelector('[data-no]').onclick = function () { confirmEl.close(); };
     confirmEl.oncancel = null;
