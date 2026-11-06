@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-3';
+  var APP_VERSION = '2026.11.07-4';
   var store;
   try {
     store = new CGP.Store();
@@ -14,7 +14,6 @@
     return;
   }
 
-  var AVATARS = ['🐻', '🐰', '🐱', '🐶', '🦊', '🐼', '🐯', '🐨', '🦁', '🐸', '🐵', '🐧', '🦄', '🐲', '🐳', '⭐'];
   var BADGES = ['🏪', '🚜', '🎨', '⚽', '🎹', '🚀', '🦖', '🌸', '📚', '🧪', '🍳', '🏰'];
   var COLORS = ['#ffd166', '#ffadad', '#9bd5ff', '#b8f2a8', '#d7b8ff', '#ffc58f'];
   var WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -149,7 +148,12 @@
   }
 
   function avatar(child, size) {
-    return '<span class="avatar ' + (size || '') + '" style="--c:' + h(child.color) + '">' + h(child.avatar) + '</span>';
+    // 頭像 = 孩子選的冒險夥伴
+    return '<span class="avatar ' + (size || '') + '" style="--c:' + h(child.color) + '">' +
+      '<img src="images/characters/' + h(charIdOf(child)) + '.webp" alt="" width="300" height="310" decoding="async"></span>';
+  }
+  function charIdOf(child) {
+    return CGP.CHARACTER_IDS.indexOf(child.avatar) >= 0 ? child.avatar : CGP.CHARACTER_IDS[0];
   }
   /** 千分位，例如 3,409 */
   function num(n) { return Number(n).toLocaleString('en-US'); }
@@ -476,10 +480,7 @@
 
   // ---------- 金島棋盤（Phase 3） ----------
   var GAME = window.CGPGame;
-  function characterId(child) {
-    var id = store.getPlayer(child.id).character;
-    return GAME.CHARACTERS.some(function (c) { return c.id === id; }) ? id : GAME.DEFAULT_CHARACTER;
-  }
+  function characterId(child) { return charIdOf(child); }
   function charImg(id, cls) {
     var c = GAME.CHARACTERS.find(function (x) { return x.id === id; });
     return '<img class="' + (cls || 'char-img') + '" src="images/characters/' + id + '.webp" alt="' + h(c.name) + '" width="300" height="310" decoding="async">';
@@ -898,7 +899,7 @@
     var chips = '<div class="pts-chips">' +
       '<button class="pts-chip ' + (rp.childId === 'all' ? 'active' : '') + '" data-action="report-child" data-id="all">全部</button>' +
       children.map(function (c) {
-        return '<button class="pts-chip ' + (rp.childId === c.id ? 'active' : '') + '" data-action="report-child" data-id="' + h(c.id) + '">' + h(c.avatar + ' ' + c.name) + '</button>';
+        return '<button class="pts-chip ' + (rp.childId === c.id ? 'active' : '') + '" data-action="report-child" data-id="' + h(c.id) + '">' + h(c.name) + '</button>';
       }).join('') + '</div>';
     var seg = '<div class="seg seg3">' + [['day', '日'], ['week', '週'], ['month', '月']].map(function (x) {
       return '<button class="seg-btn ' + (rp.period === x[0] ? 'active' : '') + '" data-action="report-period" data-kind="' + x[0] + '">' + x[1] + '</button>';
@@ -1164,11 +1165,12 @@
   }
 
   function openChildForm(child) {
-    var c = child || { name: '', avatar: AVATARS[store.getChildren().length % AVATARS.length], color: COLORS[store.getChildren().length % COLORS.length], startPoints: 0, title: '', badge: '', weeklyGoal: 0 };
+    var c = child || { name: '', avatar: store._nextCharacter(), color: COLORS[store.getChildren().length % COLORS.length], startPoints: 0, title: '', badge: '', weeklyGoal: 0 };
     var fields =
       '<label class="field">名稱<input type="text" name="name" maxlength="20" required value="' + h(c.name) + '"></label>' +
-      '<fieldset class="field"><legend>頭像</legend><div class="pick">' + AVATARS.map(function (a) {
-        return '<label class="pick-item"><input type="radio" name="avatar" value="' + a + '"' + (a === c.avatar ? ' checked' : '') + '><span>' + a + '</span></label>';
+      '<fieldset class="field"><legend>頭像（也是冒險夥伴）</legend><div class="pick char-radio">' + GAME.CHARACTERS.map(function (ch) {
+        return '<label class="pick-item char-item"><input type="radio" name="avatar" value="' + ch.id + '"' + (ch.id === c.avatar ? ' checked' : '') + '>' +
+          '<span>' + charImg(ch.id) + '<small>' + h(ch.name) + '</small></span></label>';
       }).join('') + '</div></fieldset>' +
       '<fieldset class="field"><legend>代表色</legend><div class="pick">' + COLORS.map(function (col) {
         return '<label class="pick-item color"><input type="radio" name="color" value="' + col + '"' + (col === c.color ? ' checked' : '') + '><span style="background:' + col + '"></span></label>';
@@ -1202,7 +1204,7 @@
       '<div class="pick-children" data-show-when="scope=some">' +
       (children.length ? children.map(function (c) {
         var on = !all && ids.indexOf(c.id) >= 0;
-        return '<label class="chip"><input type="checkbox" name="childIds" value="' + h(c.id) + '"' + (on ? ' checked' : '') + '> ' + h(c.avatar + ' ' + c.name) + '</label>';
+        return '<label class="chip"><input type="checkbox" name="childIds" value="' + h(c.id) + '"' + (on ? ' checked' : '') + '> ' + h(c.name) + '</label>';
       }).join('') : '<span class="muted small">尚未新增孩子</span>') +
       '</div></fieldset>';
   }
@@ -1297,7 +1299,7 @@
     var fields =
       '<p class="muted small">' + typeLabel + (rec.backfill ? '・補登' : '・記錄於 ' + timeOf(rec.ts)) + (rec.stars ? '・⭐' + rec.stars : '') + '</p>' +
       '<label class="field">孩子<select name="childId" id="rec-child">' + store.getChildren().map(function (c) {
-        return '<option value="' + h(c.id) + '"' + (c.id === rec.childId ? ' selected' : '') + '>' + h(c.avatar + ' ' + c.name) + '</option>';
+        return '<option value="' + h(c.id) + '"' + (c.id === rec.childId ? ' selected' : '') + '>' + h(c.name) + '</option>';
       }).join('') + '</select></label>' +
       '<label class="field">日期<input type="date" name="date" id="rec-date" max="' + store.today() + '" required value="' + rec.date + '"></label>' +
       '<label class="field">' + (neg ? (rec.type === 'reward' ? '扣除點數' : '扣除點數') : '點數') +
@@ -1335,7 +1337,7 @@
     }
     var fields =
       '<label class="field">孩子<select name="childId" id="bf-child">' + children.map(function (c) {
-        return '<option value="' + h(c.id) + '"' + (c.id === childId ? ' selected' : '') + '>' + h(c.avatar + ' ' + c.name) + '</option>';
+        return '<option value="' + h(c.id) + '"' + (c.id === childId ? ' selected' : '') + '>' + h(c.name) + '</option>';
       }).join('') + '</select></label>' +
       '<label class="field">日期<input type="date" name="date" id="bf-date" max="' + today + '" required value="' + defDate + '"></label>' +
       '<label class="field">規則<select name="itemId" id="bf-item">' + ruleOptions(childId) + '</select></label>' +

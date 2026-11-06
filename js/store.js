@@ -6,7 +6,7 @@
  * 資料格式（schemaVersion 1）：
  * {
  *   schemaVersion: 1,
- *   children: [{ id, name, avatar, color, startPoints, createdAt }],
+ *   children: [{ id, name, avatar, color, startPoints, createdAt }],   // avatar = 冒險夥伴代號（舊版為表情符號，載入時自動轉換）
  *   items:    [{ id, kind: 'bonus'|'penalty'|'task', name, points, childIds: 'all'|[id],
  *                frequency: { type, days?, n? }, custom, stars, createdAt }],
  *   rewards:  [{ id, name, cost, createdAt }],
@@ -44,6 +44,9 @@
   var FREQUENCY_TYPES = ['daily', 'weekdays', 'weekends', 'days', 'weeklyN', 'once'];
   var ITEM_KINDS = ['bonus', 'penalty', 'task'];
   var SCORE_TYPES = ['bonus', 'penalty', 'task']; // 計入今日淨得分的紀錄類型
+  /** 8 種冒險夥伴代號：孩子的頭像與冒險棋子共用（child.avatar） */
+  var CHARACTER_IDS = ['roundear', 'longear', 'horn', 'wing', 'drop', 'sprout', 'flame', 'stone'];
+  function isCharacter(id) { return CHARACTER_IDS.indexOf(id) >= 0; }
 
   // ---------- 工具 ----------
   function uid() {
@@ -257,6 +260,13 @@
       })()
     };
 
+    // 頭像統一為 8 種冒險夥伴：舊版表情符號頭像 → 已選的冒險夥伴，否則依順序分配；並同步到冒險棋子
+    d.children.forEach(function (c, idx) {
+      var p = d.adventure.players[c.id];
+      if (!isCharacter(c.avatar)) c.avatar = p && isCharacter(p.character) ? p.character : CHARACTER_IDS[idx % CHARACTER_IDS.length];
+      if (p) p.character = c.avatar;
+    });
+
     var itemIdSet = new Set(d.items.map(function (i) { return i.id; }));
     var challenges = Array.isArray(d.challenges) ? d.challenges : [];
     d.challenges = challenges.filter(function (c) { return c && c.id; }).map(function (c) {
@@ -349,7 +359,7 @@
     var c = {
       id: uid(),
       name: name,
-      avatar: input.avatar || '🙂',
+      avatar: isCharacter(input.avatar) ? input.avatar : this._nextCharacter(),
       color: input.color || '#ffd166',
       startPoints: toInt(input.startPoints, 0),
       title: String(input.title || '').trim(),
@@ -370,7 +380,12 @@
       if (!name) throw new Error('請輸入孩子名稱');
       c.name = name;
     }
-    if (patch.avatar != null) c.avatar = patch.avatar;
+    if (patch.avatar != null) {
+      if (!isCharacter(patch.avatar)) throw new Error('請選擇一個冒險夥伴當頭像');
+      c.avatar = patch.avatar;
+      var pl = this.data.adventure.players[id];
+      if (pl) pl.character = c.avatar;
+    }
     if (patch.color != null) c.color = patch.color;
     if (patch.startPoints != null) c.startPoints = toInt(patch.startPoints, 0);
     if (patch.title != null) c.title = String(patch.title).trim();
@@ -378,6 +393,12 @@
     if (patch.weeklyGoal != null) c.weeklyGoal = Math.max(0, toInt(patch.weeklyGoal, 0));
     this.save();
     return c;
+  };
+
+  /** 新孩子的預設頭像：還沒被用過的第一隻夥伴 */
+  Store.prototype._nextCharacter = function () {
+    var used = this.data.children.map(function (c) { return c.avatar; });
+    return CHARACTER_IDS.find(function (id) { return used.indexOf(id) < 0; }) || CHARACTER_IDS[this.data.children.length % CHARACTER_IDS.length];
   };
 
   Store.prototype.deleteChild = function (id) {
@@ -1010,7 +1031,7 @@
     src.children.forEach(function (c) {
       var found = next.children.find(function (x) { return x.name === c.name; });
       if (!found) {
-        found = { id: uid(), name: c.name, avatar: c.avatar, color: c.color, startPoints: c.startPoints, createdAt: t };
+        found = { id: uid(), name: c.name, avatar: c.avatar, color: c.color, startPoints: c.startPoints, title: c.title, badge: c.badge, weeklyGoal: c.weeklyGoal, createdAt: t };
         next.children.push(found);
         result.childrenAdded.push(c.name);
       }
@@ -1102,6 +1123,7 @@
     defaultData: defaultData,
     SCHEMA_VERSION: SCHEMA_VERSION,
     levelThreshold: levelThreshold,
+    CHARACTER_IDS: CHARACTER_IDS,
     starsForNet: starsForNet,
     STORAGE_KEY: STORAGE_KEY
   };

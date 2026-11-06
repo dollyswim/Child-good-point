@@ -887,3 +887,25 @@ test('角色：8 種冒險夥伴可選，每個孩子獨立；匯出入保留遊
   assert.equal(other.getPlayer(a.id).bag.d6, 1);
   assert.equal(other.getStarBalance(a.id), 15);
 });
+
+test('頭像改為 8 種冒險夥伴：舊版表情符號自動轉換、與冒險棋子同步', () => {
+  // 舊資料：表情符號頭像；第二位孩子已選過冒險夥伴
+  const d = migrate({
+    children: [{ id: 'a', name: 'A', avatar: '🐻' }, { id: 'b', name: 'B', avatar: '🐰' }, { id: 'c', name: 'C', avatar: 'flame' }],
+    adventure: { players: { b: { pos: 3, character: 'stone', bag: {} } } }
+  });
+  assert.equal(d.children[0].avatar, 'roundear', '沒選過 → 依順序分配');
+  assert.equal(d.children[1].avatar, 'stone', '已選過的冒險夥伴當頭像');
+  assert.equal(d.children[2].avatar, 'flame', '已是夥伴代號就保留');
+  assert.equal(d.adventure.players.b.character, 'stone');
+
+  const { store } = makeStore();
+  const x = store.addChild({ name: 'X' });
+  const y = store.addChild({ name: 'Y' });
+  assert.notEqual(x.avatar, y.avatar, '新孩子預設不同夥伴');
+  store.setCharacter(x.id, 'wing');
+  assert.equal(store.getChild(x.id).avatar, 'wing', '換冒險夥伴 → 頭像同步');
+  store.updateChild(y.id, { avatar: 'drop' });
+  assert.equal(store.getPlayer(y.id).character, 'drop', '換頭像 → 冒險夥伴同步');
+  assert.throws(() => store.updateChild(y.id, { avatar: '🐶' }), /冒險夥伴/);
+});

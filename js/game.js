@@ -10,7 +10,7 @@
  * - 背包道具沒用完隔天仍保留
  * - 金島測試版 30 格；走到第 30 格停在終點（多餘步數不走、骰子不浪費：在終點就不能再擲）
  * - 地圖資料結構可擴充為 100 格（tiles 陣列長度即格數）
- * - 角色：8 種冒險夥伴，每個孩子各自選擇；未選或舊版角色代號時使用圓耳獸
+ * - 角色：8 種冒險夥伴，每個孩子各自選擇；與孩子頭像為同一個（child.avatar）
  */
 (function (root) {
   'use strict';
@@ -70,7 +70,10 @@
   // ---------- 狀態 ----------
   Store.prototype.getPlayer = function (childId) {
     var adv = this.data.adventure;
-    if (!adv.players[childId]) adv.players[childId] = { island: 'gold', pos: 0, character: '', bag: { d6: 0, d12: 0, skates: 0 } };
+    if (!adv.players[childId]) {
+      var child = this.getChild(childId);
+      adv.players[childId] = { island: 'gold', pos: 0, character: child ? child.avatar : '', bag: { d6: 0, d12: 0, skates: 0 } };
+    }
     return adv.players[childId];
   };
   Store.prototype.getBoard = function (childId) {
@@ -87,8 +90,8 @@
 
   Store.prototype.setCharacter = function (childId, charId) {
     if (!CHARACTERS.some(function (c) { return c.id === charId; })) throw new Error('沒有這個角色');
-    this.getPlayer(childId).character = charId;
-    this.save();
+    // 頭像與冒險夥伴是同一個：一起更新
+    this.updateChild(childId, { avatar: charId });
   };
 
   Store.prototype._requirePlay = function (childId) {
