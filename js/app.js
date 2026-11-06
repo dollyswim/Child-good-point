@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.06-7';
+  var APP_VERSION = '2026.11.06-8';
   var store;
   try {
     store = new CGP.Store();
@@ -233,18 +233,9 @@
     }
   }
 
-  /** 原創吉祥物：圓頭小機器貓（簡化向量圖） */
-  var MASCOT = '<svg class="mascot" viewBox="0 0 120 120" aria-hidden="true">' +
-    '<path d="M28 34 L22 8 L48 24 Z" fill="#eef4fb" stroke="#7a8da3" stroke-width="3" stroke-linejoin="round"/>' +
-    '<path d="M92 34 L98 8 L72 24 Z" fill="#eef4fb" stroke="#7a8da3" stroke-width="3" stroke-linejoin="round"/>' +
-    '<path d="M30 30 L27 16 L40 24 Z" fill="#7fd3ff"/><path d="M90 30 L93 16 L80 24 Z" fill="#7fd3ff"/>' +
-    '<rect x="16" y="22" width="88" height="72" rx="34" fill="#f7fbff" stroke="#7a8da3" stroke-width="3"/>' +
-    '<rect x="27" y="38" width="66" height="40" rx="20" fill="#1f2b45"/>' +
-    '<ellipse cx="46" cy="56" rx="6" ry="8" fill="#5fe0ff"/><ellipse cx="74" cy="56" rx="6" ry="8" fill="#5fe0ff"/>' +
-    '<path d="M54 66 q6 6 12 0" fill="none" stroke="#5fe0ff" stroke-width="3" stroke-linecap="round"/>' +
-    '<circle cx="35" cy="70" r="4" fill="#ff9bb3" opacity=".7"/><circle cx="85" cy="70" r="4" fill="#ff9bb3" opacity=".7"/>' +
-    '<rect x="40" y="94" width="40" height="18" rx="9" fill="#f7fbff" stroke="#7a8da3" stroke-width="3"/>' +
-    '<circle cx="60" cy="103" r="4" fill="#5fe0ff"/></svg>';
+  /** 插圖集中在 js/art.js（原創向量圖） */
+  var ART = window.CGPArt;
+  var MASCOT = ART.MASCOT;
 
   function sky(inner, small) {
     return '<header class="sky ' + (small ? 'sky-sm' : '') + '"><span class="cloud c1"></span><span class="cloud c2"></span>' + inner + '</header>';
@@ -314,7 +305,7 @@
       '</section>' : '';
 
     return sky('<div class="hero">' + MASCOT + plaque('親子集點冒險', '完成任務・累積點數・解鎖獎勵') +
-        '<span class="island" aria-hidden="true">🏰</span></div>' + gear()) +
+        '<span class="island" aria-hidden="true">' + ART.FLOAT_CASTLE + '</span></div>' + gear()) +
       '<main class="page home">' +
       (children.length
         ? '<div class="child-list">' + cards + '</div>'
@@ -393,32 +384,8 @@
       '<button class="btn primary" data-action="enter-adventure">進入今日冒險</button></section>';
   }
 
-  /** 冒險大廳的漂浮島插圖（簡化向量圖） */
-  var ISLAND_ART = '<svg class="island-art" viewBox="0 0 320 200" aria-hidden="true">' +
-    '<defs><linearGradient id="isSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fd6ff"/><stop offset="1" stop-color="#d9f2ff"/></linearGradient>' +
-    '<linearGradient id="isSea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3fb6e8"/><stop offset="1" stop-color="#1e8fcf"/></linearGradient></defs>' +
-    '<rect width="320" height="200" fill="url(#isSky)"/>' +
-    '<g fill="#fff" opacity=".9"><ellipse cx="60" cy="40" rx="30" ry="10"/><ellipse cx="78" cy="34" rx="16" ry="12"/><ellipse cx="250" cy="28" rx="24" ry="8"/></g>' +
-    '<rect y="132" width="320" height="68" fill="url(#isSea)"/>' +
-    '<path d="M0 140 q20 -6 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0" stroke="#bfeaff" stroke-width="3" fill="none" opacity=".7"/>' +
-    '<ellipse cx="160" cy="150" rx="118" ry="22" fill="#f3d79a"/>' +
-    '<path d="M70 148 C 80 95, 120 70, 160 66 C 205 62, 240 95, 252 148 Z" fill="#5cbf4a"/>' +
-    '<path d="M110 148 C 120 110, 150 92, 175 96 C 200 100, 215 125, 220 148 Z" fill="#8a7a6a"/>' +
-    '<path d="M150 150 C 150 120, 175 100, 190 104" stroke="#e9c98a" stroke-width="8" fill="none" stroke-linecap="round" stroke-dasharray="2 10"/>' +
-    '<line x1="178" y1="96" x2="178" y2="58" stroke="#6b4a2b" stroke-width="3"/><path d="M178 58 l26 7 -26 8 z" fill="#ff5a4e"/>' +
-    '<g transform="translate(92 92)"><path d="M10 50 C 12 30, 8 18, 14 4" stroke="#8a5a2b" stroke-width="5" fill="none"/>' +
-    '<path d="M14 4 c-20 -2 -26 8 -28 14 c10 -8 20 -8 28 -14 z M14 4 c18 -6 28 2 30 8 c-10 -6 -20 -6 -30 -8 z M14 4 c-6 -14 4 -22 10 -22 c-4 8 -6 14 -10 22 z" fill="#3fa63a"/></g>' +
-    '<g transform="translate(206 120)"><rect width="30" height="20" rx="3" fill="#a8642c"/><rect y="-8" width="30" height="10" rx="5" fill="#c77d3a"/>' +
-    '<rect x="12" y="-2" width="6" height="8" rx="1" fill="#ffd23f"/><rect y="4" width="30" height="3" fill="#ffd23f"/></g>' +
-    '<g transform="translate(232 150)" fill="#a8642c"><rect width="60" height="8" rx="2"/><rect x="6" y="6" width="5" height="18"/><rect x="48" y="6" width="5" height="18"/></g>' +
-    '<g fill="#ffd23f"><path d="M40 90 l3 7 7 1 -5 5 1 7 -6 -4 -6 4 1 -7 -5 -5 7 -1z"/><path d="M285 70 l2 5 5 1 -4 3 1 5 -4 -3 -4 3 1 -5 -4 -3 5 -1z"/></g>' +
-    '</svg>';
-
-  /** 小寶箱（簡化向量圖） */
-  var CHEST = '<svg viewBox="0 0 48 40" width="46" height="38"><path d="M4 16 Q4 4 24 4 Q44 4 44 16 Z" fill="#c77d3a" stroke="#7d4519" stroke-width="2"/>' +
-    '<rect x="4" y="16" width="40" height="20" rx="3" fill="#a8642c" stroke="#7d4519" stroke-width="2"/>' +
-    '<rect x="4" y="16" width="40" height="4" fill="#ffd23f"/><rect x="20" y="13" width="8" height="11" rx="2" fill="#ffd23f" stroke="#c99a12" stroke-width="1.5"/>' +
-    '<circle cx="24" cy="19" r="1.6" fill="#7d4519"/><path d="M10 6 l1.5 3 3 .5 -2 2 .5 3 -3 -1.5 -3 1.5 .5 -3 -2 -2 3 -.5z" fill="#fff6b0"/></svg>';
+  var ISLAND_ART = ART.GOLD_ISLAND;
+  var CHEST = ART.CHEST;
 
   var ISLANDS = [['金島', '#ffd23f'], ['木島', '#5cbf4a'], ['水島', '#3fb6e8'], ['火島', '#ff6a3d'], ['土島', '#b07a4a']];
   var DICE_COST = 5; // Phase 3 規格：6 面骰 5 星
@@ -432,7 +399,7 @@
     var hero = '<header class="sky adv-hero"><span class="cloud c1"></span><span class="cloud c2"></span>' +
       '<a class="round-btn back" href="#child-' + h(child.id) + '" aria-label="回到今日任務">‹</a>' +
       '<div class="adv-hero-main">' + MASCOT + plaque('冒險大廳', '完成任務・累積星星・解鎖新冒險') + '</div>' +
-      '<span class="float-island" aria-hidden="true"><i>🏰</i></span>' + gear() + '</header>';
+      '<span class="float-island" aria-hidden="true">' + ART.FLOAT_CASTLE + '</span>' + gear() + '</header>';
 
     // 2. 角色切換 tab
     var tabs = '<nav class="hero-tabs" aria-label="切換孩子">' + kids.map(function (c) {

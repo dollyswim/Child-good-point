@@ -835,3 +835,19 @@ body {
 .star-main { padding-right: 52px; }
 .chest-deco { right: 8px; bottom: 10px; filter: drop-shadow(0 0 6px rgba(255, 210, 63, .8)); }
 @media (max-width: 379px) { .float-island { display: none; } }
+/* 精緻插圖尺寸 */
+.island { width: 70px; flex: none; }
+.island svg, .float-island svg { width: 100%; height: auto; display: block; }
+.float-island { background: none; box-shadow: none; width: 64px; height: auto; right: 8px; top: calc(env(safe-area-inset-top) + 56px); }
+.adv-hero-main .mascot { width: 58px; height: 62px; }
+.mascot { height: auto; }
+.chest-deco { bottom: 6px; }
+/* 關卡卡：插圖放大為整張卡寬 */
+.map-card { grid-template-columns: 1fr; padding: 10px 10px 14px; }
+.map-art { transform: rotate(-1deg); }
+.map-info { grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 10px; padding: 0 4px; }
+.map-info .map-title { grid-row: span 2; }
+.map-info p { grid-column: 2; }
+.map-info .lock-pill { grid-column: 2; justify-self: start; }
+.map-info .map-cta { grid-column: 1 / -1; }
+.compass { top: -12px; right: -8px; font-size: 2rem; }
