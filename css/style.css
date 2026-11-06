@@ -346,3 +346,8 @@ h2 { font-size: 1.05rem; margin: 0 0 8px; }
 @media (min-width: 480px) {
   .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* 每日任務切換 */
+.radio.daily-toggle { padding: 10px 12px; background: var(--pos-bg); border-radius: 12px; font-weight: 600; align-items: flex-start; }
+.radio.daily-toggle input { flex: none; margin-top: 2px; }
+.field-group { display: grid; gap: 12px; }

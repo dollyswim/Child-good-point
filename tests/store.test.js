@@ -510,9 +510,9 @@ test('期間合計與規則排行', () => {
   store.addRecordOn(a.id, b.id, '2026-10-30'); // 上週
   store.redeemReward(a.id, rw.id);
   const s = R.summarize(store, a.id, '2026-11-02', '2026-11-08');
-  assert.deepEqual([s.bonus, s.penalty, s.task, s.net, s.reward, s.stars, s.days], [10, -10, 3, 3, 30, 4, 3]);
+  assert.deepEqual([s.bonus, s.penalty, s.task, s.net, s.reward, s.stars, s.days], [13, -10, 3, 3, 30, 4, 3], '每日任務併入加分');
   const top = R.ranking(store, a.id, '2026-11-02', '2026-11-08', 'bonus');
-  assert.deepEqual(top, [{ name: '幫忙', count: 2, points: 10 }]);
+  assert.deepEqual(top, [{ name: '幫忙', count: 2, points: 10 }, { name: '刷牙', count: 1, points: 3 }]);
 });
 
 test('任務完成率：每日、平日、每週 N 次，只算到今天且不算任務建立前', () => {
@@ -533,4 +533,19 @@ test('任務完成率：每日、平日、每週 N 次，只算到今天且不�
   assert.equal(by['運動'].label, '1/3 次');
   const month = R.taskCompletion(store, a.id, '2026-11-01', '2026-11-30');
   assert.equal(month.find(r => r.task.name === '刷牙').target, 5, '11/1～11/5');
+});
+
+test('加分與每日任務可互相切換；扣分不能改成加分；紀錄保留', () => {
+  const { store } = makeStore();
+  const a = store.addChild({ name: 'A' });
+  const b = store.addItem({ kind: 'bonus', name: '刷牙', points: 5, custom: true });
+  store.updateItem(b.id, { kind: 'task', frequency: { type: 'weekdays' } });
+  assert.equal(store.getItem(b.id).kind, 'task');
+  assert.equal(store.getItem(b.id).custom, false, '每日任務不可自填');
+  store.completeTask(a.id, b.id);
+  store.updateItem(b.id, { kind: 'bonus' });
+  assert.equal(store.getItem(b.id).kind, 'bonus');
+  assert.equal(store.getTotal(a.id), 5);
+  const p = store.addItem({ kind: 'penalty', name: 'x', points: 3 });
+  assert.throws(() => store.updateItem(p.id, { kind: 'bonus' }), /扣分/);
 });

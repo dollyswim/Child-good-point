@@ -70,17 +70,20 @@ async function main() {
   await page.fill('input[name="points"]', '10');
   await page.click('#modal-form button[type="submit"]');
 
-  await page.click('a[href="#rules-task"]');
+  assert.equal(await page.locator('a[href="#rules-task"]').count(), 0, '不再有獨立的任務分頁');
   await page.click('[data-action="add-item"]');
   await page.fill('input[name="name"]', '共同閱讀');
   await page.fill('input[name="points"]', '8');
+  assert.ok(await page.locator('select[name="freqType"]').isHidden(), '未勾每日任務時不顯示頻率');
+  await page.check('#item-daily');
+  assert.ok(await page.locator('input[name="custom"]').isHidden(), '每日任務不能自填');
   await page.selectOption('select[name="freqType"]', 'daily');
   await page.check('input[name="scope"][value="some"]');
   await page.check('input[name="childIds"] >> nth=0');
   await page.check('input[name="childIds"] >> nth=1');
   await shot('03-task-form');
   await page.click('#modal-form button[type="submit"]');
-  assert.match(await text('.rows'), /共同閱讀[\s\S]*端端、波妞/);
+  assert.match(await text('.rows'), /📋 每日任務[\s\S]*共同閱讀[\s\S]*端端、波妞/);
   await noHScroll('設定頁');
   await shot('04-settings-tasks');
 
@@ -113,6 +116,9 @@ async function main() {
   await page.click('.child-card >> text=端端');
   const before = [await text('[data-testid=total]'), await text('[data-testid=today]')];
   const recCount = await page.locator('.rec').count();
+  await page.fill('#score-search', '閱讀');
+  assert.ok(await page.locator('#score-list .task.done >> text=共同閱讀').isVisible(), '搜尋也找得到每日任務');
+  await page.fill('#score-search', '');
   // 用搜尋找到項目（搜尋同時涵蓋加分與扣分）
   await page.fill('#score-search', '十分');
   assert.equal(await page.locator('.score-btn').count(), 1);

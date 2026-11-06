@@ -19,9 +19,10 @@
     daily: '每日', weekdays: '平日（一～五）', weekends: '週末（六、日）',
     days: '指定星期', weeklyN: '每週 N 次', once: '單次'
   };
-  var KIND_LABELS = { bonus: '加分項目', penalty: '扣分項目', task: '任務' };
+  // 「任務」在介面上就是「每日任務」的加分項目（資料內部仍以 kind: 'task' 保存，舊資料不需轉換）
+  var KIND_LABELS = { bonus: '加分項目', penalty: '扣分項目', task: '加分項目' };
   var SETTINGS_TABS = [
-    ['children', '孩子'], ['task', '任務'], ['bonus', '加分'],
+    ['children', '孩子'], ['bonus', '加分'],
     ['penalty', '扣分'], ['reward', '獎勵'], ['backup', '備份']
   ];
 
@@ -242,16 +243,7 @@
     var records = store.getRecords(id, ui.showAllRecords ? 0 : 8);
     var allCount = store.getRecords(id).length;
 
-    var taskHtml = tasks.length ? tasks.map(function (t) {
-      var s = t.status;
-      var cls = s.doneToday ? 'done' : (s.canComplete ? '' : 'locked');
-      return '<button class="task ' + cls + '" data-action="task" data-id="' + h(t.task.id) + '"' +
-        (!s.doneToday && !s.canComplete ? ' disabled' : '') + '>' +
-        '<span class="check" aria-hidden="true">' + (s.doneToday ? '✓' : '') + '</span>' +
-        '<span class="task-name">' + h(t.task.name) +
-        (s.label ? '<small>' + h(s.label) + '</small>' : '') + '</span>' +
-        '<span class="pts pos">' + h(ptsLabel(t.task)) + '</span></button>';
-    }).join('') : '<p class="muted small">今天沒有任務</p>';
+    var taskHtml = tasks.length ? tasks.map(taskButton).join('') : '<p class="muted small">今天沒有每日任務。可在設定的加分項目勾選「📋 每日任務」。</p>';
 
     var rewardHtml = rewards.length ? rewards.map(function (r) {
       var ok = total >= r.cost;
@@ -273,7 +265,7 @@
       '<div><div class="label">目前總點數</div><div class="total-value" data-testid="total">' + total + '</div></div>' +
       '<div class="today"><div class="label">今日淨得分</div><div class="today-value ' + signClass(net) + '" data-testid="today">' + signed(net) + '</div></div>' +
       '</section>' +
-      '<section><h2>📋 今日任務</h2><div class="tasks">' + taskHtml + '</div></section>' +
+      '<section><h2>📌 常用・今日任務</h2><div class="tasks">' + taskHtml + '</div></section>' +
       '<section class="scorer"><h2>✏️ 加分・扣分</h2>' +
       '<input type="search" id="score-search" class="search" data-search="score" placeholder="🔍 搜尋規定，例如：功課" ' +
       'autocomplete="off" enterkeyhint="search" value="' + h(ui.query) + '">' +
@@ -289,11 +281,23 @@
       '</button></div>';
   }
 
+  /** 每日任務按鈕（一天一次打勾，再點一次取消） */
+  function taskButton(t) {
+    var s = t.status;
+    var cls = s.doneToday ? 'done' : (s.canComplete ? '' : 'locked');
+    return '<button class="task ' + cls + '" data-action="task" data-id="' + h(t.task.id) + '"' +
+      (!s.doneToday && !s.canComplete ? ' disabled' : '') + '>' +
+      '<span class="check" aria-hidden="true">' + (s.doneToday ? '✓' : '') + '</span>' +
+      '<span class="task-name">' + h(t.task.name) +
+      (s.label ? '<small>' + h(s.label) + '</small>' : '') + '</span>' +
+      '<span class="pts pos">' + h(ptsLabel(t.task)) + '</span></button>';
+  }
+
   /** 孩子頁的加減分清單（搜尋與篩選時只重畫這一塊，輸入框不會失去焦點） */
   function renderScoreList(childId) {
     var bonus = store.getItemsFor(childId, 'bonus');
     var penalty = store.getItemsFor(childId, 'penalty');
-    if (!bonus.length && !penalty.length) return '<p class="muted small">尚未設定加分或扣分項目，可到設定頁新增</p>';
+    if (!bonus.length && !penalty.length && !store.getItemsFor(childId, 'task').length) return '<p class="muted small">尚未設定加分或扣分項目，可到設定頁新增</p>';
 
     function btns(items) {
       return '<div class="grid">' + items.map(function (i) {
@@ -314,8 +318,11 @@
     // 搜尋模式：同時搜尋加分與扣分
     if (ui.query.trim()) {
       var found = bonus.concat(penalty).filter(function (i) { return matchQuery(i.name, ui.query); });
-      if (!found.length) return '<p class="muted small search-empty">找不到「' + h(ui.query.trim()) + '」相關的規定</p>';
-      return '<p class="muted small">搜尋結果 ' + found.length + ' 項</p>' + grouped(found);
+      var foundTasks = store.getTodayTasks(childId).filter(function (t) { return matchQuery(t.task.name, ui.query); });
+      if (!found.length && !foundTasks.length) return '<p class="muted small search-empty">找不到「' + h(ui.query.trim()) + '」相關的規定</p>';
+      return '<p class="muted small">搜尋結果 ' + (found.length + foundTasks.length) + ' 項</p>' +
+        (foundTasks.length ? '<div class="pts-group"><div class="pts-head pos">📋 每日任務</div><div class="tasks">' + foundTasks.map(taskButton).join('') + '</div></div>' : '') +
+        (found.length ? grouped(found) : '');
     }
 
     var kind = ui.scoreKind === 'penalty' ? 'penalty' : 'bonus';
@@ -357,7 +364,7 @@
 
   /** 紀錄列（點一下可修改）；showChild 時在前面顯示孩子頭像 */
   function recordRow(r, showChild) {
-    var tag = { bonus: '加分', penalty: '扣分', task: '任務', reward: '兌換' }[r.type];
+    var tag = { bonus: '加分', penalty: '扣分', task: '每日任務', reward: '兌換' }[r.type];
     var child = showChild ? store.getChild(r.childId) : null;
     return '<li class="rec" data-action="edit-record" data-id="' + h(r.id) + '" role="button" tabindex="0">' +
       (child ? avatar(child, 'xs') : '') +
@@ -403,11 +410,11 @@
         '<div class="stat-grid">' +
         cell('淨得分', signed(s.net), signClass(s.net) + ' big') +
         cell('加分', signed(s.bonus), 'pos') +
-        cell('任務', signed(s.task), 'pos') +
         cell('扣分', String(s.penalty), s.penalty ? 'neg' : 'zero') +
         cell('兌換', s.reward ? '-' + s.reward : '0', s.reward ? 'neg' : 'zero') +
         cell('⭐ 星星', String(s.stars), 'zero') +
-        '</div>' + (rp.period !== 'day' ? '<p class="muted small">有記分的天數：' + s.days + ' 天</p>' : '') + '</div>';
+        cell('記分天數', s.days + ' 天', 'zero') +
+        '</div></div>';
     }).join('');
 
     // 規則排行
@@ -430,7 +437,7 @@
           var pct = x.rate == null ? 0 : Math.round(x.rate * 100);
           return '<li><span class="comp-name">' + h(x.task.name) + '</span><span class="comp-bar"><i style="width:' + pct + '%"></i></span>' +
             '<span class="comp-val">' + h(x.label) + '</span></li>';
-        }).join('') + '</ul>' : '<p class="muted small">這段期間沒有任務</p>') + '</div>';
+        }).join('') + '</ul>' : '<p class="muted small">這段期間沒有每日任務</p>') + '</div>';
     }).join('');
 
     // 每日明細
@@ -449,7 +456,7 @@
       '<div class="report-controls">' + chips + seg + nav + '</div>' +
       '<section><h2>📈 統計</h2><div class="stat-cards">' + cards + '</div></section>' +
       '<section><h2>🏆 規則排行</h2>' + rank + '</section>' +
-      '<section><h2>✅ 任務完成率</h2>' + comp + '</section>' +
+      '<section><h2>✅ 每日任務完成率</h2>' + comp + '</section>' +
       '<section><div class="section-head"><h2>🗓️ 每日明細</h2>' +
       '<button class="btn small primary" data-action="backfill">＋ 補登</button></div>' +
       '<p class="muted small">點任何一筆可以修改點數、日期、孩子或刪除。</p>' + detail + '</section>' +
@@ -464,6 +471,7 @@
     if (tab === 'children') body = settingsChildren();
     else if (tab === 'reward') body = settingsRewards();
     else if (tab === 'backup') body = settingsBackup();
+    else if (tab === 'task') { tab = 'bonus'; body = settingsItems('bonus'); } // 舊網址相容
     else if (KIND_LABELS[tab]) body = settingsItems(tab);
     else body = settingsChildren();
 
@@ -486,10 +494,10 @@
   }
 
   function settingsItems(kind) {
-    var hint = kind === 'task'
-      ? '任務只要建立一次，可指定給全部或部分孩子，每個孩子的完成狀態各自獨立。'
+    var hint = kind === 'bonus'
+      ? '勾選「📋 每日任務」的加分項目會放在孩子頁最上方的常用區，一天打勾一次（可設每日、平日、週末、指定星期、每週 N 次或單次）。每個孩子的完成狀態各自獨立。'
       : (kind === 'penalty' ? '扣分項目輸入正數即可，系統會自動以負數記錄。' : '');
-    var count = store.getItems(kind).length;
+    var count = itemsForTab(kind).length;
     return (hint ? '<p class="muted small">' + hint + '</p>' : '') +
       (count > 5 ? '<input type="search" id="settings-search" class="search" data-search="settings" placeholder="🔍 搜尋' + KIND_LABELS[kind] + '" ' +
         'autocomplete="off" value="' + h(ui.settingsQuery) + '">' : '') +
@@ -497,21 +505,31 @@
       '<button class="btn primary block" data-action="add-item" data-kind="' + kind + '">＋ 新增' + KIND_LABELS[kind] + '</button>';
   }
 
+  /** 設定頁「加分」分頁同時列出一般加分與每日任務 */
+  function itemsForTab(kind) {
+    return kind === 'bonus' ? store.getItems('task').concat(store.getItems('bonus')) : store.getItems(kind);
+  }
+
   function settingsItemList(kind) {
-    var all = store.getItems(kind);
+    var all = itemsForTab(kind);
     if (!all.length) return '<ul class="rows"><li class="muted">尚未建立</li></ul>';
     var items = all.filter(function (i) { return matchQuery(i.name, ui.settingsQuery); });
     if (!items.length) return '<ul class="rows"><li class="muted">找不到「' + h(ui.settingsQuery.trim()) + '」</li></ul>';
-    if (kind !== 'task') items.sort(byPoints);
+    items.sort(function (a, b) {
+      var ta = a.kind === 'task' ? 0 : 1, tb = b.kind === 'task' ? 0 : 1;
+      return ta - tb || (ta ? byPoints(a, b) : 0);
+    });
     var lastPts = null;
     var list = items.map(function (i) {
-      var meta = childIdsText(i.childIds) + (kind === 'task' ? '・' + freqText(i.frequency) : '');
+      var isTask = i.kind === 'task';
+      var meta = childIdsText(i.childIds) + (isTask ? '・📋 ' + freqText(i.frequency) : '');
       var head = '';
-      var key = ptsKey(i);
-      if (kind !== 'task' && key !== lastPts) {
+      var key = isTask ? 'task' : ptsKey(i);
+      if (key !== lastPts) {
         lastPts = key;
-        head = '<li class="rows-head ' + ptsKeyClass(key, i.kind) + '">' + ptsKeyLabel(key) + '</li>';
+        head = '<li class="rows-head ' + (isTask ? 'pos' : ptsKeyClass(key, i.kind)) + '">' + (isTask ? '📋 每日任務' : ptsKeyLabel(key)) + '</li>';
       }
+      key = ptsKey(i);
       return head + '<li class="row"><span class="row-main"><b>' + h(i.name) +
         ' <span class="pts ' + ptsKeyClass(key, i.kind) + '">' + h(ptsLabel(i)) + '</span></b>' +
         '<small>' + h(meta) + '</small></span>' +
@@ -626,34 +644,40 @@
     modalForm.querySelectorAll('[data-show-when]').forEach(function (el) {
       var p = el.getAttribute('data-show-when').split('=');
       var ctl = modalForm.elements[p[0]];
-      var val = ctl ? (ctl.value !== undefined ? ctl.value : '') : '';
+      var val = !ctl ? '' : (ctl.type === 'checkbox' ? (ctl.checked ? ctl.value : '') : (ctl.value !== undefined ? ctl.value : ''));
       el.hidden = val !== p[1];
     });
   }
   modalForm.addEventListener('change', syncConditional);
 
+  /** 新增或編輯加分／扣分項目；加分可勾選「每日任務」（內部 kind 為 task） */
   function openItemForm(kind, item) {
-    var it = item || { name: '', points: kind === 'penalty' ? -5 : 5, childIds: 'all', frequency: { type: 'daily' }, custom: false, stars: 0 };
+    var base = kind === 'penalty' ? 'penalty' : 'bonus';
+    var isTask = kind === 'task';
+    var it = item || { name: '', points: base === 'penalty' ? -5 : 5, childIds: 'all', frequency: { type: 'daily' }, custom: false, stars: 0 };
     var fields =
       '<label class="field">名稱<input type="text" name="name" maxlength="40" required value="' + h(it.name) + '"></label>' +
-      '<label class="field">' + (kind === 'penalty' ? '扣除點數' : '點數') +
+      '<label class="field">' + (base === 'penalty' ? '扣除點數' : '點數') +
       '<input type="number" name="points" min="0" step="1" inputmode="numeric" required value="' + Math.abs(it.points) + '"></label>' +
-      (kind !== 'task' ? '<label class="radio"><input type="checkbox" name="custom" value="1"' + (it.custom ? ' checked' : '') + '> 每次由家長自填點數（上方數字為預設值）</label>' : '') +
-      (kind === 'task' ? freqPicker(it.frequency) : '') +
+      (base === 'bonus' ? '<label class="radio daily-toggle"><input type="checkbox" name="daily" id="item-daily" value="1"' + (isTask ? ' checked' : '') + '> 📋 每日任務（放在常用區，一天打勾一次）</label>' +
+        '<div class="field-group" data-show-when="daily=1">' + freqPicker(it.frequency) + '</div>' : '') +
+      '<label class="radio" data-show-when="daily="><input type="checkbox" name="custom" value="1"' + (it.custom ? ' checked' : '') + '> 每次由家長自填點數（上方數字為預設值）</label>' +
       '<label class="field">額外能量星星<input type="number" name="stars" min="0" step="1" inputmode="numeric" value="' + (it.stars || 0) + '">' +
       '<small class="muted">Phase 1 只記錄，冒險功能（Phase 2）推出後才會發放。</small></label>' +
       childPicker(it.childIds);
-    openModal((item ? '編輯' : '新增') + KIND_LABELS[kind], fields, function (fd) {
+    openModal((item ? '編輯' : '新增') + KIND_LABELS[base], fields, function (fd) {
       var scope = fd.get('scope');
+      var daily = base === 'bonus' && fd.get('daily') === '1';
+      var newKind = daily ? 'task' : base;
       var data = {
-        kind: kind,
+        kind: newKind,
         name: fd.get('name'),
         points: fd.get('points'),
-        custom: kind !== 'task' && fd.get('custom') === '1',
+        custom: !daily && fd.get('custom') === '1',
         stars: fd.get('stars'),
         childIds: scope === 'all' ? 'all' : fd.getAll('childIds')
       };
-      if (kind === 'task') {
+      if (daily) {
         data.frequency = {
           type: fd.get('freqType'),
           days: fd.getAll('days').map(Number),
@@ -686,7 +710,7 @@
 
   /** 修改或刪除一筆紀錄 */
   function openRecordForm(rec) {
-    var typeLabel = { bonus: '加分', penalty: '扣分', task: '任務', reward: '兌換獎勵' }[rec.type];
+    var typeLabel = { bonus: '加分', penalty: '扣分', task: '加分・每日任務', reward: '兌換獎勵' }[rec.type];
     var neg = rec.type === 'penalty' || rec.type === 'reward';
     var fields =
       '<p class="muted small">' + typeLabel + (rec.backfill ? '・補登' : '・記錄於 ' + timeOf(rec.ts)) + (rec.stars ? '・⭐' + rec.stars : '') + '</p>' +
@@ -719,7 +743,7 @@
     var defDate = rp.period === 'day' ? rp.anchor : window.CGPReport.addDays(today, -1);
     if (defDate > today) defDate = today;
     function ruleOptions(cid) {
-      return [['task', '任務'], ['bonus', '加分'], ['penalty', '扣分']].map(function (k) {
+      return [['task', '📋 每日任務（加分）'], ['bonus', '加分'], ['penalty', '扣分']].map(function (k) {
         var items = store.getItemsFor(cid, k[0]).slice().sort(byPoints);
         if (!items.length) return '';
         return '<optgroup label="' + k[1] + '">' + items.map(function (i) {
