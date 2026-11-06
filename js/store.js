@@ -333,6 +333,13 @@
       if (!name) throw new Error('請輸入名稱');
       item.name = name;
     }
+    if (patch.kind != null && patch.kind !== item.kind) {
+      // 加分與每日任務可互相切換（兩者都是加分）；扣分不可改成加分，以免正負號混淆
+      var pair = ['bonus', 'task'];
+      if (pair.indexOf(patch.kind) < 0 || pair.indexOf(item.kind) < 0) throw new Error('扣分項目不能改成加分');
+      item.kind = patch.kind;
+      if (item.kind === 'task') item.custom = false;
+    }
     if (patch.points != null) item.points = normalizeItemPoints(item.kind, patch.points);
     if (patch.childIds != null) item.childIds = this._normalizeChildIds(patch.childIds);
     if (patch.frequency != null) item.frequency = normalizeFrequency(patch.frequency);

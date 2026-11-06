@@ -49,7 +49,7 @@
     return { start: start, end: end, label: label, prev: prev, next: next };
   }
 
-  /** 期間合計 */
+  /** 期間合計（bonus 含每日任務；task 為其中每日任務的部分） */
   function summarize(store, childId, start, end) {
     var s = { bonus: 0, penalty: 0, task: 0, net: 0, reward: 0, stars: 0, count: 0, days: 0 };
     var days = {};
@@ -57,7 +57,8 @@
       s.count++;
       s.stars += r.stars || 0;
       if (r.type === 'reward') { s.reward += -r.points; return; }
-      s[r.type] += r.points;
+      if (r.type === 'task') { s.task += r.points; s.bonus += r.points; } // 每日任務也算加分
+      else s[r.type] += r.points;
       s.net += r.points;
       days[r.date] = true;
     });
@@ -69,7 +70,7 @@
   function ranking(store, childId, start, end, kind, limit) {
     var map = {};
     store.getRecordsBetween(childId, start, end).forEach(function (r) {
-      if (r.type !== kind) return;
+      if (r.type !== kind && !(kind === 'bonus' && r.type === 'task')) return;
       var key = r.name;
       if (!map[key]) map[key] = { name: r.name, count: 0, points: 0 };
       map[key].count++;
