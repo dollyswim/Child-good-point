@@ -231,7 +231,118 @@
     '<circle cx="18" cy="54" r="5" fill="#3fa63a"/><circle cx="84" cy="54" r="4" fill="#3fa63a"/>' +
     '</svg>';
 
-  var api = { GOLD_ISLAND: GOLD_ISLAND, MASCOT: MASCOT, CHEST: CHEST, FLOAT_CASTLE: FLOAT_CASTLE, gearPath: gearPath };
+  // ---------------------------------------------------------------
+  // 角色棋子（Phase 3 測試角色）：腳底中心在 (30, 68)
+  // ---------------------------------------------------------------
+  var SHADOW = '<ellipse cx="30" cy="68" rx="16" ry="4" fill="#000" opacity=".18"/>';
+  var CHARACTERS = {
+    robot: '<svg viewBox="0 0 60 72" aria-hidden="true">' + SHADOW +
+      '<defs><linearGradient id="pc-rb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#d4e4f4"/></linearGradient></defs>' +
+      '<line x1="30" y1="10" x2="30" y2="4" stroke="#7a8da3" stroke-width="2"/><circle cx="30" cy="4" r="3.2" fill="#ffd23f" stroke="#c98a00"/>' +
+      '<path d="M12 22 L9 6 L24 15 Z M48 22 L51 6 L36 15 Z" fill="url(#pc-rb)" stroke="#7a8da3" stroke-width="2" stroke-linejoin="round"/>' +
+      '<path d="M14 18 L12 10 L20 15 Z M46 18 L48 10 L40 15 Z" fill="#7fd3ff"/>' +
+      '<path d="M19 50 Q18 66 30 66 Q42 66 41 50 Z" fill="url(#pc-rb)" stroke="#7a8da3" stroke-width="2"/>' +
+      '<circle cx="30" cy="57" r="3.2" fill="#5fe0ff"/>' +
+      '<rect x="6" y="10" width="48" height="42" rx="20" fill="url(#pc-rb)" stroke="#7a8da3" stroke-width="2"/>' +
+      '<rect x="12" y="20" width="36" height="23" rx="11.5" fill="#1b2747"/>' +
+      '<ellipse cx="23" cy="31" rx="3.6" ry="4.6" fill="#5fe0ff"/><ellipse cx="37" cy="31" rx="3.6" ry="4.6" fill="#5fe0ff"/>' +
+      '<circle cx="24" cy="29" r="1.2" fill="#fff"/><circle cx="38" cy="29" r="1.2" fill="#fff"/>' +
+      '<path d="M27 37 q3 3 6 0" stroke="#5fe0ff" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>',
+    deer: '<svg viewBox="0 0 60 72" aria-hidden="true">' + SHADOW +
+      '<defs><linearGradient id="pc-dr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e7a466"/><stop offset="1" stop-color="#b8743a"/></linearGradient></defs>' +
+      '<g stroke="#7a4a20" stroke-width="2.4" stroke-linecap="round" fill="none"><path d="M20 16 L14 4 M16 9 L10 8 M40 16 L46 4 M44 9 L50 8"/></g>' +
+      '<path d="M8 22 Q2 18 4 12 Q12 14 14 20 Z M52 22 Q58 18 56 12 Q48 14 46 20 Z" fill="url(#pc-dr)" stroke="#7a4a20" stroke-width="1.5"/>' +
+      '<path d="M7 20 Q5 16 6 14 Q10 16 11 19 Z M53 20 Q55 16 54 14 Q50 16 49 19 Z" fill="#ffc7d6"/>' +
+      '<path d="M19 50 Q18 66 30 66 Q42 66 41 50 Z" fill="url(#pc-dr)" stroke="#7a4a20" stroke-width="2"/>' +
+      '<path d="M24 54 Q30 62 36 54" fill="#fff4e6"/>' +
+      '<circle cx="30" cy="32" r="21" fill="url(#pc-dr)" stroke="#7a4a20" stroke-width="2"/>' +
+      '<ellipse cx="30" cy="41" rx="11" ry="8" fill="#fff4e6"/>' +
+      '<g fill="#fff4e6"><circle cx="17" cy="24" r="2"/><circle cx="43" cy="22" r="1.6"/><circle cx="40" cy="28" r="1.3"/></g>' +
+      '<ellipse cx="22" cy="31" rx="3.6" ry="4.4" fill="#2b1a10"/><ellipse cx="38" cy="31" rx="3.6" ry="4.4" fill="#2b1a10"/>' +
+      '<circle cx="23" cy="29" r="1.3" fill="#fff"/><circle cx="39" cy="29" r="1.3" fill="#fff"/>' +
+      '<ellipse cx="30" cy="38" rx="3" ry="2" fill="#5b3418"/><path d="M27 42 q3 2.5 6 0" stroke="#5b3418" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
+      '<ellipse cx="15" cy="38" rx="3" ry="2" fill="#ff9bb3" opacity=".7"/><ellipse cx="45" cy="38" rx="3" ry="2" fill="#ff9bb3" opacity=".7"/></svg>',
+    boxcat: '<svg viewBox="0 0 60 72" aria-hidden="true">' + SHADOW +
+      '<defs><linearGradient id="pc-bx" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9c48a"/><stop offset="1" stop-color="#c89552"/></linearGradient>' +
+      '<linearGradient id="pc-bf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b6a6ff"/><stop offset="1" stop-color="#8b74f0"/></linearGradient></defs>' +
+      // 從箱子探出頭的紫色小怪獸
+      '<path d="M16 22 L13 9 L24 17 Z M44 22 L47 9 L36 17 Z" fill="url(#pc-bf)" stroke="#5b47b8" stroke-width="1.8" stroke-linejoin="round"/>' +
+      '<ellipse cx="30" cy="30" rx="18" ry="15" fill="url(#pc-bf)" stroke="#5b47b8" stroke-width="2"/>' +
+      '<ellipse cx="23" cy="29" rx="3.4" ry="4.2" fill="#fff"/><ellipse cx="37" cy="29" rx="3.4" ry="4.2" fill="#fff"/>' +
+      '<circle cx="23.5" cy="30" r="2" fill="#2b1a40"/><circle cx="37.5" cy="30" r="2" fill="#2b1a40"/>' +
+      '<path d="M26 36 q4 3 8 0" stroke="#2b1a40" stroke-width="1.6" fill="none" stroke-linecap="round"/>' +
+      '<path d="M28 36 l1 2 1 -2" fill="#fff"/>' +
+      '<path d="M14 38 Q10 36 8 40" stroke="#5b47b8" stroke-width="4" stroke-linecap="round" fill="none"/>' +
+      '<path d="M46 38 Q50 36 52 40" stroke="#5b47b8" stroke-width="4" stroke-linecap="round" fill="none"/>' +
+      // 紙箱
+      '<path d="M10 40 L50 40 L48 66 L12 66 Z" fill="url(#pc-bx)" stroke="#8a5a26" stroke-width="2" stroke-linejoin="round"/>' +
+      '<path d="M10 40 L4 34 L22 34 L26 40 Z M50 40 L56 34 L38 34 L34 40 Z" fill="#f1d39f" stroke="#8a5a26" stroke-width="1.6" stroke-linejoin="round"/>' +
+      '<rect x="22" y="48" width="16" height="4" rx="1" fill="#8a5a26" opacity=".35"/>' +
+      '<path d="M30 54 l1.6 3.4 3.6.5 -2.6 2.5 .6 3.6 -3.2 -1.7 -3.2 1.7 .6 -3.6 -2.6 -2.5 3.6 -.5z" fill="#ffd23f" stroke="#c98a00" stroke-width=".8"/></svg>'
+  };
+
+  // ---------------------------------------------------------------
+  // 棋盤裝飾（以螢幕座標放置，原點在物件底部中心）
+  // ---------------------------------------------------------------
+  function at(x, y, s, inner) { return '<g transform="translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ') scale(' + s + ')">' + inner + '</g>'; }
+  var DECO = {
+    palm: function (x, y, s) { return palm(x, y - 40 * s, s); },
+    mine: function (x, y, s) {
+      return at(x, y, s,
+        '<path d="M-26 0 C -26 -26, -14 -40, 0 -40 C 14 -40, 26 -26, 26 0 Z" fill="url(#bd-rock)"/>' +
+        '<path d="M-10 0 L-10 -14 Q-10 -24 0 -24 Q10 -24 10 -14 L10 0 Z" fill="#3a2a1d"/>' +
+        '<path d="M-13 1 L-13 -15 Q-13 -27 0 -27 Q13 -27 13 -15 L13 1" fill="none" stroke="url(#bd-wood)" stroke-width="4"/>' +
+        '<circle cx="0" cy="-10" r="9" fill="url(#bd-glow)"/>' +
+        '<circle cx="-16" cy="-22" r="2" fill="#efe6d8" opacity=".7"/>');
+    },
+    crystals: function (x, y, s) {
+      return at(x, y, s, '<circle cx="0" cy="-10" r="16" fill="url(#bd-glow)"/>' +
+        '<g stroke="#c98a00" stroke-width="1" stroke-linejoin="round"><path d="M-4 0 L0 -20 L5 0 Z" fill="url(#bd-crys)"/>' +
+        '<path d="M-12 0 L-10 -12 L-5 0 Z" fill="url(#bd-crys)"/><path d="M4 0 L9 -14 L13 0 Z" fill="url(#bd-crys)"/></g>' +
+        '<path d="M15 -16 l1 2.5 2.5 1 -2.5 1 -1 2.5 -1 -2.5 -2.5 -1 2.5 -1z" fill="#fff"/>');
+    },
+    gear: function (x, y, s) {
+      return at(x, y, s, '<rect x="-2" y="-14" width="4" height="14" fill="#8a6a45"/>' +
+        '<path d="' + gearPath(0, -26, 16, 12) + '" fill="url(#bd-gold)" stroke="#a86b00" stroke-width="1.5" stroke-linejoin="round"/>' +
+        '<circle cx="0" cy="-26" r="4" fill="#7d4f12"/>' +
+        '<path d="' + gearPath(18, -36, 9, 9) + '" fill="url(#bd-gold)" stroke="#a86b00" stroke-width="1.2" stroke-linejoin="round"/>' +
+        '<circle cx="18" cy="-36" r="2.4" fill="#7d4f12"/>');
+    },
+    factory: function (x, y, s) {
+      return at(x, y, s, '<rect x="-16" y="-20" width="32" height="20" rx="2" fill="#f1e1c6" stroke="#8a6a45" stroke-width="1.5"/>' +
+        '<path d="M-16 -20 l10 -8 0 8 10 -8 0 8 10 -8 0 8z" fill="#d45a35" stroke="#8a3a20" stroke-width="1.2" stroke-linejoin="round"/>' +
+        '<rect x="8" y="-40" width="6" height="16" fill="#9aa9b8" stroke="#64748b" stroke-width="1"/>' +
+        '<rect x="-11" y="-13" width="7" height="7" rx="1" fill="#ffe680"/><rect x="2" y="-13" width="7" height="7" rx="1" fill="#ffe680"/>' +
+        '<g fill="#fff" opacity=".9"><circle cx="11" cy="-45" r="4"/><circle cx="16" cy="-52" r="5"/><circle cx="23" cy="-58" r="6"/></g>');
+    },
+    cart: function (x, y, s) {
+      return at(x, y, s, '<path d="M-14 -16 L14 -16 L11 -4 L-11 -4 Z" fill="url(#bd-metal)" stroke="#5b6b7c" stroke-width="1.5" stroke-linejoin="round"/>' +
+        '<g fill="url(#bd-gold)" stroke="#c98a00" stroke-width="1"><circle cx="-6" cy="-17" r="5"/><circle cx="2" cy="-19" r="5.5"/><circle cx="9" cy="-16" r="4"/></g>' +
+        '<circle cx="-7" cy="-2" r="3.2" fill="#4a5563"/><circle cx="7" cy="-2" r="3.2" fill="#4a5563"/>');
+    },
+    bridge: function (x, y, s) {
+      return at(x, y, s, '<g stroke="url(#bd-metal)" stroke-width="3" fill="none" stroke-linecap="round">' +
+        '<path d="M-30 0 Q0 -24 30 0"/><path d="M-30 0 L30 0"/><path d="M-18 0 L-17 -10 M-6 0 L-6 -15 M6 0 L6 -15 M18 0 L17 -10"/></g>' +
+        '<path d="M-30 0 L30 0" stroke="#5b6b7c" stroke-width="1.2"/>');
+    },
+    castle: function (x, y, s) { return at(x - 50 * s, y - 88 * s, s, FLOAT_CASTLE.replace(/<\/?svg[^>]*>/g, '')); }
+  };
+  /** 棋盤用的共用漸層（放在棋盤 svg 的 defs 裡） */
+  var BOARD_DEFS =
+    '<linearGradient id="bd-rock" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#cdbda9"/><stop offset="1" stop-color="#857261"/></linearGradient>' +
+    '<linearGradient id="bd-wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d4924f"/><stop offset="1" stop-color="#8f5323"/></linearGradient>' +
+    '<linearGradient id="bd-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3a6"/><stop offset=".45" stop-color="#ffc83a"/><stop offset="1" stop-color="#d98c00"/></linearGradient>' +
+    '<linearGradient id="bd-metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1f5fa"/><stop offset=".5" stop-color="#b4c2d1"/><stop offset="1" stop-color="#7f8fa1"/></linearGradient>' +
+    '<linearGradient id="bd-crys" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fffbe0"/><stop offset=".5" stop-color="#ffd84a"/><stop offset="1" stop-color="#f0a000"/></linearGradient>' +
+    '<radialGradient id="bd-glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fffbe0"/><stop offset=".4" stop-color="#ffe680" stop-opacity=".8"/><stop offset="1" stop-color="#ffe680" stop-opacity="0"/></radialGradient>' +
+    '<linearGradient id="bd-sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd9f7"/><stop offset="1" stop-color="#2aa3dc"/></linearGradient>' +
+    '<linearGradient id="bd-grass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a6ea6e"/><stop offset="1" stop-color="#5cbf4a"/></linearGradient>' +
+    '<linearGradient id="bd-sand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0c4"/><stop offset="1" stop-color="#ecc77e"/></linearGradient>' +
+    '<linearGradient id="bd-earth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b98457"/><stop offset="1" stop-color="#7d5233"/></linearGradient>' +
+    FLOAT_CASTLE.match(/<defs>([\s\S]*?)<\/defs>/)[1];
+
+  var api = { GOLD_ISLAND: GOLD_ISLAND, MASCOT: MASCOT, CHEST: CHEST, FLOAT_CASTLE: FLOAT_CASTLE, gearPath: gearPath,
+    CHARACTERS: CHARACTERS, DECO: DECO, BOARD_DEFS: BOARD_DEFS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPArt = api;
 })(typeof self !== 'undefined' ? self : this);

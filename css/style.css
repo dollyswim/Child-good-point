@@ -874,3 +874,70 @@ body {
 .map-info p { grid-column: 1; }
 .map-info .lock-pill { grid-column: 2; grid-row: 1; justify-self: end; align-self: center; white-space: nowrap; }
 .ribbon .nb { white-space: nowrap; }
+
+/* =====================================================================
+   Phase 3：金島棋盤
+   ===================================================================== */
+.map-page { display: grid; gap: 10px; }
+.map-page > * { margin: 0; }
+.hud {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items: center; gap: 4px;
+  padding: 8px 10px; border-radius: 20px; background: #fff; border: 3px solid #fff; box-shadow: var(--card-shadow);
+}
+.hud-cell { display: grid; justify-items: center; line-height: 1.15; }
+.hud-cell small { font-size: .7rem; color: var(--muted); font-weight: 700; }
+.hud-cell b { font-size: 1.05rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+.hud-cell b.gold { color: #e69500; }
+.hud-shop { white-space: nowrap; }
+.board-wrap {
+  position: relative; border-radius: 22px; overflow: hidden; border: 4px solid #fff;
+  box-shadow: var(--card-shadow); background: #2aa3dc;
+}
+.board-svg { display: block; width: 100%; height: auto; }
+.pawn {
+  position: absolute; width: 10.5%; max-width: 56px; transform: translate(-50%, -94%);
+  transition: left .28s ease-in-out, top .28s ease-in-out; pointer-events: none; z-index: 2;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,.2));
+}
+.pawn-inner svg { display: block; width: 100%; height: auto; }
+.pawn.hop .pawn-inner { animation: hop .3s ease-out; }
+@keyframes hop { 0% { transform: translateY(0) scale(1, 1); } 40% { transform: translateY(-36%) scale(.96, 1.05); } 80% { transform: translateY(0) scale(1.06, .92); } 100% { transform: translateY(0) scale(1, 1); } }
+.dice-overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(30, 60, 90, .25); z-index: 3; }
+.die-face {
+  width: 86px; height: 86px; display: grid; place-items: center; font-size: 2.8rem; font-weight: 900; color: var(--wood-3);
+  background: linear-gradient(#fff, #f1e6d2); border: 4px solid var(--wood-2); border-radius: 22px; box-shadow: 0 6px 0 var(--wood-3), 0 10px 20px rgba(0,0,0,.25);
+}
+.die-face.spin { animation: spin .25s linear infinite; }
+@keyframes spin { from { transform: rotate(-12deg) scale(.95); } 50% { transform: rotate(12deg) scale(1.05); } to { transform: rotate(-12deg) scale(.95); } }
+.map-hint { text-align: center; font-weight: 800; color: var(--wood-2); font-size: .9rem; }
+.dice-bar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.dice-btn {
+  display: grid; justify-items: center; gap: 0; padding: 10px 4px; border-radius: 18px; cursor: pointer;
+  border: 3px solid #fff; box-shadow: 0 4px 0 rgba(150, 100, 50, .25), var(--card-shadow); font-weight: 900;
+  background: linear-gradient(#fff7cf, #ffdf7e);
+}
+.dice-btn.d12 { background: linear-gradient(#ffe9f2, #ffc4db); }
+.dice-btn.skates { background: linear-gradient(#e4f7ff, #b9e6ff); }
+.dice-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(150, 100, 50, .25); }
+.dice-btn:disabled { filter: grayscale(.7); opacity: .55; cursor: not-allowed; transform: none; }
+.dice-icon { font-size: 2rem; line-height: 1.1; }
+.dice-btn b { font-size: .9rem; }
+.dice-btn small { font-size: .72rem; color: var(--muted); font-weight: 700; }
+.legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; font-size: .78rem; color: var(--muted); font-weight: 700; }
+.lock-pill.open { background: var(--pos); }
+a.map-cta { text-decoration: none; }
+/* 商店與角色選擇 */
+.shop-box { gap: 10px; }
+.shop-bal { margin: 0; font-weight: 700; }
+.shop-bal b { color: #e69500; font-size: 1.2rem; }
+.shop-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 16px; background: #fbf4e8; }
+.shop-row-icon { font-size: 1.8rem; }
+.shop-row-main { display: grid; min-width: 0; }
+.shop-row-main small { color: var(--muted); }
+.char-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.char-opt { display: grid; justify-items: center; gap: 4px; padding: 10px 4px; border-radius: 18px; border: 3px solid #f1e2cc; background: #fff; cursor: pointer; }
+.char-opt svg { width: 64px; height: auto; }
+.char-opt.active { border-color: #ffd23f; background: #fffbe9; box-shadow: 0 0 0 3px rgba(255, 210, 63, .4); }
+button.partner { border: none; background: none; padding: 0; cursor: pointer; font: inherit; }
+.partner-ring svg { width: 70%; height: auto; }
+@media (prefers-reduced-motion: reduce) { .pawn { transition: none; } .pawn.hop .pawn-inner, .die-face.spin { animation: none; } }

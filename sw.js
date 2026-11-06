@@ -1,7 +1,7 @@
 /* 親子集點 Service Worker：離線可用。資料存在 localStorage，不受快取影響。 */
-var CACHE = 'cgp-shell-v10';
+var CACHE = 'cgp-shell-v11';
 var SHELL = [
-  './', 'index.html', 'css/style.css', 'js/store.js', 'js/rules-csv.js', 'js/report.js', 'js/art.js', 'js/app.js',
+  './', 'index.html', 'css/style.css', 'js/store.js', 'js/rules-csv.js', 'js/report.js', 'js/game.js', 'js/art.js', 'js/app.js',
   'manifest.webmanifest', 'images/gold-island.webp', 'images/gold-island.jpg', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'
 ];
 

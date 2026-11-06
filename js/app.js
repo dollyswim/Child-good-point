@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.06-10';
+  var APP_VERSION = '2026.11.07-1';
   var store;
   try {
     store = new CGP.Store();
@@ -87,7 +87,7 @@
       return { name: parts[0] || 'home', arg: parts[1] || null };
     }
     if (hs === 'report') return { name: 'report', arg: null };
-    var m = hs.match(/^(child|rules|challenge|shop|adventure)(?:-(.+))?$/);
+    var m = hs.match(/^(child|rules|challenge|shop|adventure|map)(?:-(.+))?$/);
     if (!m) return { name: 'home', arg: null };
     return { name: m[1] === 'rules' ? 'settings' : m[1], arg: m[2] || null };
   }
@@ -210,12 +210,12 @@
   function render() {
     var r = route();
     var html;
-    if (r.name === 'child' || r.name === 'challenge' || r.name === 'shop' || r.name === 'adventure') {
+    if (r.name === 'child' || r.name === 'challenge' || r.name === 'shop' || r.name === 'adventure' || r.name === 'map') {
       var child = store.getChild(r.arg);
       if (!child) { location.replace('#home'); return; }
       setCurrent(child.id);
       html = r.name === 'child' ? renderChild(child) : r.name === 'challenge' ? renderChallenge(child)
-        : r.name === 'shop' ? renderShop(child) : renderAdventure(child);
+        : r.name === 'shop' ? renderShop(child) : r.name === 'map' ? renderMap(child) : renderAdventure(child);
     } else if (r.name === 'settings') {
       html = renderSettings(r.arg || 'children');
     } else if (r.name === 'report') {
@@ -223,7 +223,7 @@
     } else {
       html = renderHome();
     }
-    if (r.name !== 'settings') html += bottomNav(r.name === 'adventure' ? 'child' : r.name);
+    if (r.name !== 'settings') html += bottomNav(r.name === 'adventure' || r.name === 'map' ? 'child' : r.name);
     app.innerHTML = html;
     app.dataset.view = r.name;
     if (ui.pulse) {
@@ -414,11 +414,13 @@
     // 3. 夥伴＋能量星星主卡
     var bal = st.balance;
     var toNext = DICE_COST - (bal % DICE_COST);
+    var bagNow = store.getPlayer(child.id).bag;
     var hint = bal >= DICE_COST
-      ? '已經可以換 ' + Math.floor(bal / DICE_COST) + ' 顆 6 面骰 🎲'
+      ? '可以換 ' + Math.floor(bal / DICE_COST) + ' 顆 6 面骰 🎲・背包 🎲' + bagNow.d6 + ' 🎯' + bagNow.d12 + ' 🛼' + bagNow.skates
       : '再 <b>' + toNext + '</b> 顆星可以換一顆 6 面骰 🎲';
     var starCard = '<section class="star-card" style="--c:' + h(child.color) + '">' +
-      '<div class="partner"><span class="partner-ring">' + h(child.avatar) + '</span><span class="partner-tag">夥伴即將登場</span></div>' +
+      '<button class="partner" data-action="pick-character" aria-label="選擇冒險夥伴"><span class="partner-ring">' + characterArt(child) + '</span>' +
+      '<span class="partner-tag">' + h(characterName(child)) + ' ✎</span></button>' +
       '<div class="star-main"><span class="star-label">' + h(child.name) + '的能量星星</span>' +
       '<b class="star-value" data-testid="stars"><span class="big-star">⭐</span> ' + num(bal) + '</b>' +
       '<span class="star-hint">' + hint + '</span>' + progressBar(bal % DICE_COST, DICE_COST, 'star') + '</div>' +
@@ -454,9 +456,10 @@
       '<div class="map-art"><picture><source srcset="images/gold-island.webp" type="image/webp">' +
       '<img src="images/gold-island.jpg" alt="金島：齒輪、礦坑、礦車、金屬橋與發光礦石" width="1200" height="675" loading="lazy" decoding="async"></picture></div>' +
       '<div class="map-info">' +
-      '<p>擲骰子、走格子、開寶箱，即將展開！</p>' +
-      '<span class="lock-pill">🔒 下一階段開放</span>' +
-      '<button class="btn primary map-cta" disabled>開始冒險 ›</button></div>' +
+      '<p>擲骰子、走格子、開寶箱！目前在第 ' + store.getPlayer(child.id).pos + ' / 30 格</p>' +
+      (x ? '<span class="lock-pill open">🔓 今天可以玩</span>' : '<span class="lock-pill">🔒 先進入今日冒險</span>') +
+      (x ? '<a class="btn primary map-cta" href="#map-' + h(child.id) + '">開始冒險 ›</a>'
+        : '<button class="btn primary map-cta" disabled>開始冒險 ›</button>') + '</div>' +
       '<span class="compass" aria-hidden="true">🧭</span></section>' +
       '<div class="island-dots" aria-label="五座島">' + ISLANDS.map(function (is, i) {
         return '<span class="dot ' + (i === 0 ? 'active' : '') + '" style="--d:' + is[1] + '" title="' + is[0] + '"></span>';
@@ -470,6 +473,245 @@
       '<button class="tile t-report" data-action="open-log"><span class="tile-icon">📜</span>結算紀錄</button></nav>';
 
     return hero + '<main class="page adventure">' + tabs + starCard + summary + log + map + quick + '</main>';
+  }
+
+  // ---------- 金島棋盤（Phase 3） ----------
+  var GAME = window.CGPGame;
+  function characterId(child) { return store.getPlayer(child.id).character || 'robot'; }
+  function characterArt(child) { return ART.CHARACTERS[characterId(child)]; }
+  function characterName(child) {
+    var id = characterId(child);
+    return GAME.CHARACTERS.find(function (c) { return c.id === id; }).name;
+  }
+
+  /** 等角投影：格座標 → 螢幕座標 */
+  var TW = 22, TH = 12.5, DEPTH = 7;
+  function iso(gx, gy) { return { x: (gx - gy) * TW, y: (gx + gy) * TH }; }
+
+  var TILE_STYLE = {
+    start: { top: '#8be07a', side: '#4f9e44', icon: '🚩' },
+    normal: { top: '#fff4d6', side: '#d8b77c', icon: '' },
+    chest: { top: '#ffd75e', side: '#c99a12', icon: '🎁' },
+    chance: { top: '#cdbbff', side: '#8b74f0', icon: '❓' },
+    minigame: { top: '#a9dcff', side: '#4aa3f0', icon: '🎮' },
+    end: { top: '#ff8a7a', side: '#c4372d', icon: '🏁' }
+  };
+
+  function boardSvg(board) {
+    var tiles = board.tiles;
+    var pts = tiles.map(function (t) { return iso(t.gx, t.gy); });
+    var xs = pts.map(function (p) { return p.x; }), ys = pts.map(function (p) { return p.y; });
+    function P(gx, gy) { return iso(gx, gy); }
+    // 地圖範圍：涵蓋整座島（含側面厚度）與上方的城堡、煙
+    var corners = [P(-0.9, -1.2), P(9.9, -1.2), P(9.9, 9.9), P(-0.9, 9.9)];
+    var cx = corners.map(function (p) { return p.x; }), cy = corners.map(function (p) { return p.y; });
+    var minX = Math.min(Math.min.apply(null, cx), Math.min.apply(null, xs)) - 12, maxX = Math.max(Math.max.apply(null, cx), Math.max.apply(null, xs)) + 12;
+    var minY = Math.min(Math.min.apply(null, cy), Math.min.apply(null, ys)) - 40, maxY = Math.max.apply(null, cy) + 26;
+    var vb = { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+    // 島嶼地面：等角菱形
+    var c1 = P(-0.9, -1.2), c2 = P(9.9, -1.2), c3 = P(9.9, 9.9), c4 = P(-0.9, 9.9);
+    var g1 = P(-0.5, -0.8), g2 = P(9.5, -0.8), g3 = P(9.5, 9.5), g4 = P(-0.5, 9.5);
+    function poly(a) { return a.map(function (p) { return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' '); }
+    var ground =
+      '<polygon points="' + poly([c1, c2, c3, c4]) + '" fill="#8be6f5" opacity=".6" transform="translate(0 6) scale(1.04)" transform-origin="' + P(4.5, 4.4).x + ' ' + P(4.5, 4.4).y + '"/>' +
+      '<polygon points="' + poly([c4, c3, { x: c3.x, y: c3.y + 14 }, { x: c4.x, y: c4.y + 14 }]) + '" fill="url(#bd-earth)"/>' +
+      '<polygon points="' + poly([c2, c3, { x: c3.x, y: c3.y + 14 }, { x: c2.x, y: c2.y + 14 }]) + '" fill="#6e4a2e"/>' +
+      '<polygon points="' + poly([c1, c2, c3, c4]) + '" fill="url(#bd-sand)" stroke="#fff" stroke-width="2" stroke-dasharray="6 4"/>' +
+      '<polygon points="' + poly([g1, g2, g3, g4]) + '" fill="url(#bd-grass)"/>';
+    // 路徑連線
+    var line = '<polyline points="' + poly(pts) + '" fill="none" stroke="#c99a5a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/>';
+    // 裝飾（依深度與格子一起排序）
+    var D = ART.DECO, items = [];
+    // 裝飾畫在格子下面，路徑永遠清楚可見；裝飾之間依深度排序
+    function deco(gx, gy, svg) { var p = P(gx, gy); items.push({ d: -100 + gx + gy, svg: svg(p.x, p.y) }); }
+    deco(4.2, 6.7, function (x, y) { return D.mine(x, y, 1); });
+    deco(6.2, 6.8, function (x, y) { return D.cart(x, y, 0.9); });
+    deco(5.4, 6.4, function (x, y) { return D.crystals(x, y, 0.9); });
+    deco(3.4, 3.6, function (x, y) { return D.gear(x, y, 0.9); });
+    deco(5.8, 3.4, function (x, y) { return D.factory(x, y, 0.9); });
+    deco(4.6, 1.0, function (x, y) { return D.bridge(x, y, 0.8); });
+    deco(0.1, 9.2, function (x, y) { return D.palm(x, y, 0.8); });
+    deco(9.3, 6.4, function (x, y) { return D.palm(x, y, 0.75); });
+    deco(0.0, 3.4, function (x, y) { return D.palm(x, y, 0.7); });
+    deco(7.6, 7.0, function (x, y) { return D.crystals(x, y, 0.6); });
+    deco(9.0, -0.6, function (x, y) { return D.castle(x, y, 0.62); });
+    tiles.forEach(function (t, i) {
+      var p = pts[i], st = TILE_STYLE[t.type];
+      var top = poly([{ x: p.x, y: p.y - TH }, { x: p.x + TW, y: p.y }, { x: p.x, y: p.y + TH }, { x: p.x - TW, y: p.y }]);
+      var left = poly([{ x: p.x - TW, y: p.y }, { x: p.x, y: p.y + TH }, { x: p.x, y: p.y + TH + DEPTH }, { x: p.x - TW, y: p.y + DEPTH }]);
+      var right = poly([{ x: p.x + TW, y: p.y }, { x: p.x, y: p.y + TH }, { x: p.x, y: p.y + TH + DEPTH }, { x: p.x + TW, y: p.y + DEPTH }]);
+      items.push({ d: t.gx + t.gy, svg: '<g class="tile-g" data-n="' + t.n + '">' +
+        '<polygon points="' + left + '" fill="' + st.side + '"/><polygon points="' + right + '" fill="' + st.side + '" opacity=".8"/>' +
+        '<polygon points="' + top + '" fill="' + st.top + '" stroke="#fff" stroke-width="1.5"/>' +
+        (st.icon ? '<text x="' + p.x + '" y="' + (p.y - 2) + '" font-size="13" text-anchor="middle">' + st.icon + '</text>' : '') +
+        '<text x="' + p.x + '" y="' + (p.y + (st.icon ? 8 : 4)) + '" font-size="' + (st.icon ? 7 : 9) + '" font-weight="900" text-anchor="middle" fill="#7d4519">' + (t.n === 0 ? '起點' : t.n) + '</text></g>' });
+    });
+    items.sort(function (a, b) { return a.d - b.d; });
+    var svg = '<svg class="board-svg" viewBox="' + vb.x + ' ' + vb.y + ' ' + vb.w + ' ' + vb.h + '" aria-label="金島地圖，共 ' + (tiles.length - 1) + ' 格">' +
+      '<defs>' + ART.BOARD_DEFS + '</defs>' +
+      '<rect x="' + vb.x + '" y="' + vb.y + '" width="' + vb.w + '" height="' + vb.h + '" fill="url(#bd-sea)"/>' +
+      '<g stroke="#d4f3ff" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7">' +
+      '<path d="M' + (vb.x + 16) + ' ' + (vb.y + vb.h - 18) + ' q8 -4 16 0 t16 0"/><path d="M' + (vb.x + vb.w - 60) + ' ' + (vb.y + 40) + ' q8 -4 16 0 t16 0"/></g>' +
+      ground + line + items.map(function (it) { return it.svg; }).join('') + '</svg>';
+    return { svg: svg, vb: vb, pts: pts };
+  }
+
+  /** 棋子在容器裡的百分比座標（站在格子頂面中心） */
+  function pawnStyle(geo, n) {
+    var p = geo.pts[n];
+    return 'left:' + ((p.x - geo.vb.x) / geo.vb.w * 100).toFixed(2) + '%;top:' + ((p.y + 2 - geo.vb.y) / geo.vb.h * 100).toFixed(2) + '%';
+  }
+
+  function renderMap(child) {
+    var player = store.getPlayer(child.id);
+    var board = store.getBoard(child.id);
+    var geo = boardSvg(board);
+    var bag = player.bag;
+    var canPlay = store.canPlayToday(child.id);
+    var used = store.getRollsToday(child.id);
+    var limit = GAME.DAILY_DICE_LIMIT;
+    var end = board.tiles.length - 1;
+    var atEnd = player.pos >= end;
+    var noRolls = used >= limit;
+    function act(kind, icon, label, count, disabled) {
+      return '<button class="dice-btn ' + kind + '" data-action="' + (kind === 'skates' ? 'use-skates' : 'roll') + '" data-kind="' + kind + '"' +
+        (disabled ? ' disabled' : '') + '><span class="dice-icon">' + icon + '</span><b>' + label + '</b><small>背包 ×' + count + '</small></button>';
+    }
+    var reason = !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
+      : atEnd ? '🏁 已經抵達金島終點！下一座島即將開放'
+        : noRolls ? '今天的 3 次骰子用完了，明天再來！（溜冰鞋還可以用）'
+          : (!bag.d6 && !bag.d12 && !bag.skates ? '背包是空的，到 🛒 商店用能量星星購買骰子' : '選一個道具出發吧！');
+    return pageHeader('金島', child, 'map') +
+      '<main class="page map-page">' +
+      '<section class="hud">' +
+      '<span class="hud-cell"><small>能量星星</small><b class="gold" data-testid="stars">⭐ ' + num(store.getStarBalance(child.id)) + '</b></span>' +
+      '<span class="hud-cell"><small>今日骰子</small><b data-testid="rolls">' + used + ' / ' + limit + '</b></span>' +
+      '<span class="hud-cell"><small>位置</small><b data-testid="pos">' + player.pos + ' / ' + end + '</b></span>' +
+      '<button class="btn small hud-shop" data-action="open-shop"' + (canPlay ? '' : ' disabled') + '>🛒 商店</button></section>' +
+      '<section class="board-wrap">' + geo.svg +
+      '<div class="pawn" id="pawn" data-pos="' + player.pos + '" style="' + pawnStyle(geo, player.pos) + '"><div class="pawn-inner">' + characterArt(child) + '</div></div>' +
+      '<div class="dice-overlay" id="dice-overlay" hidden><div class="die-face" id="die-face">?</div></div>' +
+      '</section>' +
+      '<p class="map-hint">' + reason + '</p>' +
+      '<section class="dice-bar">' +
+      act('d6', '🎲', '6 面骰', bag.d6, !canPlay || atEnd || noRolls || !bag.d6) +
+      act('d12', '🎯', '12 面骰', bag.d12, !canPlay || atEnd || noRolls || !bag.d12) +
+      act('skates', '🛼', '溜冰鞋 +3', bag.skates, !canPlay || atEnd || !bag.skates) +
+      '</section>' +
+      '<div class="legend"><span>🎁 寶箱</span><span>❓ 機會</span><span>🎮 小遊戲（即將開放）</span><span>🏁 終點</span></div>' +
+      '<a class="btn block" href="#adventure-' + h(child.id) + '">‹ 回冒險大廳</a>' +
+      '</main>';
+  }
+
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /** 棋子一格一格跳過去 */
+  async function hopAlong(child, path) {
+    var pawn = document.getElementById('pawn');
+    if (!pawn) return;
+    var geo = boardSvg(store.getBoard(child.id));
+    for (var i = 0; i < path.length; i++) {
+      pawn.setAttribute('style', pawnStyle(geo, path[i]));
+      pawn.dataset.pos = path[i];
+      pawn.classList.remove('hop'); void pawn.offsetWidth; pawn.classList.add('hop');
+      await sleep(reduceMotion ? 60 : 330);
+    }
+    pawn.classList.remove('hop');
+  }
+
+  async function showDie(value, sides) {
+    var ov = document.getElementById('dice-overlay'), face = document.getElementById('die-face');
+    if (!ov) return;
+    ov.hidden = false;
+    face.classList.add('spin');
+    var spins = reduceMotion ? 1 : 8;
+    for (var i = 0; i < spins; i++) { face.textContent = 1 + Math.floor(Math.random() * sides); await sleep(70); }
+    face.textContent = value;
+    face.classList.remove('spin');
+    await sleep(reduceMotion ? 150 : 550);
+    ov.hidden = true;
+  }
+
+  function eventText(ev) {
+    if (!ev || ev.type === 'normal' || ev.type === 'start') return '';
+    var t = ev.title + '\n' + ev.text;
+    if (ev.then) t += '\n\n' + eventText(ev.then);
+    return t;
+  }
+
+  ui.busy = false;
+  async function playMove(childId, kind) {
+    if (ui.busy) return;
+    var child = store.getChild(childId);
+    var res;
+    try { res = kind === 'skates' ? store.useSkates(childId) : store.rollDice(childId, kind); }
+    catch (err) { toast(err.message, 'neg'); render(); return; }
+    ui.busy = true;
+    app.querySelectorAll('.dice-btn, .hud-shop').forEach(function (b) { b.disabled = true; });
+    try {
+      if (kind !== 'skates') await showDie(res.value, kind === 'd6' ? 6 : 12);
+      else toast('🛼 溜冰鞋前進 3 格！', 'pos');
+      await hopAlong(child, res.path);
+      if (res.event && res.event.extraPath && res.event.extraPath.length) {
+        toast('🚃 ' + res.event.text, 'pos');
+        await sleep(400);
+        await hopAlong(child, res.event.extraPath);
+      }
+    } finally { ui.busy = false; }
+    render();
+    var msg = eventText(res.event);
+    var head = kind === 'skates' ? '🛼 前進 3 格' : '🎲 擲出 ' + res.value;
+    if (msg) showInfo(head + '・停在第 ' + store.getPlayer(childId).pos + ' 格', msg);
+    else toast(head + '，停在第 ' + store.getPlayer(childId).pos + ' 格');
+  }
+
+  /** 星星商店（對話框） */
+  function openShop(childId) {
+    function draw() {
+      var bal = store.getStarBalance(childId);
+      var bag = store.getPlayer(childId).bag;
+      confirmEl.innerHTML = '<div class="confirm-box shop-box"><h2>🛒 星星商店</h2>' +
+        '<p class="shop-bal">目前有 <b>⭐ ' + num(bal) + '</b></p>' +
+        GAME.SHOP.map(function (it) {
+          var ok = bal >= it.price;
+          return '<div class="shop-row"><span class="shop-row-icon">' + it.icon + '</span>' +
+            '<span class="shop-row-main"><b>' + h(it.name) + '</b><small>' + h(it.desc) + '・背包 ×' + bag[it.id] + '</small></span>' +
+            '<button class="btn ' + (ok ? 'primary' : '') + ' small" data-buy="' + it.id + '"' + (ok ? '' : ' disabled') + '>⭐' + it.price + '</button></div>';
+        }).join('') +
+        '<p class="muted small">買來的道具放進背包，沒用完隔天仍然保留。每天最多擲 3 次骰子。</p>' +
+        '<div class="modal-actions"><button type="button" class="btn" data-no>完成</button></div></div>';
+      confirmEl.querySelectorAll('[data-buy]').forEach(function (b) {
+        b.onclick = function () {
+          try { var it = store.buyItem(childId, b.getAttribute('data-buy')); toast('買到 ' + it.icon + ' ' + it.name + '！', 'pos'); }
+          catch (err) { toast(err.message, 'neg'); }
+          draw();
+        };
+      });
+      confirmEl.querySelector('[data-no]').onclick = function () { confirmEl.close(); render(); };
+    }
+    draw();
+    confirmEl.oncancel = function () { render(); };
+    if (typeof confirmEl.showModal === 'function') confirmEl.showModal();
+    else confirmEl.setAttribute('open', '');
+  }
+
+  /** 選擇冒險夥伴（測試角色 3 種） */
+  function openCharacterPicker(childId) {
+    var child = store.getChild(childId);
+    var cur = characterId(child);
+    confirmEl.innerHTML = '<div class="confirm-box"><h2>選擇 ' + h(child.name) + ' 的冒險夥伴</h2><div class="char-pick">' +
+      GAME.CHARACTERS.map(function (c) {
+        return '<button class="char-opt ' + (c.id === cur ? 'active' : '') + '" data-char="' + c.id + '">' + ART.CHARACTERS[c.id] + '<b>' + h(c.name) + '</b></button>';
+      }).join('') + '</div><p class="muted small">測試角色，之後會有 8 種原創夥伴。每個孩子各自選擇。</p>' +
+      '<div class="modal-actions"><button type="button" class="btn" data-no>取消</button></div></div>';
+    confirmEl.querySelectorAll('[data-char]').forEach(function (b) {
+      b.onclick = function () { store.setCharacter(childId, b.getAttribute('data-char')); confirmEl.close(); toast('已選擇 ' + b.textContent.trim(), 'pos'); render(); };
+    });
+    confirmEl.querySelector('[data-no]').onclick = function () { confirmEl.close(); };
+    confirmEl.oncancel = null;
+    if (typeof confirmEl.showModal === 'function') confirmEl.showModal();
+    else confirmEl.setAttribute('open', '');
   }
 
   function enterAdventure(childId) {
@@ -1289,6 +1531,10 @@
         case 'export': exportData(); break;
         case 'pick-child': pickChild(el.getAttribute('data-kind')); break;
         case 'enter-adventure': enterAdventure(childId); break;
+        case 'roll': playMove(childId, el.getAttribute('data-kind')); break;
+        case 'use-skates': playMove(childId, 'skates'); break;
+        case 'open-shop': openShop(childId); break;
+        case 'pick-character': openCharacterPicker(childId); break;
         case 'open-log': {
           ui.logOpen = true;
           var lg = document.getElementById('settle-log');
