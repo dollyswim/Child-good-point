@@ -34,6 +34,10 @@
   var ui = {
     showAllRecords: false,
     pulse: false,
+    scoreKind: 'bonus',   // 孩子頁目前顯示加分或扣分
+    scorePoints: null,    // 分數篩選（null = 全部）
+    query: '',            // 孩子頁搜尋文字
+    settingsQuery: '',    // 設定頁搜尋文字
     lastDate: store.today()
   };
 
@@ -126,6 +130,30 @@
     return ids.map(function (id) { var c = store.getChild(id); return c ? c.name : ''; }).filter(Boolean).join('、');
   }
 
+  /** 搜尋：每個關鍵字都要出現在名稱中（不分大小寫） */
+  function matchQuery(name, q) {
+    var terms = String(q || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+    var n = String(name).toLowerCase();
+    return terms.every(function (t) { return n.indexOf(t) >= 0; });
+  }
+  /** 分數排序：加分由小到大（+3、+5、+10），扣分由輕到重（-3、-5、-10） */
+  function byPoints(a, b) {
+    var sa = a.points < 0 ? 1 : 0, sb = b.points < 0 ? 1 : 0;
+    if (sa !== sb) return sa - sb;
+    var d = Math.abs(a.points) - Math.abs(b.points);
+    return d || String(a.name).localeCompare(String(b.name), 'zh-Hant');
+  }
+  /** 依分數分組 */
+  function groupByPoints(items) {
+    var groups = [];
+    items.slice().sort(byPoints).forEach(function (i) {
+      var g = groups[groups.length - 1];
+      if (!g || g.points !== i.points) { g = { points: i.points, items: [] }; groups.push(g); }
+      g.items.push(i);
+    });
+    return groups;
+  }
+
   // ---------- 畫面 ----------
   function render() {
     var r = route();
@@ -176,8 +204,6 @@
     var total = store.getTotal(id);
     var net = store.getTodayNet(id);
     var tasks = store.getTodayTasks(id);
-    var bonus = store.getItemsFor(id, 'bonus');
-    var penalty = store.getItemsFor(id, 'penalty');
     var rewards = store.getRewards();
     var last = store.getLastRecord(id);
     var records = store.getRecords(id, ui.showAllRecords ? 0 : 8);
@@ -193,15 +219,6 @@
         (s.label ? '<small>' + h(s.label) + '</small>' : '') + '</span>' +
         '<span class="pts pos">' + signed(t.task.points) + '</span></button>';
     }).join('') : '<p class="muted small">今天沒有任務</p>';
-
-    function itemBtns(items, cls) {
-      if (!items.length) return '<p class="muted small">尚未設定，可到設定頁新增</p>';
-      return '<div class="grid">' + items.map(function (i) {
-        return '<button class="score-btn ' + cls + '" data-action="record" data-id="' + h(i.id) + '">' +
-          '<span class="score-name">' + h(i.name) + '</span>' +
-          '<span class="score-pts">' + signed(i.points) + '</span></button>';
-      }).join('') + '</div>';
-    }
 
     var rewardHtml = rewards.length ? rewards.map(function (r) {
       var ok = total >= r.cost;
@@ -224,8 +241,10 @@
       '<div class="today"><div class="label">今日淨得分</div><div class="today-value ' + signClass(net) + '" data-testid="today">' + signed(net) + '</div></div>' +
       '</section>' +
       '<section><h2>📋 今日任務</h2><div class="tasks">' + taskHtml + '</div></section>' +
-      '<section><h2>👍 加分</h2>' + itemBtns(bonus, 'bonus') + '</section>' +
-      '<section><h2>⚠️ 扣分</h2>' + itemBtns(penalty, 'penalty') + '</section>' +
+      '<section class="scorer"><h2>✏️ 加分・扣分</h2>' +
+      '<input type="search" id="score-search" class="search" data-search="score" placeholder="🔍 搜尋規定，例如：功課" ' +
+      'autocomplete="off" enterkeyhint="search" value="' + h(ui.query) + '">' +
+      '<div id="score-list">' + renderScoreList(id) + '</div></section>' +
       '<section><details class="rewards"><summary><h2>🎁 兌換現實獎勵</h2></summary>' +
       '<p class="muted small">兌換會扣除總點數，不影響今日淨得分。</p>' + rewardHtml + '</details></section>' +
       '<section><h2>🕘 最近紀錄</h2>' + recHtml +
@@ -235,6 +254,62 @@
       '<div class="undo-bar"><button class="btn undo" data-action="undo"' + (last ? '' : ' disabled') + '>' +
       '↶ 撤銷上一筆' + (last ? '<small>' + h(last.name) + ' ' + signed(last.points) + '</small>' : '') +
       '</button></div>';
+  }
+
+  /** 孩子頁的加減分清單（搜尋與篩選時只重畫這一塊，輸入框不會失去焦點） */
+  function renderScoreList(childId) {
+    var bonus = store.getItemsFor(childId, 'bonus');
+    var penalty = store.getItemsFor(childId, 'penalty');
+    if (!bonus.length && !penalty.length) return '<p class="muted small">尚未設定加分或扣分項目，可到設定頁新增</p>';
+
+    function btns(items) {
+      return '<div class="grid">' + items.map(function (i) {
+        return '<button class="score-btn ' + i.kind + '" data-action="record" data-id="' + h(i.id) + '">' +
+          '<span class="score-name">' + h(i.name) + '</span>' +
+          '<span class="score-pts">' + signed(i.points) + '</span></button>';
+      }).join('') + '</div>';
+    }
+    function grouped(items) {
+      var groups = groupByPoints(items);
+      if (groups.length === 1) return btns(groups[0].items);
+      return groups.map(function (g) {
+        return '<div class="pts-group"><div class="pts-head ' + signClass(g.points) + '">' + signed(g.points) +
+          '<span>' + g.items.length + ' 項</span></div>' + btns(g.items) + '</div>';
+      }).join('');
+    }
+
+    // 搜尋模式：同時搜尋加分與扣分
+    if (ui.query.trim()) {
+      var found = bonus.concat(penalty).filter(function (i) { return matchQuery(i.name, ui.query); });
+      if (!found.length) return '<p class="muted small search-empty">找不到「' + h(ui.query.trim()) + '」相關的規定</p>';
+      return '<p class="muted small">搜尋結果 ' + found.length + ' 項</p>' + grouped(found);
+    }
+
+    var kind = ui.scoreKind === 'penalty' ? 'penalty' : 'bonus';
+    var items = kind === 'bonus' ? bonus : penalty;
+    var values = groupByPoints(items).map(function (g) { return g.points; });
+    if (values.indexOf(ui.scorePoints) < 0) ui.scorePoints = null;
+    var shown = ui.scorePoints == null ? items : items.filter(function (i) { return i.points === ui.scorePoints; });
+
+    var seg = '<div class="seg" role="tablist">' +
+      '<button class="seg-btn bonus ' + (kind === 'bonus' ? 'active' : '') + '" data-action="score-kind" data-kind="bonus" role="tab" aria-selected="' + (kind === 'bonus') + '">👍 加分 <small>' + bonus.length + '</small></button>' +
+      '<button class="seg-btn penalty ' + (kind === 'penalty' ? 'active' : '') + '" data-action="score-kind" data-kind="penalty" role="tab" aria-selected="' + (kind === 'penalty') + '">⚠️ 扣分 <small>' + penalty.length + '</small></button>' +
+      '</div>';
+    var chips = values.length > 1 ? '<div class="pts-chips">' +
+      '<button class="pts-chip ' + (ui.scorePoints == null ? 'active' : '') + '" data-action="score-points" data-points="">全部</button>' +
+      values.map(function (v) {
+        return '<button class="pts-chip ' + kind + ' ' + (ui.scorePoints === v ? 'active' : '') + '" data-action="score-points" data-points="' + v + '">' + signed(v) + '</button>';
+      }).join('') + '</div>' : '';
+
+    var list = items.length ? grouped(shown)
+      : '<p class="muted small">尚未設定' + (kind === 'bonus' ? '加分' : '扣分') + '項目，可到設定頁新增</p>';
+    return seg + chips + list;
+  }
+
+  function updateScoreList() {
+    var el = document.getElementById('score-list');
+    var childId = route().arg;
+    if (el && childId) el.innerHTML = renderScoreList(childId);
   }
 
   function groupByDate(records) {
@@ -285,20 +360,38 @@
   }
 
   function settingsItems(kind) {
-    var list = store.getItems(kind).map(function (i) {
+    var hint = kind === 'task'
+      ? '任務只要建立一次，可指定給全部或部分孩子，每個孩子的完成狀態各自獨立。'
+      : (kind === 'penalty' ? '扣分項目輸入正數即可，系統會自動以負數記錄。' : '');
+    var count = store.getItems(kind).length;
+    return (hint ? '<p class="muted small">' + hint + '</p>' : '') +
+      (count > 5 ? '<input type="search" id="settings-search" class="search" data-search="settings" placeholder="🔍 搜尋' + KIND_LABELS[kind] + '" ' +
+        'autocomplete="off" value="' + h(ui.settingsQuery) + '">' : '') +
+      '<div id="settings-list">' + settingsItemList(kind) + '</div>' +
+      '<button class="btn primary block" data-action="add-item" data-kind="' + kind + '">＋ 新增' + KIND_LABELS[kind] + '</button>';
+  }
+
+  function settingsItemList(kind) {
+    var all = store.getItems(kind);
+    if (!all.length) return '<ul class="rows"><li class="muted">尚未建立</li></ul>';
+    var items = all.filter(function (i) { return matchQuery(i.name, ui.settingsQuery); });
+    if (!items.length) return '<ul class="rows"><li class="muted">找不到「' + h(ui.settingsQuery.trim()) + '」</li></ul>';
+    if (kind !== 'task') items.sort(byPoints);
+    var lastPts = null;
+    var list = items.map(function (i) {
       var meta = childIdsText(i.childIds) + (kind === 'task' ? '・' + freqText(i.frequency) : '');
-      return '<li class="row"><span class="row-main"><b>' + h(i.name) +
+      var head = '';
+      if (kind !== 'task' && i.points !== lastPts) {
+        lastPts = i.points;
+        head = '<li class="rows-head ' + signClass(i.points) + '">' + signed(i.points) + '</li>';
+      }
+      return head + '<li class="row"><span class="row-main"><b>' + h(i.name) +
         ' <span class="pts ' + signClass(i.points) + '">' + signed(i.points) + '</span></b>' +
         '<small>' + h(meta) + '</small></span>' +
         '<button class="btn small" data-action="edit-item" data-id="' + h(i.id) + '">編輯</button>' +
         '<button class="btn small danger" data-action="delete-item" data-id="' + h(i.id) + '">刪除</button></li>';
     }).join('');
-    var hint = kind === 'task'
-      ? '任務只要建立一次，可指定給全部或部分孩子，每個孩子的完成狀態各自獨立。'
-      : (kind === 'penalty' ? '扣分項目輸入正數即可，系統會自動以負數記錄。' : '');
-    return (hint ? '<p class="muted small">' + hint + '</p>' : '') +
-      '<ul class="rows">' + (list || '<li class="muted">尚未建立</li>') + '</ul>' +
-      '<button class="btn primary block" data-action="add-item" data-kind="' + kind + '">＋ 新增' + KIND_LABELS[kind] + '</button>';
+    return '<ul class="rows">' + list + '</ul>';
   }
 
   function settingsRewards() {
@@ -491,10 +584,24 @@
     var childId = route().arg;
     try {
       switch (action) {
-        case 'open-child': ui.showAllRecords = false; go('#child-' + id); break;
+        case 'open-child':
+          ui.showAllRecords = false; ui.query = ''; ui.scorePoints = null;
+          go('#child-' + id);
+          break;
+        case 'score-kind':
+          ui.scoreKind = el.getAttribute('data-kind'); ui.scorePoints = null;
+          updateScoreList();
+          break;
+        case 'score-points': {
+          var pv = el.getAttribute('data-points');
+          ui.scorePoints = pv === '' ? null : Number(pv);
+          updateScoreList();
+          break;
+        }
         case 'add-child': openChildForm(); break;
         case 'record': {
           var rec = store.recordItem(childId, id);
+          ui.query = ''; // 記錄後清除搜尋，方便下一筆
           ui.pulse = true;
           toast(rec.name + ' ' + signed(rec.points), rec.points < 0 ? 'neg' : 'pos');
           render();
@@ -563,6 +670,17 @@
     }
   });
 
+  app.addEventListener('input', function (e) {
+    var kind = e.target.getAttribute && e.target.getAttribute('data-search');
+    if (kind === 'score') { ui.query = e.target.value; updateScoreList(); }
+    else if (kind === 'settings') {
+      ui.settingsQuery = e.target.value;
+      var el = document.getElementById('settings-list');
+      var tab = route().arg;
+      if (el && KIND_LABELS[tab]) el.innerHTML = settingsItemList(tab);
+    }
+  });
+
   app.addEventListener('change', function (e) {
     if (e.target.matches('[data-action="import"]') && e.target.files[0]) {
       importData(e.target.files[0]);
@@ -572,6 +690,7 @@
 
   window.addEventListener('hashchange', function () {
     if (modal.open) modal.close();
+    ui.settingsQuery = '';
     render();
     window.scrollTo(0, 0);
   });

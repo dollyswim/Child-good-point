@@ -87,7 +87,9 @@ async function main() {
   // 案例 A：端端起始 100，+20、-5 → 115 / +15
   await page.goto(url + '#home');
   await page.click('.child-card >> text=端端');
-  await page.click('.score-btn.bonus >> text=超棒表現');
+  await page.click('.score-btn.bonus >> text=超棒表現');          // 預設顯示加分
+  await page.click('.seg-btn.penalty');                            // 切到扣分
+  assert.equal(await page.locator('.score-btn.bonus').count(), 0, '扣分頁不顯示加分項目');
   await page.click('.score-btn.penalty >> text=違反約定');
   assert.equal(await text('[data-testid=total]'), '115');
   assert.equal(await text('[data-testid=today]'), '+15');
@@ -111,7 +113,11 @@ async function main() {
   await page.click('.child-card >> text=端端');
   const before = [await text('[data-testid=total]'), await text('[data-testid=today]')];
   const recCount = await page.locator('.rec').count();
+  // 用搜尋找到項目（搜尋同時涵蓋加分與扣分）
+  await page.fill('#score-search', '十分');
+  assert.equal(await page.locator('.score-btn').count(), 1);
   await page.click('.score-btn.bonus >> text=多做十分'); // 誤按 +10
+  assert.equal(await page.inputValue('#score-search'), '', '記錄後清除搜尋');
   assert.equal(await text('[data-testid=total]'), String(Number(before[0]) + 10));
   assert.match(await text('.undo-bar'), /多做十分 \+10/);
   await page.click('[data-action=undo]');
@@ -166,10 +172,42 @@ async function main() {
   assert.equal(await page.locator('.rows .row').count(), 1);
   console.log('✔ 編輯、刪除孩子');
 
+  // 大量項目：分數篩選與搜尋
+  await page.evaluate(() => {
+    const st = window.__cgpStore;
+    const pts = [3, 5, 10, 20];
+    for (let i = 0; i < 40; i++) st.addItem({ kind: i >= 20 ? 'penalty' : 'bonus', name: '規定' + i, points: pts[i % 4] });
+  });
+  await page.goto(url + '#home');
+  await page.click('.child-card >> nth=0');
+  await page.click('.seg-btn.penalty');
+  const chipTexts = await page.locator('.pts-chip').allInnerTexts();
+  assert.deepEqual(chipTexts, ['全部', '-3', '-5', '-10', '-20'], '扣分分數依輕到重排列');
+  await page.click('.pts-chip >> text=-10');
+  const shownPts = await page.locator('.score-btn .score-pts').allInnerTexts();
+  assert.ok(shownPts.length === 5 && shownPts.every(t => t === '-10'), '只顯示 -10 的項目');
+  await shot('06-filter-penalty');
+  await page.fill('#score-search', '規定1');
+  assert.ok(await page.locator('#score-search').evaluate(el => el === document.activeElement), '輸入時不失去焦點');
+  const names = await page.locator('.score-btn .score-name').allInnerTexts();
+  assert.ok(names.length > 0 && names.every(n => n.includes('規定1')));
+  const before40 = await text('[data-testid=total]');
+  await page.click('.score-btn >> text=規定11');
+  assert.equal(await text('[data-testid=total]'), String(Number(before40) + 20));
+  await noHScroll('大量項目孩子頁');
+  await page.fill('#score-search', '找不到的東西');
+  assert.match(await text('#score-list'), /找不到/);
+  await page.goto(url + '#rules-penalty');
+  await page.fill('#settings-search', '規定3');
+  const rows = await page.locator('#settings-list .row').allInnerTexts();
+  assert.ok(rows.length > 0 && rows.every(r => r.includes('規定3')));
+  await shot('07-settings-search');
+  console.log('✔ 大量項目：加分／扣分切換、分數篩選、搜尋');
+
   // 舊版網址格式仍可使用
   const cid = await page.evaluate(() => window.__cgpStore.getChildren()[0].id);
   await page.goto(url + '#/child/' + cid);
-  assert.equal(await text('[data-testid=total]'), afterRedeem);
+  assert.equal(await text('[data-testid=total]'), String(Number(before40) + 20));
   console.log('✔ 相容舊版網址格式');
 
   assert.deepEqual(errors, [], '頁面不得出現 JS 錯誤或原生對話框');

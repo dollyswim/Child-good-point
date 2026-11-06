@@ -178,6 +178,40 @@ h2 { font-size: 1.05rem; margin: 0 0 8px; }
 .undo-bar .btn { display: flex; width: 100%; max-width: 608px; margin: 0 auto; min-height: 52px; font-weight: 600; box-shadow: var(--shadow); }
 .undo-bar small { font-weight: 400; color: var(--muted); margin-left: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* ---- 加減分：搜尋、分類、分數篩選 ---- */
+.search {
+  width: 100%; min-height: 46px; padding: 8px 14px;
+  border: 1px solid #ddd2c4; border-radius: 12px; background: var(--surface);
+  font-size: 1rem; -webkit-appearance: none; appearance: none;
+}
+.search:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+.scorer { display: grid; gap: 10px; }
+.scorer h2 { margin: 0; }
+#score-list { display: grid; gap: 10px; min-width: 0; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--line); border-radius: 14px; }
+.seg-btn { min-height: 44px; border: none; border-radius: 10px; background: transparent; font-weight: 600; cursor: pointer; color: var(--muted); }
+.seg-btn small { font-weight: 400; opacity: .8; }
+.seg-btn.active { background: var(--surface); box-shadow: var(--shadow); }
+.seg-btn.bonus.active { color: var(--pos); }
+.seg-btn.penalty.active { color: var(--neg); }
+.pts-chips { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: none; }
+.pts-chips::-webkit-scrollbar { display: none; }
+.pts-chip {
+  flex: none; min-width: 52px; min-height: 40px; padding: 4px 14px;
+  border: 2px solid var(--line); border-radius: 999px; background: var(--surface);
+  font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer;
+}
+.pts-chip.bonus { color: var(--pos); }
+.pts-chip.penalty { color: var(--neg); }
+.pts-chip.active { background: var(--text); border-color: var(--text); color: #fff; }
+.pts-group { display: grid; gap: 6px; }
+.pts-group + .pts-group { margin-top: 4px; }
+.pts-head { display: flex; align-items: baseline; gap: 8px; font-weight: 800; font-size: 1.05rem; }
+.pts-head span { font-weight: 400; font-size: .8rem; color: var(--muted); }
+.search-empty { padding: 12px 0; text-align: center; }
+.scorer .score-btn { min-height: 64px; }
+.scorer .score-pts { font-size: 1.15rem; }
+
 /* ---- 設定 ---- */
 .tabs {
   position: sticky; top: calc(env(safe-area-inset-top) + 65px); z-index: 9;
@@ -191,6 +225,8 @@ h2 { font-size: 1.05rem; margin: 0 0 8px; }
 .rows { list-style: none; margin: 0 0 14px; padding: 0; background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); }
 .rows > li { padding: 12px 14px; border-top: 1px solid var(--line); }
 .rows > li:first-child { border-top: none; }
+.rows > li.rows-head { padding: 6px 14px; font-weight: 800; background: #faf5ee; }
+.page > .search { margin-bottom: 12px; }
 .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .row-main { flex: 1 1 140px; display: flex; flex-direction: column; min-width: 0; }
 .row-main b { word-break: break-word; }
