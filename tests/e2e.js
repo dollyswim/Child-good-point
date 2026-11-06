@@ -32,7 +32,7 @@ async function main() {
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  page.on('dialog', (d) => d.accept());
+  page.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
   const shot = async (name) => { if (SHOT_DIR) await page.screenshot({ path: path.join(SHOT_DIR, name + '.png'), fullPage: true }); };
   const noHScroll = async (label) => {
     const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -60,7 +60,7 @@ async function main() {
 
   // 設定：新增 +20 加分、共同任務（指定兩人）
   await page.click('a[aria-label="設定"]');
-  await page.click('a[href="#/settings/bonus"]');
+  await page.click('a[href="#rules-bonus"]');
   await page.click('[data-action="add-item"]');
   await page.fill('input[name="name"]', '超棒表現');
   await page.fill('input[name="points"]', '20');
@@ -70,7 +70,7 @@ async function main() {
   await page.fill('input[name="points"]', '10');
   await page.click('#modal-form button[type="submit"]');
 
-  await page.click('a[href="#/settings/task"]');
+  await page.click('a[href="#rules-task"]');
   await page.click('[data-action="add-item"]');
   await page.fill('input[name="name"]', '共同閱讀');
   await page.fill('input[name="points"]', '8');
@@ -85,7 +85,7 @@ async function main() {
   await shot('04-settings-tasks');
 
   // 案例 A：端端起始 100，+20、-5 → 115 / +15
-  await page.goto(url + '#/');
+  await page.goto(url + '#home');
   await page.click('.child-card >> text=端端');
   await page.click('.score-btn.bonus >> text=超棒表現');
   await page.click('.score-btn.penalty >> text=違反約定');
@@ -122,6 +122,7 @@ async function main() {
   // 兌換獎勵
   await page.click('.rewards summary');
   await page.click('[data-action=redeem] >> nth=0');
+  await page.click('#confirm [data-yes]');
   assert.equal(await text('[data-testid=total]'), String(Number(before[0]) - 30));
   assert.equal(await text('[data-testid=today]'), before[1], '兌換不影響今日淨得分');
   assert.match(await text('.records'), /看卡通 30 分鐘[\s\S]*-30/);
@@ -136,34 +137,42 @@ async function main() {
   console.log('✔ 案例 D：重新整理後資料保留');
 
   // 備份匯出 → 清空 → 匯入
-  await page.goto(url + '#/settings/backup');
+  await page.goto(url + '#rules-backup');
   const [download] = await Promise.all([page.waitForEvent('download'), page.click('[data-action=export]')]);
   const backupPath = await download.path();
   const backup = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
   assert.equal(backup.children.length, 2);
   await page.evaluate(() => localStorage.clear());
-  await page.goto(url + '#/');
+  await page.goto(url + '#home');
   await page.reload();
   assert.equal(await page.locator('.child-card').count(), 0);
-  await page.goto(url + '#/settings/backup');
+  await page.goto(url + '#rules-backup');
   await page.setInputFiles('input[data-action=import]', backupPath);
+  await page.click('#confirm [data-yes]');
   await page.waitForSelector('.toast >> text=匯入完成');
-  await page.goto(url + '#/');
+  await page.goto(url + '#home');
   assert.equal(await page.locator('.child-card').count(), 2);
   assert.match(await text('.child-card >> nth=0'), new RegExp('目前 ' + afterRedeem + ' 點'));
   console.log('✔ 備份匯出與匯入還原');
 
   // 編輯與刪除孩子
-  await page.goto(url + '#/settings/children');
+  await page.goto(url + '#rules-children');
   await page.click('[data-action=edit-child] >> nth=1');
   await page.fill('input[name="name"]', '波妞妞');
   await page.click('#modal-form button[type="submit"]');
   assert.match(await text('.rows'), /波妞妞/);
   await page.click('[data-action=delete-child] >> nth=1');
+  await page.click('#confirm [data-yes]');
   assert.equal(await page.locator('.rows .row').count(), 1);
   console.log('✔ 編輯、刪除孩子');
 
-  assert.deepEqual(errors, [], '頁面不得出現 JS 錯誤');
+  // 舊版網址格式仍可使用
+  const cid = await page.evaluate(() => window.__cgpStore.getChildren()[0].id);
+  await page.goto(url + '#/child/' + cid);
+  assert.equal(await text('[data-testid=total]'), afterRedeem);
+  console.log('✔ 相容舊版網址格式');
+
+  assert.deepEqual(errors, [], '頁面不得出現 JS 錯誤或原生對話框');
   await browser.close();
   server.close();
   console.log('全部 E2E 測試通過');

@@ -29,6 +29,7 @@
   var modal = document.getElementById('modal');
   var modalForm = document.getElementById('modal-form');
   var toastEl = document.getElementById('toast');
+  var confirmEl = document.getElementById('confirm');
 
   var ui = {
     showAllRecords: false,
@@ -56,9 +57,19 @@
     if (key === CGP.dateKey(y)) return '昨天';
     return (d.getMonth() + 1) + '/' + d.getDate() + '（' + WEEKDAYS[d.getDay()] + '）';
   }
+  /**
+   * 路由格式：#home、#child-<id>、#rules、#rules-<分頁>
+   * （只用英數與連字號，在各種嵌入環境都能正常運作；仍相容舊版 #/child/<id> 格式）
+   */
   function route() {
-    var parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
-    return { name: parts[0] || 'home', arg: parts[1] || null };
+    var hs = location.hash.replace(/^#/, '');
+    if (hs.charAt(0) === '/') {
+      var parts = hs.split('/').filter(Boolean);
+      return { name: parts[0] || 'home', arg: parts[1] || null };
+    }
+    var m = hs.match(/^(child|rules)(?:-(.+))?$/);
+    if (!m) return { name: 'home', arg: null };
+    return { name: m[1] === 'rules' ? 'settings' : 'child', arg: m[2] || null };
   }
   function go(hash) {
     if (location.hash === hash) render();
@@ -72,6 +83,35 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { toastEl.hidden = true; }, 1800);
   }
+  /** App 內建確認對話框（取代瀏覽器原生 confirm，手機上較易閱讀，也能在嵌入環境運作） */
+  function askConfirm(message, okLabel, danger) {
+    return new Promise(function (resolve) {
+      confirmEl.innerHTML = '<div class="confirm-box"><p class="confirm-msg">' + h(message).replace(/\n/g, '<br>') + '</p>' +
+        '<div class="modal-actions"><button type="button" class="btn" data-no>取消</button>' +
+        '<button type="button" class="btn ' + (danger ? 'danger-solid' : 'primary') + '" data-yes>' + h(okLabel || '確定') + '</button></div></div>';
+      var settled = false;
+      function done(v) {
+        if (settled) return;
+        settled = true;
+        if (confirmEl.open) confirmEl.close();
+        resolve(v);
+      }
+      confirmEl.querySelector('[data-yes]').onclick = function () { done(true); };
+      confirmEl.querySelector('[data-no]').onclick = function () { done(false); };
+      confirmEl.oncancel = function (e) { e.preventDefault(); done(false); };
+      if (typeof confirmEl.showModal === 'function') confirmEl.showModal();
+      else confirmEl.setAttribute('open', '');
+    });
+  }
+  /** 確認後執行，錯誤以提示顯示 */
+  function confirmThen(message, okLabel, danger, fn) {
+    askConfirm(message, okLabel, danger).then(function (ok) {
+      if (!ok) return;
+      try { fn(); } catch (err) { toast(err.message, 'neg'); }
+      render();
+    });
+  }
+
   function avatar(child, size) {
     return '<span class="avatar ' + (size || '') + '" style="background:' + h(child.color) + '">' + h(child.avatar) + '</span>';
   }
@@ -92,7 +132,7 @@
     var html;
     if (r.name === 'child') {
       var child = store.getChild(r.arg);
-      if (!child) { location.replace('#/'); return; }
+      if (!child) { location.replace('#home'); return; }
       html = renderChild(child);
     } else if (r.name === 'settings') {
       html = renderSettings(r.arg || 'children');
@@ -122,7 +162,7 @@
     }).join('');
 
     return '<header class="topbar"><h1>🌟 親子集點</h1>' +
-      '<a class="icon-btn" href="#/settings" aria-label="設定">⚙️</a></header>' +
+      '<a class="icon-btn" href="#rules" aria-label="設定">⚙️</a></header>' +
       '<main class="page">' +
       (children.length
         ? '<div class="child-list">' + cards + '</div>'
@@ -175,9 +215,9 @@
     }).join('') + '</ul>' : '<p class="muted small">還沒有紀錄</p>';
 
     return '<header class="topbar">' +
-      '<a class="icon-btn" href="#/" aria-label="回首頁">‹</a>' +
+      '<a class="icon-btn" href="#home" aria-label="回首頁">‹</a>' +
       '<h1 class="child-title">' + avatar(child, 'sm') + h(child.name) + '</h1>' +
-      '<a class="icon-btn" href="#/settings" aria-label="設定">⚙️</a></header>' +
+      '<a class="icon-btn" href="#rules" aria-label="設定">⚙️</a></header>' +
       '<main class="page has-undo">' +
       '<section class="summary" style="--accent:' + h(child.color) + '">' +
       '<div><div class="label">目前總點數</div><div class="total-value" data-testid="total">' + total + '</div></div>' +
@@ -217,7 +257,7 @@
 
   function renderSettings(tab) {
     var tabs = SETTINGS_TABS.map(function (t) {
-      return '<a class="tab ' + (t[0] === tab ? 'active' : '') + '" href="#/settings/' + t[0] + '">' + t[1] + '</a>';
+      return '<a class="tab ' + (t[0] === tab ? 'active' : '') + '" href="#rules-' + t[0] + '">' + t[1] + '</a>';
     }).join('');
     var body;
     if (tab === 'children') body = settingsChildren();
@@ -227,7 +267,7 @@
     else body = settingsChildren();
 
     return '<header class="topbar">' +
-      '<a class="icon-btn" href="#/" aria-label="回首頁">‹</a>' +
+      '<a class="icon-btn" href="#home" aria-label="回首頁">‹</a>' +
       '<h1>計分規則設定</h1><span class="icon-btn"></span></header>' +
       '<nav class="tabs">' + tabs + '</nav>' +
       '<main class="page">' + body + '</main>';
@@ -428,14 +468,16 @@
   function importData(file) {
     var reader = new FileReader();
     reader.onload = function () {
-      if (!confirm('確定要用「' + file.name + '」取代目前所有資料嗎？')) return;
-      try {
-        store.importJSON(String(reader.result));
-        toast('匯入完成');
-        render();
-      } catch (e) {
-        alert('匯入失敗：' + e.message);
-      }
+      askConfirm('確定要用「' + file.name + '」取代目前所有資料嗎？', '匯入並取代', true).then(function (ok) {
+        if (!ok) return;
+        try {
+          store.importJSON(String(reader.result));
+          toast('匯入完成', 'pos');
+          render();
+        } catch (e) {
+          toast('匯入失敗：' + e.message, 'neg');
+        }
+      });
     };
     reader.readAsText(file);
   }
@@ -449,7 +491,7 @@
     var childId = route().arg;
     try {
       switch (action) {
-        case 'open-child': ui.showAllRecords = false; go('#/child/' + id); break;
+        case 'open-child': ui.showAllRecords = false; go('#child-' + id); break;
         case 'add-child': openChildForm(); break;
         case 'record': {
           var rec = store.recordItem(childId, id);
@@ -482,36 +524,35 @@
         case 'redeem': {
           var reward = store.getReward(id);
           var child = store.getChild(childId);
-          if (!confirm('讓 ' + child.name + ' 用 ' + reward.cost + ' 點兌換「' + reward.name + '」？')) return;
-          store.redeemReward(childId, id);
-          toast('已兌換 ' + reward.name, 'pos');
-          ui.pulse = true;
-          render();
+          confirmThen('讓 ' + child.name + ' 用 ' + reward.cost + ' 點兌換「' + reward.name + '」？', '兌換', false, function () {
+            store.redeemReward(childId, id);
+            toast('已兌換 ' + reward.name, 'pos');
+            ui.pulse = true;
+          });
           break;
         }
         case 'toggle-history': ui.showAllRecords = !ui.showAllRecords; render(); break;
         case 'edit-child': openChildForm(store.getChild(id)); break;
         case 'delete-child': {
           var c = store.getChild(id);
-          if (confirm('確定刪除「' + c.name + '」？\n此孩子的所有紀錄也會一起刪除，且無法復原。')) {
+          confirmThen('確定刪除「' + c.name + '」？\n此孩子的所有紀錄也會一起刪除，且無法復原。', '刪除', true, function () {
             store.deleteChild(id);
             toast('已刪除');
-            render();
-          }
+          });
           break;
         }
         case 'add-item': openItemForm(el.getAttribute('data-kind')); break;
         case 'edit-item': { var it = store.getItem(id); openItemForm(it.kind, it); break; }
         case 'delete-item': {
           var item = store.getItem(id);
-          if (confirm('確定刪除「' + item.name + '」？（過去的紀錄會保留）')) { store.deleteItem(id); render(); }
+          confirmThen('確定刪除「' + item.name + '」？\n過去的紀錄會保留。', '刪除', true, function () { store.deleteItem(id); });
           break;
         }
         case 'add-reward': openRewardForm(); break;
         case 'edit-reward': openRewardForm(store.getReward(id)); break;
         case 'delete-reward': {
           var rw = store.getReward(id);
-          if (confirm('確定刪除獎勵「' + rw.name + '」？（過去的兌換紀錄會保留）')) { store.deleteReward(id); render(); }
+          confirmThen('確定刪除獎勵「' + rw.name + '」？\n過去的兌換紀錄會保留。', '刪除', true, function () { store.deleteReward(id); });
           break;
         }
         case 'export': exportData(); break;

@@ -222,7 +222,13 @@
   };
 
   Store.prototype.save = function () {
-    this.storage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+    try {
+      this.storage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+      this.storageError = null;
+    } catch (e) {
+      // 儲存空間已滿或被封鎖：資料仍保留在記憶體中，介面可提示使用者匯出備份
+      this.storageError = e;
+    }
     var self = this;
     this.listeners.forEach(function (fn) { fn(self); });
   };
