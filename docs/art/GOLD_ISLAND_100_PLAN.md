@@ -1,7 +1,7 @@
 # 金島 100 格：Codex 配置草圖 v2 整理
 
 > 來源：Codex `gold_island_layout_review`（草圖 v2，**非正式背景、不可直接匯入**）。原始座標存於 `docs/art/gold_island_layout_draft_v2.json`。
-> 狀態：家長已決定採**一條連續長地圖**、劇情事件先不做。程式已改成長地圖結構（第二區資料已備妥、開關關閉），等水晶礦谷背景到貨。
+> 狀態：**第一、二區（第 1～55 格）已上線**（Codex 核定版 v3，接縫預覽 `docs/art/gold_region01_02_join_preview.png`）。下一步：齒輪工坊（56～80）、金冠城堡（81～100）。
 
 ## 1. 草圖內容
 

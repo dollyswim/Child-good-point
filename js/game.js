@@ -75,7 +75,7 @@
    */
   var WORLD = { width: 1080, height: 5400 };
   /** 第二區開放開關：水晶礦谷背景與最終座標到貨後改為 true */
-  var REGION02_OPEN = false;
+  var REGION02_OPEN = true;   // 2026-11-07 水晶礦谷背景（Codex 核定版 v3）上線
   // 事件依既有遊戲規格（JSON 的 eventType 僅為占位；第 30 格為區域邊界）
   var TYPES = { 3: 'chance', 5: 'chest', 7: 'minigame', 9: 'chance', 11: 'fate', 12: 'chest', 14: 'fate', 15: 'chance', 17: 'minigame',
     19: 'chest', 21: 'fate', 22: 'chance', 24: 'minigame', 26: 'chest', 27: 'fate', 28: 'chance' };
@@ -573,7 +573,10 @@
         } else ev.text = '今天已經玩過小遊戲了（每天 1 次），明天再來挑戰！';
       }
     } else if (tile.type === 'boundary') {
-      ev.title = '🚪 抵達礦場木門！'; ev.text = '你走完金島第一區「黃金沙灘與初級礦場」了！門後的第二區即將開放。\n下次出發會從起點開始新的一輪，寶箱也會重新放滿！';
+      var opened = REGIONS.filter(function (r) { return r.available; });
+      var lastR = opened[opened.length - 1], nextR = REGIONS[opened.length];
+      ev.title = '🚪 抵達' + lastR.name + '的終點！';
+      ev.text = '你走完金島第 1～' + lastR.to + ' 格了！' + (nextR ? '前方的「' + nextR.name + '」即將開放。' : '') + '\n下次出發會從起點開始新的一輪，寶箱也會重新放滿！';
     } else if (tile.type === 'end') {
       ev.title = '🏁 抵達金島終點！'; ev.text = '你走完金島測試版 30 格了！下一座島即將開放。';
     }
@@ -811,7 +814,6 @@
     n = Math.floor(Number(n));
     if (!(n >= 1 && n < end)) throw new Error('任意門不能傳送到這一格');
     if (n === p.pos) throw new Error('你已經在這一格了');
-    if (tiles[n].regionId !== tiles[p.pos].regionId) throw new Error('任意門只能傳送到目前區域');
     if (!(p.bag.door > 0)) throw new Error('背包裡沒有任意門');
     this._markDayStart(childId);
     var from = p.pos;

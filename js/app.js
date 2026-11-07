@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-34';
+  var APP_VERSION = '2026.11.07-35';
   var store;
   try {
     store = new CGP.Store();
@@ -632,10 +632,10 @@
     var ended = store.isAdventureEnded(child.id);
     var reason = ended ? '🏁 今天的冒險已經結束了，明天見！' : !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
       : picking ? '🚪 任意門：點地圖上的格子選擇要去的地方'
-      : atEnd ? '🚪 已抵達礦場木門！下次出發從起點開始新的一輪'
+      : atEnd ? '🚪 已抵達目前開放區域的終點！下次出發從起點開始新的一輪'
         : noRolls ? '今天的 3 次骰子用完了，明天再來！（溜冰鞋還可以用）'
           : (!bag.d6 && !bag.d12 && !bag.skates ? '背包是空的，點左下角的商店用能量星星購買骰子' : '選一個道具出發吧！');
-    var tiles = board.tiles.filter(function (t) { return t.regionId === region.id; }).map(function (t) {
+    var tiles = board.tiles.map(function (t) {   // 長地圖：所有已開放區域的格子都顯示
       var p = worldXY(region, t);
       if (t.type === 'start') {
         return '<div class="mstart' + (t.id === player.tileId ? ' here' : '') + '" data-tile="' + t.id + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px" aria-hidden="true">' +
