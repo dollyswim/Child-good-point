@@ -65,6 +65,8 @@
 
 **原則**：神秘寶箱的獎勵池放的是**冒險道具**，不直接給生活點數。
 
+**和一般寶箱的差別**：一般寶箱是地圖固定格（第 5、12、19、26 格），停上去自動開、內容是星星或基本道具；神秘寶箱位置不固定、需要黃金鑰匙、內容是 7 種特殊道具，**外觀使用專屬圖示**。
+
 **出現機制**：
 1. 每天最多擲骰 3 次、玩小遊戲 1 次。
 2. 因每日上限而無法使用的額外機會（例如事件再送一次擲骰、今天已玩過小遊戲又停在小遊戲格），轉化成神秘寶箱。
@@ -127,7 +129,7 @@
 | 命運格圖示 | 必要 | 🔮 |
 | 寶箱特殊道具圖示：好運金牌、神奇骰子、飛行翼、防護罩、任意門、呼叫專機 | 必要（做到第 3 步時） | 表情符號 |
 | 商店道具圖示：黃金鑰匙、寶物磁鐵 | 必要（做到第 3 步時） | 🔑🧲 |
-| 神秘寶箱 | 選做 | 現有寶箱＋紫色光暈 |
+| **神秘寶箱（專屬圖，外觀要和一般寶箱明顯不同）** | **必要**（圖到之前不上線神秘寶箱） | — |
 | 小遊戲背景（直式） | 選做 | 金島夜空漸層 |
 | 機會卡、命運卡卡背 | 選做 | 文字卡片 |
 
@@ -139,4 +141,15 @@ a tiny golden star and a little question-swirl floating in the mist, gentle glow
 mysterious but friendly
 ```
 
-中文：放在金色小底座上的可愛水晶球，球裡有粉紅與藍綠色的霧氣在旋轉，霧中飄著一顆金色小星星和一個小漩渦，柔和發光，神秘又親切。
+**神秘寶箱提示詞**（同上，正方形 1024×1024、白底）：
+
+```
+A cute magical mystery chest, rounded and chunky, deep purple and midnight blue body
+with silver-white star patterns, a glowing golden keyhole lock in the front (clearly locked),
+soft violet magic glow and tiny floating sparkles around it, a small question-mark swirl
+of light above the lid, mysterious and exciting, clearly different from a normal wooden treasure chest
+```
+
+中文：可愛的魔法神秘寶箱，圓潤厚實，深紫色與午夜藍箱身，有銀白色星星花紋，正面一個發光的金色鑰匙孔鎖（明顯是鎖著的），周圍有淡紫色魔法光暈和小閃光，箱蓋上方飄著一個問號形狀的小光芒；神秘又令人期待，要和一般木頭寶箱明顯不同。
+
+命運格圖示中文：放在金色小底座上的可愛水晶球，球裡有粉紅與藍綠色的霧氣在旋轉，霧中飄著一顆金色小星星和一個小漩渦，柔和發光，神秘又親切。
