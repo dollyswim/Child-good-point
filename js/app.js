@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-31';
+  var APP_VERSION = '2026.11.07-32';
   var store;
   try {
     store = new CGP.Store();
@@ -629,7 +629,8 @@
         return '<div class="mstart' + (t.id === player.tileId ? ' here' : '') + '" data-tile="' + t.id + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px" aria-hidden="true">' +
           tileArt('start', 'start-art') + '<span>起點</span></div>';
       }
-      return '<div class="mtile mt-' + t.type + (t.id === player.tileId ? ' here' : '') + '" data-n="' + t.n + '" data-tile="' + t.id + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px"' +
+      // 疊放順序：越靠畫面下方（越近）的格子在越上層，避免後方石板蓋住前方格子的事件圖示
+      return '<div class="mtile mt-' + t.type + (t.id === player.tileId ? ' here' : '') + '" data-n="' + t.n + '" data-tile="' + t.id + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px;z-index:' + Math.round(t.y * 1000) + '"' +
         (TILE_LABEL[t.type] ? ' title="' + TILE_LABEL[t.type] + '"' : '') + '>' + tileArt(t.type, 'mtile-icon') + '</div>';
     }).join('');
     var pp = worldXY(region, board.tiles[player.pos]);

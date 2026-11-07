@@ -1374,3 +1374,7 @@ body.mg-open { overflow: hidden; }
 .adv-status .settle-log .records { margin: 0; }
 .item-bar-title { grid-column: 1 / -1; margin: 2px 0 0; font-size: .9rem; color: var(--wood-2); }
 .chest-btn { background: linear-gradient(#fffaf0, #ffeac2); }
+/* 地圖疊放：格子 z-index 依 y（0～1000），神秘寶箱與角色永遠在格子之上 */
+.map-world .mstart { z-index: 1001; }
+.map-world .map-chest { z-index: 1500; }
+.map-world .pawn { z-index: 2000; }
