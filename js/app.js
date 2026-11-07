@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-40';
+  var APP_VERSION = '2026.11.07-41';
   var store;
   try {
     store = new CGP.Store();
@@ -599,7 +599,7 @@
   var STAR_IMG = '<img class="star-ico" src="images/items/star.webp" alt="⭐" width="256" height="256" decoding="async" draggable="false">';
   /** 地圖格子事件圖示（白底圖放在白色圓角圖示框，contain 不裁切） */
   var TILE_ART = { start: 'images/tiles/start.webp', chest: 'images/tiles/chest.webp', chance: 'images/tiles/chance.webp',
-    minigame: 'images/tiles/minigame.webp', fate: 'images/tiles/fate.webp', boundary: 'images/tiles/door.webp' }; // 第一區終點：礦場木門（終點旗 finish.webp 保留給全島終點）
+    minigame: 'images/tiles/minigame.webp', fate: 'images/tiles/fate.webp', boundary: 'images/tiles/door.webp', end: 'images/tiles/finish.webp' }; // 區域終點：礦場木門；全島終點（第 100 格）：終點旗
   /** 圖未到前的暫代表情符號（新格子類型先放這裡，圖到貨後改放進 TILE_ART） */
   var TILE_EMOJI = {};
   function tileArt(type, cls) {
@@ -618,7 +618,7 @@
   }
 
   // ---------- 金島第一區地圖（背景＋格子＋事件圖示＋角色，同一個座標容器） ----------
-  var TILE_LABEL = { chest: '寶箱', chance: '機會', fate: '命運', minigame: '小遊戲：抓住星星', boundary: '第一區終點：礦場木門' };
+  var TILE_LABEL = { chest: '寶箱', chance: '機會', fate: '命運', minigame: '小遊戲：抓住星星', boundary: '區域終點：礦場木門', end: '全島終點：金冠城堡' };
 
   /** 目前區域（第一區）的參考尺寸與背景 */
   function regionOf(board, tile) {
@@ -661,7 +661,7 @@
     var ended = store.isAdventureEnded(child.id);
     var reason = ended ? '🏁 今天的冒險已經結束了，明天見！' : !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
       : picking ? '🚪 任意門：點地圖上的格子選擇要去的地方'
-      : atEnd ? '🚪 已抵達目前開放區域的終點！下次出發從起點開始新的一輪'
+      : atEnd ? (board.tiles[player.pos].type === 'end' ? '🏁 已抵達金冠城堡、通關金島！下次出發從起點開始新的一輪' : '🚪 已抵達目前開放區域的終點！下次出發從起點開始新的一輪')
         : noRolls ? '今天的 3 次骰子用完了，明天再來！（溜冰鞋還可以用）'
           : (!bag.d6 && !bag.d12 && !bag.skates ? '背包是空的，點左下角的商店用能量星星購買骰子' : '選一個道具出發吧！');
     var tiles = board.tiles.map(function (t) {   // 長地圖：所有已開放區域的格子都顯示
@@ -683,7 +683,7 @@
       '<span class="hud-cell"><small>位置</small><b data-testid="pos">' + player.pos + ' / ' + end + '</b></span>' +
       '</section>' +
       '<p class="region-name">🏝️ ' + REGION_NO[board.regions.indexOf(region)] + '・' + h(region.name) + '</p>' +
-      '<section class="map-view' + (picking ? ' picking' : '') + '" id="map-view" aria-label="金島第一區地圖，可拖曳與縮放">' +
+      '<section class="map-view' + (picking ? ' picking' : '') + '" id="map-view" aria-label="金島地圖，可拖曳與縮放">' +
       '<div class="map-world" id="map-world" style="width:' + W + 'px;height:' + H + 'px" data-w="' + W + '" data-h="' + H + '">' +
       mapStrips(board) +
       tiles +
@@ -712,7 +712,9 @@
       itemBar(child, player, { canPlay: canPlay, atEnd: atEnd, pending: !!pending, picking: picking, quota: quota }) +
       (canPlay ? '<button type="button" class="btn block end-day" data-action="end-day"' + (pending || picking ? ' disabled' : '') + '>🏁 結束今日冒險</button>' : '') +
       (ended ? '<button type="button" class="btn primary block" data-action="show-summary">📋 查看今日小結</button>' : '') +
-      '<div class="legend">' + [['chest', '寶箱'], ['chance', '機會'], ['fate', '命運'], ['minigame', '小遊戲'], ['boundary', '第一區終點']].map(function (l) {
+      '<div class="legend">' + [['chest', '寶箱'], ['chance', '機會'], ['fate', '命運'], ['minigame', '小遊戲'], ['boundary', '區域終點'], ['end', '全島終點']].filter(function (l) {
+        return l[0] !== 'boundary' && l[0] !== 'end' || board.tiles.some(function (t) { return t.type === l[0]; });
+      }).map(function (l) {
         return '<span>' + tileArt(l[0], 'legend-art') + l[1] + '</span>';
       }).join('') + '</div>' +
       '<a class="btn block" href="#adventure-' + h(child.id) + '">‹ 回冒險大廳</a>' +

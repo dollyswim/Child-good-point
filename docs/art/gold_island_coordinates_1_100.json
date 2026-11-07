@@ -1,0 +1,1155 @@
+{
+  "purpose": "位置合併檔；不得取代遊戲類型、事件、獎勵設定",
+  "worldSize": {
+    "width": 1080,
+    "height": 5400
+  },
+  "backgrounds": [
+    {
+      "id": "region01",
+      "file": "region01.png",
+      "worldOffset": {
+        "x": 0,
+        "y": 4050
+      },
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "id": "region02",
+      "file": "region02.png",
+      "worldOffset": {
+        "x": 0,
+        "y": 2700
+      },
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "id": "region03",
+      "file": "region03.png",
+      "worldOffset": {
+        "x": 0,
+        "y": 1350
+      },
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "id": "region04",
+      "file": "region04.png",
+      "worldOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "width": 1080,
+      "height": 1350
+    }
+  ],
+  "tiles": [
+    {
+      "order": 1,
+      "id": "gold-01-001",
+      "backgroundId": "region01",
+      "x": 0.49,
+      "y": 0.9,
+      "worldPx": {
+        "x": 529.2,
+        "y": 5265.0
+      }
+    },
+    {
+      "order": 2,
+      "id": "gold-01-002",
+      "backgroundId": "region01",
+      "x": 0.533284,
+      "y": 0.855828,
+      "worldPx": {
+        "x": 575.95,
+        "y": 5205.37
+      }
+    },
+    {
+      "order": 3,
+      "id": "gold-01-003",
+      "backgroundId": "region01",
+      "x": 0.585806,
+      "y": 0.818683,
+      "worldPx": {
+        "x": 632.67,
+        "y": 5155.22
+      }
+    },
+    {
+      "order": 4,
+      "id": "gold-01-004",
+      "backgroundId": "region01",
+      "x": 0.634066,
+      "y": 0.778011,
+      "worldPx": {
+        "x": 684.79,
+        "y": 5100.31
+      }
+    },
+    {
+      "order": 5,
+      "id": "gold-01-005",
+      "backgroundId": "region01",
+      "x": 0.65,
+      "y": 0.725192,
+      "worldPx": {
+        "x": 702.0,
+        "y": 5029.01
+      }
+    },
+    {
+      "order": 6,
+      "id": "gold-01-006",
+      "backgroundId": "region01",
+      "x": 0.61861,
+      "y": 0.679386,
+      "worldPx": {
+        "x": 668.1,
+        "y": 4967.17
+      }
+    },
+    {
+      "order": 7,
+      "id": "gold-01-007",
+      "backgroundId": "region01",
+      "x": 0.556131,
+      "y": 0.65416,
+      "worldPx": {
+        "x": 600.62,
+        "y": 4933.12
+      }
+    },
+    {
+      "order": 8,
+      "id": "gold-01-008",
+      "backgroundId": "region01",
+      "x": 0.489128,
+      "y": 0.637391,
+      "worldPx": {
+        "x": 528.26,
+        "y": 4910.48
+      }
+    },
+    {
+      "order": 9,
+      "id": "gold-01-009",
+      "backgroundId": "region01",
+      "x": 0.421142,
+      "y": 0.623377,
+      "worldPx": {
+        "x": 454.83,
+        "y": 4891.56
+      }
+    },
+    {
+      "order": 10,
+      "id": "gold-01-010",
+      "backgroundId": "region01",
+      "x": 0.35308,
+      "y": 0.60959,
+      "worldPx": {
+        "x": 381.33,
+        "y": 4872.95
+      }
+    },
+    {
+      "order": 11,
+      "id": "gold-01-011",
+      "backgroundId": "region01",
+      "x": 0.285351,
+      "y": 0.5949,
+      "worldPx": {
+        "x": 308.18,
+        "y": 4853.11
+      }
+    },
+    {
+      "order": 12,
+      "id": "gold-01-012",
+      "backgroundId": "region01",
+      "x": 0.222652,
+      "y": 0.569934,
+      "worldPx": {
+        "x": 240.46,
+        "y": 4819.41
+      }
+    },
+    {
+      "order": 13,
+      "id": "gold-01-013",
+      "backgroundId": "region01",
+      "x": 0.205,
+      "y": 0.519131,
+      "worldPx": {
+        "x": 221.4,
+        "y": 4750.83
+      }
+    },
+    {
+      "order": 14,
+      "id": "gold-01-014",
+      "backgroundId": "region01",
+      "x": 0.252088,
+      "y": 0.482305,
+      "worldPx": {
+        "x": 272.26,
+        "y": 4701.11
+      }
+    },
+    {
+      "order": 15,
+      "id": "gold-01-015",
+      "backgroundId": "region01",
+      "x": 0.320519,
+      "y": 0.47034,
+      "worldPx": {
+        "x": 346.16,
+        "y": 4684.96
+      }
+    },
+    {
+      "order": 16,
+      "id": "gold-01-016",
+      "backgroundId": "region01",
+      "x": 0.390046,
+      "y": 0.462534,
+      "worldPx": {
+        "x": 421.25,
+        "y": 4674.42
+      }
+    },
+    {
+      "order": 17,
+      "id": "gold-01-017",
+      "backgroundId": "region01",
+      "x": 0.459537,
+      "y": 0.454502,
+      "worldPx": {
+        "x": 496.3,
+        "y": 4663.58
+      }
+    },
+    {
+      "order": 18,
+      "id": "gold-01-018",
+      "backgroundId": "region01",
+      "x": 0.529119,
+      "y": 0.447,
+      "worldPx": {
+        "x": 571.45,
+        "y": 4653.45
+      }
+    },
+    {
+      "order": 19,
+      "id": "gold-01-019",
+      "backgroundId": "region01",
+      "x": 0.598815,
+      "y": 0.44021,
+      "worldPx": {
+        "x": 646.72,
+        "y": 4644.28
+      }
+    },
+    {
+      "order": 20,
+      "id": "gold-01-020",
+      "backgroundId": "region01",
+      "x": 0.668007,
+      "y": 0.430729,
+      "worldPx": {
+        "x": 721.45,
+        "y": 4631.48
+      }
+    },
+    {
+      "order": 21,
+      "id": "gold-01-021",
+      "backgroundId": "region01",
+      "x": 0.735526,
+      "y": 0.415651,
+      "worldPx": {
+        "x": 794.37,
+        "y": 4611.13
+      }
+    },
+    {
+      "order": 22,
+      "id": "gold-01-022",
+      "backgroundId": "region01",
+      "x": 0.787227,
+      "y": 0.379422,
+      "worldPx": {
+        "x": 850.21,
+        "y": 4562.22
+      }
+    },
+    {
+      "order": 23,
+      "id": "gold-01-023",
+      "backgroundId": "region01",
+      "x": 0.765092,
+      "y": 0.331028,
+      "worldPx": {
+        "x": 826.3,
+        "y": 4496.89
+      }
+    },
+    {
+      "order": 24,
+      "id": "gold-01-024",
+      "backgroundId": "region01",
+      "x": 0.69736,
+      "y": 0.317071,
+      "worldPx": {
+        "x": 753.15,
+        "y": 4478.05
+      }
+    },
+    {
+      "order": 25,
+      "id": "gold-01-025",
+      "backgroundId": "region01",
+      "x": 0.627506,
+      "y": 0.311452,
+      "worldPx": {
+        "x": 677.71,
+        "y": 4470.46
+      }
+    },
+    {
+      "order": 26,
+      "id": "gold-01-026",
+      "backgroundId": "region01",
+      "x": 0.557637,
+      "y": 0.305919,
+      "worldPx": {
+        "x": 602.25,
+        "y": 4462.99
+      }
+    },
+    {
+      "order": 27,
+      "id": "gold-01-027",
+      "backgroundId": "region01",
+      "x": 0.488105,
+      "y": 0.298292,
+      "worldPx": {
+        "x": 527.15,
+        "y": 4452.69
+      }
+    },
+    {
+      "order": 28,
+      "id": "gold-01-028",
+      "backgroundId": "region01",
+      "x": 0.43,
+      "y": 0.275718,
+      "worldPx": {
+        "x": 464.4,
+        "y": 4422.22
+      }
+    },
+    {
+      "order": 29,
+      "id": "gold-01-029",
+      "backgroundId": "region01",
+      "x": 0.466869,
+      "y": 0.23816,
+      "worldPx": {
+        "x": 504.22,
+        "y": 4371.52
+      }
+    },
+    {
+      "order": 30,
+      "id": "gold-01-030",
+      "backgroundId": "region01",
+      "x": 0.535,
+      "y": 0.225,
+      "worldPx": {
+        "x": 577.8,
+        "y": 4353.75
+      }
+    },
+    {
+      "order": 31,
+      "id": "gold-02-031",
+      "backgroundId": "region01",
+      "x": 0.5092592592592593,
+      "y": 0.17777777777777778,
+      "worldPx": {
+        "x": 550.0,
+        "y": 4290.0
+      }
+    },
+    {
+      "order": 32,
+      "id": "gold-02-032",
+      "backgroundId": "region01",
+      "x": 0.5,
+      "y": 0.1259259259259259,
+      "worldPx": {
+        "x": 540.0,
+        "y": 4220.0
+      }
+    },
+    {
+      "order": 33,
+      "id": "gold-02-033",
+      "backgroundId": "region01",
+      "x": 0.5,
+      "y": 0.07407407407407407,
+      "worldPx": {
+        "x": 540.0,
+        "y": 4150.0
+      }
+    },
+    {
+      "order": 34,
+      "id": "gold-02-034",
+      "backgroundId": "region01",
+      "x": 0.5,
+      "y": 0.022222222222222223,
+      "worldPx": {
+        "x": 540.0,
+        "y": 4080.0
+      }
+    },
+    {
+      "order": 35,
+      "id": "gold-02-035",
+      "backgroundId": "region02",
+      "x": 0.5,
+      "y": 0.97037,
+      "worldPx": {
+        "x": 540.0,
+        "y": 4010.0
+      }
+    },
+    {
+      "order": 36,
+      "id": "gold-02-036",
+      "backgroundId": "region02",
+      "x": 0.490741,
+      "y": 0.916763,
+      "worldPx": {
+        "x": 530.0,
+        "y": 3937.63
+      }
+    },
+    {
+      "order": 37,
+      "id": "gold-02-037",
+      "backgroundId": "region02",
+      "x": 0.490741,
+      "y": 0.862529,
+      "worldPx": {
+        "x": 530.0,
+        "y": 3864.41
+      }
+    },
+    {
+      "order": 38,
+      "id": "gold-02-038",
+      "backgroundId": "region02",
+      "x": 0.516511,
+      "y": 0.813468,
+      "worldPx": {
+        "x": 557.83,
+        "y": 3798.18
+      }
+    },
+    {
+      "order": 39,
+      "id": "gold-02-039",
+      "backgroundId": "region02",
+      "x": 0.55849,
+      "y": 0.77106,
+      "worldPx": {
+        "x": 603.17,
+        "y": 3740.93
+      }
+    },
+    {
+      "order": 40,
+      "id": "gold-02-040",
+      "backgroundId": "region02",
+      "x": 0.602607,
+      "y": 0.729984,
+      "worldPx": {
+        "x": 650.82,
+        "y": 3685.48
+      }
+    },
+    {
+      "order": 41,
+      "id": "gold-02-041",
+      "backgroundId": "region02",
+      "x": 0.637923,
+      "y": 0.68396,
+      "worldPx": {
+        "x": 688.96,
+        "y": 3623.35
+      }
+    },
+    {
+      "order": 42,
+      "id": "gold-02-042",
+      "backgroundId": "region02",
+      "x": 0.652346,
+      "y": 0.631075,
+      "worldPx": {
+        "x": 704.53,
+        "y": 3551.95
+      }
+    },
+    {
+      "order": 43,
+      "id": "gold-02-043",
+      "backgroundId": "region02",
+      "x": 0.638536,
+      "y": 0.578636,
+      "worldPx": {
+        "x": 689.62,
+        "y": 3481.16
+      }
+    },
+    {
+      "order": 44,
+      "id": "gold-02-044",
+      "backgroundId": "region02",
+      "x": 0.602039,
+      "y": 0.533444,
+      "worldPx": {
+        "x": 650.2,
+        "y": 3420.15
+      }
+    },
+    {
+      "order": 45,
+      "id": "gold-02-045",
+      "backgroundId": "region02",
+      "x": 0.553245,
+      "y": 0.49582,
+      "worldPx": {
+        "x": 597.5,
+        "y": 3369.36
+      }
+    },
+    {
+      "order": 46,
+      "id": "gold-02-046",
+      "backgroundId": "region02",
+      "x": 0.500113,
+      "y": 0.462149,
+      "worldPx": {
+        "x": 540.12,
+        "y": 3323.9
+      }
+    },
+    {
+      "order": 47,
+      "id": "gold-02-047",
+      "backgroundId": "region02",
+      "x": 0.444669,
+      "y": 0.430962,
+      "worldPx": {
+        "x": 480.24,
+        "y": 3281.8
+      }
+    },
+    {
+      "order": 48,
+      "id": "gold-02-048",
+      "backgroundId": "region02",
+      "x": 0.389453,
+      "y": 0.399513,
+      "worldPx": {
+        "x": 420.61,
+        "y": 3239.34
+      }
+    },
+    {
+      "order": 49,
+      "id": "gold-02-049",
+      "backgroundId": "region02",
+      "x": 0.335916,
+      "y": 0.366316,
+      "worldPx": {
+        "x": 362.79,
+        "y": 3194.53
+      }
+    },
+    {
+      "order": 50,
+      "id": "gold-02-050",
+      "backgroundId": "region02",
+      "x": 0.29724,
+      "y": 0.322027,
+      "worldPx": {
+        "x": 321.02,
+        "y": 3134.74
+      }
+    },
+    {
+      "order": 51,
+      "id": "gold-02-051",
+      "backgroundId": "region02",
+      "x": 0.301282,
+      "y": 0.269521,
+      "worldPx": {
+        "x": 325.38,
+        "y": 3063.85
+      }
+    },
+    {
+      "order": 52,
+      "id": "gold-02-052",
+      "backgroundId": "region02",
+      "x": 0.333363,
+      "y": 0.222083,
+      "worldPx": {
+        "x": 360.03,
+        "y": 2999.81
+      }
+    },
+    {
+      "order": 53,
+      "id": "gold-02-053",
+      "backgroundId": "region02",
+      "x": 0.378727,
+      "y": 0.181858,
+      "worldPx": {
+        "x": 409.03,
+        "y": 2945.51
+      }
+    },
+    {
+      "order": 54,
+      "id": "gold-02-054",
+      "backgroundId": "region02",
+      "x": 0.429596,
+      "y": 0.146011,
+      "worldPx": {
+        "x": 463.96,
+        "y": 2897.11
+      }
+    },
+    {
+      "order": 55,
+      "id": "gold-02-055",
+      "backgroundId": "region02",
+      "x": 0.481481,
+      "y": 0.111111,
+      "worldPx": {
+        "x": 520.0,
+        "y": 2850.0
+      }
+    },
+    {
+      "order": 56,
+      "id": "gold-03-056",
+      "backgroundId": "region02",
+      "x": 0.487487,
+      "y": 0.059679,
+      "worldPx": {
+        "x": 526.49,
+        "y": 2780.57
+      }
+    },
+    {
+      "order": 57,
+      "id": "gold-03-057",
+      "backgroundId": "region02",
+      "x": 0.494841,
+      "y": 0.008357,
+      "worldPx": {
+        "x": 534.43,
+        "y": 2711.28
+      }
+    },
+    {
+      "order": 58,
+      "id": "gold-03-058",
+      "backgroundId": "region03",
+      "x": 0.506825,
+      "y": 0.957692,
+      "worldPx": {
+        "x": 547.37,
+        "y": 2642.88
+      }
+    },
+    {
+      "order": 59,
+      "id": "gold-03-059",
+      "backgroundId": "region03",
+      "x": 0.546664,
+      "y": 0.917421,
+      "worldPx": {
+        "x": 590.4,
+        "y": 2588.52
+      }
+    },
+    {
+      "order": 60,
+      "id": "gold-03-060",
+      "backgroundId": "region03",
+      "x": 0.588887,
+      "y": 0.878424,
+      "worldPx": {
+        "x": 636.0,
+        "y": 2535.87
+      }
+    },
+    {
+      "order": 61,
+      "id": "gold-03-061",
+      "backgroundId": "region03",
+      "x": 0.629236,
+      "y": 0.838166,
+      "worldPx": {
+        "x": 679.57,
+        "y": 2481.52
+      }
+    },
+    {
+      "order": 62,
+      "id": "gold-03-062",
+      "backgroundId": "region03",
+      "x": 0.638889,
+      "y": 0.788057,
+      "worldPx": {
+        "x": 690.0,
+        "y": 2413.88
+      }
+    },
+    {
+      "order": 63,
+      "id": "gold-03-063",
+      "backgroundId": "region03",
+      "x": 0.63857,
+      "y": 0.736409,
+      "worldPx": {
+        "x": 689.66,
+        "y": 2344.15
+      }
+    },
+    {
+      "order": 64,
+      "id": "gold-03-064",
+      "backgroundId": "region03",
+      "x": 0.607367,
+      "y": 0.692038,
+      "worldPx": {
+        "x": 655.96,
+        "y": 2284.25
+      }
+    },
+    {
+      "order": 65,
+      "id": "gold-03-065",
+      "backgroundId": "region03",
+      "x": 0.563099,
+      "y": 0.654435,
+      "worldPx": {
+        "x": 608.15,
+        "y": 2233.49
+      }
+    },
+    {
+      "order": 66,
+      "id": "gold-03-066",
+      "backgroundId": "region03",
+      "x": 0.515554,
+      "y": 0.619591,
+      "worldPx": {
+        "x": 556.8,
+        "y": 2186.45
+      }
+    },
+    {
+      "order": 67,
+      "id": "gold-03-067",
+      "backgroundId": "region03",
+      "x": 0.464253,
+      "y": 0.588219,
+      "worldPx": {
+        "x": 501.39,
+        "y": 2144.1
+      }
+    },
+    {
+      "order": 68,
+      "id": "gold-03-068",
+      "backgroundId": "region03",
+      "x": 0.414719,
+      "y": 0.555106,
+      "worldPx": {
+        "x": 447.9,
+        "y": 2099.39
+      }
+    },
+    {
+      "order": 69,
+      "id": "gold-03-069",
+      "backgroundId": "region03",
+      "x": 0.364452,
+      "y": 0.522683,
+      "worldPx": {
+        "x": 393.61,
+        "y": 2055.62
+      }
+    },
+    {
+      "order": 70,
+      "id": "gold-03-070",
+      "backgroundId": "region03",
+      "x": 0.320372,
+      "y": 0.485303,
+      "worldPx": {
+        "x": 346.0,
+        "y": 2005.16
+      }
+    },
+    {
+      "order": 71,
+      "id": "gold-03-071",
+      "backgroundId": "region03",
+      "x": 0.305753,
+      "y": 0.435215,
+      "worldPx": {
+        "x": 330.21,
+        "y": 1937.54
+      }
+    },
+    {
+      "order": 72,
+      "id": "gold-03-072",
+      "backgroundId": "region03",
+      "x": 0.300959,
+      "y": 0.38375,
+      "worldPx": {
+        "x": 325.04,
+        "y": 1868.06
+      }
+    },
+    {
+      "order": 73,
+      "id": "gold-03-073",
+      "backgroundId": "region03",
+      "x": 0.328931,
+      "y": 0.338153,
+      "worldPx": {
+        "x": 355.25,
+        "y": 1806.51
+      }
+    },
+    {
+      "order": 74,
+      "id": "gold-03-074",
+      "backgroundId": "region03",
+      "x": 0.371671,
+      "y": 0.299436,
+      "worldPx": {
+        "x": 401.4,
+        "y": 1754.24
+      }
+    },
+    {
+      "order": 75,
+      "id": "gold-03-075",
+      "backgroundId": "region03",
+      "x": 0.417623,
+      "y": 0.263247,
+      "worldPx": {
+        "x": 451.03,
+        "y": 1705.38
+      }
+    },
+    {
+      "order": 76,
+      "id": "gold-03-076",
+      "backgroundId": "region03",
+      "x": 0.467458,
+      "y": 0.230398,
+      "worldPx": {
+        "x": 504.85,
+        "y": 1661.04
+      }
+    },
+    {
+      "order": 77,
+      "id": "gold-03-077",
+      "backgroundId": "region03",
+      "x": 0.515634,
+      "y": 0.196017,
+      "worldPx": {
+        "x": 556.88,
+        "y": 1614.62
+      }
+    },
+    {
+      "order": 78,
+      "id": "gold-03-078",
+      "backgroundId": "region03",
+      "x": 0.56509,
+      "y": 0.162805,
+      "worldPx": {
+        "x": 610.3,
+        "y": 1569.79
+      }
+    },
+    {
+      "order": 79,
+      "id": "gold-03-079",
+      "backgroundId": "region03",
+      "x": 0.608645,
+      "y": 0.124961,
+      "worldPx": {
+        "x": 657.34,
+        "y": 1518.7
+      }
+    },
+    {
+      "order": 80,
+      "id": "gold-03-080",
+      "backgroundId": "region03",
+      "x": 0.624316,
+      "y": 0.075136,
+      "worldPx": {
+        "x": 674.26,
+        "y": 1451.43
+      }
+    },
+    {
+      "order": 81,
+      "id": "gold-04-081",
+      "backgroundId": "region03",
+      "x": 0.62963,
+      "y": 0.023704,
+      "worldPx": {
+        "x": 680.0,
+        "y": 1382.0
+      }
+    },
+    {
+      "order": 82,
+      "id": "gold-04-082",
+      "backgroundId": "region04",
+      "x": 0.642559,
+      "y": 0.976322,
+      "worldPx": {
+        "x": 693.96,
+        "y": 1318.03
+      }
+    },
+    {
+      "order": 83,
+      "id": "gold-04-083",
+      "backgroundId": "region04",
+      "x": 0.643519,
+      "y": 0.927804,
+      "worldPx": {
+        "x": 695.0,
+        "y": 1252.54
+      }
+    },
+    {
+      "order": 84,
+      "id": "gold-04-084",
+      "backgroundId": "region04",
+      "x": 0.642626,
+      "y": 0.879292,
+      "worldPx": {
+        "x": 694.04,
+        "y": 1187.04
+      }
+    },
+    {
+      "order": 85,
+      "id": "gold-04-085",
+      "backgroundId": "region04",
+      "x": 0.622195,
+      "y": 0.833777,
+      "worldPx": {
+        "x": 671.97,
+        "y": 1125.6
+      }
+    },
+    {
+      "order": 86,
+      "id": "gold-04-086",
+      "backgroundId": "region04",
+      "x": 0.595424,
+      "y": 0.790232,
+      "worldPx": {
+        "x": 643.06,
+        "y": 1066.81
+      }
+    },
+    {
+      "order": 87,
+      "id": "gold-04-087",
+      "backgroundId": "region04",
+      "x": 0.562853,
+      "y": 0.749285,
+      "worldPx": {
+        "x": 607.88,
+        "y": 1011.53
+      }
+    },
+    {
+      "order": 88,
+      "id": "gold-04-088",
+      "backgroundId": "region04",
+      "x": 0.527955,
+      "y": 0.709575,
+      "worldPx": {
+        "x": 570.19,
+        "y": 957.93
+      }
+    },
+    {
+      "order": 89,
+      "id": "gold-04-089",
+      "backgroundId": "region04",
+      "x": 0.488778,
+      "y": 0.672544,
+      "worldPx": {
+        "x": 527.88,
+        "y": 907.93
+      }
+    },
+    {
+      "order": 90,
+      "id": "gold-04-090",
+      "backgroundId": "region04",
+      "x": 0.441845,
+      "y": 0.641941,
+      "worldPx": {
+        "x": 477.19,
+        "y": 866.62
+      }
+    },
+    {
+      "order": 91,
+      "id": "gold-04-091",
+      "backgroundId": "region04",
+      "x": 0.390993,
+      "y": 0.61545,
+      "worldPx": {
+        "x": 422.27,
+        "y": 830.86
+      }
+    },
+    {
+      "order": 92,
+      "id": "gold-04-092",
+      "backgroundId": "region04",
+      "x": 0.342573,
+      "y": 0.586265,
+      "worldPx": {
+        "x": 369.98,
+        "y": 791.46
+      }
+    },
+    {
+      "order": 93,
+      "id": "gold-04-093",
+      "backgroundId": "region04",
+      "x": 0.296938,
+      "y": 0.554276,
+      "worldPx": {
+        "x": 320.69,
+        "y": 748.27
+      }
+    },
+    {
+      "order": 94,
+      "id": "gold-04-094",
+      "backgroundId": "region04",
+      "x": 0.258256,
+      "y": 0.517115,
+      "worldPx": {
+        "x": 278.92,
+        "y": 698.11
+      }
+    },
+    {
+      "order": 95,
+      "id": "gold-04-095",
+      "backgroundId": "region04",
+      "x": 0.236166,
+      "y": 0.472616,
+      "worldPx": {
+        "x": 255.06,
+        "y": 638.03
+      }
+    },
+    {
+      "order": 96,
+      "id": "gold-04-096",
+      "backgroundId": "region04",
+      "x": 0.268817,
+      "y": 0.432911,
+      "worldPx": {
+        "x": 290.32,
+        "y": 584.43
+      }
+    },
+    {
+      "order": 97,
+      "id": "gold-04-097",
+      "backgroundId": "region04",
+      "x": 0.320909,
+      "y": 0.408842,
+      "worldPx": {
+        "x": 346.58,
+        "y": 551.94
+      }
+    },
+    {
+      "order": 98,
+      "id": "gold-04-098",
+      "backgroundId": "region04",
+      "x": 0.379457,
+      "y": 0.396397,
+      "worldPx": {
+        "x": 409.81,
+        "y": 535.14
+      }
+    },
+    {
+      "order": 99,
+      "id": "gold-04-099",
+      "backgroundId": "region04",
+      "x": 0.439654,
+      "y": 0.390295,
+      "worldPx": {
+        "x": 474.83,
+        "y": 526.9
+      }
+    },
+    {
+      "order": 100,
+      "id": "gold-04-100",
+      "backgroundId": "region04",
+      "x": 0.5,
+      "y": 0.385185,
+      "worldPx": {
+        "x": 540.0,
+        "y": 520.0
+      }
+    }
+  ],
+  "notes": [
+    "起點第0格沿用現有遊戲設定，不在本檔內。",
+    "以穩定ID更新座標，不以陣列索引替換全部設定。"
+  ]
+}

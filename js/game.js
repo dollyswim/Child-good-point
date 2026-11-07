@@ -70,6 +70,7 @@
   var REGION01 = (typeof module !== 'undefined' && module.exports) ? require('./board-gold.js') : root.CGP_GOLD_REGION01;
   var REGION02 = (typeof module !== 'undefined' && module.exports) ? require('./board-gold-02.js') : root.CGP_GOLD_REGION02;
   var REGION03 = (typeof module !== 'undefined' && module.exports) ? require('./board-gold-03.js') : root.CGP_GOLD_REGION03;
+  var REGION04 = (typeof module !== 'undefined' && module.exports) ? require('./board-gold-04.js') : root.CGP_GOLD_REGION04;
   /**
    * 金島長地圖（總覽座標 1080×5400，左上為原點，由下往上走）：四張 1080×1350 背景由上到下為
    * 第四區（y 0）、第三區（1350）、第二區（2700）、第一區（4050）。格子的 gx、gy 為總覽座標；x、y 為所在背景圖內 0～1。
@@ -77,9 +78,9 @@
   var WORLD = { width: 1080, height: 5400 };
   /**
    * 已開放到第幾區（1～4）。背景與最終座標到貨並核對後往上加：
-   * 2026-11-07 第二區水晶礦谷（Codex 核定版 v3）；2026-11-07 第三區齒輪工坊（檢視版 v1）
+   * 2026-11-07 第二區水晶礦谷（Codex 核定版 v3）；2026-11-07 第三區齒輪工坊（檢視版 v1）；2026-11-07 第四區金冠城堡（四區整合交件 v1）＝全島 100 格開放
    */
-  var OPEN_REGIONS = 3;
+  var OPEN_REGIONS = 4;
   // 事件依既有遊戲規格（JSON 的 eventType 僅為占位；第 30 格為區域邊界）
   var TYPES = { 3: 'chance', 5: 'chest', 7: 'minigame', 9: 'chance', 11: 'fate', 12: 'chest', 14: 'fate', 15: 'chance', 17: 'minigame',
     19: 'chest', 21: 'fate', 22: 'chance', 24: 'minigame', 26: 'chest', 27: 'fate', 28: 'chance' };
@@ -111,7 +112,8 @@
       background: { webp: 'images/gold/region02.webp', jpg: 'images/gold/region02.jpg' }, size: { width: 1080, height: 1350 } },
     { id: 'gold-03', name: '齒輪工坊', from: 56, to: 80, stripY: 1350, data: REGION03,
       background: { webp: 'images/gold/region03.webp', jpg: 'images/gold/region03.jpg' }, size: { width: 1080, height: 1350 } },
-    { id: 'gold-04', name: '金冠城堡', from: 81, to: 100, stripY: 0 }
+    { id: 'gold-04', name: '金冠城堡', from: 81, to: 100, stripY: 0, data: REGION04,
+      background: { webp: 'images/gold/region04.webp', jpg: 'images/gold/region04.jpg' }, size: { width: 1080, height: 1350 } }
   ];
   REGIONS.forEach(function (r, i) { r.available = i < OPEN_REGIONS; });
   /**
@@ -593,8 +595,8 @@
         } else ev.text = '今天已經玩過小遊戲了（每天 1 次），明天再來挑戰！';
       }
     } else if (tile.type === 'boundary') {
-      var opened = REGIONS.filter(function (r) { return r.available; });
-      var lastR = opened[opened.length - 1], nextR = REGIONS[opened.length];
+      var ri = REGIONS.findIndex(function (r) { return r.id === tile.regionId; });
+      var lastR = REGIONS[ri], nextR = REGIONS[ri + 1];
       ev.title = '🚪 抵達' + lastR.name + '的終點！';
       ev.text = '你走完金島第 1～' + lastR.to + ' 格了！' + (nextR ? '前方的「' + nextR.name + '」即將開放。' : '') + '\n下次出發會從起點開始新的一輪，寶箱也會重新放滿！';
     } else if (tile.type === 'end') {
@@ -929,7 +931,7 @@
     return this.getBonusQuota(childId);
   };
 
-  var api = { ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, MAGNET_RANGE: MAGNET_RANGE, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

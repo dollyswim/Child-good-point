@@ -1,7 +1,7 @@
 # 金島 100 格：Codex 配置草圖 v2 整理
 
 > 來源：Codex `gold_island_layout_review`（草圖 v2，**非正式背景、不可直接匯入**）。原始座標存於 `docs/art/gold_island_layout_draft_v2.json`。
-> 狀態：**第一～三區（第 1～80 格）已上線**（第三區接縫預覽 `docs/art/gold_region02_03_join_preview.png`）；（Codex 核定版 v3，接縫預覽 `docs/art/gold_region01_02_join_preview.png`）。下一步：齒輪工坊（56～80）、金冠城堡（81～100）。
+> 狀態：**全島 100 格已上線（2026-11-07）**：第四區金冠城堡用 Codex 四區整合交件 v1（第 100 格在城堡門前 (540, 520)）。全島座標 `docs/art/gold_island_coordinates_1_100.json`、總覽 `docs/art/gold_island_overview.jpg`。
 
 ## 1. 草圖內容
 
@@ -74,7 +74,7 @@
 | 機會 | 58、64、70、77 | 83、89、95 |
 | 命運 | 66、69、76 | 87、93 |
 | 小遊戲 | 62、72、79 | 90、99 |
-| 邊界／終點 | 80（區域邊界） | 100（全島終點） |
+| 邊界／終點 | 80（區域邊界；全島開放後為一般格） | 100（全島終點） |
 | 普通 | 其餘 10 格 | 其餘 9 格 |
 
 ### 舊版建議（沿用第一區比例）

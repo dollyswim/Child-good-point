@@ -1,0 +1,377 @@
+{
+  "version": 1,
+  "approvalStatus": "第四區待檢視",
+  "imageSize": {
+    "width": 1080,
+    "height": 1350
+  },
+  "coordinateSystem": {
+    "type": "normalized",
+    "origin": "top-left",
+    "anchor": "tile-top-center",
+    "worldSize": {
+      "width": 1080,
+      "height": 5400
+    }
+  },
+  "tiles": [
+    {
+      "order": 81,
+      "id": "gold-04-081",
+      "type": "普通",
+      "regionId": "gold-04",
+      "backgroundId": "region03",
+      "x": 0.62963,
+      "y": 0.023704,
+      "px": {
+        "x": 680.0,
+        "y": 32.0
+      },
+      "worldPx": {
+        "x": 680.0,
+        "y": 1382.0
+      }
+    },
+    {
+      "order": 82,
+      "id": "gold-04-082",
+      "type": "普通",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.642559,
+      "y": 0.976322,
+      "px": {
+        "x": 693.96,
+        "y": 1318.03
+      },
+      "worldPx": {
+        "x": 693.96,
+        "y": 1318.03
+      }
+    },
+    {
+      "order": 83,
+      "id": "gold-04-083",
+      "type": "機會",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.643519,
+      "y": 0.927804,
+      "px": {
+        "x": 695.0,
+        "y": 1252.53
+      },
+      "worldPx": {
+        "x": 695.0,
+        "y": 1252.53
+      }
+    },
+    {
+      "order": 84,
+      "id": "gold-04-084",
+      "type": "普通",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.642626,
+      "y": 0.879292,
+      "px": {
+        "x": 694.04,
+        "y": 1187.04
+      },
+      "worldPx": {
+        "x": 694.04,
+        "y": 1187.04
+      }
+    },
+    {
+      "order": 85,
+      "id": "gold-04-085",
+      "type": "寶箱",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.622195,
+      "y": 0.833777,
+      "px": {
+        "x": 671.97,
+        "y": 1125.6
+      },
+      "worldPx": {
+        "x": 671.97,
+        "y": 1125.6
+      }
+    },
+    {
+      "order": 86,
+      "id": "gold-04-086",
+      "type": "普通",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.595424,
+      "y": 0.790232,
+      "px": {
+        "x": 643.06,
+        "y": 1066.81
+      },
+      "worldPx": {
+        "x": 643.06,
+        "y": 1066.81
+      }
+    },
+    {
+      "order": 87,
+      "id": "gold-04-087",
+      "type": "命運",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.562853,
+      "y": 0.749285,
+      "px": {
+        "x": 607.88,
+        "y": 1011.54
+      },
+      "worldPx": {
+        "x": 607.88,
+        "y": 1011.54
+      }
+    },
+    {
+      "order": 88,
+      "id": "gold-04-088",
+      "type": "普通",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.527955,
+      "y": 0.709575,
+      "px": {
+        "x": 570.19,
+        "y": 957.93
+      },
+      "worldPx": {
+        "x": 570.19,
+        "y": 957.93
+      }
+    },
+    {
+      "order": 89,
+      "id": "gold-04-089",
+      "type": "機會",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.488778,
+      "y": 0.672544,
+      "px": {
+        "x": 527.88,
+        "y": 907.93
+      },
+      "worldPx": {
+        "x": 527.88,
+        "y": 907.93
+      }
+    },
+    {
+      "order": 90,
+      "id": "gold-04-090",
+      "type": "小遊戲",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.441845,
+      "y": 0.641941,
+      "px": {
+        "x": 477.19,
+        "y": 866.62
+      },
+      "worldPx": {
+        "x": 477.19,
+        "y": 866.62
+      }
+    },
+    {
+      "order": 91,
+      "id": "gold-04-091",
+      "type": "寶箱",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.390993,
+      "y": 0.61545,
+      "px": {
+        "x": 422.27,
+        "y": 830.86
+      },
+      "worldPx": {
+        "x": 422.27,
+        "y": 830.86
+      }
+    },
+    {
+      "order": 92,
+      "id": "gold-04-092",
+      "type": "普通",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.342573,
+      "y": 0.586265,
+      "px": {
+        "x": 369.98,
+        "y": 791.46
+      },
+      "worldPx": {
+        "x": 369.98,
+        "y": 791.46
+      }
+    },
+    {
+      "order": 93,
+      "id": "gold-04-093",
+      "type": "命運",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.296938,
+      "y": 0.554276,
+      "px": {
+        "x": 320.69,
+        "y": 748.27
+      },
+      "worldPx": {
+        "x": 320.69,
+        "y": 748.27
+      }
+    },
+    {
+      "order": 94,
+      "id": "gold-04-094",
+      "type": "普通",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.258256,
+      "y": 0.517115,
+      "px": {
+        "x": 278.92,
+        "y": 698.11
+      },
+      "worldPx": {
+        "x": 278.92,
+        "y": 698.11
+      }
+    },
+    {
+      "order": 95,
+      "id": "gold-04-095",
+      "type": "機會",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.236166,
+      "y": 0.472616,
+      "px": {
+        "x": 255.06,
+        "y": 638.03
+      },
+      "worldPx": {
+        "x": 255.06,
+        "y": 638.03
+      }
+    },
+    {
+      "order": 96,
+      "id": "gold-04-096",
+      "type": "普通",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.268817,
+      "y": 0.432911,
+      "px": {
+        "x": 290.32,
+        "y": 584.43
+      },
+      "worldPx": {
+        "x": 290.32,
+        "y": 584.43
+      }
+    },
+    {
+      "order": 97,
+      "id": "gold-04-097",
+      "type": "寶箱",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.320909,
+      "y": 0.408842,
+      "px": {
+        "x": 346.58,
+        "y": 551.94
+      },
+      "worldPx": {
+        "x": 346.58,
+        "y": 551.94
+      }
+    },
+    {
+      "order": 98,
+      "id": "gold-04-098",
+      "type": "普通",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.379457,
+      "y": 0.396397,
+      "px": {
+        "x": 409.81,
+        "y": 535.14
+      },
+      "worldPx": {
+        "x": 409.81,
+        "y": 535.14
+      }
+    },
+    {
+      "order": 99,
+      "id": "gold-04-099",
+      "type": "小遊戲",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.439654,
+      "y": 0.390295,
+      "px": {
+        "x": 474.83,
+        "y": 526.9
+      },
+      "worldPx": {
+        "x": 474.83,
+        "y": 526.9
+      }
+    },
+    {
+      "order": 100,
+      "id": "gold-04-100",
+      "type": "全島終點",
+      "regionId": "gold-04",
+      "backgroundId": "region04",
+      "x": 0.5,
+      "y": 0.385185,
+      "px": {
+        "x": 540.0,
+        "y": 520.0
+      },
+      "worldPx": {
+        "x": 540.0,
+        "y": 520.0
+      }
+    }
+  ],
+  "celebrationArea": {
+    "backgroundId": "region04",
+    "x": 390,
+    "y": 450,
+    "width": 300,
+    "height": 200
+  },
+  "validation": {
+    "distanceMinPx": 64.16,
+    "distanceMaxPx": 65.54,
+    "includes81To82": true,
+    "gameRuntimeTested": false
+  },
+  "notes": [
+    "第81格保持第三區(680,32)。",
+    "第100格改為城堡門前(540,520)，不沿用草圖(540,290)。",
+    "中文type僅作brief標籤，合併時不改現有程式type列舉。"
+  ]
+}

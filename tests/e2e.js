@@ -631,8 +631,8 @@ async function main() {
     await q.goto(url + '#map-' + id);
     await q.waitForSelector('#pawn');
     // 地圖：4 個命運格（暫用 🔮）＋圖例
-    assert.deepEqual(await q.$$eval('.mtile.mt-fate', (els) => els.map((e) => +e.dataset.n)), [11, 14, 21, 27, 41, 44, 51, 66, 69, 76]);
-    assert.equal(await q.locator('.mt-fate .tile-art img[src="images/tiles/fate.webp"]').count(), 10, '命運格用水晶球圖（第一～三區共 10 格）');
+    assert.deepEqual(await q.$$eval('.mtile.mt-fate', (els) => els.map((e) => +e.dataset.n)), [11, 14, 21, 27, 41, 44, 51, 66, 69, 76, 87, 93]);
+    assert.equal(await q.locator('.mt-fate .tile-art img[src="images/tiles/fate.webp"]').count(), 12, '命運格用水晶球圖（第一～四區共 12 格）');
     await q.waitForFunction(() => [...document.querySelectorAll('.mt-fate img')].every((i) => i.complete && i.naturalWidth === 192));
     assert.match(await q.locator('.legend').innerText(), /命運/);
     // 擲 4 → 第 14 格命運格 → 後退 2 格到第 12 格（寶箱格不觸發）
@@ -643,7 +643,7 @@ async function main() {
     assert.match(msg, /命運卡[\s\S]*往回退了 2 格/);
     assert.match(msg, /停在第 12 格/);
     await q.click('#confirm [data-yes]');
-    assert.equal(await q.locator('[data-testid=pos]').innerText(), '12 / 80');
+    assert.equal(await q.locator('[data-testid=pos]').innerText(), '12 / 100');
     assert.equal(await q.locator('#pawn').getAttribute('data-tile'), 'gold-01-012');
     // 擲 2 → 第 14 格命運格 → 特殊任務：讚美與感謝（0.3）
     await q.evaluate(() => { const seq = [1.5 / 6, 0.3]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0); });
@@ -970,7 +970,7 @@ async function main() {
     const pt = await q.evaluate(() => {
       const view = document.getElementById('map-view').getBoundingClientRect();
       const cand = [...document.querySelectorAll('.mtile')].map((el) => ({ n: +el.dataset.n, r: el.getBoundingClientRect() }))
-        .filter((t) => t.n !== 7 && t.n < 80 && t.r.left > view.left + 10 && t.r.right < view.right - 60 && t.r.top > view.top + 10 && t.r.bottom < view.bottom - 10);
+        .filter((t) => t.n !== 7 && t.n < 100 && t.r.left > view.left + 10 && t.r.right < view.right - 60 && t.r.top > view.top + 10 && t.r.bottom < view.bottom - 10);
       const t = cand.find((c) => c.n === 5) || cand[0];
       return { n: t.n, x: t.r.left + t.r.width / 2, y: t.r.top + t.r.height / 2 };
     });
@@ -981,11 +981,11 @@ async function main() {
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.door, id), 0);
     await q.waitForSelector('#confirm[open]', { timeout: 10000 }).catch(() => {});
     if (await q.locator('#confirm[open] [data-yes]').count()) await q.click('#confirm [data-yes]');
-    // 飛行翼：前進 20 格（不超過第 80 格）
+    // 飛行翼：前進 20 格（不超過第 100 格）
     const before = await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).pos, id);
     await q.evaluate(() => { window.__cgpStore.random = () => 0.5; });
     await q.click('.item-btn[data-kind=wings]');
-    await q.waitForFunction((b) => +document.querySelector('[data-testid=pos]').textContent.split(' ')[0] === Math.min(80, b + 20), before, { timeout: 15000 });
+    await q.waitForFunction((b) => +document.querySelector('[data-testid=pos]').textContent.split(' ')[0] === Math.min(100, b + 20), before, { timeout: 15000 });
     const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(over <= 0);
     console.log('✔ 寶物商店 Phase 4A：道具列、神奇骰子＋命運重骰券、好運金牌、再來 3 次、任意門點選格子、飛行翼');
@@ -1118,24 +1118,29 @@ async function main() {
       const a = s.addChild({ name: '端端', startPoints: 1200 });
       const it = s.addItem({ kind: 'bonus', name: '大加分', points: 100 });
       s.recordItem(a.id, it.id); s.settleToday(a.id);
-      s.getPlayer(a.id).bag.d6 = 1; s.setPlayerTile(a.id, 77); s.save();
+      s.getPlayer(a.id).bag.d6 = 1; s.setPlayerTile(a.id, 97); s.save();
       return a.id;
     });
     await q.goto(url + '#adventure-' + id);
     await q.waitForSelector('[data-testid=achievements]');
     assert.match(await q.locator('#toast').innerText(), /解鎖成就[\s\S]*累計 1000 分/);
-    assert.match(await q.locator('[data-testid=achievements] h2').innerText(), /已解鎖 3 \/ 14/);   // 累計 1000、抵達水晶礦谷、抵達齒輪工坊
+    assert.match(await q.locator('[data-testid=achievements] h2').innerText(), /已解鎖 4 \/ 14/);   // 累計 1000、抵達水晶礦谷、抵達齒輪工坊、抵達金冠城堡
     await q.click('[data-action=ach-info][data-id=goldClear1]');
     assert.match(await q.locator('#confirm').innerText(), /金島通關[\s\S]*還沒達成/);
     await q.click('#confirm [data-yes]');
-    // 模擬全島終點（第 81～100 格背景尚未開放）：第 80 格當終點
+    // 從第 97 格擲 6：走到第 100 格（全島終點，多的步數捨棄）
     await q.goto(url + '#map-' + id);
-    await q.evaluate(() => { const s = window.__cgpStore; s.getBoard(s.getChildren()[0].id).tiles[80].type = 'end'; s.random = () => 0.99; });
+    await q.evaluate(() => { window.__cgpStore.random = () => 0.99; });
     await q.click('.dice-btn.d6');
     await q.waitForSelector('#clear-screen', { timeout: 10000 });
     assert.match(await q.locator('#clear-screen').innerText(), /恭喜通關金島[\s\S]*神秘寶箱 ×1[\s\S]*金島通關/);
     await q.click('#clear-screen [data-clear-ok]');
     await q.waitForFunction(() => !document.getElementById('clear-screen'));
+    assert.equal(await q.locator('#pawn').getAttribute('data-tile'), 'gold-04-100');
+    assert.match(await q.locator('.map-hint').innerText(), /抵達金冠城堡[\s\S]*新的一輪/);
+    assert.match(await q.locator('.legend').innerText(), /全島終點/);
+    assert.doesNotMatch(await q.locator('.legend').innerText(), /區域終點/, '全島開放後沒有區域邊界');
+    await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'gold-end.png') : path.join(require('os').tmpdir(), 'ge.png') });
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.giftMysteryChest, id), 1);
     assert.ok(await q.evaluate((cid) => window.__cgpStore.getAchievements(cid).find((a) => a.id === 'goldClear1').done, id));
     console.log('✔ 成就：冒險大廳成就區、解鎖提示、說明；金島通關全螢幕慶祝、第一次通關獎勵與成就');
@@ -1344,6 +1349,7 @@ async function main() {
     const REGION = require('../js/board-gold.js');
     const REGION02 = require('../js/board-gold-02.js');
     const REGION03 = require('../js/board-gold-03.js');
+    const REGION04 = require('../js/board-gold-04.js');
     for (const width of [360, 390, 430]) {
       const cx = await browser.newContext({ viewport: { width, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
       const q = await cx.newPage();
@@ -1382,9 +1388,9 @@ async function main() {
         };
       });
       const count = (t) => arts.types.filter((x) => x === t).length;
-      assert.deepEqual([count('start'), count('chest'), count('chance'), count('fate'), count('minigame'), count('boundary')], [1, 12, 13, 10, 9, 1], '格子圖示數量（第一～三區）');
+      assert.deepEqual([count('start'), count('chest'), count('chance'), count('fate'), count('minigame'), count('boundary'), count('end')], [1, 15, 16, 12, 11, 0, 1], '格子圖示數量（第一～四區；第 100 格為全島終點旗）');
       assert.deepEqual(arts.fit, ['contain']); assert.deepEqual(arts.bg, ['rgb(255, 255, 255)']);
-      assert.deepEqual(arts.legend, ['chest.webp', 'chance.webp', 'fate.webp', 'minigame.webp', 'door.webp']);
+      assert.deepEqual(arts.legend, ['chest.webp', 'chance.webp', 'fate.webp', 'minigame.webp', 'finish.webp'], '全島開放：圖例顯示全島終點旗');
       assert.ok(arts.startHere, '角色在起點：起點旗讓位');
       console.log('  ・' + width + 'px 預設縮放：格子圖示約 ' + arts.px + 'px');
       // 30 格依 JSON 座標、與背景同一縮放：比對畫面位置
@@ -1400,10 +1406,10 @@ async function main() {
           return { tiles, bgw: bg.width, pawnW: pr.width, pawnFeet: { x: pr.left + pr.width / 2, y: pr.bottom },
             tileC: tile ? (() => { const r = tile.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })() : null };
         });
-        assert.equal(m.tiles.length, 80, label + '：80 格（第一～三區）');
+        assert.equal(m.tiles.length, 100, label + '：100 格（第一～四區）');
         for (const t of m.tiles) {
           // 對照第一區背景：1～30 格用第一區 JSON；31～55 格用長地圖總覽座標換算（y 以第一區背景上緣為 0，第二區在其上方為負值）
-          const j = t.n <= 30 ? REGION.tiles[t.n - 1] : (() => { const r = t.n <= 55 ? REGION02.tiles[t.n - 31] : REGION03.tiles[t.n - 56]; return { x: r.gx / 1080, y: (r.gy - 4050) / 1350 }; })();
+          const j = t.n <= 30 ? REGION.tiles[t.n - 1] : (() => { const r = t.n <= 55 ? REGION02.tiles[t.n - 31] : t.n <= 80 ? REGION03.tiles[t.n - 56] : REGION04.tiles[t.n - 81]; return { x: r.gx / 1080, y: (r.gy - 4050) / 1350 }; })();
           assert.ok(Math.abs(t.cx - j.x) * m.bgw < 1.5 && Math.abs(t.cy - j.y) * m.bgw * 1.25 < 1.5, label + '：第 ' + t.n + ' 格對齊座標');
         }
         const tileW = m.tiles[0].w;
@@ -1456,23 +1462,23 @@ async function main() {
         }, id);
         await q.reload(); await q.waitForSelector('#pawn');
         assert.equal(await q.locator('#pawn').getAttribute('data-tile'), 'gold-01-012', '舊整數格號遷移');
-        assert.equal(await q.locator('[data-testid=pos]').innerText(), '12 / 80');
-        // 第 80 格（第三區邊界）安全停止：從第 77 格擲 12，只走到 80，多餘步數捨棄
-        await q.evaluate((cid) => { const s = window.__cgpStore; s.setPlayerTile(cid, 77); s.save(); }, id);
+        assert.equal(await q.locator('[data-testid=pos]').innerText(), '12 / 100');
+        // 第 100 格（全島終點）安全停止：從第 97 格擲 12，只走到 100，多餘步數捨棄
+        await q.evaluate((cid) => { const s = window.__cgpStore; s.setPlayerTile(cid, 97); s.save(); }, id);
         await q.reload(); await q.waitForSelector('#pawn');
         await q.evaluate(() => { window.__cgpStore.random = () => 0.99; }); // 重新整理後才固定亂數（擲出 12）
         await q.click('[data-action=roll][data-kind=d12]');
-        await q.waitForSelector('#confirm[open]', { timeout: 8000 });
-        assert.match(await q.locator('#confirm').innerText(), /齒輪工坊的終點[\s\S]*金冠城堡[\s\S]*即將開放[\s\S]*新的一輪/);
-        assert.doesNotMatch(await q.locator('#confirm').innerText(), /通關/, '不是全島通關');
-        await q.click('#confirm [data-yes]');
-        assert.equal(await q.locator('#pawn').getAttribute('data-tile'), 'gold-03-080');
+        await q.waitForSelector('#clear-screen', { timeout: 8000 });
+        assert.match(await q.locator('#clear-screen').innerText(), /恭喜通關金島/);
+        await q.click('#clear-screen [data-clear-ok]');
+        await q.waitForFunction(() => !document.getElementById('clear-screen'));
+        assert.equal(await q.locator('#pawn').getAttribute('data-tile'), 'gold-04-100');
         assert.match(await q.locator('.map-hint').innerText(), /從起點開始新的一輪/);
         assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.d12, id), 1, '只扣一顆骰子');
         await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'region-end.png') : path.join(require('os').tmpdir(), 'r2.png') });
       }
       await cx.close();
-      console.log('✔ 金島第一～三區地圖 ' + width + 'px：80 格對齊、縮放拖曳、不橫向溢出' + (width === 390 ? '、逐格移動、重新整理恢復、舊存檔遷移、第 80 格停止' : ''));
+      console.log('✔ 金島第一～四區地圖 ' + width + 'px：100 格對齊、縮放拖曳、不橫向溢出' + (width === 390 ? '、逐格移動、重新整理恢復、舊存檔遷移、第 100 格通關停止' : ''));
     }
   }
 

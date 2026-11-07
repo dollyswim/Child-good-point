@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.07-40`｜Service Worker 快取 `cgp-shell-v50`
+> 最後更新：2026-11-07｜App 版本 `2026.11.07-41`｜Service Worker 快取 `cgp-shell-v51`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---
@@ -110,15 +110,17 @@
 | `tests/store.test.js` | 單元測試（`npm test`） |
 | `tests/e2e.js` | Playwright 手機尺寸 E2E（`npm run test:e2e`），含 360／390／430px 地圖檢查 |
 
-### 金島長地圖（第一～三區已開放：第 1～80 格）
+### 金島長地圖（四區全部開放：第 1～100 格）
 - 地圖改為一條長地圖：總覽座標 1080×5400（左上原點），四張 1080×1350 背景由上到下為第四、三、二、一區（`REGIONS[].stripY` = 0、1350、2700、4050）。格子帶 `gx、gy`（總覽座標）與 `x、y`（所在背景圖內 0～1）；第一區換算 `gy = 4050 + y × 1350`，格子 ID 與存檔不變。
 - 未開放區域以雲霧＋「即將開放」遮住；最小縮放＝寬度填滿畫面。
 - 第二區資料 `data/gold_region02_tiles.json` → `tools/gen_board02.py` → `js/board-gold-02.js`（座標暫用 Codex 草圖 v2；類型已排好，見 `docs/art/gold_region02_layout_preview.png`）。
 - **2026-11-07 第二區（水晶礦谷）已上線**：Codex 核定版 v3（`region01` 與 `region02` 必須成對使用，第一區上方 320px 已為接縫修整）。`REGION02_OPEN = true`；第 30 格變一般格、第 55 格為邊界，「回起點下一輪」在目前最後一格（現為第 80 格）。任意門可在整座島已開放的格子間傳送。
 - 背景用 WebP 品質 92（約 400KB／張）；接縫處誤差與整張圖相同，看不出接線。
 - **2026-11-07 第三區（齒輪工坊）已上線**：Codex 檢視版 v1（`region02` 上方 320px 再修整、與 `region03` 成對使用；320px 以下與 v3 完全相同）。第 56～57 格在水晶礦谷圖最上方，第 58～80 格在齒輪工坊。能源主塔空地在第三區 (850, 190)。
-- 開放區數由 `js/game.js` 的 `OPEN_REGIONS` 控制（目前 3）；只有最後開放區域的最後一格是邊界，前面的邊界格自動改為一般格。各區資料用 `tools/gen_board_region.py` 由 `data/gold_regionNN_tiles.json` 產生 `js/board-gold-NN.js`。
-- 下一區（金冠城堡 81～100）：用 `docs/art/region03_top_seam_reference.png` 作接縫；第 81 格已有座標 (680, 1382)（`docs/art/gold_region03_tiles_final.json`），第 82～100 格依第三區上緣出口（x ≈ 680）重新排。
+- **2026-11-07 第四區（金冠城堡）已上線，全島 100 格開放**：Codex 金島四區整合交件 v1（`docs/art/CODEX_GOLD_REGION04_HANDOFF.md`）。`region03` 上方 320px 再修整、與 `region04` 成對使用（320px 以下與檢視版 v1 完全相同；`region01`、`region02` 未變）。第 81 格在齒輪工坊圖頂端 (680, 1382)，第 82～100 格在城堡圖；第 100 格為全島終點，城堡門前 (540, 520)，門前留 300×200 慶祝空地（x 390～690、y 450～650）。格子類型：寶箱 85、91、97；機會 83、89、95；命運 87、93；小遊戲 90、99；其餘普通。全島座標合併檔 `docs/art/gold_island_coordinates_1_100.json`、總覽 `docs/art/gold_island_overview.jpg`。
+- 開放區數由 `js/game.js` 的 `OPEN_REGIONS` 控制（目前 4＝全島）；只有最後開放區域的最後一格是邊界，前面的邊界格自動改為一般格。各區資料用 `tools/gen_board_region.py` 由 `data/gold_regionNN_tiles.json` 產生 `js/board-gold-NN.js`。
+- 全島開放後沒有區域邊界格（圖例改顯示「全島終點」旗）；區域邊界規則仍保留，單元測試以 `buildGold(3)` 模擬。
+- 美術尚未做的：能源主塔與技師（第三區 (850, 190) 空地）、右側管線通電切換、第 100 格門前慶祝動畫——都由程式疊加，背景不含。
 
 ### 近期介面調整
 - 冒險大廳簡化：移除背包區與四個快速入口（與底部導覽重複）；結算紀錄放進綠底「今日已結算」卡內，點了才展開。背包道具（含寶箱開箱、黃金鑰匙）統一在地圖下方的「🎒 背包道具」列。
@@ -145,7 +147,7 @@
 ### 成就與金島通關
 - 成就 14 項（冒險 6、收集 3、生活 5），定義在 `js/game.js` 的 `ACHIEVEMENTS`；紀錄 `data.achievements[childId][成就代號] = { date, ts }`，達成後不會消失。每次畫孩子相關頁面前 `store.checkAchievements()`，新達成的顯示提示。徽章先用表情符號。
 - 角色統計：`players[id].goldClears`（通關次數）、`maxReached`（最遠格子）、`stats.chests／mystery`（開過的寶箱數）。
-- 金島通關（第 100 格 `type: 'end'`）：第一次＝神秘寶箱 ×1（免鑰匙，`giftMysteryChest`）＋成就「金島通關」；之後每次 ＋10 能量星星；全螢幕慶祝畫面；下一次移動從起點開始新的一輪。第 81～100 格開放前無法實際走到（測試以暫改終點模擬）。
+- 金島通關（第 100 格 `type: 'end'`）：第一次＝神秘寶箱 ×1（免鑰匙，`giftMysteryChest`）＋成就「金島通關」；之後每次 ＋10 能量星星；全螢幕慶祝畫面；下一次移動從起點開始新的一輪。已可實際走到第 100 格（E2E 從第 97 格擲骰走到終點驗證）。
 
 ### 備份提醒
 - `data.backup`：`lastExportAt`（最後匯出）、`since`（開始計算）、`snoozeUntil`（明天再提醒）。滿 7 天沒匯出 JSON 時首頁顯示提醒，「立即匯出」不需家長密碼（匯出不改資料）。
