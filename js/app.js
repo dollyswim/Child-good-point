@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-10';
+  var APP_VERSION = '2026.11.07-11';
   var store;
   try {
     store = new CGP.Store();
@@ -503,7 +503,7 @@
   var STAR_IMG = '<img class="star-ico" src="images/items/star.webp" alt="⭐" width="256" height="256" decoding="async" draggable="false">';
   /** 地圖格子事件圖示（白底圖放在白色圓角圖示框，contain 不裁切） */
   var TILE_ART = { start: 'images/tiles/start.webp', chest: 'images/tiles/chest.webp', chance: 'images/tiles/chance.webp',
-    minigame: 'images/tiles/minigame.webp', boundary: 'images/tiles/finish.webp' };
+    minigame: 'images/tiles/minigame.webp', boundary: 'images/tiles/door.webp' }; // 第一區終點：礦場木門（終點旗 finish.webp 保留給全島終點）
   function tileArt(type, cls) {
     return TILE_ART[type] ? '<span class="tile-art ' + (cls || '') + '"><img src="' + TILE_ART[type] + '" alt="" aria-hidden="true" width="192" height="192" decoding="async" draggable="false"></span>' : '';
   }

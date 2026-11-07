@@ -1,10 +1,10 @@
 /* 親子集點 Service Worker：離線可用。資料存在 localStorage，不受快取影響。 */
-var CACHE = 'cgp-shell-v20';
+var CACHE = 'cgp-shell-v21';
 var SHELL = [
   './', 'index.html', 'css/style.css', 'js/store.js', 'js/rules-csv.js', 'js/report.js', 'js/board-gold.js', 'js/game.js', 'js/art.js', 'js/app.js',
   'manifest.webmanifest', 'images/gold-island.webp', 'images/gold-island.jpg', 'images/gold/region01.webp', 'images/gold/region01.jpg', 'images/gold/stone.webp', 'images/mascot.webp', 'images/float-castle.webp', 'images/chest.webp',
   'images/characters/roundear.webp', 'images/characters/longear.webp', 'images/characters/horn.webp', 'images/characters/wing.webp',
-  'images/characters/drop.webp', 'images/characters/sprout.webp', 'images/characters/flame.webp', 'images/characters/stone.webp', 'images/items/dice_6.webp', 'images/items/dice_12.webp', 'images/items/roller_skate.webp', 'images/islands/wood.webp', 'images/islands/water.webp', 'images/islands/fire.webp', 'images/islands/earth.webp', 'images/items/star.webp', 'images/tiles/start.webp', 'images/tiles/chest.webp', 'images/tiles/chance.webp', 'images/tiles/minigame.webp', 'images/tiles/finish.webp', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'
+  'images/characters/drop.webp', 'images/characters/sprout.webp', 'images/characters/flame.webp', 'images/characters/stone.webp', 'images/items/dice_6.webp', 'images/items/dice_12.webp', 'images/items/roller_skate.webp', 'images/islands/wood.webp', 'images/islands/water.webp', 'images/islands/fire.webp', 'images/islands/earth.webp', 'images/items/star.webp', 'images/tiles/start.webp', 'images/tiles/chest.webp', 'images/tiles/chance.webp', 'images/tiles/minigame.webp', 'images/tiles/finish.webp', 'images/tiles/door.webp', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'
 ];
 
 self.addEventListener('install', function (e) {

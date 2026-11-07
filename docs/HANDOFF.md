@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.07-10`｜Service Worker 快取 `cgp-shell-v20`
+> 最後更新：2026-11-07｜App 版本 `2026.11.07-11`｜Service Worker 快取 `cgp-shell-v21`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---
@@ -64,8 +64,7 @@
 | 優先 | 項目 | 目前 |
 |---|---|---|
 | ✅ | 6 面骰、12 面骰（正式版）、溜冰鞋圖示 | `images/items/`（白底圖＋白色圖示框，contain） |
-| ✅ | 格子事件圖示：起點旗、寶箱、機會、小遊戲、終點旗 | `images/tiles/`（192px WebP，白色圓角圖示框浮在石板上；角色所在格 `.here` 時圖示縮小移到右上角）。第 30 格暫用終點旗 |
-| 2 | 礦場木門（第 30 格） | 暫用終點旗；提示詞見 `docs/art-prompts.md`「第四優先」，到貨後 `TILE_ART.boundary` 改指木門圖，終點旗留給第 100 格 |
+| ✅ | 格子事件圖示：起點旗、寶箱、機會、小遊戲、終點旗 | `images/tiles/`（192px WebP，白色圓角圖示框浮在石板上；角色所在格 `.here` 時圖示縮小移到右上角）。第 30 格用礦場木門 `door.webp`，終點旗 `finish.webp` 保留給全島終點 |
 | ✅ | 能量星星圖示 | `images/items/star.webp`，以 `mix-blend-mode: multiply` 顯示在淺色底（星星卡、地圖 HUD、商店餘額、結算摘要）；句子、提示訊息、商店橘色價格按鈕仍用 ⭐ 文字 |
 | ✅ | 五島入口插圖（冒險大廳地圖關卡卡） | 金島 `images/gold-island.*`；木／水／火／土島 `images/islands/<wood|water|fire|earth>.*`，依 `players[id].island` 自動切換（`js/app.js` 的 `ISLANDS`）。木、火、土島原圖右下角的淡浮水印已修除（反算半透明白框＋周圍紋理補圖）；換圖時同檔名覆蓋並升 `sw.js` 快取版本 |
 | — | 「抓住星星」小遊戲素材 | Phase 4 需要 |

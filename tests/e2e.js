@@ -703,7 +703,7 @@ async function main() {
       const count = (t) => arts.types.filter((x) => x === t).length;
       assert.deepEqual([count('start'), count('chest'), count('chance'), count('minigame'), count('boundary')], [1, 4, 5, 3, 1], '格子圖示數量');
       assert.deepEqual(arts.fit, ['contain']); assert.deepEqual(arts.bg, ['rgb(255, 255, 255)']);
-      assert.deepEqual(arts.legend, ['chest.webp', 'chance.webp', 'minigame.webp', 'finish.webp']);
+      assert.deepEqual(arts.legend, ['chest.webp', 'chance.webp', 'minigame.webp', 'door.webp']);
       assert.ok(arts.startHere, '角色在起點：起點旗讓位');
       console.log('  ・' + width + 'px 預設縮放：格子圖示約 ' + arts.px + 'px');
       // 30 格依 JSON 座標、與背景同一縮放：比對畫面位置
