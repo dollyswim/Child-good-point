@@ -1672,3 +1672,49 @@ body.mg-open { overflow: hidden; }
   .th-actions .btn { min-height: 40px; padding: 6px 8px; font-size: .88rem; }
   .th-beam { height: 100%; }
 }
+
+/* ================= 小孩頁面：加分・扣分（單欄條列，2026-11-07） ================= */
+.scorer {
+  --sc-text: #4E4339; --sc-line: #E7E2D9; --sc-pos-bg: #E2F4E7; --sc-pos: #25804D; --sc-neg-bg: #F8E8DC; --sc-neg: #A66442;
+  gap: 12px; background: #fff; border: 1px solid var(--sc-line); box-shadow: 0 1px 3px rgba(78, 67, 57, .06); color: var(--sc-text);
+}
+.scorer h2 { font-size: 1.3rem; font-weight: 700; }
+/* 搜尋欄 */
+.scorer .search { height: 50px; min-height: 0; padding: 0 14px; border: 1px solid var(--sc-line); border-radius: 14px; background: #FFFCF7;
+  font-size: 1rem; color: var(--sc-text); box-shadow: none; text-align: left; }   /* 提示文字本身已有 🔍，靠左顯示 */
+.scorer .search::placeholder { color: #a99e92; }
+/* 加分／扣分切換：各半寬、等高、柔和色系 */
+.scorer .seg { gap: 8px; padding: 0; background: none; border-radius: 0; }
+.scorer .seg-btn { min-height: 52px; border-radius: 14px; border: 2px solid transparent; font-size: 1.05rem; font-weight: 700; box-shadow: none; }
+.scorer .seg-btn.bonus { background: #F1F8F3; color: #6f9a80; }
+.scorer .seg-btn.penalty { background: #FBF3EE; color: #b48a73; }
+.scorer .seg-btn.bonus.active { background: var(--sc-pos-bg); color: var(--sc-pos); border-color: #bfe3cb; box-shadow: none; }
+.scorer .seg-btn.penalty.active { background: var(--sc-neg-bg); color: var(--sc-neg); border-color: #efd3c0; box-shadow: none; }
+/* 分數篩選：48×48 正圓形，不被壓縮，可橫向捲動 */
+.scorer .pts-chips { gap: 9px; padding: 2px 2px 4px; overflow-x: auto; flex-wrap: nowrap; }
+.scorer .pts-chip { flex: 0 0 48px; width: 48px; height: 48px; min-width: 48px; min-height: 48px; max-width: 48px; max-height: 48px; aspect-ratio: 1 / 1;
+  display: grid; place-items: center; padding: 0; border-radius: 50%; border: 1.5px solid var(--sc-line); background: #fff;
+  font-size: .95rem; font-weight: 700; line-height: 1; white-space: nowrap; letter-spacing: -.02em; box-shadow: none; }
+.scorer .pts-chip.bonus { color: var(--sc-pos); }
+.scorer .pts-chip.penalty { color: var(--sc-neg); }
+.scorer .pts-chip.active { background: var(--sc-text); border-color: var(--sc-text); color: #fff; }
+/* 規定清單：一列一個，名稱靠左、分數固定靠右 */
+.scorer .score-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding-top: 4px; border-top: 1px solid var(--sc-line); }
+.scorer .score-btn { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; min-height: 0;
+  padding: 13px 14px 13px 16px; border: 1px solid var(--sc-line); border-radius: 14px; background: #fff; box-shadow: 0 1px 2px rgba(78, 67, 57, .05);
+  text-align: left; color: var(--sc-text); }
+.scorer .score-btn.bonus, .scorer .score-btn.penalty { background: #fff; color: var(--sc-text); }
+.scorer .score-btn:active { transform: scale(.985); background: #FFF8EF; filter: none; }
+.scorer .score-name { font-size: 1rem; font-weight: 600; line-height: 1.45; white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word;
+  -webkit-line-clamp: unset; display: block; text-align: left; }
+.scorer .score-pts { justify-self: end; flex: none; min-width: 58px; padding: 6px 10px; border-radius: 12px; text-align: center; white-space: nowrap;
+  font-size: 1.15rem; font-weight: 700; line-height: 1.2; }
+.scorer .score-btn.bonus .score-pts { background: var(--sc-pos-bg); color: var(--sc-pos); }
+.scorer .score-btn.penalty .score-pts { background: var(--sc-neg-bg); color: var(--sc-neg); }
+.scorer .pts-group { gap: 8px; }
+/* 撤銷上一筆：精簡一行，名稱過長才省略 */
+.page.has-undo { padding-bottom: calc(env(safe-area-inset-bottom) + 150px); }
+.undo-bar .btn.undo { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 6px 14px; border-radius: 14px;
+  border: 1px solid #E7E2D9; background: #fff; box-shadow: 0 2px 8px rgba(78, 67, 57, .12); font-size: .95rem; white-space: nowrap; }
+.undo-bar .undo-label { flex: none; font-weight: 700; color: #4E4339; }
+.undo-bar .btn.undo small { min-width: 0; margin-left: 0; }

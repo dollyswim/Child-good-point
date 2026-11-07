@@ -238,6 +238,31 @@ async function main() {
   await page.click('.seg-btn.penalty');
   const chipTexts = await page.locator('.pts-chip').allInnerTexts();
   assert.deepEqual(chipTexts, ['全部', '-3', '-5', '-10', '-20'], '扣分分數依輕到重排列');
+  // 加分・扣分版面：單欄條列、沒有分數分類標題、切換按鈕不顯示項目數、篩選按鈕 48×48 正圓形、分數靠右、可橫向捲動
+  const lay = await page.evaluate(() => {
+    const btns = [...document.querySelectorAll('.scorer .score-btn')];
+    return {
+      cols: new Set(btns.map((x) => Math.round(x.getBoundingClientRect().left))).size,
+      ptsRight: new Set(btns.map((x) => Math.round(x.querySelector('.score-pts').getBoundingClientRect().right))).size,
+      heads: document.querySelectorAll('.scorer .pts-head').length,
+      seg: [...document.querySelectorAll('.scorer .seg-btn')].map((x) => x.textContent.trim()),
+      chips: [...document.querySelectorAll('.scorer .pts-chip')].map((x) => { const r = x.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height), getComputedStyle(x).borderRadius]; }),
+    };
+  });
+  assert.equal(lay.cols, 1, '規定清單單欄');
+  assert.equal(lay.ptsRight, 1, '分數標籤固定靠右');
+  assert.equal(lay.heads, 0, '不再插入分數分類標題');
+  assert.deepEqual(lay.seg, ['👍 加分', '⚠️ 扣分'], '切換按鈕不顯示項目數量');
+  assert.ok(lay.chips.every((c) => c[0] === 48 && c[1] === 48 && c[2] === '50%'), '篩選按鈕 48×48 正圓形：' + JSON.stringify(lay.chips));
+  // 最後一筆能捲到撤銷列與導覽列上方完整看見
+  const lastOk = await page.evaluate(async () => {
+    const last = [...document.querySelectorAll('.scorer .score-btn')].pop();
+    last.scrollIntoView({ block: 'end' }); window.scrollTo(0, document.documentElement.scrollHeight);
+    await new Promise((r) => setTimeout(r, 50));
+    const r = last.getBoundingClientRect(), u = document.querySelector('.undo-bar').getBoundingClientRect();
+    return r.bottom <= u.top + 1;
+  });
+  assert.ok(lastOk, '最後一筆規定不被撤銷列或導覽列遮住');
   await page.click('.pts-chip >> text=-10');
   const shownPts = await page.locator('.score-btn .score-pts').allInnerTexts();
   assert.ok(shownPts.length === 5 && shownPts.every(t => t === '-10'), '只顯示 -10 的項目');

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-54';
+  var APP_VERSION = '2026.11.07-55';
   var store;
   try {
     store = new CGP.Store();
@@ -477,7 +477,7 @@
         (ui.showAllRecords ? '只顯示最近幾筆' : '顯示全部 ' + allCount + ' 筆') + '</button>' : '') +
       '</section></main>' +
       '<div class="undo-bar"><button class="btn undo" data-action="undo"' + (last ? '' : ' disabled') + '>' +
-      '↶ 撤銷上一筆' + (last ? '<small>' + h(last.name) + ' ' + signed(last.points) + '</small>' : '') +
+      '<span class="undo-label">↶ 撤銷上一筆</span>' + (last ? '<small>' + h(last.name) + ' ' + signed(last.points) + '</small>' : '') +
       '</button></div>';
   }
 
@@ -1735,19 +1735,15 @@
     if (!bonus.length && !penalty.length && !store.getItemsFor(childId, 'task').length) return '<p class="muted small">尚未設定加分或扣分項目，可到設定頁新增</p>';
 
     function btns(items) {
-      return '<div class="grid">' + items.map(function (i) {
+      return '<div class="score-list">' + items.map(function (i) {
         return '<button class="score-btn ' + i.kind + '" data-action="record" data-id="' + h(i.id) + '">' +
           '<span class="score-name">' + h(i.name) + '</span>' +
           '<span class="score-pts">' + h(ptsLabel(i)) + '</span></button>';
       }).join('') + '</div>';
     }
+    // 單欄條列：維持原本依分數排列的順序，但不再插入「+2　2 項」分類標題（每列右側已有分數）
     function grouped(items) {
-      var groups = groupByPoints(items);
-      if (groups.length === 1) return btns(groups[0].items);
-      return groups.map(function (g) {
-        return '<div class="pts-group"><div class="pts-head ' + ptsKeyClass(g.key, g.kind) + '">' + ptsKeyLabel(g.key) +
-          '<span>' + g.items.length + ' 項</span></div>' + btns(g.items) + '</div>';
-      }).join('');
+      return btns(groupByPoints(items).reduce(function (all, g) { return all.concat(g.items); }, []));
     }
 
     // 搜尋模式：同時搜尋加分與扣分
@@ -1767,8 +1763,8 @@
     var shown = ui.scorePoints == null ? items : items.filter(function (i) { return ptsKey(i) === ui.scorePoints; });
 
     var seg = '<div class="seg" role="tablist">' +
-      '<button class="seg-btn bonus ' + (kind === 'bonus' ? 'active' : '') + '" data-action="score-kind" data-kind="bonus" role="tab" aria-selected="' + (kind === 'bonus') + '">👍 加分 <small>' + bonus.length + '</small></button>' +
-      '<button class="seg-btn penalty ' + (kind === 'penalty' ? 'active' : '') + '" data-action="score-kind" data-kind="penalty" role="tab" aria-selected="' + (kind === 'penalty') + '">⚠️ 扣分 <small>' + penalty.length + '</small></button>' +
+      '<button class="seg-btn bonus ' + (kind === 'bonus' ? 'active' : '') + '" data-action="score-kind" data-kind="bonus" role="tab" aria-selected="' + (kind === 'bonus') + '">👍 加分</button>' +
+      '<button class="seg-btn penalty ' + (kind === 'penalty' ? 'active' : '') + '" data-action="score-kind" data-kind="penalty" role="tab" aria-selected="' + (kind === 'penalty') + '">⚠️ 扣分</button>' +
       '</div>';
     var chips = values.length > 1 ? '<div class="pts-chips">' +
       '<button class="pts-chip ' + (ui.scorePoints == null ? 'active' : '') + '" data-action="score-points" data-points="">全部</button>' +
