@@ -584,7 +584,7 @@ async function main() {
       return { left: s.left - v.left, bottom: v.bottom - s.bottom, w: s.width, overlap: s.right > c.left };
     });
     assert.ok(box.left < 20 && box.bottom < 20 && box.w >= 64 && !box.overlap, '商店在左下角：' + JSON.stringify(box));
-    assert.ok(await q.evaluate(() => { const i = document.querySelector('.map-shop img'); return i && i.complete && i.naturalWidth === 384 && getComputedStyle(i).objectFit === 'contain'; }), '商店圖載入、contain');
+    await q.waitForFunction(() => { const i = document.querySelector('.map-shop img'); return i && i.complete && i.naturalWidth === 384 && getComputedStyle(i).objectFit === 'contain'; }, null, { timeout: 8000 }); // 商店圖載入、contain
     await q.click('.map-shop');
     await q.waitForSelector('#confirm .shop-box');
     console.log('✔ 今日冒險出發：勾選多位孩子一起結算、未解鎖不可選、已出發打勾；商店在地圖左下角');
@@ -743,6 +743,66 @@ async function main() {
     assert.equal(await q.evaluate(() => localStorage.getItem('cgp-data')), snap, '試玩不改變存檔');
     console.log('✔ Phase 4：試玩網址 #minigame-test（不給星星、可再玩一次、離開回首頁、存檔不變）');
     await c8.close();
+  }
+
+  // ---------- 寶物商店 Phase 2：冒險寶物商店（兌換頁） ----------
+  {
+    const c9 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 780 }, serviceWorkers: 'block' });
+    const q = await c9.newPage();
+    await q.clock.setFixedTime(new Date('2026-11-06T10:00:00'));
+    q.on('pageerror', (e) => errors.push(e.message));
+    q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
+    await q.goto(url);
+    const [id, id2] = await q.evaluate(() => {
+      const s = window.__cgpStore;
+      return [s.addChild({ name: '端端', startPoints: 150 }).id, s.addChild({ name: '波妞', startPoints: 150 }).id];
+    });
+    await q.goto(url + '#shop-' + id);
+    await q.waitForSelector('[data-testid=treasure]');
+    await q.waitForFunction(() => [...document.querySelectorAll('.treasure-art img')].every((i) => i.complete && i.naturalWidth === 256));
+    const cards = await q.$$eval('.treasure-card', (cs) => cs.map((c) => [c.dataset.treasure, c.querySelector('.treasure-price').textContent.trim()]));
+    assert.deepEqual(cards, [['skates', '點10 點'], ['shield', '點20 點'], ['magicDice', '點10 點'], ['luckyMedal', '點100 點'], ['wings', '點100 點'], ['door', '點100 點']]);
+    assert.equal(await q.evaluate(() => getComputedStyle(document.querySelector('.treasure-art img')).objectFit), 'contain');
+    // 兌換防護罩
+    await q.click('[data-treasure=shield] [data-action=buy-treasure]');
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction(() => /背包 ×1/.test(document.querySelector('[data-treasure=shield]').textContent));
+    assert.match(await q.locator('[data-testid=total]').innerText(), /130/);
+    assert.match(await q.locator('[data-testid=treasure] h2').innerText(), /本週已兌換 1 \/ 3 件/);
+    assert.match(await q.locator('.records').innerText(), /寶物：防護罩[\s\S]*-20/);
+    // 再買 2 件 → 本週 3 件，全部按鈕停用並顯示原因
+    for (const t of ['skates', 'magicDice']) {
+      await q.click('[data-treasure=' + t + '] [data-action=buy-treasure]');
+      await q.click('#confirm [data-yes]');
+      await q.waitForFunction((t) => /背包 ×1/.test(document.querySelector('[data-treasure=' + t + ']').textContent), t);
+    }
+    const btns = await q.$$eval('.treasure-buy', (bs) => bs.map((b) => [b.disabled, b.textContent]));
+    assert.ok(btns.every(([d, t]) => d && t === '本週已兌換 3 件'), JSON.stringify(btns));
+    // 另一位孩子不受影響；點數不足顯示還差幾點
+    await q.goto(url + '#shop-' + id2);
+    await q.waitForSelector('[data-testid=treasure]');
+    assert.equal(await q.locator('[data-treasure=wings] .treasure-buy').isDisabled(), false);
+    // 確認視窗快速連點兩下：只兌換一次
+    await q.click('[data-treasure=skates] [data-action=buy-treasure]');
+    await q.dblclick('#confirm [data-yes]');
+    await q.waitForTimeout(300);
+    assert.deepEqual(await q.evaluate((cid) => [window.__cgpStore.getTotal(cid), window.__cgpStore.getPlayer(cid).bag.skates], id2), [140, 1], '連點不重複扣點');
+    await q.evaluate((cid) => window.__cgpStore.updateChild(cid, { startPoints: 60 }), id2);   // 扣掉溜冰鞋 10 點 → 50 點
+    await q.reload(); await q.waitForSelector('[data-testid=treasure]');
+    assert.equal(await q.locator('[data-treasure=wings] .treasure-buy').innerText(), '還差 50 點');
+    // 冒險大廳的背包
+    await q.goto(url + '#adventure-' + id);
+    await q.waitForSelector('[data-testid=bag]');
+    assert.deepEqual(await q.$$eval('.bag-item', (els) => els.map((e) => e.dataset.bag)), ['skates', 'shield', 'magicDice']);
+    // 撤銷最後一筆兌換 → 收回神奇骰子、退點
+    await q.goto(url + '#child-' + id);
+    await q.click('[data-action=undo]');
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.magicDice, id), 0);
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), 120);
+    const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert.ok(over <= 0);
+    console.log('✔ 寶物商店：6 款商品、兌換扣點進背包、每週 3 件、點數不足原因、背包顯示、撤銷收回道具');
+    await c9.close();
   }
 
   // ---------- 冒險大廳：依孩子所在島嶼輪換地圖關卡卡插圖 ----------

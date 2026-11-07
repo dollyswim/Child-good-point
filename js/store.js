@@ -52,6 +52,9 @@
     helper: { name: '幫忙大師：幫家人做 3 件事', icon: '🤝' }
   };
   var SPECIAL_TASK_POINTS = 20;
+  /** 冒險背包的道具代號（穩定、唯一；不以中文名稱判斷） */
+  var BAG_KEYS = ['d6', 'd12', 'skates', 'shield', 'magicDice', 'luckyMedal', 'wings', 'door', 'airplane', 'goldenKey', 'magnet', 'rerollTicket', 'bonusPlay'];
+  function emptyBag() { var b = {}; BAG_KEYS.forEach(function (k) { b[k] = 0; }); return b; }
   var SPECIAL_TASK_DAYS = 3;
   /** 8 種冒險夥伴代號：孩子的頭像與冒險棋子共用（child.avatar） */
   var CHARACTER_IDS = ['roundear', 'longear', 'horn', 'wing', 'drop', 'sprout', 'flame', 'stone'];
@@ -288,7 +291,7 @@
             pos: Math.max(0, toInt(p.pos, 0)),
             tileId: p.tileId ? String(p.tileId) : '',  // 穩定格子 ID；舊存檔沒有時由 game.js 依 pos 對應
             character: String(p.character || ''),
-            bag: { d6: Math.max(0, toInt(bag.d6, 0)), d12: Math.max(0, toInt(bag.d12, 0)), skates: Math.max(0, toInt(bag.skates, 0)) }
+            bag: BAG_KEYS.reduce(function (o, k) { o[k] = Math.max(0, toInt(bag[k], 0)); return o; }, {})
           };
         });
         return out;
@@ -752,9 +755,18 @@
   };
 
   /** 撤銷此孩子的上一筆紀錄 */
+  /** 寶物商店購買紀錄（refId = 'treasure:<道具代號>'）被撤銷或刪除時，一併收回 1 件道具；已用掉則不能撤銷 */
+  Store.prototype._takeBackTreasure = function (rec) {
+    if (!rec || rec.type !== 'reward' || !/^treasure:/.test(rec.refId || '')) return;
+    var key = rec.refId.slice(9);
+    var p = this.data.adventure.players[rec.childId];
+    if (!p || !p.bag || !(p.bag[key] > 0)) throw new Error('「' + rec.name.replace(/^寶物：/, '') + '」已經用掉了，不能撤銷這筆兌換');
+    p.bag[key]--;
+  };
   Store.prototype.undoLast = function (childId) {
     var last = this.getLastRecord(childId);
     if (!last) return null;
+    this._takeBackTreasure(last);
     this.data.records = this.data.records.filter(function (r) { return r.id !== last.id; });
     this.save();
     return last;
@@ -809,6 +821,7 @@
     var childId = patch.childId != null ? String(patch.childId) : r.childId;
     var date = patch.date != null ? String(patch.date) : r.date;
     if (!this.getChild(childId)) throw new Error('找不到孩子');
+    if (childId !== r.childId && /^treasure:/.test(r.refId || '')) throw new Error('寶物兌換紀錄不能改成其他孩子（道具在原本孩子的背包裡）');
     this._checkDate(date);
     if (r.type === 'task') this._checkTaskDup(childId, r.refId, date, r.id);
     if (patch.points != null) {
@@ -828,6 +841,7 @@
   Store.prototype.deleteRecord = function (id) {
     var r = this.getRecord(id);
     if (!r) return null;
+    this._takeBackTreasure(r);
     this.data.records = this.data.records.filter(function (x) { return x.id !== id; });
     this.save();
     return r;
@@ -1221,6 +1235,8 @@
     SCHEMA_VERSION: SCHEMA_VERSION,
     levelThreshold: levelThreshold,
     SPECIAL_TASKS: SPECIAL_TASKS,
+    BAG_KEYS: BAG_KEYS,
+    emptyBag: emptyBag,
     SPECIAL_TASK_POINTS: SPECIAL_TASK_POINTS,
     CHARACTER_IDS: CHARACTER_IDS,
     starsForNet: starsForNet,

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-22';
+  var APP_VERSION = '2026.11.07-23';
   var store;
   try {
     store = new CGP.Store();
@@ -510,7 +510,7 @@
       '<a class="tile t-shop" href="#shop-' + h(child.id) + '"><span class="tile-icon">🎁</span>兌換</a>' +
       '<button class="tile t-report" data-action="open-log"><span class="tile-icon">📜</span>結算紀錄</button></nav>';
 
-    return hero + '<main class="page adventure">' + tabs + starCard + summary + log + map + quick + '</main>';
+    return hero + '<main class="page adventure">' + tabs + starCard + summary + log + map + bagPanel(child) + quick + '</main>';
   }
 
   // ---------- 金島棋盤（Phase 3） ----------
@@ -1032,9 +1032,51 @@
       '<main class="page">' +
       '<section class="wallet" style="--c:' + h(child.color) + '">' + avatar(child, 'md') +
       '<div><div class="label">' + h(child.name) + ' 可以用的點數</div><div class="wallet-value" data-testid="total"><i class="coin" aria-hidden="true">點</i>' + num(total) + '</div></div></section>' +
+      treasurePanel(child) +
       '<section class="panel"><h2>🎁 可兌換的獎勵</h2>' + cards +
       '<p class="muted small">兌換會扣除總點數，不影響今日淨得分與等級。</p></section>' +
       '<section class="panel"><h2>🧾 兌換紀錄</h2>' + histHtml + '</section></main>';
+  }
+
+  /** 冒險寶物商店：用生活點數兌換冒險寶物（每週 3 件、同款持有 2 件） */
+  function treasurePanel(child) {
+    var bag = store.getPlayer(child.id).bag;
+    var used = store.getTreasureBoughtThisWeek(child.id);
+    return '<section class="panel treasure-panel" data-testid="treasure"><h2>🎒 冒險寶物商店 <small>本週已兌換 ' + used + ' / ' + GAME.TREASURE_WEEKLY_LIMIT + ' 件</small></h2>' +
+      '<div class="treasure-grid">' + GAME.TREASURES.map(function (t) {
+        var chk = store.canBuyTreasure(child.id, t.id);
+        return '<div class="treasure-card' + (chk.ok ? ' can' : '') + '" data-treasure="' + t.id + '">' +
+          '<span class="item-art treasure-art"><img src="' + t.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async" draggable="false"></span>' +
+          '<span class="treasure-main"><b>' + h(t.name) + '</b><small>' + h(t.desc) + '</small>' +
+          '<span class="treasure-meta"><span class="treasure-price"><i class="coin" aria-hidden="true">點</i>' + t.price + ' 點</span><span class="treasure-own">背包 ×' + (bag[t.id] || 0) + '</span></span></span>' +
+          '<button class="btn ' + (chk.ok ? 'primary' : '') + ' small treasure-buy" data-action="buy-treasure" data-id="' + t.id + '"' + (chk.ok ? '' : ' disabled') + '>' +
+          (chk.ok ? '兌換' : h(chk.reason)) + '</button></div>';
+      }).join('') + '</div>' +
+      '<p class="muted small">用生活點數兌換，放進冒險背包；每週最多 ' + GAME.TREASURE_WEEKLY_LIMIT + ' 件，同款最多持有 ' + GAME.TREASURE_HOLD_LIMIT + ' 件。不消耗能量星星。</p></section>';
+  }
+
+  /** 冒險大廳的背包：顯示持有的道具（使用方式在地圖上；寶物效果逐步開放） */
+  var BAG_INFO = {
+    d6: { name: '6 面骰', img: 'images/items/dice_6.webp', note: '地圖上使用' },
+    d12: { name: '12 面骰', img: 'images/items/dice_12.webp', note: '地圖上使用' },
+    skates: { name: '溜冰鞋', img: 'images/items/roller_skate.webp', note: '地圖上使用' },
+    shield: { name: '防護罩', img: 'images/items/shield.webp', note: '即將開放' },
+    magicDice: { name: '神奇骰子', img: 'images/items/magic_dice.webp', note: '即將開放' },
+    luckyMedal: { name: '好運金牌', img: 'images/items/lucky_medal.webp', note: '即將開放' },
+    wings: { name: '飛行翼', img: 'images/items/flying_wings.webp', note: '即將開放' },
+    door: { name: '任意門', img: 'images/items/magic_door.webp', note: '即將開放' }
+  };
+  function bagPanel(child) {
+    var bag = store.getPlayer(child.id).bag;
+    var keys = Object.keys(BAG_INFO).filter(function (k) { return bag[k] > 0; });
+    return '<section class="panel bag-panel" data-testid="bag"><h2>🎒 冒險背包</h2>' +
+      (keys.length ? '<div class="bag-grid">' + keys.map(function (k) {
+        var b = BAG_INFO[k];
+        return '<div class="bag-item" data-bag="' + k + '"><span class="item-art bag-art"><img src="' + b.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></span>' +
+          '<b>' + b.name + '</b><small>×' + bag[k] + '・' + b.note + '</small></div>';
+      }).join('') + '</div>'
+        : '<p class="muted small">背包是空的。可以用能量星星在地圖的商店買骰子，或用生活點數在「兌換」頁的冒險寶物商店換寶物。</p>') +
+      '</section>';
   }
 
   /** 每日任務按鈕（一天一次打勾，再點一次取消） */
@@ -1764,6 +1806,17 @@
           if (undone) toast('已撤銷：' + undone.name + ' ' + signed(undone.points));
           ui.pulse = true;
           render();
+          break;
+        }
+        case 'buy-treasure': {
+          var tr0 = GAME.TREASURES.find(function (t) { return t.id === id; });
+          var kid = store.getChild(childId);
+          confirmThen('讓 ' + kid.name + ' 用 ' + tr0.price + ' 點兌換「' + tr0.name + '」？\n寶物會放進冒險背包。', '兌換', false, function () {
+            // 防重複：確認視窗的按鈕只會觸發一次；每次兌換前都重新檢查點數、每週件數與持有上限
+            store.buyTreasure(childId, id);
+            toast('🎒 ' + tr0.name + ' 放進背包了！', 'pos');
+            ui.pulse = true;
+          });
           break;
         }
         case 'redeem': {

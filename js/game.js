@@ -26,6 +26,20 @@
   var MINIGAME_SECONDS = 10;
 
   /** 道具圖示：家長提供的白底插圖（images/items/，256×256 WebP，原圖 1024×1024 PNG），介面以白色圖示框＋contain 顯示 */
+  /**
+   * 冒險寶物商店（生活點數兌換）：每個孩子每週最多 3 件、同款最多持有 2 件（只限寶物商店購買）
+   * 效果於後續階段接入；購買後放進背包。
+   */
+  var TREASURE_WEEKLY_LIMIT = 3, TREASURE_HOLD_LIMIT = 2;
+  var TREASURES = [
+    { id: 'skates', name: '溜冰鞋', icon: '🛼', img: 'images/items/roller_skate.webp', price: 10, desc: '向前移動 3 格' },
+    { id: 'shield', name: '防護罩', icon: '🛡️', img: 'images/items/shield.webp', price: 20, desc: '抵擋一次冒險中的負面效果' },
+    { id: 'magicDice', name: '神奇骰子', icon: '🎲', img: 'images/items/magic_dice.webp', price: 10, desc: '額外擲一次 12 面骰（不占每日 3 次，每天最多用 1 顆）' },
+    { id: 'luckyMedal', name: '好運金牌', icon: '🥇', img: 'images/items/lucky_medal.webp', price: 100, desc: '下一次停在寶箱或機會格，效果發生 2 次' },
+    { id: 'wings', name: '飛行翼', icon: '🪽', img: 'images/items/flying_wings.webp', price: 100, desc: '向前飛行 20 格' },
+    { id: 'door', name: '任意門', icon: '🚪', img: 'images/items/magic_door.webp', price: 100, desc: '傳送到本區指定的格子' }
+  ];
+
   var SHOP = [
     { id: 'd6', name: '6 面骰', icon: '🎲', img: 'images/items/dice_6.webp', price: 5, desc: '擲出 1～6 步' },
     { id: 'd12', name: '12 面骰', icon: '🎲', img: 'images/items/dice_12.webp', price: 10, desc: '擲出 1～12 步' },
@@ -104,9 +118,10 @@
     var adv = this.data.adventure;
     if (!adv.players[childId]) {
       var child = this.getChild(childId);
-      adv.players[childId] = { island: 'gold', pos: 0, tileId: 'gold-01-start', character: child ? child.avatar : '', bag: { d6: 0, d12: 0, skates: 0 } };
+      adv.players[childId] = { island: 'gold', pos: 0, tileId: 'gold-01-start', character: child ? child.avatar : '', bag: CGP.emptyBag() };
     }
     var p = adv.players[childId];
+    CGP.BAG_KEYS.forEach(function (k) { if (!(p.bag[k] >= 0)) p.bag[k] = 0; });   // 新道具代號補 0
     // 位置以穩定格子 ID 為準；舊存檔只有整數格號時對應到同號的格子（第 n 格 → gold-01-00n）
     var board = BOARDS[p.island] || GOLD;
     var idx = p.tileId ? board.tiles.findIndex(function (t) { return t.id === p.tileId; }) : -1;
@@ -167,6 +182,35 @@
     this.getPlayer(childId).bag[item.id]++;
     this.save();
     return item;
+  };
+
+  // ---------- 冒險寶物商店（生活點數） ----------
+  /** 本週（週一開始）已在寶物商店買了幾件 */
+  Store.prototype.getTreasureBoughtThisWeek = function (childId) {
+    var ws = CGP.weekStartKey(this.now()), today = this.today();
+    return this.data.records.filter(function (r) {
+      return r.childId === childId && r.type === 'reward' && /^treasure:/.test(r.refId || '') && r.date >= ws && r.date <= today;
+    }).length;
+  };
+  /** @returns {{ ok, reason }} 是否可以兌換（停用時附原因） */
+  Store.prototype.canBuyTreasure = function (childId, itemId) {
+    var item = TREASURES.find(function (x) { return x.id === itemId; });
+    if (!item) return { ok: false, reason: '沒有這個寶物' };
+    if (this.getTreasureBoughtThisWeek(childId) >= TREASURE_WEEKLY_LIMIT) return { ok: false, reason: '本週已兌換 ' + TREASURE_WEEKLY_LIMIT + ' 件' };
+    if ((this.getPlayer(childId).bag[itemId] || 0) >= TREASURE_HOLD_LIMIT) return { ok: false, reason: '已持有 ' + TREASURE_HOLD_LIMIT + ' 件' };
+    var lack = item.price - this.getTotal(childId);
+    if (lack > 0) return { ok: false, reason: '還差 ' + lack + ' 點' };
+    return { ok: true, reason: '' };
+  };
+  /** 用生活點數兌換寶物：記一筆兌換紀錄（扣點）＋背包 +1，同一次存檔完成 */
+  Store.prototype.buyTreasure = function (childId, itemId) {
+    if (!this.getChild(childId)) throw new Error('找不到孩子');
+    var item = TREASURES.find(function (x) { return x.id === itemId; });
+    if (!item) throw new Error('沒有這個寶物');
+    var chk = this.canBuyTreasure(childId, itemId);
+    if (!chk.ok) throw new Error(chk.reason.indexOf('還差') === 0 ? '點數不足（' + chk.reason + '）' : chk.reason);
+    this.getPlayer(childId).bag[itemId]++;
+    return this._addRecord(childId, 'reward', 'treasure:' + itemId, '寶物：' + item.name, -item.price); // _addRecord 會一併存檔
   };
 
   // ---------- 移動與事件 ----------
@@ -321,7 +365,7 @@
     return { die: 'skates', value: 3, from: from, path: path, event: event };
   };
 
-  var api = { MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

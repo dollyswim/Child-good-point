@@ -1143,3 +1143,89 @@ test('Phase 4：小遊戲存檔遷移（同一孩子同一天只留一筆）、�
   store.deleteChild(a.id);
   assert.equal(store.data.adventure.minigames.length, 0);
 });
+
+// ---------- 寶物商店 Phase 2：冒險寶物商店（生活點數） ----------
+function tsStore(startPoints = 1000, dateStr = '2026-11-06T10:00:00') {   // 2026-11-06 是週五
+  const ctx = makeStore(dateStr);
+  const a = ctx.store.addChild({ name: '端端', startPoints });
+  const b = ctx.store.addChild({ name: '波妞', startPoints });
+  return Object.assign(ctx, { a, b });
+}
+
+test('寶物商店：6 款商品與價格', () => {
+  assert.deepEqual(G.TREASURES.map(t => [t.id, t.price]),
+    [['skates', 10], ['shield', 20], ['magicDice', 10], ['luckyMedal', 100], ['wings', 100], ['door', 100]]);
+  assert.ok(!G.TREASURES.some(t => t.id === 'airplane'), '呼叫專機不放商店');
+  assert.deepEqual([G.TREASURE_WEEKLY_LIMIT, G.TREASURE_HOLD_LIMIT], [3, 2]);
+});
+
+test('寶物商店：扣生活點數、放進背包，不動能量星星與等級，兩位孩子互不影響', () => {
+  const { store, a, b } = tsStore(1000);
+  const lv = store.getLevel(a.id).level;
+  const rec = store.buyTreasure(a.id, 'shield');
+  assert.deepEqual([rec.type, rec.points, rec.refId, rec.name], ['reward', -20, 'treasure:shield', '寶物：防護罩']);
+  assert.equal(store.getTotal(a.id), 980);
+  assert.equal(store.getPlayer(a.id).bag.shield, 1);
+  assert.equal(store.getStarBalance(a.id), 0, '不消耗也不增加能量星星');
+  assert.equal(store.getLevel(a.id).level, lv, '兌換不影響等級');
+  assert.equal(store.getTodayNet(a.id), 0, '不影響今日淨得分');
+  assert.equal(store.getPlayer(b.id).bag.shield, 0, '另一位孩子不受影響');
+  assert.equal(store.getTotal(b.id), 1000);
+});
+
+test('寶物商店：每週最多 3 件、下週重新計算；點數不足不能買', () => {
+  const { store, a, setDate } = tsStore(1000);
+  store.buyTreasure(a.id, 'skates'); store.buyTreasure(a.id, 'shield'); store.buyTreasure(a.id, 'magicDice');
+  assert.equal(store.getTreasureBoughtThisWeek(a.id), 3);
+  assert.deepEqual(store.canBuyTreasure(a.id, 'wings'), { ok: false, reason: '本週已兌換 3 件' });
+  assert.throws(() => store.buyTreasure(a.id, 'wings'), /本週已兌換 3 件/);
+  assert.equal(store.getTotal(a.id), 960, '被擋下時不扣點');
+  setDate('2026-11-09T09:00:00');           // 下週一
+  assert.equal(store.getTreasureBoughtThisWeek(a.id), 0);
+  assert.ok(store.canBuyTreasure(a.id, 'wings').ok);
+  const { store: s2, a: poor } = tsStore(50);
+  assert.deepEqual(s2.canBuyTreasure(poor.id, 'luckyMedal'), { ok: false, reason: '還差 50 點' });
+  assert.throws(() => s2.buyTreasure(poor.id, 'luckyMedal'), /點數不足/);
+  assert.equal(s2.getPlayer(poor.id).bag.luckyMedal, 0);
+  assert.equal(s2.getTotal(poor.id), 50);
+});
+
+test('寶物商店：同款最多持有 2 件（只限寶物商店；星星商店的溜冰鞋不受限）', () => {
+  const { store, a, setDate } = tsStore(1000);
+  store.buyTreasure(a.id, 'skates'); store.buyTreasure(a.id, 'skates');
+  assert.deepEqual(store.canBuyTreasure(a.id, 'skates'), { ok: false, reason: '已持有 2 件' });
+  setDate('2026-11-09T09:00:00');
+  assert.throws(() => store.buyTreasure(a.id, 'skates'), /已持有 2 件/, '換週仍受持有上限限制');
+  // 星星商店照舊可買
+  const it = store.addItem({ kind: 'bonus', name: '大', points: 100 });
+  store.recordItem(a.id, it.id); store.settleToday(a.id);
+  store.buyItem(a.id, 'skates');
+  assert.equal(store.getPlayer(a.id).bag.skates, 3, '星星商店不受持有上限');
+});
+
+test('寶物商店：撤銷或刪除購買紀錄一併收回道具；道具用掉則不能撤銷；不能改成其他孩子', () => {
+  const { store, a, b } = tsStore(1000);
+  store.buyTreasure(a.id, 'wings');
+  store.undoLast(a.id);
+  assert.deepEqual([store.getTotal(a.id), store.getPlayer(a.id).bag.wings], [1000, 0], '撤銷：退點並收回道具');
+  const r = store.buyTreasure(a.id, 'door');
+  assert.throws(() => store.updateRecord(r.id, { childId: b.id }), /不能改成其他孩子/);
+  store.getPlayer(a.id).bag.door = 0;      // 模擬已用掉
+  assert.throws(() => store.undoLast(a.id), /已經用掉了/);
+  assert.throws(() => store.deleteRecord(r.id), /已經用掉了/);
+  assert.equal(store.getTotal(a.id), 900, '擋下時紀錄仍在');
+  store.getPlayer(a.id).bag.door = 1;
+  store.deleteRecord(r.id);
+  assert.deepEqual([store.getTotal(a.id), store.getPlayer(a.id).bag.door], [1000, 0], '刪除：退點並收回道具');
+  // 一般獎勵兌換的撤銷不受影響
+  const rw = store.addReward({ name: '冰淇淋', cost: 30 });
+  store.redeemReward(a.id, rw.id);
+  store.undoLast(a.id);
+  assert.equal(store.getTotal(a.id), 1000);
+});
+
+test('寶物商店：舊存檔背包自動補上新道具欄位', () => {
+  const d = migrate({ children: [{ id: 'c', name: 'B' }], adventure: { players: { c: { pos: 3, bag: { d6: 2, d12: 1, skates: 1 } } } } });
+  const bag = d.adventure.players.c.bag;
+  assert.deepEqual([bag.d6, bag.d12, bag.skates, bag.shield, bag.magicDice, bag.luckyMedal, bag.wings, bag.door], [2, 1, 1, 0, 0, 0, 0, 0]);
+});
