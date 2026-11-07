@@ -891,13 +891,16 @@
 
   // ----- 等級 -----
   /** 升到 Lv.n 需要的累積加分：每 1000 點 1 級，Lv.1 從 0 開始，Lv.2 = 2000、Lv.3 = 3000…Lv.10 = 10000 */
-  function levelThreshold(n) { return n <= 1 ? 0 : 1000 * n; }
+  /** 每 1000 分升 1 級：Lv.1＝0～999、Lv.2＝1000～1999… */
+  function levelThreshold(n) { return n <= 1 ? 0 : 1000 * (n - 1); }
 
-  /** 累積賺到的加分（不含起始點數；扣分、兌換不扣） */
+  /** 等級用的總分＝起始點數＋累計得分（加分、每日任務累加，扣分抵銷；兌換獎勵不影響），最少 0 */
   Store.prototype.getEarned = function (childId) {
-    return this.data.records.reduce(function (sum, r) {
-      return (r.childId === childId && (r.type === 'bonus' || r.type === 'task') && r.points > 0) ? sum + r.points : sum;
-    }, 0);
+    var child = this.getChild(childId);
+    var total = this.data.records.reduce(function (sum, r) {
+      return (r.childId === childId && SCORE_TYPES.indexOf(r.type) >= 0) ? sum + r.points : sum;
+    }, child ? child.startPoints || 0 : 0);
+    return Math.max(0, total);
   };
 
   /** @returns {{level, earned, current, next, progress}} progress 為 0～1 */

@@ -1080,3 +1080,13 @@ img.mascot { width: 64px; height: auto; object-fit: contain; flex: none; }
 .legend > span { display: inline-flex; align-items: center; gap: 4px; }
 .legend-art.tile-art { width: 22px; height: 22px; border-radius: 6px; box-shadow: 0 0 0 1px rgba(214, 180, 130, .55); }
 .star-main { z-index: auto; } /* 不建立獨立堆疊層，讓星星圖的 multiply 能與卡片背景混合 */
+
+/* 頭像：依各角色臉部位置置中並統一臉部比例（以眼距為準，基準＝圓耳獸；長耳獸頭較窄再放大 12%） */
+.avatar img[data-char=roundear] { transform: translate(-20.6%, 6.9%) scale(1.163); }
+.avatar img[data-char=longear] { transform: translate(-12.3%, -1.9%) scale(1.389); }
+.avatar img[data-char=horn] { transform: translate(20.6%, 5.6%) scale(1.163); }
+.avatar img[data-char=wing] { transform: translate(11.0%, 0.4%) scale(1.240); }
+.avatar img[data-char=drop] { transform: translate(-13.9%, -5.5%) scale(1.134); }
+.avatar img[data-char=sprout] { transform: translate(-20.6%, -5.0%) scale(1.163); }
+.avatar img[data-char=flame] { transform: translate(-14.3%, 1.2%) scale(1.134); }
+.avatar img[data-char=stone] { transform: translate(9.7%, -0.1%) scale(1.094); }

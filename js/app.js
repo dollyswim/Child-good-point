@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-11';
+  var APP_VERSION = '2026.11.07-12';
   var store;
   try {
     store = new CGP.Store();
@@ -150,7 +150,7 @@
   function avatar(child, size) {
     // 頭像 = 孩子選的冒險夥伴
     return '<span class="avatar ' + (size || '') + '" style="--c:' + h(child.color) + '">' +
-      '<img src="images/characters/' + h(charIdOf(child)) + '.webp" alt="" width="300" height="310" decoding="async"></span>';
+      '<img src="images/characters/' + h(charIdOf(child)) + '.webp" data-char="' + h(charIdOf(child)) + '" alt="" width="300" height="310" decoding="async"></span>';
   }
   function charIdOf(child) {
     return CGP.CHARACTER_IDS.indexOf(child.avatar) >= 0 ? child.avatar : CGP.CHARACTER_IDS[0];
@@ -1244,7 +1244,7 @@
         return '<label class="pick-item color"><input type="radio" name="color" value="' + col + '"' + (col === c.color ? ' checked' : '') + '><span style="background:' + col + '"></span></label>';
       }).join('') + '</div></fieldset>' +
       '<label class="field">頭銜<input type="text" name="title" maxlength="12" placeholder="例如：小小店長、小小工程師" value="' + h(c.title || '') + '">' +
-      '<small class="muted">會和等級一起顯示，例如「小小店長 Lv.5」。等級依累積加分自動升級。</small></label>' +
+      '<small class="muted">會和等級一起顯示，例如「小小店長 Lv.5」。等級依「起始點數＋累計得分」自動換算，每 1000 分升 1 級（兌換獎勵不影響）。</small></label>' +
       '<fieldset class="field"><legend>代表圖示</legend><div class="pick">' +
       '<label class="pick-item"><input type="radio" name="badge" value=""' + (!c.badge ? ' checked' : '') + '><span class="none">無</span></label>' +
       BADGES.map(function (b) {

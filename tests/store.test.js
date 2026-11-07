@@ -562,23 +562,29 @@ test('孩子頭銜、代表圖示、每週目標；舊資料自動補預設值',
   assert.deepEqual(d.challenges, []);
 });
 
-test('等級：每 1000 點 1 級（Lv.1 從 0 開始、Lv.10 = 10000），扣分與兌換不降級', () => {
+test('等級：起始點數＋累計得分，每 1000 分升 1 級；扣分抵銷、兌換不影響', () => {
   const { store } = makeStore();
-  const a = store.addChild({ name: 'A', startPoints: 50000 });
-  assert.equal(store.getLevel(a.id).level, 1, '起始點數不算等級');
-  const b = store.addItem({ kind: 'bonus', name: 'b', points: 1000 });
-  const p = store.addItem({ kind: 'penalty', name: 'p', points: 1000 });
+  const a = store.addChild({ name: 'A', startPoints: 2500 });
+  assert.deepEqual([store.getLevel(a.id).level, store.getLevel(a.id).earned], [3, 2500], '起始點數計入等級');
+  const b = store.addItem({ kind: 'bonus', name: 'b', points: 500 });
+  const p = store.addItem({ kind: 'penalty', name: 'p', points: 200 });
   store.recordItem(a.id, b.id);
-  assert.equal(store.getLevel(a.id).level, 1, '1000 點仍是 Lv.1');
-  store.recordItem(a.id, b.id);
-  assert.deepEqual([store.getLevel(a.id).level, store.getLevel(a.id).next], [2, 3000]);
-  for (let i = 0; i < 8; i++) store.recordItem(a.id, b.id);
-  const lv = store.getLevel(a.id);
-  assert.deepEqual([lv.level, lv.earned, lv.current, lv.next], [10, 10000, 10000, 11000]);
+  let lv = store.getLevel(a.id);
+  assert.deepEqual([lv.level, lv.earned, lv.current, lv.next], [4, 3000, 3000, 4000], '剛好 3000 升 Lv.4');
   store.recordItem(a.id, p.id);
-  assert.equal(store.getLevel(a.id).level, 10);
+  assert.deepEqual([store.getLevel(a.id).level, store.getLevel(a.id).earned], [3, 2800], '扣分抵銷');
+  const r = store.addReward({ name: '冰淇淋', cost: 2000 });
+  store.redeemReward(a.id, r.id);
+  assert.equal(store.getLevel(a.id).earned, 2800, '兌換獎勵不影響等級');
   const c = store.addChild({ name: 'C' });
-  assert.deepEqual([store.getLevel(c.id).level, store.getLevel(c.id).current, store.getLevel(c.id).next], [1, 0, 2000]);
+  lv = store.getLevel(c.id);
+  assert.deepEqual([lv.level, lv.current, lv.next], [1, 0, 1000], '新孩子 Lv.1，1000 分升 Lv.2');
+  const big = store.addItem({ kind: 'bonus', name: 'big', points: 999 });
+  store.recordItem(c.id, big.id);
+  assert.equal(store.getLevel(c.id).level, 1, '999 分仍是 Lv.1');
+  const pen = store.addItem({ kind: 'penalty', name: 'pen', points: 5000 });
+  store.recordItem(c.id, pen.id);
+  assert.deepEqual([store.getLevel(c.id).level, store.getLevel(c.id).earned], [1, 0], '總分不會低於 0');
 });
 
 test('每週淨得分：週一開始，不含上週', () => {
