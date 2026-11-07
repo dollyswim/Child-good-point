@@ -12,7 +12,7 @@
 - 舊 repo 的 `main` 停在 PR #7（`c4de1b8`）。其後有 **2 個 commit 只存在 bundle 裡**：
   - `f340e94` 金島第一區：使用無格子正式背景與 JSON 座標建立第 1～30 格
   - `eb51994` 金島第一區：石板改用家長提供的石板圖
-- 交付檔案：`child-good-point.bundle`（完整 git 紀錄，31 個 commit）、`child-good-point-gold-region01.zip`（純程式碼備份）。
+- 交付檔案：`child-good-point.bundle`（完整 git 紀錄，32 個 commit）、`child-good-point-gold-region01.zip`（純程式碼備份）。
 
 ---
 
@@ -29,7 +29,7 @@
    npm test && npm run test:e2e        # 預期：單元 59 項、E2E 全部通過
    git push -u origin main
    ```
-   - bundle 裡的分支：`claude/parent-child-points-adventure-app-syxbxi`（最新，`eb51994`）、`main`（舊，`c4de1b8`）。
+   - **請用 `claude/parent-child-points-adventure-app-syxbxi` 分支**（最新，含交接文件）。bundle 裡的 `refs/heads/main` 是最早的初始 commit，請勿使用；舊 repo 的 main（PR #7，`c4de1b8`）在 `refs/remotes/origin/main`，已包含在最新分支的歷史中。
    - 若 `main` 不是空的，先確認內容再決定是否覆蓋，勿直接強推。
 4. 開啟 GitHub Pages：Settings → Pages → Deploy from a branch → `main` / `(root)`。
    新網址：`https://dollyswim.github.io/Child-good-point/`
