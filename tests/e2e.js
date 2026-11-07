@@ -591,6 +591,71 @@ async function main() {
     await c6.close();
   }
 
+  // ---------- Phase 4 第 1 步：命運格、命運卡、特殊任務 ----------
+  {
+    const c7 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 800 }, serviceWorkers: 'block' });
+    const q = await c7.newPage();
+    await q.clock.setFixedTime(new Date('2026-11-06T10:00:00'));
+    q.on('pageerror', (e) => errors.push(e.message));
+    q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
+    await q.goto(url);
+    const id = await q.evaluate(() => {
+      const s = window.__cgpStore;
+      const a = s.addChild({ name: '甲', startPoints: 0 });
+      const it = s.addItem({ kind: 'bonus', name: '大加分', points: 100 });
+      s.recordItem(a.id, it.id); s.settleToday(a.id);
+      s.getPlayer(a.id).bag.d6 = 3; s.setPlayerTile(a.id, 10); s.save();
+      return a.id;
+    });
+    await q.goto(url + '#map-' + id);
+    await q.waitForSelector('#pawn');
+    // 地圖：4 個命運格（暫用 🔮）＋圖例
+    assert.deepEqual(await q.$$eval('.mtile.mt-fate', (els) => els.map((e) => +e.dataset.n)), [11, 14, 21, 27]);
+    assert.equal(await q.locator('.mt-fate .tile-emoji').count(), 4);
+    assert.match(await q.locator('.legend').innerText(), /命運/);
+    // 擲 4 → 第 14 格命運格 → 後退 2 格到第 12 格（寶箱格不觸發）
+    await q.evaluate(() => { const seq = [3.5 / 6, 0.8, 0.9]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0); });
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#confirm[open]', { timeout: 10000 });
+    const msg = await q.locator('#confirm').innerText();
+    assert.match(msg, /命運卡[\s\S]*往回退了 2 格/);
+    assert.match(msg, /停在第 12 格/);
+    await q.click('#confirm [data-yes]');
+    assert.equal(await q.locator('[data-testid=pos]').innerText(), '12 / 30');
+    assert.equal(await q.locator('#pawn').getAttribute('data-tile'), 'gold-01-012');
+    // 擲 2 → 第 14 格命運格 → 特殊任務：讚美與感謝（0.3）
+    await q.evaluate(() => { const seq = [1.5 / 6, 0.3]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0); });
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#confirm[open]', { timeout: 10000 });
+    assert.match(await q.locator('#confirm').innerText(), /特殊任務[\s\S]*讚美[\s\S]*明天起出現在任務頁/);
+    await q.click('#confirm [data-yes]');
+    // 今天任務頁：顯示「明天開始」，不能完成
+    await q.goto(url + '#child-' + id);
+    await q.waitForSelector('[data-testid=special]');
+    assert.match(await q.locator('[data-testid=special]').innerText(), /11\/7 開始/);
+    assert.equal(await q.locator('[data-action=special-done]').count(), 0);
+    // 隔天：可以完成，+20 點；撤銷恢復；取消後消失
+    await q.clock.setFixedTime(new Date('2026-11-07T09:00:00'));
+    await q.reload();
+    await q.waitForSelector('[data-action=special-done]');
+    const before = await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id);
+    assert.match(await q.locator('[data-action=special-done]').innerText(), /完成 \+20/);
+    await q.click('[data-action=special-done]');
+    await q.waitForFunction(() => !document.querySelector('[data-testid=special]'));
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), before + 20);
+    assert.match(await q.locator('.records').innerText(), /特殊任務：和所有家人說一句讚美的話和感謝的話/);
+    await q.click('[data-action=undo]');
+    await q.waitForSelector('[data-action=special-done]');
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), before);
+    await q.click('[data-action=special-cancel]');
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction(() => !document.querySelector('[data-testid=special]'));
+    const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert.ok(over <= 0, '任務頁不可橫向溢出');
+    console.log('✔ Phase 4：命運格 4 格、命運卡後退動畫、特殊任務隔天出現、完成 +20、撤銷恢復、取消');
+    await c7.close();
+  }
+
   // ---------- 冒險大廳：依孩子所在島嶼輪換地圖關卡卡插圖 ----------
   {
     const c5 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 800 }, serviceWorkers: 'block' });

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-15';
+  var APP_VERSION = '2026.11.07-16';
   var store;
   try {
     store = new CGP.Store();
@@ -355,6 +355,7 @@
       '<main class="page has-undo">' +
       adventureBanner(child) +
       summaryCard(child) +
+      specialPanel(child) +
       '<section class="panel"><h2>📌 常用・今日任務' + (tasks.length ? ' <small>' + doneCount + '/' + tasks.length + '</small>' : '') + '</h2><div class="tasks">' + taskHtml + '</div></section>' +
       '<section class="panel scorer"><h2>✏️ 加分・扣分</h2>' +
       '<input type="search" id="score-search" class="search" data-search="score" placeholder="🔍 搜尋規定，例如：功課" ' +
@@ -368,6 +369,25 @@
       '↶ 撤銷上一筆' + (last ? '<small>' + h(last.name) + ' ' + signed(last.points) + '</small>' : '') +
       '</button></div>';
   }
+
+  /** Phase 4 命運卡得到的特殊任務：進行中（今天可完成）與明天開始的 */
+  function specialPanel(child) {
+    var list = store.getSpecialTasks(child.id).filter(function (t) { return t.status === 'active' || t.status === 'upcoming'; });
+    if (!list.length) return '';
+    return '<section class="panel special-panel" data-testid="special"><h2>🔮 特殊任務 <small>命運卡</small></h2><div class="special-list">' +
+      list.map(function (t) {
+        var active = t.status === 'active';
+        var when = active ? '到 ' + shortDate(t.endDate) + ' 前完成' : shortDate(t.startDate) + ' 開始・到 ' + shortDate(t.endDate);
+        return '<div class="special-row ' + t.status + '" data-special="' + h(t.id) + '"><span class="special-icon">' + t.icon + '</span>' +
+          '<span class="special-main"><b>' + h(t.name) + '</b><small>' + (active ? '' : '⏳ ') + when + '</small></span>' +
+          '<span class="special-acts">' +
+          (active ? '<button class="btn primary small" data-action="special-done" data-id="' + h(t.id) + '">完成 +' + t.points + '</button>'
+            : '<span class="special-pts">+' + t.points + ' 點</span>') +
+          '<button class="btn link small" data-action="special-cancel" data-id="' + h(t.id) + '" aria-label="取消這個特殊任務">取消</button></span></div>';
+      }).join('') + '</div></section>';
+  }
+  /** 2026-11-08 → 11/8 */
+  function shortDate(key) { var p = key.split('-'); return Number(p[1]) + '/' + Number(p[2]); }
 
   // ---------- 冒險（Phase 2） ----------
   /** 孩子任務頁最上方的冒險入口 */
@@ -506,8 +526,11 @@
   /** 地圖格子事件圖示（白底圖放在白色圓角圖示框，contain 不裁切） */
   var TILE_ART = { start: 'images/tiles/start.webp', chest: 'images/tiles/chest.webp', chance: 'images/tiles/chance.webp',
     minigame: 'images/tiles/minigame.webp', boundary: 'images/tiles/door.webp' }; // 第一區終點：礦場木門（終點旗 finish.webp 保留給全島終點）
+  /** 圖未到前的暫代表情符號（命運格水晶球圖到貨後改放進 TILE_ART） */
+  var TILE_EMOJI = { fate: '🔮' };
   function tileArt(type, cls) {
-    return TILE_ART[type] ? '<span class="tile-art ' + (cls || '') + '"><img src="' + TILE_ART[type] + '" alt="" aria-hidden="true" width="192" height="192" decoding="async" draggable="false"></span>' : '';
+    if (TILE_ART[type]) return '<span class="tile-art ' + (cls || '') + '"><img src="' + TILE_ART[type] + '" alt="" aria-hidden="true" width="192" height="192" decoding="async" draggable="false"></span>';
+    return TILE_EMOJI[type] ? '<span class="tile-emoji ' + (cls || '') + '" aria-hidden="true">' + TILE_EMOJI[type] + '</span>' : '';
   }
   /** 道具圖示（白底圖放在白色圖示框中，contain 不裁切）；名稱與價格由介面另外顯示 */
   function itemArt(id, cls) {
@@ -521,7 +544,7 @@
   }
 
   // ---------- 金島第一區地圖（背景＋格子＋事件圖示＋角色，同一個座標容器） ----------
-  var TILE_LABEL = { chest: '寶箱', chance: '機會', minigame: '小遊戲（即將開放）', boundary: '第一區終點：礦場木門' };
+  var TILE_LABEL = { chest: '寶箱', chance: '機會', fate: '命運', minigame: '小遊戲（即將開放）', boundary: '第一區終點：礦場木門' };
 
   /** 目前區域（第一區）的參考尺寸與背景 */
   function regionOf(board, tile) {
@@ -587,7 +610,7 @@
       act('d12', '12 面骰', bag.d12, !canPlay || atEnd || noRolls || !bag.d12) +
       act('skates', '溜冰鞋 +3', bag.skates, !canPlay || atEnd || !bag.skates) +
       '</section>' +
-      '<div class="legend">' + [['chest', '寶箱'], ['chance', '機會'], ['minigame', '小遊戲（即將開放）'], ['boundary', '第一區終點']].map(function (l) {
+      '<div class="legend">' + [['chest', '寶箱'], ['chance', '機會'], ['fate', '命運'], ['minigame', '小遊戲（即將開放）'], ['boundary', '第一區終點']].map(function (l) {
         return '<span>' + tileArt(l[0], 'legend-art') + l[1] + '</span>';
       }).join('') + '</div>' +
       '<a class="btn block" href="#adventure-' + h(child.id) + '">‹ 回冒險大廳</a>' +
@@ -731,10 +754,18 @@
       if (kind !== 'skates') await showDie(res.value, kind === 'd6' ? 6 : 12);
       else toast('🛼 溜冰鞋前進 3 格！', 'pos');
       await hopAlong(child, res.path);
-      if (res.event && res.event.extraPath && res.event.extraPath.length) {
-        toast('🚃 ' + res.event.text, 'pos');
+      var ev = res.event;
+      if (ev && ev.extraPath && ev.extraPath.length) {
+        toast('🚃 ' + ev.text, 'pos');
         await sleep(400);
-        await hopAlong(child, res.event.extraPath);
+        await hopAlong(child, ev.extraPath);
+      }
+      // 命運卡後退（可能是礦車載到命運格後的連鎖事件）
+      var back = ev && ev.backPath && ev.backPath.length ? ev : (ev && ev.then && ev.then.backPath && ev.then.backPath.length ? ev.then : null);
+      if (back) {
+        toast('🔮 ' + back.text, 'neg');
+        await sleep(500);
+        await hopAlong(child, back.backPath);
       }
     } finally { ui.busy = false; }
     render();
@@ -1594,6 +1625,22 @@
           }
           ui.pulse = true;
           render();
+          break;
+        }
+        case 'special-done': {
+          var sr = store.completeSpecialTask(id);
+          toast('完成 ' + recText(sr), 'pos');
+          ui.pulse = true;
+          render();
+          break;
+        }
+        case 'special-cancel': {
+          var stask = store.getSpecialTasks(childId).find(function (t) { return t.id === id; });
+          confirmThen('取消特殊任務「' + (stask ? stask.name : '') + '」？取消後不會再出現，也不扣分。', '取消任務', true, function () {
+            store.cancelSpecialTask(id);
+            toast('已取消特殊任務');
+            render();
+          });
           break;
         }
         case 'undo': {

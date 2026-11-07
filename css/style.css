@@ -1121,3 +1121,28 @@ img.mascot { width: 64px; height: auto; object-fit: contain; flex: none; }
 .map-shop-art { width: 76px; height: 76px; filter: drop-shadow(0 3px 3px rgba(60, 35, 10, .45)); }
 .map-shop b { margin-top: -6px; padding: 0 10px; border-radius: 99px; background: #fff; border: 2px solid #f3d9a8; box-shadow: 0 2px 0 rgba(150, 100, 50, .3); font-size: .8rem; }
 .map-shop:active { transform: translateY(2px); box-shadow: none; }
+
+/* Phase 4：命運格（粉藍綠色調）與暫代的 🔮 圖示框 */
+.mt-fate { background: none; box-shadow: none; }
+.mt-fate::before { filter: hue-rotate(300deg) saturate(1.6) brightness(1.04) drop-shadow(0 0 4px rgba(255, 120, 200, .55)) drop-shadow(0 4px 3px rgba(80, 50, 20, .35)); }
+.tile-emoji {
+  display: grid; place-items: center; background: #fff; border-radius: 10px; line-height: 1;
+  box-shadow: 0 0 0 1.5px rgba(214, 180, 130, .55), 0 2px 3px rgba(80, 50, 20, .3);
+}
+.mtile-icon.tile-emoji { position: relative; width: 46px; height: 46px; font-size: 30px; transform: translateY(-16px); transition: transform .25s ease, opacity .25s ease; }
+.mtile.here .mtile-icon.tile-emoji { transform: translate(30px, -34px) scale(.5); opacity: .8; }
+.legend-art.tile-emoji { width: 22px; height: 22px; border-radius: 6px; font-size: 15px; box-shadow: 0 0 0 1px rgba(214, 180, 130, .55); }
+
+/* Phase 4：任務頁的特殊任務 */
+.special-panel { background: linear-gradient(135deg, #fff0fa, #eefcff); border: 3px solid #fff; }
+.special-panel h2 small { font-size: .75rem; color: #b25ea8; font-weight: 800; }
+.special-list { display: grid; gap: 8px; }
+.special-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px; border-radius: 16px; background: #fff; box-shadow: 0 2px 0 rgba(180, 120, 170, .18); }
+.special-icon { font-size: 1.8rem; line-height: 1; }
+.special-main { display: grid; min-width: 0; }
+.special-main b { font-size: .95rem; line-height: 1.3; }
+.special-main small { color: var(--muted); font-weight: 700; }
+.special-acts { display: grid; justify-items: end; gap: 2px; }
+.special-acts .btn.link { padding: 0 4px; font-size: .75rem; color: var(--muted); min-height: 0; }
+.special-pts { font-weight: 900; color: #b25ea8; font-size: .9rem; }
+.special-row.upcoming { opacity: .8; }

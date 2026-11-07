@@ -979,3 +979,104 @@ test('移動途中不重複觸發事件、不重複扣道具：一次擲骰只�
   assert.equal(again.getPlayer(a.id).tileId, 'gold-01-005');
   assert.ok(after > before);
 });
+
+// ---------- Phase 4 第 1 步：命運格與特殊任務 ----------
+test('Phase 4：命運格在第 11、14、21、27 格', () => {
+  const b = G.BOARDS.gold;
+  assert.deepEqual(b.tiles.filter(t => t.type === 'fate').map(t => t.n), [11, 14, 21, 27]);
+  assert.equal(b.tiles[30].type, 'boundary');
+});
+
+test('Phase 4：命運卡抽到特殊任務 → 明天起 3 天內有效，完成 +20 點，撤銷恢復未完成', () => {
+  const { store, a, push, setDate } = p3Store();
+  store.buyItem(a.id, 'd6');
+  store.setPlayerTile(a.id, 8);
+  push(face(3), 0.1);                       // 擲 3 → 第 11 格命運格；0.1 → 指定家務
+  const r = store.rollDice(a.id, 'd6');
+  assert.equal(r.event.type, 'fate');
+  assert.equal(r.event.special.kind, 'chore');
+  let t = store.getSpecialTasks(a.id)[0];
+  assert.deepEqual([t.status, t.startDate, t.endDate, t.points], ['upcoming', '2026-11-07', '2026-11-09', 20]);
+  assert.throws(() => store.completeSpecialTask(t.id), /明天才開始/);
+  setDate('2026-11-07T09:00:00');
+  assert.equal(store.getSpecialTasks(a.id)[0].status, 'active');
+  const total = store.getTotal(a.id);
+  const rec = store.completeSpecialTask(t.id);
+  assert.deepEqual([rec.type, rec.points, rec.name], ['bonus', 20, '特殊任務：完成指定家務']);
+  assert.equal(store.getTotal(a.id), total + 20, '生活點數 +20');
+  assert.equal(store.getTodayNet(a.id), 20, '計入今日淨得分');
+  assert.equal(store.getStarBalance(a.id), 15, '不影響能量星星');
+  assert.equal(store.getSpecialTasks(a.id)[0].status, 'done');
+  assert.throws(() => store.completeSpecialTask(t.id), /已經完成/);
+  store.undoLast(a.id);
+  assert.equal(store.getSpecialTasks(a.id)[0].status, 'active', '撤銷紀錄 → 恢復未完成');
+  setDate('2026-11-10T09:00:00');
+  assert.equal(store.getSpecialTasks(a.id)[0].status, 'expired', '第 4 天過期');
+  assert.throws(() => store.completeSpecialTask(t.id), /過期/);
+  assert.equal(store.getTotal(a.id), total, '過期不扣分');
+});
+
+test('Phase 4：三種特殊任務、同一種進行中不重複新增、可取消', () => {
+  const { store, a } = p3Store();
+  assert.equal(store.addSpecialTask(a.id, 'chore').duplicate, false);
+  assert.equal(store.addSpecialTask(a.id, 'praise').duplicate, false);
+  assert.equal(store.addSpecialTask(a.id, 'helper').duplicate, false);
+  const dup = store.addSpecialTask(a.id, 'chore');
+  assert.equal(dup.duplicate, true);
+  assert.equal(store.getSpecialTasks(a.id).length, 3);
+  assert.deepEqual(store.getSpecialTasks(a.id).map(t => t.name), ['完成指定家務', '和所有家人說一句讚美的話和感謝的話', '幫忙大師：幫家人做 3 件事']);
+  store.cancelSpecialTask(dup.task.id);
+  assert.equal(store.getSpecialTasks(a.id).find(t => t.kind === 'chore').status, 'cancelled');
+  assert.equal(store.addSpecialTask(a.id, 'chore').duplicate, false, '取消後可再抽到同一種');
+  assert.throws(() => store.addSpecialTask(a.id, 'nope'), /沒有這種/);
+});
+
+test('Phase 4：命運卡後退 1～2 格（不觸發落點事件）、路障沒有影響', () => {
+  const { store, a, push } = p3Store();
+  store.buyItem(a.id, 'd6'); store.buyItem(a.id, 'd6');
+  store.setPlayerTile(a.id, 11);
+  push(face(3), 0.8, 0.9);                   // 擲 3 → 第 14 格；0.8 → 後退；0.9 → 退 2 格
+  const r = store.rollDice(a.id, 'd6');
+  assert.equal(r.event.card, 'back');
+  assert.deepEqual(r.event.backPath, [13, 12]);
+  assert.equal(store.getPlayer(a.id).pos, 12, '退到第 12 格（寶箱格）');
+  assert.equal(store.getStarBalance(a.id), 10, '落點寶箱不觸發');
+  assert.equal(store.getPlayer(a.id).tileId, 'gold-01-012');
+  store.setPlayerTile(a.id, 18);
+  push(face(3), 0.95, 0);                    // 擲 3 → 第 21 格；0.95 → 路障
+  const r2 = store.rollDice(a.id, 'd6');
+  assert.equal(r2.event.card, 'roadblock');
+  assert.match(r2.event.text, /^路障：/);
+  assert.equal(store.getPlayer(a.id).pos, 21);
+  assert.equal(store.getSpecialTasks(a.id).length, 0);
+});
+
+test('Phase 4：命運卡後退不會退到起點之前；機率 75／10／15', () => {
+  const total = G.FATE_CARDS.reduce((s, c) => s + c.weight, 0);
+  const w = Object.fromEntries(G.FATE_CARDS.map(c => [c.id, c.weight]));
+  assert.equal(total, 100);
+  assert.deepEqual([w.chore + w.praise + w.helper, w.back, w.roadblock], [75, 10, 15]);
+  const { store, a } = p3Store();
+  store.setPlayerTile(a.id, 1);
+  store.random = () => 0.8;                  // 後退、退 2 格
+  // 暫時把第 1 格當成命運格：從第 1 格退 2 格，只能退到起點
+  const tiles = store.getBoard(a.id).tiles; const orig = tiles[1].type; tiles[1].type = 'fate';
+  try {
+    const ev = store._resolveTile(a.id, 0);
+    assert.deepEqual(ev.backPath, [0]);
+    assert.equal(store.getPlayer(a.id).tileId, 'gold-01-start');
+  } finally { tiles[1].type = orig; }
+});
+
+test('Phase 4：特殊任務存檔遷移、刪除孩子一併刪除', () => {
+  const d = migrate({ children: [{ id: 'c', name: 'B' }], specialTasks: [
+    { id: 's1', childId: 'c', kind: 'praise', startDate: '2026-11-07', endDate: '2026-11-09' },
+    { id: 's2', childId: 'x', kind: 'praise', startDate: '2026-11-07', endDate: '2026-11-09' },
+    { id: 's3', childId: 'c', kind: 'bad', startDate: '2026-11-07', endDate: '2026-11-09' }] });
+  assert.deepEqual(d.specialTasks.map(t => [t.id, t.points, t.cancelled]), [['s1', 20, false]]);
+  assert.deepEqual(migrate({ children: [] }).specialTasks, [], '舊存檔沒有此欄位 → 空陣列');
+  const { store, a } = p3Store();
+  store.addSpecialTask(a.id, 'chore');
+  store.deleteChild(a.id);
+  assert.equal(store.data.specialTasks.length, 0);
+});

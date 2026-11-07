@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.07-15`｜Service Worker 快取 `cgp-shell-v25`
+> 最後更新：2026-11-07｜App 版本 `2026.11.07-16`｜Service Worker 快取 `cgp-shell-v26`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---
@@ -47,7 +47,7 @@
 
 已提供中英文申訴信，於 https://support.github.com/contact（Account access）以 `dollyswim` 送出。
 
-### D. 下一個開發階段：Phase 4（尚未開始）
+### D. 下一個開發階段：Phase 4（進行中：第 1 步命運格＋特殊任務已完成）
 
 > 詳細規劃（含家長已決定的規則）見 **`docs/PHASE4_PLAN.md`**；以下為原始摘要。
 

@@ -162,6 +162,132 @@ a small pile of golden stars on the counter, warm and inviting, front 3/4 view
 
 ---
 
+## Phase 4 素材（請 Codex 製作）
+
+規格同前：**正方形 1024×1024、白底、單一物件、置中、不要任何文字／數字**，先貼「共用風格」再貼主體描述。
+道具圖會放在白色卡片裡顯示約 52～56px；地圖用的圖示約 30～46px，**輪廓要簡單、顏色要鮮明、一眼可辨**。
+
+| # | 素材 | 用在哪裡 | 需要時間 |
+|---|---|---|---|
+| P4-1 | 命運格（水晶球） | 地圖第 11、14、21、27 格 | **現在**（目前用 🔮 代替） |
+| P4-2 | 神秘寶箱 | 地圖上的神秘寶箱、背包 | 第 3 步（**圖到才上線**） |
+| P4-3 | 黃金鑰匙 | 商店、背包 | 第 3 步 |
+| P4-4 | 寶物磁鐵 | 商店、背包 | 第 3 步 |
+| P4-5 | 好運金牌 | 神秘寶箱開出、背包 | 第 3 步 |
+| P4-6 | 神奇骰子 | 同上 | 第 3 步 |
+| P4-7 | 飛行翼 | 同上 | 第 3 步 |
+| P4-8 | 防護罩 | 同上 | 第 3 步 |
+| P4-9 | 任意門 | 同上 | 第 3 步 |
+| P4-10 | 呼叫專機 | 同上 | 第 3 步 |
+| 選做 | 「抓住星星」小遊戲背景（直式 1080×1920） | 小遊戲畫面 | 第 2 步 |
+
+### P4-1 命運格：水晶球
+
+```
+A cute crystal ball on a small golden stand, swirling soft pink and teal mist inside,
+a tiny golden star and a little question-swirl floating in the mist, gentle glow,
+mysterious but friendly
+```
+
+中文：放在金色小底座上的可愛水晶球，球裡有粉紅與藍綠色霧氣旋轉，霧中飄著金色小星星和小漩渦，柔和發光，神秘又親切。
+
+### P4-2 神秘寶箱（外觀要和一般木頭寶箱明顯不同）
+
+```
+A cute magical mystery chest, rounded and chunky, deep purple and midnight blue body
+with silver-white star patterns, a glowing golden keyhole lock in the front (clearly locked),
+soft violet magic glow and tiny floating sparkles around it, a small question-mark swirl
+of light above the lid, mysterious and exciting, clearly different from a normal wooden treasure chest
+```
+
+中文：圓潤的魔法神秘寶箱，深紫與午夜藍箱身、銀白星星花紋，正面發光的金色鑰匙孔鎖（鎖著），淡紫光暈與小閃光，箱蓋上方有問號形狀的小光芒。
+
+### P4-3 黃金鑰匙
+
+```
+A chunky cute golden key, round bow (handle) with a purple star gem in the center,
+short thick blade with simple teeth, soft shine and a tiny sparkle, tilted diagonally
+```
+
+中文：厚實可愛的金色鑰匙，圓形握柄中央鑲一顆紫色星形寶石（呼應神秘寶箱），短而粗的鑰匙齒，斜放，帶光澤與小閃光。
+
+### P4-4 寶物磁鐵
+
+```
+A cute horseshoe magnet, glossy red body with silver-white tips, small golden coins
+and a tiny chest icon being pulled toward it with curved motion lines, playful
+```
+
+中文：可愛的 U 形磁鐵，亮紅色本體、銀白色兩端，旁邊有幾枚小金幣和一個小寶箱被吸過來，帶弧形動態線，活潑俏皮。
+
+### P4-5 好運金牌
+
+```
+A shiny round gold medal with a red-and-blue ribbon, a four-leaf clover and a small
+star embossed in the center, radiant glow, festive and lucky
+```
+
+中文：閃亮的圓形金牌，紅藍緞帶，中央浮雕四葉草和小星星，散發光芒，喜氣又幸運。
+
+### P4-6 神奇骰子
+
+```
+A magical twelve-sided dice (dodecahedron) with pentagon faces, iridescent rainbow
+crystal body with gold edges, small white star marks on the faces, swirling magic sparkles around it
+```
+
+中文：魔法十二面骰（五邊形面），彩虹水晶般的虹彩身體配金色稜邊，面上有白色小星星，周圍有旋轉的魔法閃光。（要和一般藍色 12 面骰明顯不同）
+
+### P4-7 飛行翼
+
+```
+A pair of small fluffy white angel wings with golden feather tips, joined by a tiny
+golden buckle, light breeze swoosh lines, soft glow, ready to fly
+```
+
+中文：一對蓬鬆的白色小翅膀，羽尖帶金色，中間以金色小扣環相連，旁邊有微風速度線，柔和發光。
+
+### P4-8 防護罩
+
+```
+A cute round shield with a glowing translucent sky-blue bubble dome around it,
+golden rim, a small star emblem in the center, gentle protective glow
+```
+
+中文：可愛的圓形盾牌，外面罩著一層發光的半透明天藍色泡泡護罩，金色邊框，中央有小星星徽章，柔和的守護光芒。
+
+### P4-9 任意門
+
+```
+A cute standalone pink rounded door with a golden knob, standing on a tiny grass patch,
+door slightly open with swirling magical starry light coming out, playful and magical
+```
+
+中文：一扇獨立站著的粉紅色圓角小門，金色門把，立在一小片草地上，門微微打開，透出旋轉的星光魔法；俏皮又神奇。
+
+### P4-10 呼叫專機
+
+```
+A cute chubby little propeller airplane, cream and sky-blue with golden details,
+round windows, a small star on the tail, little cloud puffs behind it, cheerful
+```
+
+中文：圓滾滾的可愛螺旋槳小飛機，奶油色與天藍色配金色細節，圓形窗戶，機尾有小星星，後面拖著小雲朵，開心活潑。
+
+### 選做：「抓住星星」小遊戲背景（直式 1080×1920，**不要白底**）
+
+把共用風格最後的 `single object ... plain white background` 換成下面這段：
+
+```
+A soft dreamy night sky over a small golden mining island, deep blue to purple gradient,
+gentle glowing clouds, faint tiny stars, a small castle silhouette far away,
+large open empty space in the middle for gameplay, no characters, no text, no UI
+```
+
+中文：金島上方柔和夢幻的夜空，深藍到紫色漸層，發光的雲朵、淡淡的小星星，遠處有小城堡剪影；**中間保留大片空白**讓星星出現，不要角色、文字、介面。
+
+---
+
 ## 選做：金島俯瞰棋盤底圖（1 張）
 
 尺寸：**直式 1080 × 1350**。這張**不要用白色背景**，背景就是海。

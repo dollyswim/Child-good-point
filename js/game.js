@@ -49,8 +49,29 @@
    */
   var REGION01 = (typeof module !== 'undefined' && module.exports) ? require('./board-gold.js') : root.CGP_GOLD_REGION01;
   // 事件依既有遊戲規格（JSON 的 eventType 僅為占位；第 30 格為區域邊界）
-  var TYPES = { 3: 'chance', 5: 'chest', 7: 'minigame', 9: 'chance', 12: 'chest', 15: 'chance', 17: 'minigame',
-    19: 'chest', 22: 'chance', 24: 'minigame', 26: 'chest', 28: 'chance' };
+  var TYPES = { 3: 'chance', 5: 'chest', 7: 'minigame', 9: 'chance', 11: 'fate', 12: 'chest', 14: 'fate', 15: 'chance', 17: 'minigame',
+    19: 'chest', 21: 'fate', 22: 'chance', 24: 'minigame', 26: 'chest', 27: 'fate', 28: 'chance' };
+
+  /**
+   * Phase 4 命運卡（家長決定：特殊任務多一點）
+   * 特殊任務 3 種各 25%、後退 1～2 格 10%、路障 15%
+   */
+  var FATE_CARDS = [
+    { id: 'chore', weight: 25 }, { id: 'praise', weight: 25 }, { id: 'helper', weight: 25 },
+    { id: 'back', weight: 10 }, { id: 'roadblock', weight: 15 }
+  ];
+  var ROADBLOCKS = [
+    '一隻小螃蟹橫著走過來擋路，停下來跟牠打個招呼吧！',
+    '礦車軌道上有一顆大石頭，大家一起等工人搬開。',
+    '一陣海風吹來，帽子差點飛走，先停下來整理一下。',
+    '路邊的小花開得好漂亮，停下來欣賞一下再出發。'
+  ];
+  function pickWeighted(rand, list) {
+    var total = list.reduce(function (s, x) { return s + x.weight; }, 0);
+    var r = rand() * total;
+    for (var i = 0; i < list.length; i++) { r -= list[i].weight; if (r < 0) return list[i]; }
+    return list[list.length - 1];
+  }
   var REGIONS = [
     { id: 'gold-01', name: '黃金沙灘與初級礦場', from: 1, to: 30, available: true,
       background: { webp: 'images/gold/region01.webp', jpg: 'images/gold/region01.jpg' }, size: REGION01.referenceSize },
@@ -161,7 +182,7 @@
     var p = this.getPlayer(childId);
     var tile = this.getBoard(childId).tiles[p.pos];
     var rand = this.random;
-    var ev = { tile: tile.n, type: tile.type, title: '', text: '', stars: 0, items: {}, extraPath: [] };
+    var ev = { tile: tile.n, type: tile.type, title: '', text: '', stars: 0, items: {}, extraPath: [], backPath: [] };
     if (tile.type === 'chest') {
       ev.title = '🎁 寶箱！';
       var roll = rand();
@@ -188,6 +209,25 @@
         ev.stars = 2; this._ledger(childId, 2, '機會：發現礦石'); ev.text = '發現發光礦石，得到 ⭐2';
       } else {
         p.bag.d6++; ev.items.d6 = 1; ev.text = '撿到一顆 🎲 6 面骰';
+      }
+    } else if (tile.type === 'fate') {
+      ev.title = '🔮 命運卡';
+      var card = pickWeighted(rand, FATE_CARDS);
+      ev.card = card.id;
+      if (card.id === 'back') {
+        var n = rint(rand, 1, 2);
+        // 後退：不退到起點之前；落點不觸發事件
+        for (var b = 0; b < n && p.pos > 0; b++) { p.pos--; ev.backPath.push(p.pos); }
+        p.tileId = this.getBoard(childId).tiles[p.pos].id;
+        ev.text = '一陣大風吹來，往回退了 ' + ev.backPath.length + ' 格！';
+      } else if (card.id === 'roadblock') {
+        ev.text = '路障：' + ROADBLOCKS[Math.floor(rand() * ROADBLOCKS.length)] + '（這次沒有影響，下次繼續前進）';
+      } else {
+        var sp = this.addSpecialTask(childId, card.id);
+        ev.special = { id: sp.task.id, kind: card.id, name: sp.task.name, duplicate: sp.duplicate };
+        ev.text = sp.duplicate
+          ? '特殊任務「' + sp.task.name + '」還在進行中喔！先把它完成吧。'
+          : '得到特殊任務：「' + sp.task.name + '」\n明天起出現在任務頁，3 天內完成可得 +' + sp.task.points + ' 點！';
       }
     } else if (tile.type === 'minigame') {
       ev.title = '🎮 小遊戲格'; ev.text = '小遊戲即將開放，敬請期待！';
@@ -236,7 +276,7 @@
     return { die: 'skates', value: 3, from: from, path: path, event: event };
   };
 
-  var api = { REGIONS: REGIONS, SHOP: SHOP, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);
