@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 1,
+  "referenceSize": {
+    "width": 1080,
+    "height": 1350
+  },
+  "tilePreviewSize": {
+    "width": 64,
+    "height": 48
+  },
+  "coordinateAnchor": "tile-center",
+  "tiles": [
+    {
+      "id": "gold-01-001",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 1,
+      "x": 0.49,
+      "y": 0.9,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-002",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 2,
+      "x": 0.533284,
+      "y": 0.855828,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-003",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 3,
+      "x": 0.585806,
+      "y": 0.818683,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-004",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 4,
+      "x": 0.634066,
+      "y": 0.778011,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-005",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 5,
+      "x": 0.65,
+      "y": 0.725192,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-006",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 6,
+      "x": 0.61861,
+      "y": 0.679386,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-007",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 7,
+      "x": 0.556131,
+      "y": 0.65416,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-008",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 8,
+      "x": 0.489128,
+      "y": 0.637391,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-009",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 9,
+      "x": 0.421142,
+      "y": 0.623377,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-010",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 10,
+      "x": 0.35308,
+      "y": 0.60959,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-011",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 11,
+      "x": 0.285351,
+      "y": 0.5949,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-012",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 12,
+      "x": 0.222652,
+      "y": 0.569934,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-013",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 13,
+      "x": 0.205,
+      "y": 0.519131,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-014",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 14,
+      "x": 0.252088,
+      "y": 0.482305,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-015",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 15,
+      "x": 0.320519,
+      "y": 0.47034,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-016",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 16,
+      "x": 0.390046,
+      "y": 0.462534,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-017",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 17,
+      "x": 0.459537,
+      "y": 0.454502,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-018",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 18,
+      "x": 0.529119,
+      "y": 0.447,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-019",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 19,
+      "x": 0.598815,
+      "y": 0.44021,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-020",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 20,
+      "x": 0.668007,
+      "y": 0.430729,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-021",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 21,
+      "x": 0.735526,
+      "y": 0.415651,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-022",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 22,
+      "x": 0.787227,
+      "y": 0.379422,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-023",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 23,
+      "x": 0.765092,
+      "y": 0.331028,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-024",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 24,
+      "x": 0.69736,
+      "y": 0.317071,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-025",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 25,
+      "x": 0.627506,
+      "y": 0.311452,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-026",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 26,
+      "x": 0.557637,
+      "y": 0.305919,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-027",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 27,
+      "x": 0.488105,
+      "y": 0.298292,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-028",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 28,
+      "x": 0.43,
+      "y": 0.275718,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-029",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 29,
+      "x": 0.466869,
+      "y": 0.23816,
+      "eventType": "normal"
+    },
+    {
+      "id": "gold-01-030",
+      "islandId": "gold",
+      "regionId": "gold-01",
+      "order": 30,
+      "x": 0.535,
+      "y": 0.225,
+      "eventType": "region_boundary"
+    }
+  ]
+}

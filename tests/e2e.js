@@ -531,6 +531,118 @@ async function main() {
     await c3.close();
   }
 
+  // ---------- 金島第一區地圖：手機顯示、對齊、逐格移動、重新整理恢復、舊存檔遷移、第 30 格停止 ----------
+  {
+    const REGION = require('../js/board-gold.js');
+    for (const width of [360, 390, 430]) {
+      const cx = await browser.newContext({ viewport: { width, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
+      const q = await cx.newPage();
+      q.on('pageerror', (e) => errors.push(e.message));
+      await q.goto(url);
+      const id = await q.evaluate(() => {
+        const s = window.__cgpStore;
+        const a = s.addChild({ name: '甲' });
+        s.addChild({ name: '乙' });
+        const b = s.addItem({ kind: 'bonus', name: '大加分', points: 200 });
+        s.recordItem(a.id, b.id); s.settleToday(a.id);
+        s.getPlayer(a.id).bag.d6 = 6; s.getPlayer(a.id).bag.d12 = 2; s.save();
+        return a.id;
+      });
+      await q.goto(url + '#map-' + id);
+      await q.waitForSelector('#map-world img.map-bg');
+      await q.waitForFunction(() => document.querySelector('#map-world img.map-bg').complete);
+      // 頁面不橫向溢出（地圖內部拖曳除外）
+      const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      assert.ok(over <= 0, width + 'px 不可橫向溢出');
+      // 背景保持 4:5、不裁切
+      const bgRatio = await q.evaluate(() => { const r = document.querySelector('.map-bg').getBoundingClientRect(); return r.width / r.height; });
+      assert.ok(Math.abs(bgRatio - 0.8) < 0.002, '背景維持 4:5');
+      // 30 格依 JSON 座標、與背景同一縮放：比對畫面位置
+      async function checkAlign(label) {
+        const m = await q.evaluate(() => {
+          const bg = document.querySelector('.map-bg').getBoundingClientRect();
+          const tiles = [...document.querySelectorAll('.mtile')].map(el => {
+            const r = el.getBoundingClientRect();
+            return { n: +el.dataset.n, cx: (r.left + r.width / 2 - bg.left) / bg.width, cy: (r.top + r.height / 2 - bg.top) / bg.height, w: r.width };
+          });
+          const pawn = document.getElementById('pawn'), pr = pawn.querySelector('img').getBoundingClientRect();
+          const tile = document.querySelector('.mtile[data-n="' + pawn.dataset.pos + '"]');
+          return { tiles, bgw: bg.width, pawnW: pr.width, pawnFeet: { x: pr.left + pr.width / 2, y: pr.bottom },
+            tileC: tile ? (() => { const r = tile.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })() : null };
+        });
+        assert.equal(m.tiles.length, 30, label + '：30 格');
+        for (const t of m.tiles) {
+          const j = REGION.tiles[t.n - 1];
+          assert.ok(Math.abs(t.cx - j.x) * m.bgw < 1.5 && Math.abs(t.cy - j.y) * m.bgw * 1.25 < 1.5, label + '：第 ' + t.n + ' 格對齊 JSON');
+        }
+        const tileW = m.tiles[0].w;
+        if (m.tileC) {
+          assert.ok(Math.abs(m.pawnFeet.x - m.tileC.x) < 2, label + '：角色水平對齊格子中心');
+          assert.ok(Math.abs(m.pawnFeet.y - m.tileC.y) < tileW * 0.25, label + '：角色腳底在格子中心');
+        }
+        assert.ok(m.pawnW < tileW * 1.2, label + '：角色寬度不超過約一格，不擋相鄰多格');
+        return tileW;
+      }
+      const tw = await checkAlign(width + 'px 預設');
+      assert.ok(tw >= 30, width + 'px：格子在手機上至少 30px 寬（實際 ' + tw.toFixed(1) + 'px）');
+      await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'region-' + width + '.png') : path.join(require('os').tmpdir(), 'r.png') });
+      // 縮放後仍對齊
+      await q.click('[data-map=in]'); await q.waitForTimeout(100);
+      await checkAlign(width + 'px 放大');
+      await q.click('[data-map=out]'); await q.click('[data-map=out]'); await q.click('[data-map=out]'); await q.waitForTimeout(100);
+      await checkAlign(width + 'px 縮小');
+      // 拖曳地圖
+      const vb = await q.locator('#map-view').boundingBox();
+      await q.mouse.move(vb.x + vb.width / 2, vb.y + vb.height / 2); await q.mouse.down();
+      await q.mouse.move(vb.x + vb.width / 2 + 40, vb.y + vb.height / 2 + 60, { steps: 4 }); await q.mouse.up();
+      await checkAlign(width + 'px 拖曳後');
+
+      if (width === 390) {
+        // 逐格移動：擲 4 → 1、2、3、4（起點在第 1 格前的沙灘）
+        await q.click('[data-map=follow]');
+        await q.evaluate(() => { const seq = [3.5 / 6]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0); });
+        const seen = [];
+        await q.exposeFunction('__seenTile', (v) => seen.push(v));
+        await q.evaluate(() => new MutationObserver(() => window.__seenTile(document.getElementById('pawn').dataset.tile))
+          .observe(document.getElementById('pawn'), { attributes: true, attributeFilter: ['data-tile'] }));
+        await q.click('[data-action=roll][data-kind=d6]');
+        await q.waitForFunction(() => document.querySelector('[data-testid=pos]').textContent.startsWith('4 '), null, { timeout: 8000 });
+        assert.deepEqual(seen.slice(0, 4), ['gold-01-001', 'gold-01-002', 'gold-01-003', 'gold-01-004'], '依序逐格移動');
+        if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
+        await checkAlign('移動後');
+        // 重新整理恢復位置（以穩定格子 ID 保存）
+        const saved = await q.evaluate((cid) => JSON.parse(localStorage.getItem('cgp-data')).adventure.players[cid].tileId, id);
+        assert.equal(saved, 'gold-01-004');
+        await q.reload(); await q.waitForSelector('#pawn');
+        assert.equal(await q.locator('#pawn').getAttribute('data-tile'), 'gold-01-004', '重新整理後恢復位置');
+        await checkAlign('重新整理後');
+        // 舊存檔只有整數格號 → 遷移成穩定 ID
+        await q.evaluate((cid) => {
+          const d = JSON.parse(localStorage.getItem('cgp-data'));
+          delete d.adventure.players[cid].tileId; d.adventure.players[cid].pos = 12;
+          localStorage.setItem('cgp-data', JSON.stringify(d));
+        }, id);
+        await q.reload(); await q.waitForSelector('#pawn');
+        assert.equal(await q.locator('#pawn').getAttribute('data-tile'), 'gold-01-012', '舊整數格號遷移');
+        assert.equal(await q.locator('[data-testid=pos]').innerText(), '12 / 30');
+        // 第 30 格安全停止：從第 27 格擲 12，只走到 30，多餘步數捨棄，不能再擲
+        await q.evaluate((cid) => { const s = window.__cgpStore; s.setPlayerTile(cid, 27); s.save(); s.random = () => 0.99; }, id);
+        await q.reload(); await q.waitForSelector('#pawn');
+        await q.click('[data-action=roll][data-kind=d12]');
+        await q.waitForSelector('#confirm[open]', { timeout: 8000 });
+        assert.match(await q.locator('#confirm').innerText(), /木門[\s\S]*第二區即將開放/);
+        assert.doesNotMatch(await q.locator('#confirm').innerText(), /通關/, '不是全島通關');
+        await q.click('#confirm [data-yes]');
+        assert.equal(await q.locator('#pawn').getAttribute('data-tile'), 'gold-01-030');
+        assert.ok(await q.locator('.dice-btn.d6').isDisabled(), '在第 30 格不能再擲');
+        assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.d12, id), 1, '只扣一顆骰子');
+        await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'region-end.png') : path.join(require('os').tmpdir(), 'r2.png') });
+      }
+      await cx.close();
+      console.log('✔ 金島第一區地圖 ' + width + 'px：格子對齊、縮放拖曳、不橫向溢出' + (width === 390 ? '、逐格移動、重新整理恢復、舊存檔遷移、第 30 格停止' : ''));
+    }
+  }
+
   assert.deepEqual(errors, [], '頁面不得出現 JS 錯誤或原生對話框');
   await browser.close();
   server.close();

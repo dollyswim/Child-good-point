@@ -41,27 +41,33 @@
   var DEFAULT_CHARACTER = 'roundear';
 
   /**
-   * 金島測試版：30 格（0 = 起點）。
-   * gx, gy 為等角格座標，路徑蜿蜒繞過礦洞、工廠、齒輪與金屬橋。
-   * 未來擴充 100 格只要加長 tiles。
+   * 金島：分為四區（1～30、31～55、56～80、81～100 格）。
+   * 目前只開放第一區「黃金沙灘與初級礦場」；座標來自 js/board-gold.js（由 data/gold_region01_tiles.json 產生）。
+   * tiles[0] 為起點（第 1 格前方的沙灘，依第 1、2 格方向往回延伸一步），tiles[n] = 第 n 格。
+   * 存檔使用穩定格子 ID（例如 gold-01-007），未來不重編。
    */
-  var CELLS = [
-    [8, 8], [7, 8], [6, 8], [5, 8], [4, 8], [3, 8], [2, 8],
-    [1, 7], [1, 6], [2, 5],
-    [3, 5], [4, 5], [5, 5], [6, 5], [7, 5],
-    [8, 4], [8, 3], [7, 2],
-    [6, 2], [5, 2], [4, 2], [3, 2], [2, 2],
-    [1, 1],
-    [2, 0], [3, 0], [4, 0], [5, 0], [6, 0], [7, 0], [8, 0]
-  ];
+  var REGION01 = (typeof module !== 'undefined' && module.exports) ? require('./board-gold.js') : root.CGP_GOLD_REGION01;
+  // 事件依既有遊戲規格（JSON 的 eventType 僅為占位；第 30 格為區域邊界）
   var TYPES = { 3: 'chance', 5: 'chest', 7: 'minigame', 9: 'chance', 12: 'chest', 15: 'chance', 17: 'minigame',
     19: 'chest', 22: 'chance', 24: 'minigame', 26: 'chest', 28: 'chance' };
-  var GOLD = {
-    id: 'gold', name: '金島',
-    tiles: CELLS.map(function (c, i) {
-      return { n: i, gx: c[0], gy: c[1], type: i === 0 ? 'start' : i === CELLS.length - 1 ? 'end' : (TYPES[i] || 'normal') };
-    })
-  };
+  var REGIONS = [
+    { id: 'gold-01', name: '黃金沙灘與初級礦場', from: 1, to: 30, available: true,
+      background: { webp: 'images/gold/region01.webp', jpg: 'images/gold/region01.jpg' }, size: REGION01.referenceSize },
+    { id: 'gold-02', name: '第二區', from: 31, to: 55, available: false },
+    { id: 'gold-03', name: '第三區', from: 56, to: 80, available: false },
+    { id: 'gold-04', name: '第四區', from: 81, to: 100, available: false }
+  ];
+  function buildGold() {
+    var src = REGION01.tiles;
+    var t1 = src[0], t2 = src[1];
+    var tiles = [{ n: 0, id: 'gold-01-start', regionId: 'gold-01', x: t1.x - (t2.x - t1.x), y: t1.y - (t2.y - t1.y), type: 'start' }];
+    src.forEach(function (t) {
+      tiles.push({ n: t.order, id: t.id, regionId: 'gold-01', x: t.x, y: t.y,
+        type: t.eventType === 'region_boundary' ? 'boundary' : (TYPES[t.order] || 'normal') });
+    });
+    return { id: 'gold', name: '金島', totalTiles: 100, regions: REGIONS, tiles: tiles };
+  }
+  var GOLD = buildGold();
   var BOARDS = { gold: GOLD };
 
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
@@ -72,12 +78,34 @@
     var adv = this.data.adventure;
     if (!adv.players[childId]) {
       var child = this.getChild(childId);
-      adv.players[childId] = { island: 'gold', pos: 0, character: child ? child.avatar : '', bag: { d6: 0, d12: 0, skates: 0 } };
+      adv.players[childId] = { island: 'gold', pos: 0, tileId: 'gold-01-start', character: child ? child.avatar : '', bag: { d6: 0, d12: 0, skates: 0 } };
     }
-    return adv.players[childId];
+    var p = adv.players[childId];
+    // 位置以穩定格子 ID 為準；舊存檔只有整數格號時對應到同號的格子（第 n 格 → gold-01-00n）
+    var board = BOARDS[p.island] || GOLD;
+    var idx = p.tileId ? board.tiles.findIndex(function (t) { return t.id === p.tileId; }) : -1;
+    if (idx >= 0) p.pos = idx;
+    else {
+      p.pos = Math.max(0, Math.min(p.pos || 0, board.tiles.length - 1));
+      p.tileId = board.tiles[p.pos].id;
+    }
+    return p;
+  };
+  /** 目前所在格子（含起點） */
+  Store.prototype.getPlayerTile = function (childId) {
+    var p = this.getPlayer(childId);
+    return this.getBoard(childId).tiles[p.pos];
   };
   Store.prototype.getBoard = function (childId) {
-    return BOARDS[this.getPlayer(childId).island] || GOLD;
+    var p = this.data.adventure.players[childId]; // 不經 getPlayer，避免移動途中重新對應位置
+    return (p && BOARDS[p.island]) || GOLD;
+  };
+  /** 直接移到指定格子（測試與修正用） */
+  Store.prototype.setPlayerTile = function (childId, n) {
+    var p = this.getPlayer(childId);
+    var tiles = this.getBoard(childId).tiles;
+    p.pos = Math.max(0, Math.min(n, tiles.length - 1));
+    p.tileId = tiles[p.pos].id;
   };
   Store.prototype.getRollsToday = function (childId) {
     var today = this.today();
@@ -121,7 +149,9 @@
     var p = this.getPlayer(childId);
     var end = this.getBoard(childId).tiles.length - 1;
     var path = [];
+    // 抵達目前開放區域的最後一格（第 30 格木門）即停止，多餘步數捨棄
     for (var i = 0; i < steps && p.pos < end; i++) { p.pos++; path.push(p.pos); }
+    p.tileId = this.getBoard(childId).tiles[p.pos].id;
     return path;
   };
 
@@ -160,6 +190,8 @@
       }
     } else if (tile.type === 'minigame') {
       ev.title = '🎮 小遊戲格'; ev.text = '小遊戲即將開放，敬請期待！';
+    } else if (tile.type === 'boundary') {
+      ev.title = '🚪 抵達礦場木門！'; ev.text = '你走完金島第一區「黃金沙灘與初級礦場」了！門後的第二區即將開放。';
     } else if (tile.type === 'end') {
       ev.title = '🏁 抵達金島終點！'; ev.text = '你走完金島測試版 30 格了！下一座島即將開放。';
     }
@@ -175,7 +207,7 @@
     if (die !== 'd6' && die !== 'd12') throw new Error('沒有這種骰子');
     var p = this.getPlayer(childId);
     var end = this.getBoard(childId).tiles.length - 1;
-    if (p.pos >= end) throw new Error('已經在終點了');
+    if (p.pos >= end) throw new Error('已經抵達第一區的木門，第二區即將開放');
     if (this.getRollsToday(childId) >= DAILY_DICE_LIMIT) throw new Error('今天已經擲了 ' + DAILY_DICE_LIMIT + ' 次骰子，明天再來！');
     if (p.bag[die] <= 0) throw new Error('背包裡沒有' + (die === 'd6' ? ' 6 面骰' : ' 12 面骰'));
     var value = rint(this.random, 1, die === 'd6' ? 6 : 12);
@@ -193,7 +225,7 @@
     this._requirePlay(childId);
     var p = this.getPlayer(childId);
     var end = this.getBoard(childId).tiles.length - 1;
-    if (p.pos >= end) throw new Error('已經在終點了');
+    if (p.pos >= end) throw new Error('已經抵達第一區的木門，第二區即將開放');
     if (p.bag.skates <= 0) throw new Error('背包裡沒有溜冰鞋');
     var from = p.pos;
     p.bag.skates--;
@@ -203,7 +235,7 @@
     return { die: 'skates', value: 3, from: from, path: path, event: event };
   };
 
-  var api = { SHOP: SHOP, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { REGIONS: REGIONS, SHOP: SHOP, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

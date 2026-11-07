@@ -26,7 +26,8 @@
  * - data.adventure.settlements：能量星星每日結算 [{ id, childId, date, net, baseStars, bonusStars, stars, paidRecordIds, ts }]
  *   （Phase 2）能量星星與生活點數完全分開保存
  * - data.adventure.ledger：星星帳（Phase 3 購買扣星、寶箱與機會格加星）；星星餘額 = 結算總和 + 星星帳
- * - data.adventure.rolls：擲骰紀錄；data.adventure.players[childId]：{ island, pos, character, bag: { d6, d12, skates } }
+ * - data.adventure.rolls：擲骰紀錄；data.adventure.players[childId]：{ island, tileId, pos, character, bag: { d6, d12, skates } }
+ *   tileId 為穩定格子 ID（例如 gold-01-007）；pos 為該格的順序，由 tileId 推導
  * - 等級：依累積「賺到的加分」（加分、每日任務、挑戰獎勵的正數點數）計算，扣分與兌換不會降級
  *
  * 規則：
@@ -252,6 +253,7 @@
           out[cid] = {
             island: String(p.island || 'gold'),
             pos: Math.max(0, toInt(p.pos, 0)),
+            tileId: p.tileId ? String(p.tileId) : '',  // 穩定格子 ID；舊存檔沒有時由 game.js 依 pos 對應
             character: String(p.character || ''),
             bag: { d6: Math.max(0, toInt(bag.d6, 0)), d12: Math.max(0, toInt(bag.d12, 0)), skates: Math.max(0, toInt(bag.skates, 0)) }
           };

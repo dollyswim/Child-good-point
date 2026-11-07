@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-4';
+  var APP_VERSION = '2026.11.07-5';
   var store;
   try {
     store = new CGP.Store();
@@ -230,6 +230,7 @@
     if (r.name !== 'settings') html += bottomNav(r.name === 'adventure' || r.name === 'map' ? 'child' : r.name);
     app.innerHTML = html;
     app.dataset.view = r.name;
+    if (r.name === 'map') setupMap(store.getChild(r.arg));
     if (ui.pulse) {
       var el = app.querySelector('.total-value');
       if (el) el.classList.add('pulse');
@@ -491,88 +492,22 @@
     return GAME.CHARACTERS.find(function (c) { return c.id === id; }).name;
   }
 
-  /** 等角投影：格座標 → 螢幕座標 */
-  var TW = 22, TH = 12.5, DEPTH = 7;
-  function iso(gx, gy) { return { x: (gx - gy) * TW, y: (gx + gy) * TH }; }
+  // ---------- 金島第一區地圖（背景＋格子＋事件圖示＋角色，同一個座標容器） ----------
+  var TILE_ICON = { start: '', normal: '', chest: '🎁', chance: '❓', minigame: '🎮', boundary: '🚪' };
+  var TILE_LABEL = { chest: '寶箱', chance: '機會', minigame: '小遊戲（即將開放）', boundary: '第一區終點：礦場木門' };
 
-  var TILE_STYLE = {
-    start: { top: '#8be07a', side: '#4f9e44', icon: '🚩' },
-    normal: { top: '#fff4d6', side: '#d8b77c', icon: '' },
-    chest: { top: '#ffd75e', side: '#c99a12', icon: '🎁' },
-    chance: { top: '#cdbbff', side: '#8b74f0', icon: '❓' },
-    minigame: { top: '#a9dcff', side: '#4aa3f0', icon: '🎮' },
-    end: { top: '#ff8a7a', side: '#c4372d', icon: '🏁' }
-  };
-
-  function boardSvg(board) {
-    var tiles = board.tiles;
-    var pts = tiles.map(function (t) { return iso(t.gx, t.gy); });
-    var xs = pts.map(function (p) { return p.x; }), ys = pts.map(function (p) { return p.y; });
-    function P(gx, gy) { return iso(gx, gy); }
-    // 地圖範圍：涵蓋整座島（含側面厚度）與上方的城堡、煙
-    var corners = [P(-0.9, -1.2), P(9.9, -1.2), P(9.9, 9.9), P(-0.9, 9.9)];
-    var cx = corners.map(function (p) { return p.x; }), cy = corners.map(function (p) { return p.y; });
-    var minX = Math.min(Math.min.apply(null, cx), Math.min.apply(null, xs)) - 12, maxX = Math.max(Math.max.apply(null, cx), Math.max.apply(null, xs)) + 12;
-    var minY = Math.min(Math.min.apply(null, cy), Math.min.apply(null, ys)) - 40, maxY = Math.max.apply(null, cy) + 26;
-    var vb = { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
-    // 島嶼地面：等角菱形
-    var c1 = P(-0.9, -1.2), c2 = P(9.9, -1.2), c3 = P(9.9, 9.9), c4 = P(-0.9, 9.9);
-    var g1 = P(-0.5, -0.8), g2 = P(9.5, -0.8), g3 = P(9.5, 9.5), g4 = P(-0.5, 9.5);
-    function poly(a) { return a.map(function (p) { return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' '); }
-    var ground =
-      '<polygon points="' + poly([c1, c2, c3, c4]) + '" fill="#8be6f5" opacity=".6" transform="translate(0 6) scale(1.04)" transform-origin="' + P(4.5, 4.4).x + ' ' + P(4.5, 4.4).y + '"/>' +
-      '<polygon points="' + poly([c4, c3, { x: c3.x, y: c3.y + 14 }, { x: c4.x, y: c4.y + 14 }]) + '" fill="url(#bd-earth)"/>' +
-      '<polygon points="' + poly([c2, c3, { x: c3.x, y: c3.y + 14 }, { x: c2.x, y: c2.y + 14 }]) + '" fill="#6e4a2e"/>' +
-      '<polygon points="' + poly([c1, c2, c3, c4]) + '" fill="url(#bd-sand)" stroke="#fff" stroke-width="2" stroke-dasharray="6 4"/>' +
-      '<polygon points="' + poly([g1, g2, g3, g4]) + '" fill="url(#bd-grass)"/>';
-    // 路徑連線
-    var line = '<polyline points="' + poly(pts) + '" fill="none" stroke="#c99a5a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/>';
-    // 裝飾（依深度與格子一起排序）
-    var D = ART.DECO, items = [];
-    // 裝飾畫在格子下面，路徑永遠清楚可見；裝飾之間依深度排序
-    function deco(gx, gy, svg) { var p = P(gx, gy); items.push({ d: -100 + gx + gy, svg: svg(p.x, p.y) }); }
-    deco(4.2, 6.7, function (x, y) { return D.mine(x, y, 1); });
-    deco(6.2, 6.8, function (x, y) { return D.cart(x, y, 0.9); });
-    deco(5.4, 6.4, function (x, y) { return D.crystals(x, y, 0.9); });
-    deco(3.4, 3.6, function (x, y) { return D.gear(x, y, 0.9); });
-    deco(5.8, 3.4, function (x, y) { return D.factory(x, y, 0.9); });
-    deco(4.6, 1.0, function (x, y) { return D.bridge(x, y, 0.8); });
-    deco(0.1, 9.2, function (x, y) { return D.palm(x, y, 0.8); });
-    deco(9.3, 6.4, function (x, y) { return D.palm(x, y, 0.75); });
-    deco(0.0, 3.4, function (x, y) { return D.palm(x, y, 0.7); });
-    deco(7.6, 7.0, function (x, y) { return D.crystals(x, y, 0.6); });
-    deco(9.0, -0.6, function (x, y) { return D.castle(x, y, 0.62); });
-    tiles.forEach(function (t, i) {
-      var p = pts[i], st = TILE_STYLE[t.type];
-      var top = poly([{ x: p.x, y: p.y - TH }, { x: p.x + TW, y: p.y }, { x: p.x, y: p.y + TH }, { x: p.x - TW, y: p.y }]);
-      var left = poly([{ x: p.x - TW, y: p.y }, { x: p.x, y: p.y + TH }, { x: p.x, y: p.y + TH + DEPTH }, { x: p.x - TW, y: p.y + DEPTH }]);
-      var right = poly([{ x: p.x + TW, y: p.y }, { x: p.x, y: p.y + TH }, { x: p.x, y: p.y + TH + DEPTH }, { x: p.x + TW, y: p.y + DEPTH }]);
-      items.push({ d: t.gx + t.gy, svg: '<g class="tile-g" data-n="' + t.n + '">' +
-        '<polygon points="' + left + '" fill="' + st.side + '"/><polygon points="' + right + '" fill="' + st.side + '" opacity=".8"/>' +
-        '<polygon points="' + top + '" fill="' + st.top + '" stroke="#fff" stroke-width="1.5"/>' +
-        (st.icon ? '<text x="' + p.x + '" y="' + (p.y - 2) + '" font-size="13" text-anchor="middle">' + st.icon + '</text>' : '') +
-        '<text x="' + p.x + '" y="' + (p.y + (st.icon ? 8 : 4)) + '" font-size="' + (st.icon ? 7 : 9) + '" font-weight="900" text-anchor="middle" fill="#7d4519">' + (t.n === 0 ? '起點' : t.n) + '</text></g>' });
-    });
-    items.sort(function (a, b) { return a.d - b.d; });
-    var svg = '<svg class="board-svg" viewBox="' + vb.x + ' ' + vb.y + ' ' + vb.w + ' ' + vb.h + '" aria-label="金島地圖，共 ' + (tiles.length - 1) + ' 格">' +
-      '<defs>' + ART.BOARD_DEFS + '</defs>' +
-      '<rect x="' + vb.x + '" y="' + vb.y + '" width="' + vb.w + '" height="' + vb.h + '" fill="url(#bd-sea)"/>' +
-      '<g stroke="#d4f3ff" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7">' +
-      '<path d="M' + (vb.x + 16) + ' ' + (vb.y + vb.h - 18) + ' q8 -4 16 0 t16 0"/><path d="M' + (vb.x + vb.w - 60) + ' ' + (vb.y + 40) + ' q8 -4 16 0 t16 0"/></g>' +
-      ground + line + items.map(function (it) { return it.svg; }).join('') + '</svg>';
-    return { svg: svg, vb: vb, pts: pts };
+  /** 目前區域（第一區）的參考尺寸與背景 */
+  function regionOf(board, tile) {
+    return board.regions.find(function (r) { return r.id === tile.regionId; }) || board.regions[0];
   }
-
-  /** 棋子在容器裡的百分比座標（站在格子頂面中心） */
-  function pawnStyle(geo, n) {
-    var p = geo.pts[n];
-    return 'left:' + ((p.x - geo.vb.x) / geo.vb.w * 100).toFixed(2) + '%;top:' + ((p.y + 2 - geo.vb.y) / geo.vb.h * 100).toFixed(2) + '%';
-  }
+  /** 標準化座標 → 地圖參考像素（原點：背景左上角） */
+  function worldXY(region, tile) { return { x: tile.x * region.size.width, y: tile.y * region.size.height }; }
 
   function renderMap(child) {
     var player = store.getPlayer(child.id);
     var board = store.getBoard(child.id);
-    var geo = boardSvg(board);
+    var region = regionOf(board, board.tiles[player.pos]);
+    var W = region.size.width, H = region.size.height;
     var bag = player.bag;
     var canPlay = store.canPlayToday(child.id);
     var used = store.getRollsToday(child.id);
@@ -585,9 +520,19 @@
         (disabled ? ' disabled' : '') + '><span class="dice-icon">' + icon + '</span><b>' + label + '</b><small>背包 ×' + count + '</small></button>';
     }
     var reason = !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
-      : atEnd ? '🏁 已經抵達金島終點！下一座島即將開放'
+      : atEnd ? '🚪 已抵達第一區的礦場木門！第二區即將開放'
         : noRolls ? '今天的 3 次骰子用完了，明天再來！（溜冰鞋還可以用）'
           : (!bag.d6 && !bag.d12 && !bag.skates ? '背包是空的，到 🛒 商店用能量星星購買骰子' : '選一個道具出發吧！');
+    var tiles = board.tiles.filter(function (t) { return t.regionId === region.id; }).map(function (t) {
+      var p = worldXY(region, t);
+      if (t.type === 'start') {
+        return '<div class="mstart" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px" aria-hidden="true">起點</div>';
+      }
+      var icon = TILE_ICON[t.type];
+      return '<div class="mtile mt-' + t.type + '" data-n="' + t.n + '" data-tile="' + t.id + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px"' +
+        (TILE_LABEL[t.type] ? ' title="' + TILE_LABEL[t.type] + '"' : '') + '>' + (icon ? '<span class="mtile-icon">' + icon + '</span>' : '') + '</div>';
+    }).join('');
+    var pp = worldXY(region, board.tiles[player.pos]);
     return pageHeader('金島', child, 'map') +
       '<main class="page map-page">' +
       '<section class="hud">' +
@@ -595,8 +540,17 @@
       '<span class="hud-cell"><small>今日骰子</small><b data-testid="rolls">' + used + ' / ' + limit + '</b></span>' +
       '<span class="hud-cell"><small>位置</small><b data-testid="pos">' + player.pos + ' / ' + end + '</b></span>' +
       '<button class="btn small hud-shop" data-action="open-shop"' + (canPlay ? '' : ' disabled') + '>🛒 商店</button></section>' +
-      '<section class="board-wrap">' + geo.svg +
-      '<div class="pawn" id="pawn" data-pos="' + player.pos + '" style="' + pawnStyle(geo, player.pos) + '"><div class="pawn-inner">' + characterArt(child) + '</div></div>' +
+      '<p class="region-name">🏝️ 第一區・' + h(region.name) + '</p>' +
+      '<section class="map-view" id="map-view" aria-label="金島第一區地圖，可拖曳與縮放">' +
+      '<div class="map-world" id="map-world" style="width:' + W + 'px;height:' + H + 'px" data-w="' + W + '" data-h="' + H + '">' +
+      '<picture><source srcset="' + region.background.webp + '" type="image/webp">' +
+      '<img class="map-bg" src="' + region.background.jpg + '" width="' + W + '" height="' + H + '" alt="" draggable="false"></picture>' +
+      tiles +
+      '<div class="pawn" id="pawn" data-pos="' + player.pos + '" data-tile="' + h(player.tileId) + '" style="left:' + pp.x.toFixed(1) + 'px;top:' + pp.y.toFixed(1) + 'px">' +
+      '<div class="pawn-inner">' + characterArt(child) + '</div></div>' +
+      '</div>' +
+      '<div class="map-ctrl"><button type="button" data-map="in" aria-label="放大">＋</button><button type="button" data-map="out" aria-label="縮小">－</button>' +
+      '<button type="button" data-map="follow" aria-label="回到角色位置">🎯</button></div>' +
       '<div class="dice-overlay" id="dice-overlay" hidden><div class="die-face" id="die-face">?</div></div>' +
       '</section>' +
       '<p class="map-hint">' + reason + '</p>' +
@@ -605,24 +559,104 @@
       act('d12', '🎯', '12 面骰', bag.d12, !canPlay || atEnd || noRolls || !bag.d12) +
       act('skates', '🛼', '溜冰鞋 +3', bag.skates, !canPlay || atEnd || !bag.skates) +
       '</section>' +
-      '<div class="legend"><span>🎁 寶箱</span><span>❓ 機會</span><span>🎮 小遊戲（即將開放）</span><span>🏁 終點</span></div>' +
+      '<div class="legend"><span>🎁 寶箱</span><span>❓ 機會</span><span>🎮 小遊戲（即將開放）</span><span>🚪 第一區終點</span></div>' +
       '<a class="btn block" href="#adventure-' + h(child.id) + '">‹ 回冒險大廳</a>' +
       '</main>';
+  }
+
+  // ---------- 鏡頭：拖曳、雙指縮放、跟隨角色 ----------
+  // ui.cam：{ childId, z（縮放）, cx, cy（畫面中心對應的地圖座標）, manual（使用者拖曳後暫停跟隨） }
+  ui.cam = null;
+  function camBounds(view, W, H) {
+    var vw = view.clientWidth, vh = view.clientHeight;
+    var fit = Math.min(vw / W, vh / H);               // 整張地圖完整入鏡
+    var def = Math.max(fit, Math.min(0.9, vw / W * 1.9)); // 預設：格子約 40px 寬
+    return { vw: vw, vh: vh, min: fit, max: 1.6, def: def };
+  }
+  function applyCam(animate) {
+    var view = document.getElementById('map-view'), world = document.getElementById('map-world');
+    if (!view || !world || !ui.cam) return;
+    var W = +world.dataset.w, H = +world.dataset.h, b = camBounds(view, W, H), c = ui.cam;
+    c.z = Math.max(b.min, Math.min(b.max, c.z));
+    var sw = W * c.z, sh = H * c.z;
+    var tx = b.vw / 2 - c.cx * c.z, ty = b.vh / 2 - c.cy * c.z;
+    // 地圖比視窗大時不露出邊外；比視窗小時置中
+    tx = sw <= b.vw ? (b.vw - sw) / 2 : Math.min(0, Math.max(b.vw - sw, tx));
+    ty = sh <= b.vh ? (b.vh - sh) / 2 : Math.min(0, Math.max(b.vh - sh, ty));
+    c.cx = (b.vw / 2 - tx) / c.z; c.cy = (b.vh / 2 - ty) / c.z;
+    world.classList.toggle('anim', !!animate);
+    world.style.transform = 'translate(' + tx.toFixed(1) + 'px,' + ty.toFixed(1) + 'px) scale(' + c.z.toFixed(4) + ')';
+  }
+  function followPawn(animate) {
+    var pawn = document.getElementById('pawn');
+    if (!pawn || !ui.cam) return;
+    ui.cam.cx = parseFloat(pawn.style.left); ui.cam.cy = parseFloat(pawn.style.top) - 30;
+    applyCam(animate);
+  }
+  function setupMap(child) {
+    var view = document.getElementById('map-view'), world = document.getElementById('map-world');
+    if (!view || !world) return;
+    var b = camBounds(view, +world.dataset.w, +world.dataset.h);
+    if (!ui.cam || ui.cam.childId !== child.id) ui.cam = { childId: child.id, z: b.def, cx: 0, cy: 0, manual: false };
+    if (ui.cam.manual) applyCam(false); else followPawn(false);
+    var pts = {}, last = null;
+    function zoomAt(f, px, py) {
+      var c = ui.cam, rect = view.getBoundingClientRect();
+      var ox = px - rect.left - rect.width / 2, oy = py - rect.top - rect.height / 2;
+      var wx = c.cx + ox / c.z, wy = c.cy + oy / c.z;      // 手指下的地圖點保持不動
+      c.z = Math.max(b.min, Math.min(b.max, c.z * f));
+      c.cx = wx - ox / c.z; c.cy = wy - oy / c.z;
+      c.manual = true; applyCam(false);
+    }
+    view.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('.map-ctrl')) return;
+      view.setPointerCapture(e.pointerId);
+      pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      last = null;
+    });
+    view.addEventListener('pointermove', function (e) {
+      if (!pts[e.pointerId]) return;
+      var prev = pts[e.pointerId]; pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var ids = Object.keys(pts);
+      if (ids.length === 1) {
+        ui.cam.cx -= (e.clientX - prev.x) / ui.cam.z; ui.cam.cy -= (e.clientY - prev.y) / ui.cam.z;
+        ui.cam.manual = true; applyCam(false);
+      } else if (ids.length >= 2) {
+        var p1 = pts[ids[0]], p2 = pts[ids[1]];
+        var d = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+        if (last) zoomAt(d / last, (p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
+        last = d;
+      }
+    });
+    function up(e) { delete pts[e.pointerId]; last = null; }
+    view.addEventListener('pointerup', up); view.addEventListener('pointercancel', up);
+    view.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY); }, { passive: false });
+    view.querySelectorAll('[data-map]').forEach(function (btn) {
+      btn.onclick = function () {
+        var k = btn.getAttribute('data-map');
+        if (k === 'follow') { ui.cam.manual = false; followPawn(true); return; }
+        var r = view.getBoundingClientRect();
+        zoomAt(k === 'in' ? 1.25 : 0.8, r.left + r.width / 2, r.top + r.height / 2);
+      };
+    });
   }
 
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /** 棋子一格一格跳過去 */
+  /** 角色依序一格一格跳過去，鏡頭跟隨 */
   async function hopAlong(child, path) {
     var pawn = document.getElementById('pawn');
     if (!pawn) return;
-    var geo = boardSvg(store.getBoard(child.id));
+    var board = store.getBoard(child.id);
+    if (ui.cam) ui.cam.manual = false;
     for (var i = 0; i < path.length; i++) {
-      pawn.setAttribute('style', pawnStyle(geo, path[i]));
-      pawn.dataset.pos = path[i];
+      var t = board.tiles[path[i]], p = worldXY(regionOf(board, t), t);
+      pawn.style.left = p.x.toFixed(1) + 'px'; pawn.style.top = p.y.toFixed(1) + 'px';
+      pawn.dataset.pos = path[i]; pawn.dataset.tile = t.id;
       pawn.classList.remove('hop'); void pawn.offsetWidth; pawn.classList.add('hop');
-      await sleep(reduceMotion ? 60 : 330);
+      followPawn(true);
+      await sleep(reduceMotion ? 60 : 340);
     }
     pawn.classList.remove('hop');
   }

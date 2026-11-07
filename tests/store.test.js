@@ -762,14 +762,14 @@ function p3Store(randoms, dateStr = '2026-11-06T10:00:00') {
 /** 讓 rint(1,6) 回傳 n 的 random 值 */
 const face = (n, sides = 6) => (n - 1 + 0.5) / sides;
 
-test('金島資料：30 格、起點與終點、可擴充', () => {
+test('金島第一區資料：30 格、起點與區域邊界、穩定 ID', () => {
   const b = G.BOARDS.gold;
   assert.equal(b.tiles.length, 31, '0 = 起點，1～30 共 30 格');
   assert.equal(b.tiles[0].type, 'start');
-  assert.equal(b.tiles[30].type, 'end');
+  assert.equal(b.tiles[30].type, 'boundary', '第 30 格是第一區的暫時邊界，不是全島終點');
   assert.ok(['chest', 'chance', 'minigame', 'normal'].every(t => b.tiles.some(x => x.type === t)));
-  const keys = new Set(b.tiles.map(t => t.gx + ',' + t.gy));
-  assert.equal(keys.size, 31, '格子不重疊');
+  const keys = new Set(b.tiles.map(t => t.id));
+  assert.equal(keys.size, 31, '格子 ID 唯一');
 });
 
 test('Phase 3 案例 A：購買 6 面骰扣 5 星、進背包', () => {
@@ -832,15 +832,15 @@ test('Phase 3 案例 D：剩餘骰子隔天仍存在；隔天擲骰次數重新�
   assert.doesNotThrow(() => s2.rollDice(a.id, 'd6'));
 });
 
-test('終點：停在第 30 格，多的步數不走；在終點不能再擲、不扣骰子', () => {
+test('區域邊界：停在第 30 格，多的步數捨棄；在木門前不能再擲、不扣骰子', () => {
   const { store, a } = p3Store();
-  store.getPlayer(a.id).pos = 27;
+  store.setPlayerTile(a.id, 27);
   store.getPlayer(a.id).bag.d12 = 2;
   store.random = () => 0.99; // 擲 12
   const r = store.rollDice(a.id, 'd12');
   assert.deepEqual(r.path, [28, 29, 30]);
-  assert.equal(r.event.type, 'end');
-  assert.throws(() => store.rollDice(a.id, 'd12'), /終點/);
+  assert.equal(r.event.type, 'boundary');
+  assert.throws(() => store.rollDice(a.id, 'd12'), /木門/);
   assert.equal(store.getPlayer(a.id).bag.d12, 1);
   assert.equal(store.getRollsToday(a.id), 1);
 });
@@ -861,7 +861,7 @@ test('寶箱格：星星或道具；機會格：前進 2 格、得 2 星、得 6
   assert.equal(r.event.type, 'chance');
   assert.equal(r.event.stars, 2);
   // 機會「前進 2 格」：放在第 3 格前一格
-  store.getPlayer(a.id).pos = 0;
+  store.setPlayerTile(a.id, 0);
   store.getPlayer(a.id).bag.skates = 1;
   push(0.0, 0.0);           // 溜冰鞋到 3（機會），選 0 → 前進 2 到 5（寶箱，roll 0 → 星 1）
   r = store.useSkates(a.id);
@@ -908,4 +908,68 @@ test('頭像改為 8 種冒險夥伴：舊版表情符號自動轉換、與冒�
   store.updateChild(y.id, { avatar: 'drop' });
   assert.equal(store.getPlayer(y.id).character, 'drop', '換頭像 → 冒險夥伴同步');
   assert.throws(() => store.updateChild(y.id, { avatar: '🐶' }), /冒險夥伴/);
+});
+
+// ---------- 金島第一區：JSON 座標、穩定格子 ID、舊存檔遷移 ----------
+const REGION01 = require('../js/board-gold.js');
+const REGION_JSON = JSON.parse(fsT.readFileSync(pathT.join(__dirname, '../data/gold_region01_tiles.json'), 'utf8'));
+
+test('金島第一區：地圖資料與 JSON 完全一致（30 格、ID 唯一、座標 0～1、事件依規格）', () => {
+  assert.equal(REGION_JSON.referenceSize.width, 1080);
+  assert.equal(REGION_JSON.referenceSize.height, 1350);
+  assert.deepEqual(REGION01.tiles, REGION_JSON.tiles.map(t => ({ id: t.id, order: t.order, x: t.x, y: t.y, eventType: t.eventType })), 'board-gold.js 由 JSON 產生');
+  const tiles = G.BOARDS.gold.tiles;
+  for (let n = 1; n <= 30; n++) {
+    assert.equal(tiles[n].id, REGION_JSON.tiles[n - 1].id);
+    assert.equal(tiles[n].x, REGION_JSON.tiles[n - 1].x);
+    assert.equal(tiles[n].y, REGION_JSON.tiles[n - 1].y);
+  }
+  assert.deepEqual([5, 12, 19, 26].map(n => tiles[n].type), ['chest', 'chest', 'chest', 'chest']);
+  assert.deepEqual([3, 9, 15, 22, 28].map(n => tiles[n].type), ['chance', 'chance', 'chance', 'chance', 'chance']);
+  assert.deepEqual([7, 17, 24].map(n => tiles[n].type), ['minigame', 'minigame', 'minigame']);
+  assert.equal(tiles[30].type, 'boundary');
+  assert.deepEqual(G.REGIONS.map(r => [r.id, r.from, r.to, r.available]),
+    [['gold-01', 1, 30, true], ['gold-02', 31, 55, false], ['gold-03', 56, 80, false], ['gold-04', 81, 100, false]], '只預留其他三區');
+});
+
+test('金島第一區：位置存成穩定格子 ID；舊存檔整數格號自動遷移；重新開啟恢復', () => {
+  const storage = memoryStorage();
+  const now = () => new Date('2026-11-07T10:00:00');
+  // 舊存檔：只有整數 pos
+  storage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: 1, children: [{ id: 'k', name: 'K', avatar: 'flame' }],
+    adventure: { players: { k: { pos: 7, bag: { d6: 1 } } } } }));
+  const s1 = new Store({ storage, seed: false, now });
+  assert.equal(s1.getPlayer('k').tileId, 'gold-01-007', '第 7 格 → gold-01-007');
+  assert.equal(s1.getPlayer('k').bag.d6, 1, '背包保留');
+  s1.setPlayerTile('k', 11); s1.save();
+  const raw = JSON.parse(storage.getItem(STORAGE_KEY));
+  assert.equal(raw.adventure.players.k.tileId, 'gold-01-011');
+  const s2 = new Store({ storage, seed: false, now });
+  assert.equal(s2.getPlayer('k').pos, 11, '重新開啟依格子 ID 恢復');
+  // 格子 ID 優先於整數（未來即使順序調整也以 ID 為準）
+  const raw2 = JSON.parse(storage.getItem(STORAGE_KEY));
+  raw2.adventure.players.k.pos = 3;
+  storage.setItem(STORAGE_KEY, JSON.stringify(raw2));
+  assert.equal(new Store({ storage, seed: false, now }).getPlayer('k').pos, 11);
+  // 新玩家在起點（第 1 格前）
+  const s3 = makeStore().store; const c = s3.addChild({ name: 'C' });
+  assert.equal(s3.getPlayer(c.id).tileId, 'gold-01-start');
+  assert.equal(s3.getPlayer(c.id).pos, 0);
+});
+
+test('移動途中不重複觸發事件、不重複扣道具：一次擲骰只結算一次', () => {
+  const { store, a } = p3Store();
+  store.getPlayer(a.id).bag.d6 = 1;
+  const seq = [face(5), 0.1, 0.99]; // 擲 5 到寶箱格 → 給星 → 3 星
+  store.random = () => (seq.length ? seq.shift() : 0);
+  const before = store.getStarBalance(a.id);
+  const r = store.rollDice(a.id, 'd6');
+  assert.equal(r.event.type, 'chest');
+  const after = store.getStarBalance(a.id);
+  // 重新載入（模擬動畫中斷、重新整理）不會再次觸發
+  const again = new Store({ storage: store.storage, seed: false, now: store.now });
+  assert.equal(again.getStarBalance(a.id), after);
+  assert.equal(again.getPlayer(a.id).bag.d6, 0);
+  assert.equal(again.getPlayer(a.id).tileId, 'gold-01-005');
+  assert.ok(after > before);
 });
