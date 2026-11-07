@@ -1139,6 +1139,8 @@ async function main() {
     assert.match(await q.locator('.bottom-nav, nav').last().innerText(), /小孩/);
     assert.equal(await q.locator('[data-testid=achievements]').getAttribute('open'), null, '小孩頁面：全部成就預設收起');
     assert.match(await q.locator('[data-testid=achievements] summary').innerText(), /全部成就[\s\S]*已解鎖 5 \/ 23/);   // 冒險開始、獲得 1000 分、抵達水晶礦谷、抵達齒輪工坊、抵達金冠城堡
+    assert.match(await q.locator('[data-testid=achievements] summary').innerText(), /最近：/, '摺疊時顯示最近得到的一個成就');
+    assert.ok(await q.evaluate(() => { const d = document.querySelector('[data-testid=achievements]').getBoundingClientRect(), n = document.querySelector('[data-testid=achievements]').nextElementSibling.getBoundingClientRect(); return n.top - d.bottom >= 12; }), '和最近紀錄之間留間距，不疊在一起');
     assert.ok(await q.evaluate(() => { const d = document.querySelector('[data-testid=achievements]'), r = [...document.querySelectorAll('.panel h2')].find((x) => /最近紀錄/.test(x.textContent)); return d.compareDocumentPosition(r) & Node.DOCUMENT_POSITION_FOLLOWING; }), '在最近紀錄上方');
     // 冒險大廳不再顯示成就
     await q.goto(url + '#adventure-' + id);
@@ -1155,8 +1157,11 @@ async function main() {
     await q.waitForFunction(() => location.hash.startsWith('#child-'));
     await q.waitForSelector('[data-testid=achievements][open]');
     await q.locator('[data-testid=achievements]').screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'achievements.png') : path.join(require('os').tmpdir(), 'ach.png') });
-    await q.click('[data-action=ach-info][data-id=goldClear1]');
-    assert.match(await q.locator('#confirm').innerText(), /金島通關[\s\S]*還沒達成/);
+    assert.equal(await q.locator('[data-testid=achievements] .ach').count(), 5, '展開只列已得到的 5 個成就');
+    assert.equal(await q.locator('[data-testid=achievements] .ach:not(.done)').count(), 0, '不顯示未達成的成就');
+    assert.equal(await q.locator('[data-testid=achievements] .ach-cat h3').count(), 2, '沒有成就的類別（收集）不顯示');
+    await q.click('[data-action=ach-info][data-id=reachR2]');
+    assert.match(await q.locator('#confirm').innerText(), /抵達水晶礦谷[\s\S]*達成/);
     await q.click('#confirm [data-yes]');
     // 從第 97 格擲 6：走到第 100 格（全島終點，多的步數捨棄）
     await q.goto(url + '#map-' + id);

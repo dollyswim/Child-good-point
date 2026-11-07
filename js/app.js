@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-47';
+  var APP_VERSION = '2026.11.07-48';
   var store;
   try {
     store = new CGP.Store();
@@ -959,7 +959,9 @@
     var list = store.getAchievements(child.id);
     return '<div class="ach-panel">' +
       ACH_CATS.map(function (c) {
-        return '<div class="ach-cat"><h3>' + c[1] + '</h3><div class="ach-grid">' + list.filter(function (a) { return a.cat === c[0]; }).map(function (a) {
+        var mine = list.filter(function (a) { return a.cat === c[0] && a.done; });   // 只列已得到的成就
+        if (!mine.length) return '';
+        return '<div class="ach-cat"><h3>' + c[1] + '</h3><div class="ach-grid">' + mine.map(function (a) {
           return '<button type="button" class="ach ach-' + a.cat + (a.done ? ' done' : '') + '" data-action="ach-info" data-id="' + a.id + '" aria-label="' + h(a.name) + (a.done ? '（已解鎖）' : '（未解鎖）') + '">' +
             '<span class="ach-badge">' + (a.done ? a.icon : '🔒') + '</span><small>' + h(a.name) + '</small></button>';
         }).join('') + '</div></div>';
@@ -979,12 +981,17 @@
     }).join('');
     return rows ? '<section class="ach-home" data-testid="home-achievements"><h2>🏆 最近得到的成就</h2>' + rows + '</section>' : '';
   }
-  /** 小孩頁面：全部成就（點選才展開；從首頁成就欄進來時自動展開） */
+  /** 小孩頁面：全部成就（點選才展開；從首頁成就欄進來時自動展開）。摺疊時顯示最近得到的一個；展開只列已得到的成就 */
   function achievementDetails(child) {
-    var list = store.getAchievements(child.id), done = list.filter(function (a) { return a.done; }).length;
+    var list = store.getAchievements(child.id), done = list.filter(function (a) { return a.done; });
     var open = ui.achOpen === child.id;
+    var latest = done.slice().sort(function (x, y) { return y.ts - x.ts; })[0];
+    var peek = latest
+      ? '<span class="ach-latest">最近：<span class="ach-mini ach-' + latest.cat + '"><i aria-hidden="true">' + latest.icon + '</i><small>' + h(latest.name) + '</small></span></span>'
+      : '<span class="ach-latest muted">還沒有成就，繼續加油！</span>';
     return '<details class="panel ach-details" id="ach-details" data-testid="achievements"' + (open ? ' open' : '') + '>' +
-      '<summary><h2>🏆 全部成就 <small>已解鎖 ' + done + ' / ' + list.length + '</small></h2></summary>' + achievementPanel(child) + '</details>';
+      '<summary><span class="ach-sum"><h2>🏆 全部成就 <small>已解鎖 ' + done.length + ' / ' + list.length + '</small></h2>' + peek + '</span></summary>' +
+      (done.length ? achievementPanel(child) : '') + '</details>';
   }
   /** 新解鎖的成就：提示一次 */
   function announceAchievements(childId) {

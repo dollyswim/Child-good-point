@@ -1530,3 +1530,9 @@ body.mg-open { overflow: hidden; }
 .ach-details summary::after { content: "▾"; color: var(--muted); font-size: 1.1rem; transition: transform .2s; }
 .ach-details[open] summary::after { transform: rotate(180deg); }
 .ach-details[open] summary { margin-bottom: 8px; }
+.ach-details { margin-bottom: 18px; }   /* details 不是 section，補上和其他區塊相同的間距 */
+.ach-sum { display: grid; gap: 6px; min-width: 0; }
+.ach-latest { display: flex; align-items: center; gap: 6px; font-size: .8rem; font-weight: 800; color: var(--muted); }
+.ach-latest .ach-mini { width: auto; grid-auto-flow: column; align-items: center; gap: 4px; padding: 2px 8px; }
+.ach-details[open] .ach-latest { display: none; }   /* 展開後下方已列出全部，不重複顯示 */
+.ach-latest .ach-mini small { font-size: .72rem; -webkit-line-clamp: 1; }
