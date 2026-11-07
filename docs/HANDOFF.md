@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.07-8`｜Service Worker 快取 `cgp-shell-v18`
+> 最後更新：2026-11-07｜App 版本 `2026.11.07-9`｜Service Worker 快取 `cgp-shell-v19`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---
@@ -66,7 +66,7 @@
 | ✅ | 6 面骰、12 面骰、溜冰鞋圖示 | 已接入 `images/items/`（白底圖＋白色圖示框，contain）；12 面骰為暫用風格稿，幾何面形之後可換正式稿（同檔名覆蓋並升 `sw.js` 快取版本即可） |
 | 2 | 格子事件圖示：寶箱、機會、小遊戲、木門 | 表情符號 🎁❓🎮🚪 |
 | 3 | 能量星星圖示 | ⭐ |
-| ✅ | 五島入口插圖（冒險大廳地圖關卡卡） | 金島 `images/gold-island.*`；木／水／火／土島 `images/islands/<wood|water|fire|earth>.*`，依 `players[id].island` 自動切換（`js/app.js` 的 `ISLANDS`）。木、火、土島原圖右下角有淡浮水印，日後可換無浮水印版（同檔名覆蓋並升 `sw.js` 快取版本） |
+| ✅ | 五島入口插圖（冒險大廳地圖關卡卡） | 金島 `images/gold-island.*`；木／水／火／土島 `images/islands/<wood|water|fire|earth>.*`，依 `players[id].island` 自動切換（`js/app.js` 的 `ISLANDS`）。木、火、土島原圖右下角的淡浮水印已修除（反算半透明白框＋周圍紋理補圖）；換圖時同檔名覆蓋並升 `sw.js` 快取版本 |
 | — | 「抓住星星」小遊戲素材 | Phase 4 需要 |
 
 家長提供的圖通常需要：去背（若非透明）、裁切、統一尺寸、壓縮成 WebP、加入 `sw.js` 快取清單。
