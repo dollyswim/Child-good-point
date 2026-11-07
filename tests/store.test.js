@@ -838,17 +838,29 @@ test('Phase 3 案例 D：剩餘骰子隔天仍存在；隔天擲骰次數重新�
   assert.doesNotThrow(() => s2.rollDice(a.id, 'd6'));
 });
 
-test('區域邊界：停在第 30 格，多的步數捨棄；在木門前不能再擲、不扣骰子', () => {
-  const { store, a } = p3Store();
+test('區域邊界：停在第 30 格，多的步數捨棄；下一次移動從起點開始新的一輪（寶箱格重新放滿）', () => {
+  const { store, a, setDate } = p3Store();
+  const p = store.getPlayer(a.id);
   store.setPlayerTile(a.id, 27);
-  store.getPlayer(a.id).bag.d12 = 2;
+  p.bag.d12 = 3; p.looted = ['gold-01-005'];
   store.random = () => 0.99; // 擲 12
   const r = store.rollDice(a.id, 'd12');
   assert.deepEqual(r.path, [28, 29, 30]);
   assert.equal(r.event.type, 'boundary');
-  assert.throws(() => store.rollDice(a.id, 'd12'), /木門/);
-  assert.equal(store.getPlayer(a.id).bag.d12, 1);
-  assert.equal(store.getRollsToday(a.id), 1);
+  assert.match(r.event.text, /新的一輪/);
+  assert.equal(p.pos, 30);
+  // 檢查不通過時不會先回到起點
+  const d6 = p.bag.d6; p.bag.d6 = 0;
+  assert.throws(() => store.rollDice(a.id, 'd6'), /沒有/);
+  assert.equal(p.pos, 30, '失敗時位置不變');
+  p.bag.d6 = d6;
+  store.random = () => 2.5 / 12;           // 擲 3
+  const r2 = store.rollDice(a.id, 'd12');
+  assert.ok(r2.lap);
+  assert.deepEqual([r2.from, r2.path, p.pos, p.laps], [0, [1, 2, 3], 3, 1]);
+  assert.deepEqual(p.looted, [], '寶箱格重新放滿');
+  assert.equal(p.bag.d12, 1);
+  assert.equal(store.getRollsToday(a.id), 2);
 });
 
 test('寶箱格：星星或道具；機會格：前進 2 格、得 2 星、得 6 面骰', () => {
@@ -1485,7 +1497,11 @@ test('飛行翼：前進 20 格、到第 30 格就停、落點觸發事件、不
   store.useWings(a.id);
   assert.equal(store.getPlayer(a.id).pos, 30, '第 30 格就停');
   assert.equal(store.getRollsToday(a.id), 0);
-  assert.throws(() => store.useWings(a.id), /木門/);
+  bag.wings = 1;
+  store.random = () => 0.5;
+  const w = store.useWings(a.id);
+  assert.ok(w.lap, '在木門用飛行翼：從起點開始新的一輪');
+  assert.equal(store.getPlayer(a.id).pos, 20);
 });
 
 test('任意門：傳送到本區指定格子、落點觸發事件；不能到終點、目前位置、起點', () => {

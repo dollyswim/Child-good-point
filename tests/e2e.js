@@ -1393,11 +1393,11 @@ async function main() {
         await q.evaluate(() => { window.__cgpStore.random = () => 0.99; }); // 重新整理後才固定亂數（擲出 12）
         await q.click('[data-action=roll][data-kind=d12]');
         await q.waitForSelector('#confirm[open]', { timeout: 8000 });
-        assert.match(await q.locator('#confirm').innerText(), /木門[\s\S]*第二區即將開放/);
+        assert.match(await q.locator('#confirm').innerText(), /木門[\s\S]*第二區即將開放[\s\S]*新的一輪/);
         assert.doesNotMatch(await q.locator('#confirm').innerText(), /通關/, '不是全島通關');
         await q.click('#confirm [data-yes]');
         assert.equal(await q.locator('#pawn').getAttribute('data-tile'), 'gold-01-030');
-        assert.ok(await q.locator('.dice-btn.d6').isDisabled(), '在第 30 格不能再擲');
+        assert.match(await q.locator('.map-hint').innerText(), /從起點開始新的一輪/);
         assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.d12, id), 1, '只扣一顆骰子');
         await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'region-end.png') : path.join(require('os').tmpdir(), 'r2.png') });
       }

@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.07-32`｜Service Worker 快取 `cgp-shell-v42`
+> 最後更新：2026-11-07｜App 版本 `2026.11.07-33`｜Service Worker 快取 `cgp-shell-v43`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---
@@ -139,7 +139,7 @@
 - 能量星星餘額 = `adventure.settlements` 總和 + `adventure.ledger`（購買為負）。**與生活點數完全分開**；生活點數金幣圖示印「點」，⭐ 只代表能量星星。
 - `child.avatar` 存冒險夥伴代號（8 種之一），同時是頭像與地圖棋子。圓形頭像依各角色臉部位置置中並統一臉部比例（`css/style.css` 末段 `.avatar img[data-char=…]`，以眼距為準、基準＝圓耳獸）。
 - 冒險位置以 `players[id].tileId`（例如 `gold-01-007`，起點 `gold-01-start`）為準；`pos` 由 tileId 推導。舊存檔只有整數時自動對應。
-- 金島第 30 格 `type: 'boundary'`：抵達即停、捨棄餘步、不發獎勵（家長尚未另定規則前的預設）。
+- 金島第 30 格 `type: 'boundary'`：抵達即停、捨棄餘步。**第二區開放前的暫時規則**：在第 30 格時下一次移動從起點開始新的一輪（`_newLap()`，`players[id].laps` 計輪數），一般寶箱格重新放滿；第二區開放後改為往前走。
 
 ### 預覽連結
 另外有 claude.ai Artifact 預覽（單檔版），由腳本把 CSS／JS 內嵌成一個 HTML，並以 `files` 參數附上 `images/`。CSS 內的 `url(../images/...)` 需改成 `url(images/...)`。

@@ -553,7 +553,7 @@
         } else ev.text = '今天已經玩過小遊戲了（每天 1 次），明天再來挑戰！';
       }
     } else if (tile.type === 'boundary') {
-      ev.title = '🚪 抵達礦場木門！'; ev.text = '你走完金島第一區「黃金沙灘與初級礦場」了！門後的第二區即將開放。';
+      ev.title = '🚪 抵達礦場木門！'; ev.text = '你走完金島第一區「黃金沙灘與初級礦場」了！門後的第二區即將開放。\n下次出發會從起點開始新的一輪，寶箱也會重新放滿！';
     } else if (tile.type === 'end') {
       ev.title = '🏁 抵達金島終點！'; ev.text = '你走完金島測試版 30 格了！下一座島即將開放。';
     }
@@ -686,7 +686,7 @@
     var p = this.getPlayer(childId);
     if (p.pendingRoll) throw new Error('先完成上一次擲骰');
     var end = this.getBoard(childId).tiles.length - 1;
-    if (p.pos >= end) throw new Error('已經抵達第一區的木門，第二區即將開放');
+    var needLap = p.pos >= end;   // 第二區開放前：在木門時這次從起點開始下一輪（檢查都通過才執行）
     var kind = 'base';
     if (die === 'magic') {
       if (!(p.bag.magicDice > 0)) throw new Error('背包裡沒有神奇骰子');
@@ -700,13 +700,14 @@
       if (p.bag[die] <= 0) throw new Error('背包裡沒有' + (die === 'd6' ? ' 6 面骰' : ' 12 面骰'));
     }
     this._markDayStart(childId);
+    if (needLap) this._newLap(childId);
     var sides = die === 'd6' ? 6 : 12;
     var value = rint(this.random, 1, sides);
     if (kind === 'bonus') this._useBonus(childId, 'rolls');
     if (die === 'magic') { p.bag.magicDice--; this._logItem(childId, 'use', 'magicDice', 1, '背包', '擲出 ' + value); } else p.bag[die]--;
     var roll = { id: uid(), childId: childId, date: this.today(), die: die === 'magic' ? 'd12' : die, kind: kind, value: value, from: p.pos, to: p.pos, ts: this.now().getTime() };
     this.data.adventure.rolls.push(roll);
-    p.pendingRoll = { rollId: roll.id, die: die, kind: kind, sides: sides, value: value, from: p.pos, rerolled: false };
+    p.pendingRoll = { rollId: roll.id, die: die, kind: kind, sides: sides, value: value, from: p.pos, rerolled: false, lap: needLap };
     this.save();
     return Object.assign({}, p.pendingRoll);
   };
@@ -737,7 +738,7 @@
     if (roll) roll.to = p.pos;
     p.pendingRoll = null;
     this.save();
-    return { die: pr.die === 'magic' ? 'magic' : pr.die, kind: pr.kind, value: pr.value, from: pr.from, path: path, event: event, rollsLeft: this.getRollsLeft(childId), found: this._found };
+    return { die: pr.die === 'magic' ? 'magic' : pr.die, kind: pr.kind, value: pr.value, from: pr.from, path: path, event: event, rollsLeft: this.getRollsLeft(childId), found: this._found, lap: !!pr.lap };
   };
   /**
    * 擲骰並直接前進（沒有重骰券時使用）：每天基本 3 次，用完後可用「再來 3 次」的額外次數
@@ -748,6 +749,15 @@
     return this.commitRoll(childId);
   };
 
+  /**
+   * 暫時規則（第二區開放前）：在第 30 格木門時，下一次移動從起點開始新的一輪。
+   * 一般寶箱格重新放滿（磁鐵吸過的也恢復），神秘寶箱與背包不變。
+   */
+  Store.prototype._newLap = function (childId) {
+    var p = this.getPlayer(childId), tiles = this.getBoard(childId).tiles;
+    p.pos = 0; p.tileId = tiles[0].id; p.looted = [];
+    p.laps = (p.laps || 0) + 1;
+  };
   /** 移動類道具：溜冰鞋 3 格、飛行翼 20 格（不算擲骰次數；到第 30 格就停） */
   var MOVE_ITEMS = { skates: { steps: 3, name: '溜冰鞋' }, wings: { steps: 20, name: '飛行翼' } };
   Store.prototype._useMoveItem = function (childId, item) {
@@ -755,9 +765,10 @@
     var p = this.getPlayer(childId);
     if (p.pendingRoll) throw new Error('先完成上一次擲骰');
     var end = this.getBoard(childId).tiles.length - 1;
-    if (p.pos >= end) throw new Error('已經抵達第一區的木門，第二區即將開放');
+    var needLap = p.pos >= end;
     if (!(p.bag[item] > 0)) throw new Error('背包裡沒有' + MOVE_ITEMS[item].name);
     this._markDayStart(childId);
+    if (needLap) this._newLap(childId);
     var from = p.pos;
     p.bag[item]--;
     this._found = 0;
@@ -765,7 +776,7 @@
     if (item !== 'skates') this._logItem(childId, 'use', item, 1, '背包', '第 ' + from + ' → ' + p.pos + ' 格');
     var event = this._resolveTile(childId, 0);
     this.save();
-    return { die: item, value: MOVE_ITEMS[item].steps, from: from, path: path, event: event, found: this._found };
+    return { die: item, value: MOVE_ITEMS[item].steps, from: from, path: path, event: event, found: this._found, lap: needLap };
   };
   /** 溜冰鞋：前進 3 格，不算擲骰次數 */
   Store.prototype.useSkates = function (childId) { return this._useMoveItem(childId, 'skates'); };
