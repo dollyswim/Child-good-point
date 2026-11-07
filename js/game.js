@@ -69,13 +69,17 @@
    */
   var REGION01 = (typeof module !== 'undefined' && module.exports) ? require('./board-gold.js') : root.CGP_GOLD_REGION01;
   var REGION02 = (typeof module !== 'undefined' && module.exports) ? require('./board-gold-02.js') : root.CGP_GOLD_REGION02;
+  var REGION03 = (typeof module !== 'undefined' && module.exports) ? require('./board-gold-03.js') : root.CGP_GOLD_REGION03;
   /**
    * 金島長地圖（總覽座標 1080×5400，左上為原點，由下往上走）：四張 1080×1350 背景由上到下為
    * 第四區（y 0）、第三區（1350）、第二區（2700）、第一區（4050）。格子的 gx、gy 為總覽座標；x、y 為所在背景圖內 0～1。
    */
   var WORLD = { width: 1080, height: 5400 };
-  /** 第二區開放開關：水晶礦谷背景與最終座標到貨後改為 true */
-  var REGION02_OPEN = true;   // 2026-11-07 水晶礦谷背景（Codex 核定版 v3）上線
+  /**
+   * 已開放到第幾區（1～4）。背景與最終座標到貨並核對後往上加：
+   * 2026-11-07 第二區水晶礦谷（Codex 核定版 v3）；2026-11-07 第三區齒輪工坊（檢視版 v1）
+   */
+  var OPEN_REGIONS = 3;
   // 事件依既有遊戲規格（JSON 的 eventType 僅為占位；第 30 格為區域邊界）
   var TYPES = { 3: 'chance', 5: 'chest', 7: 'minigame', 9: 'chance', 11: 'fate', 12: 'chest', 14: 'fate', 15: 'chance', 17: 'minigame',
     19: 'chest', 21: 'fate', 22: 'chance', 24: 'minigame', 26: 'chest', 27: 'fate', 28: 'chance' };
@@ -101,16 +105,23 @@
     return list[list.length - 1];
   }
   var REGIONS = [
-    { id: 'gold-01', name: '黃金沙灘與初級礦場', from: 1, to: 30, available: true, stripY: 4050,
+    { id: 'gold-01', name: '黃金沙灘與初級礦場', from: 1, to: 30, stripY: 4050,
       background: { webp: 'images/gold/region01.webp', jpg: 'images/gold/region01.jpg' }, size: REGION01.referenceSize },
-    { id: 'gold-02', name: '水晶礦谷', from: 31, to: 55, available: REGION02_OPEN, stripY: 2700,
+    { id: 'gold-02', name: '水晶礦谷', from: 31, to: 55, stripY: 2700, data: REGION02,
       background: { webp: 'images/gold/region02.webp', jpg: 'images/gold/region02.jpg' }, size: { width: 1080, height: 1350 } },
-    { id: 'gold-03', name: '齒輪工坊', from: 56, to: 80, available: false, stripY: 1350 },
-    { id: 'gold-04', name: '金冠城堡', from: 81, to: 100, available: false, stripY: 0 }
+    { id: 'gold-03', name: '齒輪工坊', from: 56, to: 80, stripY: 1350, data: REGION03,
+      background: { webp: 'images/gold/region03.webp', jpg: 'images/gold/region03.jpg' }, size: { width: 1080, height: 1350 } },
+    { id: 'gold-04', name: '金冠城堡', from: 81, to: 100, stripY: 0 }
   ];
-  /** @param {boolean} [open2] 是否開放第二區（預設依 REGION02_OPEN；測試可傳 true 模擬開放後） */
-  function buildGold(open2) {
-    if (open2 === undefined) open2 = REGION02_OPEN;
+  REGIONS.forEach(function (r, i) { r.available = i < OPEN_REGIONS; });
+  /**
+   * 建立金島格子：開放到第 open 區。只有最後開放區域的最後一格是邊界（第 100 格為全島終點 end），
+   * 前面各區的邊界格改為一般格（可通過）。
+   * @param {number} [open] 開放區數（預設 OPEN_REGIONS；測試可傳入模擬）
+   */
+  function buildGold(open) {
+    if (open === undefined) open = OPEN_REGIONS;
+    if (open === true) open = 2;                       // 相容舊測試 buildGold(true)＝開放到第二區
     var src = REGION01.tiles;
     var t1 = src[0], t2 = src[1];
     var r1 = REGIONS[0];
@@ -118,15 +129,18 @@
     var tiles = [g({ n: 0, id: 'gold-01-start', regionId: 'gold-01', x: t1.x - (t2.x - t1.x), y: t1.y - (t2.y - t1.y), type: 'start' })];
     src.forEach(function (t) {
       tiles.push(g({ n: t.order, id: t.id, regionId: 'gold-01', x: t.x, y: t.y,
-        // 第二區開放後，第 30 格不再是邊界（改為一般格，可通過）
-        type: t.eventType === 'region_boundary' ? (open2 ? 'normal' : 'boundary') : (TYPES[t.order] || 'normal') }));
+        type: t.eventType === 'region_boundary' ? 'boundary' : (TYPES[t.order] || 'normal') }));
     });
-    if (open2) {
-      REGION02.tiles.forEach(function (t) {
-        tiles.push({ n: t.order, id: t.id, regionId: 'gold-02', gx: t.gx, gy: t.gy,
-          x: t.gx / WORLD.width, y: (t.gy - REGIONS[1].stripY) / REGIONS[1].size.height, type: t.type });
+    for (var i = 1; i < open && i < REGIONS.length; i++) {
+      var r = REGIONS[i];
+      if (!r.data) break;
+      r.data.tiles.forEach(function (t) {
+        tiles.push({ n: t.order, id: t.id, regionId: r.id, gx: t.gx, gy: t.gy,
+          x: t.gx / WORLD.width, y: (t.gy - r.stripY) / r.size.height, type: t.type });
       });
     }
+    // 只有最後一格保留邊界；前面區域的邊界改為一般格
+    tiles.forEach(function (t, k) { if (t.type === 'boundary' && k !== tiles.length - 1) t.type = 'normal'; });
     return { id: 'gold', name: '金島', totalTiles: 100, world: WORLD, regions: REGIONS, tiles: tiles };
   }
   var GOLD = buildGold();
@@ -915,7 +929,7 @@
     return this.getBonusQuota(childId);
   };
 
-  var api = { ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, REGION02_TILES: REGION02.tiles, MAGNET_RANGE: MAGNET_RANGE, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, MAGNET_RANGE: MAGNET_RANGE, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

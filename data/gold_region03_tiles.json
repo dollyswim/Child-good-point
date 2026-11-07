@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "status": "final",
+  "note": "第 56～80 格最終座標（Codex 齒輪工坊檢視版 v1，2026-11-07 核對通過）：金島長地圖總覽座標 1080×5400。第 56～57 格在水晶礦谷圖最上方（backgroundId region02），第 58～80 格在齒輪工坊（region03）。第 81 格（屬第四區）座標見 docs/art/gold_region03_tiles_final.json。",
+  "world": {
+    "width": 1080,
+    "height": 5400
+  },
+  "regionId": "gold-03",
+  "name": "齒輪工坊",
+  "backgroundStrip": {
+    "y": 1350,
+    "height": 1350
+  },
+  "reservedClearings": [
+    {
+      "purpose": "energyTower",
+      "backgroundId": "region03",
+      "centerPx": {
+        "x": 850,
+        "y": 190
+      },
+      "width": 220,
+      "height": 180
+    },
+    {
+      "purpose": "factory",
+      "backgroundId": "region02",
+      "centerPx": {
+        "x": 250,
+        "y": 150
+      },
+      "width": 220,
+      "height": 180
+    }
+  ],
+  "tiles": [
+    {
+      "id": "gold-03-056",
+      "order": 56,
+      "gx": 526.5,
+      "gy": 2780.6,
+      "backgroundId": "region02",
+      "type": "normal"
+    },
+    {
+      "id": "gold-03-057",
+      "order": 57,
+      "gx": 534.4,
+      "gy": 2711.3,
+      "backgroundId": "region02",
+      "type": "normal"
+    },
+    {
+      "id": "gold-03-058",
+      "order": 58,
+      "gx": 547.4,
+      "gy": 2642.9,
+      "backgroundId": "region03",
+      "type": "chance"
+    },
+    {
+      "id": "gold-03-059",
+      "order": 59,
+      "gx": 590.4,
+      "gy": 2588.5,
+      "backgroundId": "region03",
+      "type": "normal"
+    },
+    {
+      "id": "gold-03-060",
+      "order": 60,
+      "gx": 636.0,
+      "gy": 2535.9,
+      "backgroundId": "region03",
+      "type": "chest"
+    },
+    {
+      "id": "gold-03-061",
+      "order": 61,
+      "gx": 679.6,
+      "gy": 2481.5,
+      "backgroundId": "region03",
+      "type": "normal"
+    },
+    {
+      "id": "gold-03-062",
+      "order": 62,
+      "gx": 690.0,
+      "gy": 2413.9,
+      "backgroundId": "region03",
+      "type": "minigame"
+    },
+    {
+      "id": "gold-03-063",
+      "order": 63,
+      "gx": 689.7,
+      "gy": 2344.2,
+      "backgroundId": "region03",
+      "type": "normal"
+    },
+    {
+      "id": "gold-03-064",
+      "order": 64,
+      "gx": 656.0,
+      "gy": 2284.2,
+      "backgroundId": "region03",
+      "type": "chance"
+    },
+    {
+      "id": "gold-03-065",
+      "order": 65,
+      "gx": 608.1,
+      "gy": 2233.5,
+      "backgroundId": "region03",
+      "type": "normal"
+    },
+    {
+      "id": "gold-03-066",
+      "order": 66,
+      "gx": 556.8,
+      "gy": 2186.4,
+      "backgroundId": "region03",
+      "type": "fate"
+    },
+    {
+      "id": "gold-03-067",
+      "order": 67,
+      "gx": 501.4,
+      "gy": 2144.1,
+      "backgroundId": "region03",
+      "type": "chest"
+    },
+    {
+      "id": "gold-03-068",
+      "order": 68,
+      "gx": 447.9,
+      "gy": 2099.4,
+      "backgroundId": "region03",
+      "type": "normal"
+    },
+    {
+      "id": "gold-03-069",
+      "order": 69,
+      "gx": 393.6,
+      "gy": 2055.6,
+      "backgroundId": "region03",
+      "type": "fate"
+    },
+    {
+      "id": "gold-03-070",
+      "order": 70,
+      "gx": 346.0,
+      "gy": 2005.2,
+      "backgroundId": "region03",
+      "type": "chance"
+    },
+    {
+      "id": "gold-03-071",
+      "order": 71,
+      "gx": 330.2,
+      "gy": 1937.5,
+      "backgroundId": "region03",
+      "type": "normal"
+    },
+    {
+      "id": "gold-03-072",
+      "order": 72,
+      "gx": 325.0,
+      "gy": 1868.1,
+      "backgroundId": "region03",
+      "type": "minigame"
+    },
+    {
+      "id": "gold-03-073",
+      "order": 73,
+      "gx": 355.2,
+      "gy": 1806.5,
+      "backgroundId": "region03",
+      "type": "normal"
+    },
+    {
+      "id": "gold-03-074",
+      "order": 74,
+      "gx": 401.4,
+      "gy": 1754.2,
+      "backgroundId": "region03",
+      "type": "chest"
+    },
+    {
+      "id": "gold-03-075",
+      "order": 75,
+      "gx": 451.0,
+      "gy": 1705.4,
+      "backgroundId": "region03",
+      "type": "normal"
+    },
+    {
+      "id": "gold-03-076",
+      "order": 76,
+      "gx": 504.9,
+      "gy": 1661.0,
+      "backgroundId": "region03",
+      "type": "fate"
+    },
+    {
+      "id": "gold-03-077",
+      "order": 77,
+      "gx": 556.9,
+      "gy": 1614.6,
+      "backgroundId": "region03",
+      "type": "chance"
+    },
+    {
+      "id": "gold-03-078",
+      "order": 78,
+      "gx": 610.3,
+      "gy": 1569.8,
+      "backgroundId": "region03",
+      "type": "chest"
+    },
+    {
+      "id": "gold-03-079",
+      "order": 79,
+      "gx": 657.3,
+      "gy": 1518.7,
+      "backgroundId": "region03",
+      "type": "minigame"
+    },
+    {
+      "id": "gold-03-080",
+      "order": 80,
+      "gx": 674.3,
+      "gy": 1451.4,
+      "backgroundId": "region03",
+      "type": "boundary"
+    }
+  ]
+}

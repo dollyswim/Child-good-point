@@ -768,15 +768,19 @@ function p3Store(randoms, dateStr = '2026-11-06T10:00:00') {
 /** 讓 rint(1,6) 回傳 n 的 random 值 */
 const face = (n, sides = 6) => (n - 1 + 0.5) / sides;
 
-test('金島資料：開放到第 55 格、起點與區域邊界、穩定 ID', () => {
+const END = G.BOARDS.gold.tiles.length - 1;   // 目前開放的最後一格（第三區開放後＝80）
+test('金島資料：開放到第 80 格（第一～三區）、起點與區域邊界、穩定 ID', () => {
   const b = G.BOARDS.gold;
-  assert.equal(b.tiles.length, 56, '0 = 起點，1～55 共 55 格（第一、二區）');
+  assert.equal(G.OPEN_REGIONS, 3);
+  assert.equal(END, 80);
+  assert.equal(b.tiles.length, 81, '0 = 起點，1～80');
   assert.equal(b.tiles[0].type, 'start');
-  assert.equal(b.tiles[30].type, 'normal', '第二區開放後第 30 格可以通過');
-  assert.equal(b.tiles[55].type, 'boundary', '第 55 格是第二區邊界，不是全島終點');
+  assert.deepEqual([b.tiles[30].type, b.tiles[55].type], ['normal', 'normal'], '前面區域的邊界可以通過');
+  assert.equal(b.tiles[80].type, 'boundary', '第 80 格是第三區邊界，不是全島終點');
+  assert.equal(b.tiles.filter(t => t.type === 'boundary').length, 1);
   assert.ok(['chest', 'chance', 'minigame', 'normal'].every(t => b.tiles.some(x => x.type === t)));
   const keys = new Set(b.tiles.map(t => t.id));
-  assert.equal(keys.size, 56, '格子 ID 唯一');
+  assert.equal(keys.size, 81, '格子 ID 唯一');
 });
 
 test('Phase 3 案例 A：購買 6 面骰扣 5 星、進背包', () => {
@@ -839,22 +843,22 @@ test('Phase 3 案例 D：剩餘骰子隔天仍存在；隔天擲骰次數重新�
   assert.doesNotThrow(() => s2.rollDice(a.id, 'd6'));
 });
 
-test('區域邊界：停在第 55 格，多的步數捨棄；下一次移動從起點開始新的一輪（寶箱格重新放滿）', () => {
+test('區域邊界：停在目前最後一格（第 80 格），多的步數捨棄；下一次移動從起點開始新的一輪（寶箱格重新放滿）', () => {
   const { store, a, setDate } = p3Store();
   const p = store.getPlayer(a.id);
-  store.setPlayerTile(a.id, 52);
+  store.setPlayerTile(a.id, END - 3);
   p.bag.d12 = 3; p.looted = ['gold-01-005'];
   store.random = () => 0.99; // 擲 12
   const r = store.rollDice(a.id, 'd12');
-  assert.deepEqual(r.path, [53, 54, 55]);
+  assert.deepEqual(r.path, [END - 2, END - 1, END]);
   assert.equal(r.event.type, 'boundary');
-  assert.match(r.event.title, /水晶礦谷/);
-  assert.match(r.event.text, /齒輪工坊[\s\S]*新的一輪/);
-  assert.equal(p.pos, 55);
+  assert.match(r.event.title, /齒輪工坊/);
+  assert.match(r.event.text, /金冠城堡[\s\S]*新的一輪/);
+  assert.equal(p.pos, END);
   // 檢查不通過時不會先回到起點
   const d6 = p.bag.d6; p.bag.d6 = 0;
   assert.throws(() => store.rollDice(a.id, 'd6'), /沒有/);
-  assert.equal(p.pos, 55, '失敗時位置不變');
+  assert.equal(p.pos, END, '失敗時位置不變');
   p.bag.d6 = d6;
   store.random = () => 2.5 / 12;           // 擲 3
   const r2 = store.rollDice(a.id, 'd12');
@@ -949,7 +953,7 @@ test('金島第一區：地圖資料與 JSON 完全一致（30 格、ID 唯一�
   assert.deepEqual([7, 17, 24].map(n => tiles[n].type), ['minigame', 'minigame', 'minigame']);
   assert.equal(REGION_JSON.tiles[29].eventType, 'region_boundary', '第一區 JSON 第 30 格仍標記區域邊界（第二區開放後程式改為一般格）');
   assert.deepEqual(G.REGIONS.map(r => [r.id, r.from, r.to, r.available]),
-    [['gold-01', 1, 30, true], ['gold-02', 31, 55, true], ['gold-03', 56, 80, false], ['gold-04', 81, 100, false]], '開放到第二區');
+    [['gold-01', 1, 30, true], ['gold-02', 31, 55, true], ['gold-03', 56, 80, true], ['gold-04', 81, 100, false]], '開放到第三區');
 });
 
 test('金島第一區：位置存成穩定格子 ID；舊存檔整數格號自動遷移；重新開啟恢復', () => {
@@ -998,7 +1002,7 @@ test('移動途中不重複觸發事件、不重複扣道具：一次擲骰只�
 test('Phase 4：命運格在第 11、14、21、27 格', () => {
   const b = G.BOARDS.gold;
   assert.deepEqual(b.tiles.filter(t => t.type === 'fate' && t.n <= 30).map(t => t.n), [11, 14, 21, 27]);
-  assert.deepEqual(b.tiles.filter(t => t.type === 'fate' && t.n > 30).map(t => t.n), [41, 44, 51], '第二區命運格');
+  assert.deepEqual(b.tiles.filter(t => t.type === 'fate' && t.n > 30).map(t => t.n), [41, 44, 51, 66, 69, 76], '第二、三區命運格');
 });
 
 test('Phase 4：命運卡抽到特殊任務 → 當天就可完成、含當天 3 天內有效，完成 +20 點，取消勾選或撤銷恢復未完成', () => {
@@ -1498,8 +1502,8 @@ test('飛行翼：前進 20 格、到第 30 格就停、落點觸發事件、不
   assert.equal(r.event.type, 'chance', '第 22 格機會格觸發');
   store.useWings(a.id);
   assert.equal(store.getPlayer(a.id).pos, 42, '第 22 → 42 格（第二區）');
-  bag.wings = 1; store.useWings(a.id);
-  assert.equal(store.getPlayer(a.id).pos, 55, '第 55 格就停');
+  bag.wings = 2; store.useWings(a.id); store.useWings(a.id);
+  assert.equal(store.getPlayer(a.id).pos, END, '最後一格就停');
   assert.equal(store.getRollsToday(a.id), 0);
   bag.wings = 1;
   store.random = () => 0.5;
@@ -1513,7 +1517,7 @@ test('任意門：傳送到本島指定格子（可跨第一、二區）、落�
   const bag = store.getPlayer(a.id).bag;
   bag.door = 2;
   store.setPlayerTile(a.id, 3);
-  assert.throws(() => store.useDoor(a.id, 55), /不能傳送/);
+  assert.throws(() => store.useDoor(a.id, END), /不能傳送/);
   assert.throws(() => store.useDoor(a.id, 0), /不能傳送/);
   assert.throws(() => store.useDoor(a.id, 3), /已經在這一格/);
   assert.equal(bag.door, 2, '失敗不消耗');
@@ -1764,15 +1768,16 @@ test('Phase 5 存檔遷移：結束紀錄、今日起點', () => {
 });
 
 // ---------- 金島長地圖：總覽座標、第二區資料（未開放） ----------
-test('金島長地圖：1080×5400，第一區在最下方（總覽 y＝4050＋y×1350），第二區（水晶礦谷 y＝2700）已開放', () => {
+test('金島長地圖：1080×5400，第一區在最下方（總覽 y＝4050＋y×1350），第二、三區已開放', () => {
   const b = G.BOARDS.gold;
   assert.deepEqual(b.world, { width: 1080, height: 5400 });
   assert.deepEqual(G.REGIONS.map(r => [r.id, r.stripY]), [['gold-01', 4050], ['gold-02', 2700], ['gold-03', 1350], ['gold-04', 0]]);
-  assert.equal(b.tiles.length, 56, '開放到第 55 格');
+  assert.equal(b.tiles.length, 81, '開放到第 80 格');
   for (const t of b.tiles.slice(0, 31)) { assert.ok(Math.abs(t.gx - t.x * 1080) < 1e-6); assert.ok(Math.abs(t.gy - (4050 + t.y * 1350)) < 1e-6); }
   // Codex 核定版 v3：第 34 格 (540, 4080)、第 35 格 (540, 4010)、第 55 格 (520, 2850)
   assert.deepEqual([b.tiles[34].gx, b.tiles[34].gy, b.tiles[35].gx, b.tiles[35].gy, b.tiles[55].gx, b.tiles[55].gy], [540, 4080, 540, 4010, 520, 2850]);
-  assert.equal(b.tiles[55].type, 'boundary');
+  assert.deepEqual([b.tiles[56].gx, b.tiles[56].gy, b.tiles[80].gx, b.tiles[80].gy], [526.49, 2780.57, 674.26, 1451.43].map(v => Math.round(v * 10) / 10), '第三區最終座標');
+  assert.equal(b.tiles[80].type, 'boundary');
 });
 
 test('金島第二區資料：25 格（31～55）、穩定 ID、格距 64～76、格子類型', () => {
@@ -1829,8 +1834,8 @@ test('金島通關：第一次＝神秘寶箱 ×1（免鑰匙）＋成就；之�
   const { store, a } = p3Store();
   const p = store.getPlayer(a.id);
   p.bag.d6 = 3;
-  withEndTile(store, a, 55, () => {
-    store.setPlayerTile(a.id, 52);
+  withEndTile(store, a, END, () => {
+    store.setPlayerTile(a.id, END - 3);
     store.random = () => 0.99;                               // 擲 6 → 停在第 55 格（終點）
     const r = store.rollDice(a.id, 'd6');
     assert.deepEqual(r.event.clear, { count: 1, first: true });
@@ -1841,7 +1846,7 @@ test('金島通關：第一次＝神秘寶箱 ×1（免鑰匙）＋成就；之�
     store.random = () => 0.4;                                // 下一次：從起點開始
     const r2 = store.rollDice(a.id, 'd6');
     assert.ok(r2.lap);
-    store.setPlayerTile(a.id, 52);
+    store.setPlayerTile(a.id, END - 3);
     store.random = () => 0.99;
     const r3 = store.rollDice(a.id, 'd6');
     assert.deepEqual(r3.event.clear, { count: 2, first: false });
@@ -1896,4 +1901,19 @@ test('成就與通關存檔遷移', () => {
   assert.deepEqual(d.achievements, { c: { goldClear1: { date: '2026-11-06', ts: 1 } } });
   const p = d.adventure.players.c;
   assert.deepEqual([p.goldClears, p.maxReached, p.stats.chests, p.stats.mystery], [2, 12, 3, 0], '最遠格子至少是目前位置');
+});
+
+test('金島第三區資料：25 格（56～80）、穩定 ID、格距 64～76、格子類型（家長確認版）', () => {
+  const t = G.REGION03_TILES;
+  assert.equal(t.length, 25);
+  assert.deepEqual([t[0].id, t[24].id], ['gold-03-056', 'gold-03-080']);
+  const all = [{ gx: 520, gy: 2850 }].concat(t);   // 從第 55 格開始
+  for (let i = 1; i < all.length; i++) {
+    const d = Math.hypot(all[i].gx - all[i - 1].gx, all[i].gy - all[i - 1].gy);
+    assert.ok(d >= 64 && d <= 76, '第 ' + (54 + i) + '→' + (55 + i) + ' 格距 ' + d.toFixed(1));
+  }
+  const pick = (ty) => t.filter(x => x.type === ty).map(x => x.order);
+  assert.deepEqual([pick('chest'), pick('chance'), pick('fate'), pick('minigame'), pick('boundary')],
+    [[60, 67, 74, 78], [58, 64, 70, 77], [66, 69, 76], [62, 72, 79], [80]]);
+  assert.deepEqual(t.filter(x => x.backgroundId === 'region02').map(x => x.order), [56, 57], '第 56、57 格在水晶礦谷圖上');
 });

@@ -1,6 +1,7 @@
 # For Codex: Gold Island "Golden Crown Castle" background (tiles 81–100)
 
 > English version of `CODEX_GOLD_REGION04_BRIEF.md` (sections match one-to-one).
+> ⚠️ Update 2026-11-07: Gear Workshop is approved and live. Use `docs/art/region03_top_seam_reference.png` (top 320px of Gear Workshop) as the seam reference; tile 81 final world position is (680, 1382) (y = 32 inside the Gear Workshop image); the road leaves the top of region 3 around x ≈ 680. Tiles 82–100 in the table below are the old proposal; please re-lay them from the new exit.
 > The fourth and topmost image of the long map, **world y = 0–1350**; directly below is "Gear Workshop".
 > **Please wait until Gear Workshop is approved before drawing this one**: the seam reference must be the top 320px of the final Gear Workshop image, and tiles 81–100 will be fine-tuned to its top exit. The table below is the current proposed route.
 
