@@ -1229,3 +1229,93 @@ test('寶物商店：舊存檔背包自動補上新道具欄位', () => {
   const bag = d.adventure.players.c.bag;
   assert.deepEqual([bag.d6, bag.d12, bag.skates, bag.shield, bag.magicDice, bag.luckyMedal, bag.wings, bag.door], [2, 1, 1, 0, 0, 0, 0, 0]);
 });
+
+// ---------- 寶物商店 Phase 3：家長密碼、寶箱庫存、神諭祝福 ----------
+test('家長密碼：4 位數、只存雜湊、解鎖與上鎖、已有密碼時需解鎖才能更換、忘記密碼可重設', () => {
+  const { store, storage } = tsStore();
+  assert.equal(store.hasParentPin(), false);
+  assert.throws(() => store.setParentPin('12a4'), /4 位數字/);
+  store.setParentPin('1234');
+  assert.ok(store.isParentUnlocked(), '設定後立即解鎖');
+  assert.ok(!JSON.stringify(store.data.parentPin).includes('1234'), '不存密碼原文');
+  store.lockParent();
+  assert.equal(store.unlockParent('0000'), false);
+  assert.throws(() => store.setParentPin('5678'), /需要先輸入家長密碼/, '上鎖時不能改密碼');
+  assert.equal(store.unlockParent('1234'), true);
+  // 重新載入：密碼保留、預設上鎖
+  const s2 = new Store({ storage, seed: false, now: () => store.now() });
+  assert.ok(s2.hasParentPin() && !s2.isParentUnlocked());
+  assert.ok(s2.checkParentPin('1234'));
+  s2.allowPinReset();                      // 通過「忘記密碼」驗證題
+  s2.setParentPin('9999');
+  assert.ok(s2.checkParentPin('9999') && !s2.checkParentPin('1234'));
+});
+
+test('神諭祝福：只有解鎖後才能發送（寫入端檢查），數量 1～5', () => {
+  const { store, a } = tsStore();
+  assert.throws(() => store.sendBlessing(a.id, 'chest', 1), /需要家長密碼/);
+  store.setParentPin('1234');
+  assert.throws(() => store.sendBlessing(a.id, 'chest', 0), /數量/);
+  assert.throws(() => store.sendBlessing(a.id, 'chest', 6), /數量/);
+  assert.throws(() => store.sendBlessing(a.id, 'nope', 1), /沒有這種祝福/);
+  assert.equal(store.getPlayer(a.id).bag.chest, 0, '失敗時不發獎');
+});
+
+test('神諭祝福：5 種獎勵入庫、幸運星直接 +10 星、發送紀錄、不算寶物商店件數、不扣點與星星', () => {
+  const { store, a, b } = tsStore(500);
+  store.setParentPin('1234');
+  store.sendBlessing(a.id, 'chest', 2, '主動收玩具');
+  store.sendBlessing(a.id, 'mysteryChest', 1);
+  store.sendBlessing(a.id, 'rerollTicket', 1);
+  store.sendBlessing(a.id, 'bonusPlay', 1);
+  const ls = store.sendBlessing(a.id, 'luckyStar', 2, '好棒！');
+  const bag = store.getPlayer(a.id).bag;
+  assert.deepEqual([bag.chest, bag.giftMysteryChest, bag.rerollTicket, bag.bonusPlay], [2, 1, 1, 1]);
+  assert.equal(store.getStarBalance(a.id), 20, '幸運星 ×2 = +20 能量星星（不經每日結算）');
+  assert.ok(store.data.adventure.ledger.some(x => x.reason === '神諭祝福：幸運星' && x.delta === 20));
+  assert.deepEqual([ls.kind, ls.qty, ls.message, ls.seen], ['luckyStar', 2, '好棒！', false]);
+  assert.equal(store.getTotal(a.id), 500, '不扣生活點數');
+  assert.equal(store.getTreasureBoughtThisWeek(a.id), 0, '不算寶物商店每週件數');
+  assert.equal(store.getUnseenBlessings(a.id).length, 5);
+  assert.equal(store.getUnseenBlessings(b.id).length, 0, '另一位孩子不受影響');
+  store.markBlessingsSeen(a.id);
+  assert.equal(store.getUnseenBlessings(a.id).length, 0);
+  assert.equal(store.getBlessings().length, 5);
+  assert.equal(store.data.adventure.itemLog.filter(x => x.action === 'grant' && x.source === '神諭祝福').length, 5);
+});
+
+test('寶箱庫存：一般寶箱沿用地圖寶箱內容；神諭祝福的神秘寶箱免鑰匙、開出特殊道具；紀錄開箱結果', () => {
+  const { store, a } = tsStore();
+  store.setParentPin('1234');
+  store.sendBlessing(a.id, 'chest', 3);
+  store.sendBlessing(a.id, 'mysteryChest', 2);
+  const seq = [0.1, 0.5, 0.7, 0.9, 0.0, 0.999];
+  store.random = () => seq.shift();
+  let r = store.openChest(a.id, 'chest');              // 0.1 → 星星，0.5 → 2 星
+  assert.equal(r.stars, 2); assert.equal(store.getStarBalance(a.id), 2);
+  r = store.openChest(a.id, 'chest');                  // 0.7 → 溜冰鞋
+  assert.deepEqual(r.items, { skates: 1 });
+  r = store.openChest(a.id, 'chest');                  // 0.9 → 6 面骰
+  assert.deepEqual(r.items, { d6: 1 });
+  assert.throws(() => store.openChest(a.id, 'chest'), /沒有這種寶箱/);
+  assert.equal(store.openChest(a.id, 'giftMysteryChest').item, 'skates');    // 0.0 → 第一項
+  assert.equal(store.openChest(a.id, 'giftMysteryChest').item, 'airplane');  // 0.999 → 最後一項（稀有）
+  assert.equal(store.getPlayer(a.id).bag.airplane, 1);
+  assert.equal(store.getPlayer(a.id).bag.goldenKey, 0, '沒有用到鑰匙');
+  assert.equal(store.data.adventure.itemLog.filter(x => x.action === 'open').length, 5);
+  assert.deepEqual(G.MYSTERY_POOL.map(x => x.weight).reduce((s, w) => s + w, 0), 100);
+});
+
+test('神諭祝福／寶箱紀錄：存檔遷移、刪除孩子一併刪除', () => {
+  const d = migrate({ children: [{ id: 'c', name: 'B' }], parentPin: { salt: 'x', hash: 'zz' }, adventure: {
+    blessings: [{ id: 'b1', childId: 'c', kind: 'chest', qty: 2, message: '讚' }, { id: 'b2', childId: 'x', kind: 'chest' }],
+    itemLog: [{ id: 'l1', childId: 'c', action: 'open', item: 'chest' }] } });
+  assert.deepEqual(d.adventure.blessings.map(x => [x.id, x.qty, x.message, x.seen]), [['b1', 2, '讚', false]]);
+  assert.equal(d.adventure.itemLog.length, 1);
+  assert.equal(d.parentPin, null, '格式不對的密碼資料不採用');
+  const { store, a } = tsStore();
+  store.setParentPin('1234');
+  store.sendBlessing(a.id, 'chest', 1);
+  store.deleteChild(a.id);
+  assert.deepEqual([store.data.adventure.blessings.length, store.data.adventure.itemLog.length], [0, 0]);
+});

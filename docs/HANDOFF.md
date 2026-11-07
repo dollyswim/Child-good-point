@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.07-23`｜Service Worker 快取 `cgp-shell-v33`
+> 最後更新：2026-11-07｜App 版本 `2026.11.07-24`｜Service Worker 快取 `cgp-shell-v34`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---
@@ -117,6 +117,9 @@
 ### Phase 4 美術素材
 - 命運格水晶球 `images/tiles/fate.webp` 已上線（第 11、14、21、27 格）。
 - 第 3 步用的 9 張道具圖已放在 `images/items/`（mystery_chest、golden_key、treasure_magnet、lucky_medal、magic_dice、flying_wings、shield、magic_door、airplane，256px 白底），**尚未接入、也未加入 `sw.js` 快取**；第 3 步接入時再加入 `SHELL`。
+
+### 家長密碼
+- 整個 ⚙️ 設定需要 4 位數家長密碼（第一次進入時設定）；離開設定自動上鎖。E2E 測試用 `passPin()` 輔助函式（密碼 1234）。
 
 ### 路由（hash，只用英數與連字號）
 `#minigame-test`（家長試玩「抓住星星」：不給星星、不算次數、不動存檔）、`#home`、`#child-<id>`（任務）、`#challenge-<id>`、`#shop-<id>`（兌換）、`#adventure-<id>`（冒險大廳）、`#map-<id>`（金島地圖）、`#report`、`#rules`、`#rules-<分頁>`。舊格式 `#/child/<id>` 仍相容。

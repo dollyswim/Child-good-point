@@ -39,6 +39,15 @@ async function main() {
     assert.ok(over <= 0, `${label} 出現橫向捲動 (${over}px)`);
   };
   const text = (sel) => page.locator(sel).innerText();
+  /** 進入設定：第一次設定家長密碼 1234，之後輸入密碼解鎖（離開設定會自動上鎖） */
+  async function passPin(pg = page) {
+    await pg.waitForSelector('[data-testid=pin], .tabs');
+    if (!(await pg.locator('[data-testid=pin]').count())) return;
+    if (await pg.locator('#pin-2').count()) { await pg.fill('#pin-1', '1234'); await pg.fill('#pin-2', '1234'); }
+    else await pg.fill('#pin-1', '1234');
+    await pg.click('[data-action=pin-submit]');
+    await pg.waitForSelector('.tabs');
+  }
 
   await page.goto(url);
   await shot('01-empty-home');
@@ -60,6 +69,10 @@ async function main() {
 
   // 設定：新增 +20 加分、共同任務（指定兩人）
   await page.click('a[aria-label="設定"]');
+  // 第一次進設定：要求設定家長密碼
+  await page.waitForSelector('[data-testid=pin] #pin-2');
+  assert.match(await text('[data-testid=pin]'), /設定家長密碼/);
+  await passPin();
   await page.click('a[href="#rules-bonus"]');
   await page.click('[data-action="add-item"]');
   await page.fill('input[name="name"]', '超棒表現');
@@ -156,6 +169,7 @@ async function main() {
 
   // 備份匯出 → 清空 → 匯入
   await page.goto(url + '#rules-backup');
+  await passPin();
   const [download] = await Promise.all([page.waitForEvent('download'), page.click('[data-action=export]')]);
   const backupPath = await download.path();
   const backup = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
@@ -165,6 +179,7 @@ async function main() {
   await page.reload();
   assert.equal(await page.locator('.child-card').count(), 0);
   await page.goto(url + '#rules-backup');
+  await passPin();
   await page.setInputFiles('input[data-action=import]', backupPath);
   await page.click('#confirm [data-yes]');
   await page.waitForSelector('.toast >> text=匯入完成');
@@ -175,6 +190,7 @@ async function main() {
 
   // 編輯與刪除孩子
   await page.goto(url + '#rules-children');
+  await passPin();
   await page.click('[data-action=edit-child] >> nth=1');
   await page.fill('input[name="name"]', '波妞妞');
   await page.click('#modal-form button[type="submit"]');
@@ -210,6 +226,7 @@ async function main() {
   await page.fill('#score-search', '找不到的東西');
   assert.match(await text('#score-list'), /找不到/);
   await page.goto(url + '#rules-penalty');
+  await passPin();
   await page.fill('#settings-search', '規定3');
   const rows = await page.locator('#settings-list .row').allInnerTexts();
   assert.ok(rows.length > 0 && rows.every(r => r.includes('規定3')));
@@ -230,6 +247,7 @@ async function main() {
   }));
   const recordsBefore = await page.evaluate(() => window.__cgpStore.data.records.length);
   await page.goto(url + '#rules-backup');
+  await passPin();
   await page.setInputFiles('input[data-action=import-rules]', rulesFile);
   await page.waitForSelector('#confirm >> text=新增 2 條');
   await page.click('#confirm [data-yes]');
@@ -254,6 +272,7 @@ async function main() {
 
   // CSV 匯入（Excel 中文版 Big5 編碼）＋ 修改後再匯入會更新
   await page.goto(url + '#rules-backup');
+  await passPin();
   await page.setInputFiles('input[data-action=import-rules]', path.join(__dirname, 'fixtures/sample-rules-big5.csv'));
   await page.waitForSelector('#confirm >> text=新增 16 條');
   assert.match(await text('#confirm'), /新增孩子：小美、小明/);
@@ -330,6 +349,7 @@ async function main() {
 
   // 介面改版：頭銜、等級、每週目標、首頁選孩子、本週挑戰、底部導覽列
   await page.goto(url + '#rules-children');
+  await passPin();
   await page.click('[data-action=edit-child] >> nth=0');
   await page.fill('input[name="title"]', '小小店長');
   await page.check('input[name="badge"][value="🏪"]', { force: true });
@@ -347,6 +367,7 @@ async function main() {
   assert.ok(await page.locator('.bottom-nav .nav-item.active >> text=挑戰').isVisible());
   // 新增一個容易達成的挑戰並領取
   await page.goto(url + '#rules-challenge');
+  await passPin();
   await page.click('[data-action=add-challenge]');
   await page.fill('input[name="name"]', '測試挑戰');
   await page.selectOption('select[name="metric"]', 'net');
@@ -803,6 +824,82 @@ async function main() {
     assert.ok(over <= 0);
     console.log('✔ 寶物商店：6 款商品、兌換扣點進背包、每週 3 件、點數不足原因、背包顯示、撤銷收回道具');
     await c9.close();
+  }
+
+  // ---------- 寶物商店 Phase 3：家長密碼、神諭祝福、寶箱庫存 ----------
+  {
+    const c10 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 780 }, serviceWorkers: 'block' });
+    const q = await c10.newPage();
+    await q.clock.setFixedTime(new Date('2026-11-06T10:00:00'));
+    q.on('pageerror', (e) => errors.push(e.message));
+    q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
+    await q.goto(url);
+    const [k1, k2] = await q.evaluate(() => { const s = window.__cgpStore; return [s.addChild({ name: '端端' }).id, s.addChild({ name: '波妞' }).id]; });
+    // 第一次進設定 → 設定密碼
+    await q.goto(url + '#rules-blessing');
+    await q.waitForSelector('[data-testid=pin] #pin-2');
+    await q.fill('#pin-1', '1234'); await q.fill('#pin-2', '4321');
+    await q.click('[data-action=pin-submit]');
+    assert.equal(await q.locator('[data-testid=pin]').count(), 1, '兩次不同不能設定');
+    await q.fill('#pin-1', '1234'); await q.fill('#pin-2', '1234');
+    await q.click('[data-action=pin-submit]');
+    await q.waitForSelector('[data-testid=blessing]');
+    assert.equal(await q.locator('.bless-kind').count(), 5);
+    // 送波妞 神秘寶箱 ×2＋鼓勵的話；再送幸運星
+    await q.click('.bless-kid:has(input[value="' + k2 + '"])');
+    await q.click('.bless-kind:has(input[value=mysteryChest])');
+    await q.selectOption('#bless-qty', '2');
+    await q.fill('#bless-msg', '今天主動收玩具，好棒！');
+    await q.click('[data-action=blessing-send]');
+    assert.match(await q.locator('#confirm').innerText(), /波妞[\s\S]*神秘寶箱 ×2[\s\S]*主動收玩具/);
+    await q.click('#confirm [data-yes]');
+    await q.waitForSelector('.bless-hist li');
+    await q.click('.bless-kind:has(input[value=luckyStar])');
+    await q.click('[data-action=blessing-send]');
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction(() => document.querySelectorAll('.bless-hist li').length === 2);
+    assert.match(await q.locator('.bless-hist').innerText(), /幸運星 ×1 → 波妞[\s\S]*神秘寶箱 ×2 → 波妞[\s\S]*主動收玩具/);
+    assert.deepEqual(await q.evaluate((id) => [window.__cgpStore.getPlayer(id).bag.giftMysteryChest, window.__cgpStore.getStarBalance(id)], k2), [2, 10]);
+    assert.equal(await q.evaluate((id) => window.__cgpStore.getPlayer(id).bag.giftMysteryChest, k1), 0, '端端不受影響');
+    // 離開設定 → 自動上鎖；錯誤密碼進不去；寫入端也擋
+    await q.goto(url + '#home');
+    await q.goto(url + '#rules-children');
+    await q.waitForSelector('[data-testid=pin] #pin-1');
+    assert.equal(await q.locator('#pin-2').count(), 0);
+    assert.equal(await q.evaluate(() => { try { window.__cgpStore.sendBlessing(window.__cgpStore.getChildren()[0].id, 'luckyStar', 1); return 'sent'; } catch (e) { return e.message; } }), '需要家長密碼才能執行');
+    await q.fill('#pin-1', '0000'); await q.click('[data-action=pin-submit]');
+    assert.equal(await q.locator('[data-testid=pin]').count(), 1, '錯誤密碼不能進入');
+    // 忘記密碼 → 答對驗證題 → 重設
+    await q.click('[data-action=pin-forgot]');
+    const qs = await q.locator('.pin-quiz-q').innerText();
+    const [x, y] = qs.match(/\d+/g).map(Number);
+    await q.fill('#pin-quiz', String(x * y));
+    await q.click('[data-action=pin-quiz]');
+    await q.fill('#pin-1', '5678'); await q.fill('#pin-2', '5678');
+    await q.click('[data-action=pin-submit]');
+    await q.waitForSelector('.tabs');
+    assert.ok(await q.evaluate(() => window.__cgpStore.checkParentPin('5678')));
+    // 孩子端：進冒險大廳看到神諭祝福 → 收下 → 背包開神秘寶箱
+    await q.goto(url + '#adventure-' + k2);
+    await q.waitForSelector('#confirm .bless-box');
+    const bt = await q.locator('#confirm .bless-box').innerText();
+    assert.match(bt, /神諭祝福[\s\S]*神秘寶箱 ×2[\s\S]*主動收玩具[\s\S]*幸運星 ×1[\s\S]*\+10 能量星星/);
+    assert.equal(await q.locator('#confirm .star-rain i').count(), 10, '幸運星：10 顆星星動畫');
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction(() => !document.querySelector('#confirm[open]'));
+    await q.reload(); await q.waitForSelector('[data-testid=bag]');
+    assert.equal(await q.locator('#confirm[open]').count(), 0, '收下後不再跳出');
+    assert.match(await q.locator('[data-bag=giftMysteryChest]').innerText(), /神秘寶箱[\s\S]*×2/);
+    await q.evaluate(() => { window.__cgpStore.random = () => 0.5; });
+    await q.click('[data-bag=giftMysteryChest] [data-action=open-chest]');
+    await q.waitForSelector('#confirm .reward-box');
+    assert.match(await q.locator('#confirm .reward-box').innerText(), /神秘寶箱[\s\S]*得到/);
+    await q.click('#confirm [data-yes]');
+    assert.match(await q.locator('[data-bag=giftMysteryChest]').innerText(), /×1/);
+    const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert.ok(over <= 0);
+    console.log('✔ 寶物商店 Phase 3：家長密碼（設定、上鎖、錯誤、忘記重設）、神諭祝福發送與紀錄、孩子領取、神秘寶箱開箱');
+    await c10.close();
   }
 
   // ---------- 冒險大廳：依孩子所在島嶼輪換地圖關卡卡插圖 ----------

@@ -184,6 +184,99 @@
     return item;
   };
 
+  // ---------- 寶箱內容（地圖寶箱格與背包寶箱共用同一套） ----------
+  /** 一般寶箱：55% 得 1～3 星、25% 溜冰鞋、20% 6 面骰 */
+  Store.prototype._rollRegularChest = function (childId, reason) {
+    var rand = this.random, p = this.getPlayer(childId), out = { stars: 0, items: {}, text: '' };
+    var roll = rand();
+    if (roll < 0.55) {
+      out.stars = rint(rand, 1, 3);
+      this._ledger(childId, out.stars, reason);
+      out.text = '得到 ⭐' + out.stars + ' 能量星星';
+    } else if (roll < 0.8) {
+      p.bag.skates++; out.items.skates = 1; out.text = '得到一雙 🛼 溜冰鞋';
+    } else {
+      p.bag.d6++; out.items.d6 = 1; out.text = '得到一顆 🎲 6 面骰';
+    }
+    return out;
+  };
+  /** 神秘寶箱獎勵池：7 種特殊道具（呼叫專機為稀有獎勵） */
+  var MYSTERY_POOL = [
+    { id: 'skates', name: '溜冰鞋', icon: '🛼', weight: 18 }, { id: 'magicDice', name: '神奇骰子', icon: '🎲', weight: 18 },
+    { id: 'luckyMedal', name: '好運金牌', icon: '🥇', weight: 18 }, { id: 'shield', name: '防護罩', icon: '🛡️', weight: 18 },
+    { id: 'wings', name: '飛行翼', icon: '🪽', weight: 12 }, { id: 'door', name: '任意門', icon: '🚪', weight: 12 },
+    { id: 'airplane', name: '呼叫專機', icon: '✈️', weight: 4 }
+  ];
+  Store.prototype._rollMysteryChest = function (childId) {
+    var item = pickWeighted(this.random, MYSTERY_POOL);
+    this.getPlayer(childId).bag[item.id]++;
+    var items = {}; items[item.id] = 1;
+    return { stars: 0, items: items, item: item.id, text: '得到 ' + item.icon + ' ' + item.name + '！' };
+  };
+  Store.prototype._logItem = function (childId, action, item, qty, source, result) {
+    this.data.adventure.itemLog.push({ id: uid(), childId: childId, action: action, item: item, qty: qty || 1, source: source || '',
+      result: result || '', date: this.today(), ts: this.now().getTime() });
+  };
+  /**
+   * 開背包裡的寶箱：kind = 'chest'（一般寶箱）或 'giftMysteryChest'（神諭祝福的神秘寶箱，免鑰匙）
+   * 不需要當天出發冒險；內容沿用既有獎勵池。
+   */
+  Store.prototype.openChest = function (childId, kind) {
+    if (!this.getChild(childId)) throw new Error('找不到孩子');
+    if (kind !== 'chest' && kind !== 'giftMysteryChest') throw new Error('沒有這種寶箱');
+    var p = this.getPlayer(childId);
+    if (!(p.bag[kind] > 0)) throw new Error('背包裡沒有這種寶箱');
+    p.bag[kind]--;
+    var res = kind === 'chest' ? this._rollRegularChest(childId, '一般寶箱') : this._rollMysteryChest(childId);
+    res.kind = kind;
+    this._logItem(childId, 'open', kind, 1, '背包', res.text);
+    this.save();
+    return res;
+  };
+
+  // ---------- 神諭祝福（媽媽加碼） ----------
+  var BLESSINGS = [
+    { id: 'chest', name: '一般寶箱', icon: '📦', img: 'images/tiles/chest.webp', desc: '加入寶箱庫存，打開可得星星或道具' },
+    { id: 'mysteryChest', name: '神秘寶箱', icon: '🎁', img: 'images/items/mystery_chest.webp', desc: '加入寶箱庫存，不用鑰匙，打開可得特殊道具' },
+    { id: 'rerollTicket', name: '命運重骰券', icon: '🎲', img: '', desc: '對剛擲出的結果重新擲一次（不占每日次數）' },
+    { id: 'bonusPlay', name: '再來 3 次', icon: '🎮', img: '', desc: '啟用當天額外 +3 次擲骰、+3 次小遊戲' },
+    { id: 'luckyStar', name: '幸運星', icon: '🌟', img: 'images/minigame/star.webp', desc: '立即獲得 10 顆能量星星' }
+  ];
+  var BLESSING_MAX_QTY = 5, LUCKY_STAR = 10;
+  /**
+   * 家長發送神諭祝福：只有輸入家長密碼解鎖後才能寫入；不消耗點數與星星；不算寶物商店每週件數
+   * @returns 發送紀錄
+   */
+  Store.prototype.sendBlessing = function (childId, kind, qty, message) {
+    this._requireParent();
+    if (!this.getChild(childId)) throw new Error('找不到孩子');
+    var b = BLESSINGS.find(function (x) { return x.id === kind; });
+    if (!b) throw new Error('沒有這種祝福');
+    var n = qty == null || qty === '' ? 1 : Math.floor(Number(qty));   // 預設 1 份
+    if (!(n >= 1 && n <= BLESSING_MAX_QTY)) throw new Error('數量請選 1～' + BLESSING_MAX_QTY);
+    var p = this.getPlayer(childId);
+    if (kind === 'luckyStar') this._ledger(childId, LUCKY_STAR * n, '神諭祝福：幸運星');
+    else p.bag[kind === 'mysteryChest' ? 'giftMysteryChest' : kind] += n;
+    var rec = { id: uid(), childId: childId, kind: kind, qty: n, message: String(message || '').trim().slice(0, 100),
+      date: this.today(), ts: this.now().getTime(), seen: false };
+    this.data.adventure.blessings.push(rec);
+    this._logItem(childId, 'grant', kind, n, '神諭祝福', kind === 'luckyStar' ? '+' + (LUCKY_STAR * n) + ' 能量星星' : '');
+    this.save();
+    return rec;
+  };
+  Store.prototype.getBlessings = function (childId) {
+    // 新的在前；同一時間時依發送順序（後送的在前）
+    return this.data.adventure.blessings.filter(function (x) { return !childId || x.childId === childId; })
+      .slice().reverse().sort(function (a, b) { return b.ts - a.ts; });
+  };
+  Store.prototype.getUnseenBlessings = function (childId) {
+    return this.data.adventure.blessings.filter(function (x) { return x.childId === childId && !x.seen; });
+  };
+  Store.prototype.markBlessingsSeen = function (childId) {
+    this.data.adventure.blessings.forEach(function (x) { if (x.childId === childId) x.seen = true; });
+    this.save();
+  };
+
   // ---------- 冒險寶物商店（生活點數） ----------
   /** 本週（週一開始）已在寶物商店買了幾件 */
   Store.prototype.getTreasureBoughtThisWeek = function (childId) {
@@ -233,16 +326,8 @@
     var ev = { tile: tile.n, type: tile.type, title: '', text: '', stars: 0, items: {}, extraPath: [], backPath: [] };
     if (tile.type === 'chest') {
       ev.title = '🎁 寶箱！';
-      var roll = rand();
-      if (roll < 0.55) {
-        ev.stars = rint(rand, 1, 3);
-        this._ledger(childId, ev.stars, '寶箱');
-        ev.text = '得到 ⭐' + ev.stars + ' 能量星星';
-      } else if (roll < 0.8) {
-        p.bag.skates++; ev.items.skates = 1; ev.text = '得到一雙 🛼 溜冰鞋';
-      } else {
-        p.bag.d6++; ev.items.d6 = 1; ev.text = '得到一顆 🎲 6 面骰';
-      }
+      var cr = this._rollRegularChest(childId, '寶箱');
+      ev.stars = cr.stars; ev.items = cr.items; ev.text = cr.text;
     } else if (tile.type === 'chance') {
       ev.title = '❓ 機會';
       var c = rint(rand, 0, 2);
@@ -365,7 +450,7 @@
     return { die: 'skates', value: 3, from: from, path: path, event: event };
   };
 
-  var api = { TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

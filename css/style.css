@@ -1221,3 +1221,53 @@ body.mg-open { overflow: hidden; }
 .bag-art.item-art { width: 52px; height: 52px; }
 .bag-item b { font-size: .78rem; }
 .bag-item small { font-size: .66rem; color: var(--muted); font-weight: 700; }
+
+/* 家長密碼 */
+.pin-card { display: grid; gap: 10px; justify-items: stretch; text-align: center; max-width: 360px; margin: 24px auto 0; }
+.pin-input { font-size: 1.6rem; letter-spacing: .5em; text-align: center; padding: 10px; border-radius: 14px; border: 2px solid #f1e2cc; font-family: inherit; }
+.pin-quiz-q { font-size: 1.6rem; font-weight: 900; margin: 0; }
+/* 神諭祝福：設定頁 */
+.bless-form { display: grid; gap: 10px; }
+.bless-kids { display: flex; flex-wrap: wrap; gap: 8px; }
+.bless-kid { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px 6px 6px; border-radius: 99px; border: 2px solid #f1e2cc; background: #fff; cursor: pointer; }
+.bless-kid input, .bless-kind input { position: absolute; opacity: 0; pointer-events: none; }
+.bless-kid:has(input:checked), .bless-kind:has(input:checked) { border-color: #ffd23f; background: #fffbe9; box-shadow: 0 0 0 3px rgba(255, 210, 63, .35); }
+.bless-kinds { display: grid; gap: 8px; }
+.bless-kind { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; padding: 8px 10px; border-radius: 16px; border: 2px solid #f1e2cc; background: #fff; cursor: pointer; }
+.bless-kind span { display: grid; min-width: 0; }
+.bless-kind small { color: var(--muted); font-size: .76rem; }
+.bless-art.item-art { width: 48px; height: 48px; }
+.bag-emoji { font-size: 2rem; line-height: 1; }
+.bless-form .field { display: grid; gap: 4px; font-weight: 800; font-size: .9rem; }
+.bless-form select, .bless-form input[type=text] { font: inherit; padding: 8px 10px; border-radius: 12px; border: 2px solid #f1e2cc; }
+/* 神諭祝福：孩子領取畫面 */
+.bless-box { gap: 8px; overflow: hidden; position: relative; }
+.bless-box h2 { text-align: center; font-size: 1.4rem; background: linear-gradient(90deg, #b25ea8, #f0a020); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.bless-list { display: grid; gap: 8px; }
+.bless-get { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; padding: 8px 10px; border-radius: 16px; background: linear-gradient(135deg, #fff8e3, #f6efff); animation: bless-in .45s cubic-bezier(.2, 1.4, .4, 1) both; }
+.bless-get:nth-child(2) { animation-delay: .12s; } .bless-get:nth-child(3) { animation-delay: .24s; }
+.bless-get span { display: grid; min-width: 0; }
+.bless-get small { color: var(--muted); font-weight: 700; }
+.bless-get em { color: #b25ea8; font-style: normal; font-weight: 800; font-size: .88rem; }
+.bless-get-art.item-art { width: 54px; height: 54px; }
+.bk-mysteryChest .bless-get-art { box-shadow: 0 0 12px rgba(160, 90, 255, .6); animation: bless-glow 1.4s ease-in-out infinite; }
+@keyframes bless-in { from { transform: scale(.6) translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes bless-glow { 50% { box-shadow: 0 0 22px rgba(255, 200, 60, .9); } }
+.star-rain { position: absolute; inset: 0; pointer-events: none; }
+.star-rain i { position: absolute; top: -20px; width: 22px; height: 22px; background: url(../images/minigame/star.webp) center / contain no-repeat; animation: star-fall 1.4s ease-in forwards; }
+.star-rain i:nth-child(1) { left: 8%; } .star-rain i:nth-child(2) { left: 18%; animation-delay: .1s; } .star-rain i:nth-child(3) { left: 28%; animation-delay: .2s; }
+.star-rain i:nth-child(4) { left: 38%; animation-delay: .05s; } .star-rain i:nth-child(5) { left: 48%; animation-delay: .25s; } .star-rain i:nth-child(6) { left: 58%; animation-delay: .15s; }
+.star-rain i:nth-child(7) { left: 68%; animation-delay: .3s; } .star-rain i:nth-child(8) { left: 78%; animation-delay: .1s; } .star-rain i:nth-child(9) { left: 86%; animation-delay: .2s; }
+.star-rain i:nth-child(10) { left: 93%; animation-delay: .35s; }
+@keyframes star-fall { 0% { transform: translateY(0) rotate(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(260px) rotate(200deg); opacity: 0; } }
+/* 開箱結果 */
+.reward-box { text-align: center; justify-items: center; }
+.reward-art { display: grid; place-items: center; width: 110px; height: 110px; border-radius: 24px; background: #fff; margin: 0 auto; }
+.reward-art img { width: 100%; height: 100%; object-fit: contain; }
+.rb-chest .reward-art { animation: chest-bounce .6s ease-out both; box-shadow: 0 0 18px rgba(255, 200, 60, .7); }
+.rb-mystery .reward-art { animation: chest-spin .8s ease-out both; box-shadow: 0 0 22px rgba(160, 90, 255, .7); }
+@keyframes chest-bounce { 0% { transform: scale(.4); } 60% { transform: scale(1.12) translateY(-6px); } 100% { transform: none; } }
+@keyframes chest-spin { from { transform: rotate(-200deg) scale(.3); opacity: 0; } to { transform: none; opacity: 1; } }
+.bag-open { margin-top: 2px; padding: 2px 10px; min-height: 0; font-size: .75rem; }
+@media (prefers-reduced-motion: reduce) { .bless-get, .rb-chest .reward-art, .rb-mystery .reward-art, .star-rain i { animation: none; } }
+.pin-card .pin-input { width: 100%; min-width: 0; box-sizing: border-box; letter-spacing: .4em; }

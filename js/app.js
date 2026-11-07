@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-23';
+  var APP_VERSION = '2026.11.07-24';
   var store;
   try {
     store = new CGP.Store();
@@ -25,7 +25,7 @@
   var KIND_LABELS = { bonus: '加分項目', penalty: '扣分項目', task: '加分項目' };
   var SETTINGS_TABS = [
     ['children', '孩子'], ['bonus', '加分'],
-    ['penalty', '扣分'], ['challenge', '挑戰'], ['reward', '獎勵'], ['backup', '備份']
+    ['penalty', '扣分'], ['challenge', '挑戰'], ['reward', '獎勵'], ['blessing', '神諭祝福'], ['backup', '備份']
   ];
 
   var app = document.getElementById('app');
@@ -222,17 +222,26 @@
       html = r.name === 'child' ? renderChild(child) : r.name === 'challenge' ? renderChallenge(child)
         : r.name === 'shop' ? renderShop(child) : r.name === 'map' ? renderMap(child) : renderAdventure(child);
     } else if (r.name === 'settings') {
-      html = renderSettings(r.arg || 'children');
+      html = store.isParentUnlocked() && ui.pinMode !== 'reset' ? renderSettings(r.arg || 'children') : renderPinGate();
     } else if (r.name === 'report') {
       html = renderReport();
     } else {
       html = renderHome();
     }
-    if (r.name !== 'settings') html += bottomNav(r.name === 'adventure' || r.name === 'map' ? 'child' : r.name);
+    if (r.name !== 'settings') {
+      if (store.isParentUnlocked()) store.lockParent();   // 離開設定就上鎖
+      ui.pinMode = null;
+      html += bottomNav(r.name === 'adventure' || r.name === 'map' ? 'child' : r.name);
+    }
     app.innerHTML = html;
     app.dataset.view = r.name;
     if (r.name === 'map') setupMap(store.getChild(r.arg));
     if (r.name === 'minigame-test') openMinigame(null, null, { practice: true });
+    if (r.name === 'adventure') showBlessings(r.arg);
+    if (r.name === 'settings') {
+      var pi = app.querySelector('#pin-1'); if (pi) pi.focus();
+      var at = app.querySelector('.tabs .tab.active'); if (at && at.parentNode.scrollTo) at.parentNode.scrollTo({ left: at.offsetLeft - 40 });   // 分頁多：目前分頁捲進畫面
+    }
     if (ui.pulse) {
       var el = app.querySelector('.total-value');
       if (el) el.classList.add('pulse');
@@ -1038,6 +1047,119 @@
       '<section class="panel"><h2>🧾 兌換紀錄</h2>' + histHtml + '</section></main>';
   }
 
+  // ---------- 家長密碼 ----------
+  /** 進設定前的密碼畫面：第一次設定、輸入解鎖、忘記密碼（答對家長驗證題後重設） */
+  function renderPinGate() {
+    var mode = !store.hasParentPin() || ui.pinMode === 'reset' ? 'set' : ui.pinMode === 'forgot' ? 'forgot' : 'enter';
+    var inp = function (id, ph) { return '<input id="' + id + '" class="pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="' + ph + '">'; };
+    var body;
+    if (mode === 'set') {
+      body = '<h2>🔐 設定家長密碼</h2><p class="muted small">請設定 4 位數密碼，之後進入設定、發送神諭祝福都要輸入。孩子不知道密碼就不能修改規則或發獎勵。</p>' +
+        inp('pin-1', '輸入 4 位數') + inp('pin-2', '再輸入一次') +
+        '<button class="btn primary block" data-action="pin-submit" data-mode="set">設定密碼</button>' +
+        (store.hasParentPin() && ui.pinMode === 'reset' && store.isParentUnlocked() ? '<button class="btn link" data-action="pin-cancel">取消</button>' : '');
+    } else if (mode === 'forgot') {
+      if (!ui.pinQuiz) ui.pinQuiz = [12 + Math.floor(Math.random() * 80), 12 + Math.floor(Math.random() * 80)];
+      body = '<h2>🤔 忘記密碼</h2><p class="muted small">請家長回答下面的問題，答對後可以重設密碼。</p>' +
+        '<p class="pin-quiz-q">' + ui.pinQuiz[0] + ' × ' + ui.pinQuiz[1] + ' = ？</p>' +
+        '<input id="pin-quiz" class="pin-input" type="text" inputmode="numeric" autocomplete="off" placeholder="答案">' +
+        '<button class="btn primary block" data-action="pin-quiz">確認</button><button class="btn link" data-action="pin-cancel">返回</button>';
+    } else {
+      body = '<h2>🔒 家長專區</h2><p class="muted small">請輸入家長密碼</p>' + inp('pin-1', '4 位數密碼') +
+        '<button class="btn primary block" data-action="pin-submit" data-mode="enter">進入設定</button>' +
+        '<button class="btn link" data-action="pin-forgot">忘記密碼？</button>';
+    }
+    return '<header class="topbar"><a class="icon-btn" href="#home" aria-label="回首頁">‹</a><h1>設定</h1><span class="icon-btn"></span></header>' +
+      '<main class="page"><section class="card pin-card" data-testid="pin">' + body + '</section></main>';
+  }
+  function submitPin() {
+    var a = app.querySelector('#pin-1'), b = app.querySelector('#pin-2');
+    var setMode = !!b;
+    if (setMode) {
+      if (!/^\d{4}$/.test(a.value)) { toast('請輸入 4 位數字', 'neg'); return; }
+      if (a.value !== b.value) { toast('兩次輸入的密碼不一樣', 'neg'); return; }
+      store.setParentPin(a.value);
+      ui.pinMode = null;
+      toast('🔐 家長密碼已設定', 'pos');
+      render();
+      return;
+    }
+    if (store.unlockParent(a.value)) { render(); }
+    else { a.value = ''; toast('密碼不對', 'neg'); a.focus(); }
+  }
+
+  // ---------- 神諭祝福（媽媽加碼） ----------
+  function blessingArt(b, cls) {
+    return '<span class="item-art ' + (cls || '') + '">' + (b.img ? '<img src="' + b.img + '" alt="" aria-hidden="true" decoding="async">' : '<span class="bag-emoji">' + b.icon + '</span>') + '</span>';
+  }
+  function settingsBlessing() {
+    var kids = store.getChildren();
+    if (!kids.length) return '<p class="muted">請先新增孩子。</p>';
+    var sel = ui.blessChild && store.getChild(ui.blessChild) ? ui.blessChild : kids[0].id;
+    var kind = ui.blessKind || 'chest';
+    var hist = store.getBlessings().slice(0, 20);
+    return '<section class="card bless-form" data-testid="blessing"><h2>🌟 神諭祝福</h2>' +
+      '<p class="muted small">家長送給孩子的特別獎勵，不消耗生活點數和能量星星，也不算寶物商店的每週件數。</p>' +
+      '<div class="bless-kids">' + kids.map(function (c) {
+        return '<label class="bless-kid' + (c.id === sel ? ' on' : '') + '"><input type="radio" name="bless-child" value="' + h(c.id) + '"' + (c.id === sel ? ' checked' : '') + '>' + avatar(c, 'sm') + '<b>' + h(c.name) + '</b></label>';
+      }).join('') + '</div>' +
+      '<div class="bless-kinds">' + GAME.BLESSINGS.map(function (b) {
+        return '<label class="bless-kind' + (b.id === kind ? ' on' : '') + '"><input type="radio" name="bless-kind" value="' + b.id + '"' + (b.id === kind ? ' checked' : '') + '>' +
+          blessingArt(b, 'bless-art') + '<span><b>' + b.icon + ' ' + b.name + '</b><small>' + h(b.desc) + '</small></span></label>';
+      }).join('') + '</div>' +
+      '<label class="field">數量<select id="bless-qty">' + [1, 2, 3, 4, 5].map(function (n) { return '<option value="' + n + '">' + n + ' 份</option>'; }).join('') + '</select></label>' +
+      '<label class="field">鼓勵的話（選填）<input id="bless-msg" type="text" maxlength="100" placeholder="例如：今天主動收玩具，好棒！"></label>' +
+      '<button class="btn primary block" data-action="blessing-send">送出神諭祝福</button></section>' +
+      '<section class="card"><h2>🧾 最近發送紀錄</h2>' + (hist.length ? '<ul class="rows bless-hist">' + hist.map(function (x) {
+        var b = GAME.BLESSINGS.find(function (y) { return y.id === x.kind; }) || { icon: '🎁', name: x.kind };
+        var c = store.getChild(x.childId);
+        var t = new Date(x.ts);
+        return '<li class="row"><span class="row-main"><b>' + b.icon + ' ' + h(b.name) + ' ×' + x.qty + ' → ' + h(c ? c.name : '') + '</b>' +
+          '<small>' + (t.getMonth() + 1) + '/' + t.getDate() + ' ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') +
+          (x.message ? '・「' + h(x.message) + '」' : '') + (x.seen ? '・已領取' : '・尚未打開') + '</small></span></li>';
+      }).join('') + '</ul>' : '<p class="muted small">還沒有發送紀錄</p>') + '</section>' +
+      '<section class="card"><h2>🔐 家長密碼</h2><button class="btn block" data-action="pin-change">更換家長密碼</button></section>';
+  }
+  function sendBlessingFromForm() {
+    var c = app.querySelector('input[name=bless-child]:checked'), k = app.querySelector('input[name=bless-kind]:checked');
+    var qty = Number(app.querySelector('#bless-qty').value), msg = app.querySelector('#bless-msg').value;
+    var child = store.getChild(c.value), b = GAME.BLESSINGS.find(function (x) { return x.id === k.value; });
+    ui.blessChild = c.value; ui.blessKind = k.value;
+    confirmThen('送給 ' + child.name + '：' + b.icon + ' ' + b.name + ' ×' + qty + (msg.trim() ? '\n鼓勵的話：「' + msg.trim() + '」' : '') + '\n確定送出嗎？', '送出', false, function () {
+      store.sendBlessing(c.value, k.value, qty, msg);
+      toast('🌟 已送出神諭祝福給 ' + child.name, 'pos');
+    });
+  }
+  /** 孩子進冒險大廳時，顯示還沒看過的神諭祝福（獎勵在發送時已加入，這裡只是領取畫面） */
+  function showBlessings(childId) {
+    var list = store.getUnseenBlessings(childId);
+    if (!list.length || (confirmEl.open)) return;
+    var stars = 0;
+    var rows = list.map(function (x) {
+      var b = GAME.BLESSINGS.find(function (y) { return y.id === x.kind; });
+      if (x.kind === 'luckyStar') stars += GAME.LUCKY_STAR * x.qty;
+      return '<div class="bless-get bk-' + x.kind + '">' + blessingArt(b, 'bless-get-art') +
+        '<span><b>' + b.icon + ' ' + b.name + ' ×' + x.qty + '</b>' + (x.kind === 'luckyStar' ? '<small>+' + (GAME.LUCKY_STAR * x.qty) + ' 能量星星</small>' : '<small>' + h(b.desc) + '</small>') +
+        (x.message ? '<em>「' + h(x.message) + '」</em>' : '') + '</span></div>';
+    }).join('');
+    confirmEl.innerHTML = '<div class="confirm-box bless-box"><h2>🌟 神諭祝福</h2><p class="muted small">有一份特別的祝福送給你！</p>' +
+      (stars ? '<div class="star-rain" aria-hidden="true">' + new Array(10).join('<i></i>') + '<i></i></div>' : '') +
+      '<div class="bless-list">' + rows + '</div>' +
+      '<div class="modal-actions"><button type="button" class="btn primary" data-yes>收下</button></div></div>';
+    confirmEl.querySelector('[data-yes]').onclick = function () { store.markBlessingsSeen(childId); confirmEl.close(); render(); };
+    confirmEl.oncancel = function (e) { e.preventDefault(); };
+    if (typeof confirmEl.showModal === 'function') confirmEl.showModal(); else confirmEl.setAttribute('open', '');
+  }
+  /** 開箱結果（簡短動畫；動畫失敗不影響已存檔的結果） */
+  function showReward(title, text, img, kind) {
+    confirmEl.innerHTML = '<div class="confirm-box reward-box rb-' + kind + '"><h2>' + h(title) + '</h2>' +
+      '<span class="reward-art"><img src="' + img + '" alt="" aria-hidden="true"></span>' +
+      '<p class="confirm-msg">' + h(text) + '</p><div class="modal-actions"><button type="button" class="btn primary" data-yes>太好了！</button></div></div>';
+    confirmEl.querySelector('[data-yes]').onclick = function () { confirmEl.close(); };
+    confirmEl.oncancel = null;
+    if (typeof confirmEl.showModal === 'function') confirmEl.showModal(); else confirmEl.setAttribute('open', '');
+  }
+
   /** 冒險寶物商店：用生活點數兌換冒險寶物（每週 3 件、同款持有 2 件） */
   function treasurePanel(child) {
     var bag = store.getPlayer(child.id).bag;
@@ -1064,7 +1186,12 @@
     magicDice: { name: '神奇骰子', img: 'images/items/magic_dice.webp', note: '即將開放' },
     luckyMedal: { name: '好運金牌', img: 'images/items/lucky_medal.webp', note: '即將開放' },
     wings: { name: '飛行翼', img: 'images/items/flying_wings.webp', note: '即將開放' },
-    door: { name: '任意門', img: 'images/items/magic_door.webp', note: '即將開放' }
+    door: { name: '任意門', img: 'images/items/magic_door.webp', note: '即將開放' },
+    airplane: { name: '呼叫專機', img: 'images/items/airplane.webp', note: '其他島嶼開放後可用' },
+    rerollTicket: { name: '命運重骰券', icon: '🎲', note: '即將開放' },
+    bonusPlay: { name: '再來 3 次', icon: '🎮', note: '即將開放' },
+    chest: { name: '一般寶箱', img: 'images/tiles/chest.webp', open: true },
+    giftMysteryChest: { name: '神秘寶箱', img: 'images/items/mystery_chest.webp', open: true }
   };
   function bagPanel(child) {
     var bag = store.getPlayer(child.id).bag;
@@ -1072,8 +1199,11 @@
     return '<section class="panel bag-panel" data-testid="bag"><h2>🎒 冒險背包</h2>' +
       (keys.length ? '<div class="bag-grid">' + keys.map(function (k) {
         var b = BAG_INFO[k];
-        return '<div class="bag-item" data-bag="' + k + '"><span class="item-art bag-art"><img src="' + b.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></span>' +
-          '<b>' + b.name + '</b><small>×' + bag[k] + '・' + b.note + '</small></div>';
+        var art = b.img ? '<img src="' + b.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async">' : '<span class="bag-emoji">' + b.icon + '</span>';
+        return '<div class="bag-item" data-bag="' + k + '"><span class="item-art bag-art">' + art + '</span>' +
+          '<b>' + b.name + '</b>' + (b.open
+            ? '<small>×' + bag[k] + '</small><button class="btn primary small bag-open" data-action="open-chest" data-id="' + k + '">開箱</button>'
+            : '<small>×' + bag[k] + '・' + b.note + '</small>') + '</div>';
       }).join('') + '</div>'
         : '<p class="muted small">背包是空的。可以用能量星星在地圖的商店買骰子，或用生活點數在「兌換」頁的冒險寶物商店換寶物。</p>') +
       '</section>';
@@ -1268,6 +1398,7 @@
     else if (tab === 'reward') body = settingsRewards();
     else if (tab === 'challenge') body = settingsChallenges();
     else if (tab === 'backup') body = settingsBackup();
+    else if (tab === 'blessing') body = settingsBlessing();
     else if (tab === 'task') { tab = 'bonus'; body = settingsItems('bonus'); } // 舊網址相容
     else if (KIND_LABELS[tab]) body = settingsItems(tab);
     else body = settingsChildren();
@@ -1808,6 +1939,23 @@
           render();
           break;
         }
+        case 'open-chest': {
+          var cres = store.openChest(childId, id);
+          showReward(id === 'chest' ? '📦 一般寶箱' : '🎁 神秘寶箱', cres.text, id === 'chest' ? 'images/tiles/chest.webp' : 'images/items/mystery_chest.webp', id === 'chest' ? 'chest' : 'mystery');
+          render();
+          break;
+        }
+        case 'pin-submit': submitPin(); break;
+        case 'pin-forgot': ui.pinMode = 'forgot'; ui.pinQuiz = null; render(); break;
+        case 'pin-quiz': {
+          var ans = app.querySelector('#pin-quiz');
+          if (ans && Number(ans.value) === ui.pinQuiz[0] * ui.pinQuiz[1]) { store.allowPinReset(); ui.pinMode = 'reset'; render(); }
+          else toast('答案不對，請再試一次', 'neg');
+          break;
+        }
+        case 'pin-cancel': ui.pinMode = null; render(); break;
+        case 'pin-change': ui.pinMode = 'reset'; render(); break;
+        case 'blessing-send': sendBlessingFromForm(); break;
         case 'buy-treasure': {
           var tr0 = GAME.TREASURES.find(function (t) { return t.id === id; });
           var kid = store.getChild(childId);
@@ -1897,6 +2045,12 @@
     if (e.target.id === 'settle-log') ui.logOpen = e.target.open;
   }, true);
 
+  // 密碼輸入框按 Enter（手機鍵盤的「前往」）直接送出
+  app.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    if (e.target.matches('.pin-input#pin-1, .pin-input#pin-2')) { e.preventDefault(); submitPin(); }
+    else if (e.target.id === 'pin-quiz') { e.preventDefault(); var q = app.querySelector('[data-action=pin-quiz]'); if (q) q.click(); }
+  });
   app.addEventListener('input', function (e) {
     var kind = e.target.getAttribute && e.target.getAttribute('data-search');
     if (kind === 'score') { ui.query = e.target.value; updateScoreList(); }

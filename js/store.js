@@ -53,7 +53,8 @@
   };
   var SPECIAL_TASK_POINTS = 20;
   /** 冒險背包的道具代號（穩定、唯一；不以中文名稱判斷） */
-  var BAG_KEYS = ['d6', 'd12', 'skates', 'shield', 'magicDice', 'luckyMedal', 'wings', 'door', 'airplane', 'goldenKey', 'magnet', 'rerollTicket', 'bonusPlay'];
+  var BAG_KEYS = ['d6', 'd12', 'skates', 'shield', 'magicDice', 'luckyMedal', 'wings', 'door', 'airplane', 'goldenKey', 'magnet', 'rerollTicket', 'bonusPlay',
+    'chest', 'giftMysteryChest']; // 寶箱庫存：一般寶箱、神諭祝福送的神秘寶箱（免鑰匙）
   function emptyBag() { var b = {}; BAG_KEYS.forEach(function (k) { b[k] = 0; }); return b; }
   var SPECIAL_TASK_DAYS = 3;
   /** 8 種冒險夥伴代號：孩子的頭像與冒險棋子共用（child.avatar） */
@@ -88,7 +89,8 @@
 
   // ---------- 預設資料 ----------
   function emptyData() {
-    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], adventure: { settlements: [], ledger: [], rolls: [], minigames: [], players: {} } };
+    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null,
+      adventure: { settlements: [], ledger: [], rolls: [], minigames: [], blessings: [], itemLog: [], players: {} } };
   }
 
   function defaultData() {
@@ -229,6 +231,10 @@
         startDate: x.startDate, endDate: x.endDate, cancelled: !!x.cancelled, ts: toInt(x.ts, Date.now()) };
     });
 
+    // 家長密碼（只存雜湊與鹽，不存原文）
+    d.parentPin = d.parentPin && typeof d.parentPin === 'object' && /^[0-9a-f]{8}$/.test(d.parentPin.hash) && d.parentPin.salt
+      ? { salt: String(d.parentPin.salt), hash: d.parentPin.hash } : null;
+
     var adv = d.adventure && typeof d.adventure === 'object' ? d.adventure : {};
     var seenSettle = {};
     d.adventure = {
@@ -278,6 +284,20 @@
             ts: toInt(x.ts, Date.now()), doneTs: x.doneTs ? toInt(x.doneTs, 0) : undefined };
         });
       })(),
+      // 神諭祝福（媽媽加碼）發送紀錄：時間、對象、獎勵、數量、鼓勵文字；seen＝孩子已看過領取畫面
+      blessings: (Array.isArray(adv.blessings) ? adv.blessings : []).filter(function (x) {
+        return x && x.id && childIdSet.has(String(x.childId)) && x.kind;
+      }).map(function (x) {
+        return { id: String(x.id), childId: String(x.childId), kind: String(x.kind), qty: Math.max(1, toInt(x.qty, 1)),
+          message: String(x.message || '').slice(0, 100), date: String(x.date || ''), ts: toInt(x.ts, Date.now()), seen: !!x.seen };
+      }),
+      // 道具與寶箱紀錄：取得、開箱、使用（時間、孩子、道具、來源、結果）
+      itemLog: (Array.isArray(adv.itemLog) ? adv.itemLog : []).filter(function (x) {
+        return x && x.id && childIdSet.has(String(x.childId));
+      }).map(function (x) {
+        return { id: String(x.id), childId: String(x.childId), action: String(x.action || ''), item: String(x.item || ''),
+          qty: toInt(x.qty, 1), source: String(x.source || ''), result: String(x.result || ''), date: String(x.date || ''), ts: toInt(x.ts, Date.now()) };
+      }),
       // Phase 3：每個孩子的棋子位置、角色、背包
       players: (function () {
         var src = adv.players && typeof adv.players === 'object' ? adv.players : {};
@@ -448,6 +468,8 @@
     adv.ledger = adv.ledger.filter(function (x) { return x.childId !== id; });
     adv.rolls = adv.rolls.filter(function (x) { return x.childId !== id; });
     adv.minigames = adv.minigames.filter(function (x) { return x.childId !== id; });
+    adv.blessings = adv.blessings.filter(function (x) { return x.childId !== id; });
+    adv.itemLog = adv.itemLog.filter(function (x) { return x.childId !== id; });
     delete adv.players[id];
     this.data.items.concat(this.data.challenges).forEach(function (i) {
       if (Array.isArray(i.childIds)) i.childIds = i.childIds.filter(function (cid) { return cid !== id; });
@@ -561,6 +583,39 @@
   Store.prototype.deleteReward = function (id) {
     this.data.rewards = this.data.rewards.filter(function (r) { return r.id !== id; });
     this.save();
+  };
+
+  // ----- 家長密碼（保護整個設定與神諭祝福） -----
+  function pinHash(pin, salt) {
+    var h = 0x811c9dc5, s = salt + ':' + pin;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+    return ('0000000' + h.toString(16)).slice(-8);
+  }
+  Store.prototype.hasParentPin = function () { return !!this.data.parentPin; };
+  /** 設定或更換家長密碼（4 位數字）。已有密碼時需先解鎖（或通過忘記密碼驗證） */
+  Store.prototype.setParentPin = function (pin) {
+    if (!/^\d{4}$/.test(String(pin))) throw new Error('請輸入 4 位數字');
+    if (this.data.parentPin && !this._parentUnlocked) throw new Error('需要先輸入家長密碼');
+    var salt = Math.random().toString(36).slice(2, 10);
+    this.data.parentPin = { salt: salt, hash: pinHash(String(pin), salt) };
+    this._parentUnlocked = true;
+    this.save();
+  };
+  Store.prototype.checkParentPin = function (pin) {
+    var p = this.data.parentPin;
+    return !!p && pinHash(String(pin), p.salt) === p.hash;
+  };
+  /** 輸入正確密碼後解鎖（只存在記憶體；離開設定或重新整理就上鎖） */
+  Store.prototype.unlockParent = function (pin) {
+    this._parentUnlocked = this.checkParentPin(pin);
+    return this._parentUnlocked;
+  };
+  Store.prototype.lockParent = function () { this._parentUnlocked = false; };
+  Store.prototype.isParentUnlocked = function () { return !!this._parentUnlocked; };
+  /** 忘記密碼：通過家長驗證題後允許重設 */
+  Store.prototype.allowPinReset = function () { this._parentUnlocked = true; };
+  Store.prototype._requireParent = function () {
+    if (!this._parentUnlocked) throw new Error('需要家長密碼才能執行');
   };
 
   // ----- 特殊任務（Phase 4 命運卡） -----
