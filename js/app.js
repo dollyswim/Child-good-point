@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-52';
+  var APP_VERSION = '2026.11.07-53';
   var store;
   try {
     store = new CGP.Store();
@@ -321,9 +321,9 @@
   /** 子頁面頂部：標題木牌＋孩子切換 */
   function pageHeader(title, child, tab) {
     var kids = store.getChildren();
-    var sw = kids.length > 1 ? '<nav class="kid-switch" aria-label="切換孩子">' + kids.map(function (c) {
+    var sw = kids.length > 1 ? '<nav class="kid-switch' + (kids.length >= 4 ? ' many' : '') + '" aria-label="切換孩子">' + kids.map(function (c) {
       return '<a class="kid ' + (c.id === child.id ? 'active' : '') + '" href="#' + tab + '-' + h(c.id) + '" style="--c:' + h(c.color) + '">' +
-        avatar(c, 'xs') + h(c.name) + '</a>';
+        avatar(c, 'xs') + '<span class="kid-name">' + h(c.name) + '</span></a>';
     }).join('') + '</nav>' : '';
     // 小孩頁面：設定城堡下方放小的「新增孩子」按鈕（圖示＋文字），和切換孩子同一列靠右
     var add = tab === 'child' ? '<button type="button" class="add-kid" data-action="add-child" aria-label="新增孩子">' +

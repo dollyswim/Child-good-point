@@ -69,6 +69,13 @@ async function main() {
   assert.ok(ak.dx < 1.5 && ak.below, '新增孩子在設定城堡正下方');
   assert.ok(ak.h < 60, '按鈕縮小（高度 ' + ak.h + 'px）');
   await addChild('波妞', 0);
+  // 孩子 4 位以上：切換列每排 3 位（第二排在下方）；3 位以下一排
+  await page.evaluate(() => { const s = window.__cgpStore; s.addChild({ name: '小明同學' }); s.addChild({ name: '阿寶' }); });
+  await page.reload(); await page.waitForSelector('.kid-switch');
+  const kidRows = await page.evaluate(() => [...new Set([...document.querySelectorAll('.kid-switch .kid')].map((k) => Math.round(k.getBoundingClientRect().top)))].length);
+  assert.ok(await page.locator('.kid-switch.many').count() === 1 && kidRows === 2, '4 位孩子：兩排（實際 ' + kidRows + ' 排）');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), true, '不橫向溢出');
+  await page.evaluate(() => { const s = window.__cgpStore; s.getChildren().slice(2).forEach((c) => s.deleteChild(c.id)); });
   await page.goto(url + '#home');
   assert.equal(await page.locator('.child-card').count(), 2);
   assert.match(await text('.child-card >> nth=0'), /100 點/);
@@ -79,8 +86,12 @@ async function main() {
   await page.click('a[aria-label="設定"]');
   // 第一次進設定：要求設定家長密碼
   await page.waitForSelector('[data-testid=pin] #pin-2');
+  // （設定分頁換行檢查在輸入密碼之後）
   assert.match(await text('[data-testid=pin]'), /設定家長密碼/);
   await passPin();
+  // 設定分頁全部看得到：每排 4 個換行，不用左右滑
+  const tabsOk = await page.evaluate(() => [...document.querySelectorAll('.tabs .tab')].every((t) => { const r = t.getBoundingClientRect(); return r.left >= 0 && r.right <= window.innerWidth && t.scrollWidth <= t.clientWidth; }));
+  assert.ok(tabsOk, '設定分頁沒有超出畫面、文字沒有被截掉');
   await page.click('a[href="#rules-bonus"]');
   await page.click('[data-action="add-item"]');
   await page.fill('input[name="name"]', '超棒表現');

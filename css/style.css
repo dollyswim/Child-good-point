@@ -263,12 +263,10 @@ h2 { font-size: 1.05rem; margin: 0 0 8px; }
 /* ---- 設定 ---- */
 .tabs {
   position: sticky; top: calc(env(safe-area-inset-top) + 65px); z-index: 9;
-  display: flex; gap: 4px; padding: 8px 12px; overflow-x: auto;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px 4px; padding: 8px 12px;   /* 全部分頁都看得到：每排 4 個自動換行，不用左右滑 */
   background: var(--bg); border-bottom: 1px solid var(--line);
-  scrollbar-width: none;
 }
-.tabs::-webkit-scrollbar { display: none; }
-.tab { flex: 1 0 auto; padding: 8px 12px; border-radius: 999px; text-align: center; font-size: .95rem; white-space: nowrap; }
+.tab { min-width: 0; padding: 7px 4px; border-radius: 999px; text-align: center; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tab.active { background: var(--primary); color: #fff; font-weight: 600; }
 .rows { list-style: none; margin: 0 0 14px; padding: 0; background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); }
 .rows > li { padding: 12px 14px; border-top: 1px solid var(--line); }
@@ -1552,3 +1550,12 @@ body.mg-open { overflow: hidden; }
 .add-kid-icon { position: relative; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: #fff3d6; border: 2px dashed rgba(107, 74, 43, .35); font-size: 1.05rem; }
 .add-kid-icon i { position: absolute; right: -3px; bottom: -3px; width: 14px; height: 14px; border-radius: 50%; display: grid; place-items: center;
   background: #5cbf4a; color: #fff; font-style: normal; font-size: .62rem; font-weight: 900; line-height: 1; }
+
+/* 孩子 4 位以上：切換列改成每排 3 位（3 位以下維持一排） */
+.kid-switch.many { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; gap: 6px; }
+.kid-switch.many .kid { min-width: 0; padding-right: 8px; }
+.kid-switch.many .kid-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kid-row { align-items: flex-start; }   /* 新增孩子固定在城堡正下方（第一排旁） */
+.kid-switch.many .kid { gap: 4px; padding: 3px 8px 3px 3px; font-size: .88rem; }
+.kid-switch.many .kid .avatar { flex: none; }
+.kid-switch.many .kid-name { white-space: normal; word-break: break-all; line-height: 1.15; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
