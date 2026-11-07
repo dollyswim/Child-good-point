@@ -1795,3 +1795,24 @@ test('金島第二區資料：25 格（31～55）、穩定 ID、格距 64～76�
   assert.ok(open.tiles[31].y > 1, '第 31～34 格在第一區原圖上（第二區背景下方之外）');
   assert.equal(open.tiles[55].type, 'boundary');
 });
+
+// ---------- 備份提醒 ----------
+test('備份提醒：滿 7 天沒匯出才提醒；匯出後重新計算；明天再提醒；沒有孩子不提醒', () => {
+  const { store, setDate } = makeStore('2026-11-01T09:00:00');
+  assert.equal(store.getBackupStatus().due, false, '沒有孩子不提醒');
+  store.addChild({ name: '端端' });
+  setDate('2026-11-07T09:00:00');
+  assert.deepEqual(store.getBackupStatus(), { days: 6, never: true, due: false });
+  setDate('2026-11-08T09:30:00');
+  assert.deepEqual(store.getBackupStatus(), { days: 7, never: true, due: true }, '第 7 天提醒');
+  store.snoozeBackup();
+  assert.equal(store.getBackupStatus().due, false, '明天再提醒');
+  setDate('2026-11-09T08:00:00');
+  assert.equal(store.getBackupStatus().due, true, '隔天再提醒');
+  store.markExported();
+  assert.deepEqual(store.getBackupStatus(), { days: 0, never: false, due: false }, '匯出後重新計算');
+  setDate('2026-11-16T08:00:00');
+  assert.equal(store.getBackupStatus().due, true, '匯出後 7 天再提醒');
+  const d = migrate({ children: [{ id: 'c', name: 'B' }] });
+  assert.deepEqual([d.backup.lastExportAt, d.backup.since], [0, 0], '舊存檔：載入時才從當下開始算');
+});

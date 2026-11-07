@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-35';
+  var APP_VERSION = '2026.11.07-36';
   var store;
   try {
     store = new CGP.Store();
@@ -347,9 +347,20 @@
       (children.length
         ? '<div class="child-list">' + cards + '</div>'
         : '<div class="empty card"><p class="big-emoji">👋</p><p><b>還沒有孩子資料</b></p><p class="muted">先新增孩子，就可以開始記錄生活積分。</p></div>') +
-      tiles + week +
+      tiles + week + backupReminder() +
       '<button class="btn add-child" data-action="add-child">＋ 新增孩子</button>' +
       '</main>';
+  }
+
+  /** 首頁：超過 7 天沒匯出備份時提醒（匯出不改資料，不需家長密碼） */
+  function backupReminder() {
+    var b = store.getBackupStatus();
+    if (!b.due) return '';
+    return '<section class="backup-remind" data-testid="backup-remind"><span class="br-icon">💾</span>' +
+      '<span class="br-main"><b>' + (b.never ? '還沒有備份過資料' : '已經 ' + b.days + ' 天沒有備份了') + '</b>' +
+      '<small>資料只存在這支手機，換手機或清除瀏覽器資料會不見。匯出 JSON 後存到雲端硬碟或電腦。</small></span>' +
+      '<span class="br-acts"><button class="btn primary small" data-action="export">立即匯出</button>' +
+      '<button class="btn link small" data-action="snooze-backup">明天再提醒</button></span></section>';
   }
 
   /** 首頁：還沒完成的特殊任務提醒（點一下到該孩子的任務頁） */
@@ -2025,7 +2036,9 @@
     a.click();
     a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-    toast('已匯出備份');
+    store.markExported();
+    toast('已匯出備份，記得存到雲端硬碟或電腦');
+    render();
   }
 
   /** 讀取文字檔：先試 UTF-8，失敗時改用 Big5（Excel 中文版預設存檔編碼） */
@@ -2238,6 +2251,7 @@
           break;
         }
         case 'export': exportData(); break;
+        case 'snooze-backup': store.snoozeBackup(); toast('好的，明天再提醒'); render(); break;
         case 'pick-child': pickChild(el.getAttribute('data-kind')); break;
         case 'enter-adventure': enterAdventure(childId); break;
         case 'roll': { var rk = el.getAttribute('data-kind'); playMove(childId, rk === 'magicDice' ? 'magic' : rk); break; }   // 神奇骰子按鈕代號 magicDice → 擲骰種類 magic

@@ -1393,3 +1393,12 @@ body.mg-open { overflow: hidden; }
 .map-fog span { display: grid; gap: 10px; justify-items: center; padding: 28px 40px; border-radius: 40px; background: rgba(255,255,255,.85);
   color: #4a7aa8; font-size: 40px; font-weight: 800; box-shadow: 0 6px 20px rgba(60,120,180,.2); }
 .map-fog span b { font-size: 56px; color: #2f6db0; }
+
+/* 首頁：備份提醒 */
+.backup-remind { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 12px; border-radius: 20px;
+  background: linear-gradient(135deg, #fff4e0, #ffe9c7); border: 3px solid #fff; box-shadow: var(--card-shadow); }
+.br-icon { font-size: 1.8rem; line-height: 1; }
+.br-main { display: grid; gap: 2px; min-width: 0; }
+.br-main b { color: #9a5b00; }
+.br-main small { color: var(--muted); font-weight: 700; font-size: .78rem; line-height: 1.4; }
+.br-acts { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; align-items: center; }

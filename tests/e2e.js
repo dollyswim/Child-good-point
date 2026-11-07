@@ -1105,6 +1105,36 @@ async function main() {
     await c14.close();
   }
 
+  // ---------- 首頁備份提醒 ----------
+  {
+    const c15 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 800 }, serviceWorkers: 'block', acceptDownloads: true });
+    const q = await c15.newPage();
+    await q.clock.setFixedTime(new Date('2026-11-01T10:00:00'));
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    await q.evaluate(() => window.__cgpStore.addChild({ name: '端端' }));
+    await q.reload();
+    assert.equal(await q.locator('[data-testid=backup-remind]').count(), 0, '剛開始用不提醒');
+    await q.clock.setFixedTime(new Date('2026-11-09T10:00:00'));
+    await q.reload();
+    await q.waitForSelector('[data-testid=backup-remind]');
+    assert.match(await q.locator('[data-testid=backup-remind]').innerText(), /還沒有備份過資料[\s\S]*立即匯出[\s\S]*明天再提醒/);
+    const [dl] = await Promise.all([q.waitForEvent('download'), q.click('[data-testid=backup-remind] [data-action=export]')]);
+    assert.match(dl.suggestedFilename(), /^child-points-backup-2026-11-09\.json$/);
+    await q.waitForFunction(() => !document.querySelector('[data-testid=backup-remind]'));
+    // 7 天後再提醒；按「明天再提醒」當天不再出現
+    await q.clock.setFixedTime(new Date('2026-11-16T10:00:00'));
+    await q.reload();
+    await q.waitForSelector('[data-testid=backup-remind]');
+    assert.match(await q.locator('[data-testid=backup-remind]').innerText(), /已經 7 天沒有備份了/);
+    await q.click('[data-action=snooze-backup]');
+    await q.waitForFunction(() => !document.querySelector('[data-testid=backup-remind]'));
+    await q.reload();
+    assert.equal(await q.locator('[data-testid=backup-remind]').count(), 0);
+    console.log('✔ 備份提醒：滿 7 天提醒、立即匯出下載並消失、7 天後再提醒、明天再提醒');
+    await c15.close();
+  }
+
   // ---------- 設定：還原資料（每日自動備份、載入備份檔覆蓋） ----------
   {
     const c11 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 780 }, serviceWorkers: 'block' });

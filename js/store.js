@@ -89,7 +89,7 @@
 
   // ---------- 預設資料 ----------
   function emptyData() {
-    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null,
+    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null, backup: { lastExportAt: 0, since: 0, snoozeUntil: '' },
       milestones: {}, adventure: { settlements: [], ledger: [], rolls: [], minigames: [], bonusQuota: [], mapChests: [], dayEnds: [], blessings: [], itemLog: [], players: {} } };
   }
 
@@ -240,6 +240,9 @@
       });
       return out;
     })();
+    // 備份提醒：lastExportAt＝最後一次匯出 JSON 的時間；since＝開始計算的時間（舊存檔＝載入當下）；snoozeUntil＝「明天再提醒」到期日
+    var bk = d.backup && typeof d.backup === 'object' ? d.backup : {};
+    d.backup = { lastExportAt: bk.lastExportAt ? toInt(bk.lastExportAt, 0) : 0, since: toInt(bk.since, 0), snoozeUntil: /^\d{4}-\d{2}-\d{2}$/.test(bk.snoozeUntil) ? bk.snoozeUntil : '' };
     // 家長密碼（只存雜湊與鹽，不存原文）
     d.parentPin = d.parentPin && typeof d.parentPin === 'object' && /^[0-9a-f]{8}$/.test(d.parentPin.hash) && d.parentPin.salt
       ? { salt: String(d.parentPin.salt), hash: d.parentPin.hash } : null;
@@ -409,6 +412,7 @@
     this.listeners = [];
     this.load();
     if (this._initMilestones && this._initMilestones()) this.save();   // 舊存檔：里程碑從功能上線當下開始算（不補發）
+    if (this._initBackup()) this.save();
     this.dailySnapshot();
   }
 
@@ -462,6 +466,7 @@
     this._snapBefore();
     this.data = data;
     if (this._initMilestones) this._initMilestones();
+    this._initBackup();
     this.save();
     return snap;
   };
@@ -1071,6 +1076,35 @@
   };
 
   // ----- 備份與還原 -----
+  var BACKUP_REMIND_DAYS = 7;
+  /** 備份提醒從何時開始算：還沒設定時＝現在（使用 App 的時鐘） */
+  Store.prototype._initBackup = function () {
+    if (!this.data.backup) this.data.backup = { lastExportAt: 0, since: 0, snoozeUntil: '' };
+    if (this.data.backup.since) return false;
+    this.data.backup.since = this.now().getTime();
+    return true;
+  };
+  /** 匯出後記下時間（備份提醒重新計算） */
+  Store.prototype.markExported = function () {
+    this.data.backup.lastExportAt = this.now().getTime();
+    this.data.backup.snoozeUntil = '';
+    this.save();
+  };
+  /** 幾天沒備份；超過 7 天且不在「明天再提醒」期間時 due＝true */
+  Store.prototype.getBackupStatus = function () {
+    var b = this.data.backup, now = this.now();
+    var from = b.lastExportAt || b.since;
+    var days = Math.floor((now.getTime() - from) / 86400000);
+    var due = this.data.children.length > 0 && days >= BACKUP_REMIND_DAYS && !(b.snoozeUntil && this.today() < b.snoozeUntil);
+    return { days: days, never: !b.lastExportAt, due: due };
+  };
+  /** 明天再提醒 */
+  Store.prototype.snoozeBackup = function () {
+    var d = this.now(); d.setDate(d.getDate() + 1);
+    this.data.backup.snoozeUntil = dateKey(d);
+    this.save();
+  };
+
   Store.prototype.exportJSON = function () {
     var out = clone(this.data);
     out.exportedAt = this.now().toISOString();
@@ -1088,6 +1122,7 @@
     this._snapBefore();   // 覆蓋前先自動備份目前狀態
     this.data = data;
     if (this._initMilestones) this._initMilestones();
+    this._initBackup();
     this.save();
     return data;
   };
