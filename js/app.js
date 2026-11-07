@@ -936,7 +936,7 @@
     if (!ev) return null;
     if (ev.clear || (last && last.clear)) return 'happy';
     if (ev.type === 'chest' || (last && last.type === 'chest')) return 'openChest';
-    if (ev.type === 'fate' || ev.backPath || (last && last.backPath)) return 'surprised';
+    if (ev.type === 'fate' || (ev.backPath && ev.backPath.length) || (last && last.backPath && last.backPath.length)) return 'surprised';
     if (res.found) return 'surprised';
     if (ev.type === 'chance') return 'happy';
     return null;

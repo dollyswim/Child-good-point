@@ -576,6 +576,8 @@ async function main() {
     await q.waitForFunction(() => !document.getElementById('dice-overlay') || document.getElementById('dice-overlay').hidden, null, { timeout: 5000 });
     await q.waitForFunction(() => document.querySelector('[data-testid=pos]').textContent.startsWith('4 '), null, { timeout: 8000 });
     assert.deepEqual(seen.slice(0, 4), [1, 2, 3, 4], '逐格移動');
+    await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 8000 });
+    assert.equal(await q.locator('#pawn .pawn-bit').count(), 0, '停在普通格：角色不做驚訝或開心');
     if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
     console.log('✔ Phase 3 案例 B：擲出 4 逐格移動 1→2→3→4');
 
