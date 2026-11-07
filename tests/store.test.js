@@ -861,8 +861,8 @@ test('寶箱格：星星或道具；機會格：前進 2 格、得 2 星、得 6
   assert.equal(r.event.type, 'chest');
   assert.equal(r.event.stars, 3);
   assert.equal(store.getStarBalance(a.id), 23);
-  // 機會在第 9 格：擲 4，機會選 1（得 2 星）
-  push(face(4), 0.5);
+  // 機會在第 9 格：擲 4，機會選 1（得 2 星；5 種機會卡，0.3 → 第 2 種）
+  push(face(4), 0.3);
   r = store.rollDice(a.id, 'd6');
   assert.equal(r.event.type, 'chance');
   assert.equal(r.event.stars, 2);
@@ -1118,7 +1118,7 @@ test('Phase 4：小遊戲每天 1 次、獎勵上限 15、隔天可再玩、重�
   const r = store.rollDice(a.id, 'd12');
   assert.equal(r.event.type, 'minigame');
   assert.ok(!r.event.minigame && r.event.minigameOverflow, '今天已玩過');
-  assert.match(r.event.text, /明天再來/);
+  assert.match(r.event.text, /神秘寶箱/, '今天已玩過 → 轉成神秘寶箱');
   assert.equal(store.getPendingMinigame(a.id), null);
   // 隔天：可以再玩
   setDate('2026-11-07T10:00:00');
@@ -1513,7 +1513,7 @@ test('好運金牌：啟用後下一次寶箱效果 2 次、機會卡抽 2 張�
   assert.equal(store.rollDice(a.id, 'd6').event.text.split('\n').length, 1);
   store.activateMedal(a.id);
   store.setPlayerTile(a.id, 14);
-  push(face(1), 0.5, 0.99);                                   // 第 15 格機會：礦石 ＋ 6 面骰
+  push(face(1), 0.3, 0.5);                                    // 第 15 格機會：礦石 ＋ 6 面骰
   const r3 = store.rollDice(a.id, 'd6');
   assert.equal(r3.event.text.split('\n').length, 2, '機會卡抽 2 張');
   assert.deepEqual([r3.event.stars, r3.event.items.d6], [2, 1]);
@@ -1545,4 +1545,135 @@ test('Phase 4A 存檔遷移：擲骰種類、好運金牌、待前進擲骰、�
   assert.equal(d.adventure.players.c.medalArmed, true);
   assert.deepEqual([d.adventure.players.c.pendingRoll.value, d.adventure.players.c.pendingRoll.sides], [9, 12]);
   assert.equal(migrate({ children: [{ id: 'c' }], adventure: { players: { c: {} } } }).adventure.players.c.pendingRoll, null);
+});
+
+// ---------- 寶物商店 Phase 4B：地圖神秘寶箱、黃金鑰匙、寶物磁鐵、里程碑、機會卡擴充 ----------
+test('機會卡擴充：小寶箱 +1～3 星、撿到溜冰鞋', () => {
+  const { store, a, push } = p3Store();
+  const bag = store.getPlayer(a.id).bag; bag.d6 = 2;
+  store.setPlayerTile(a.id, 2);
+  push(face(1), 0.7, 0.99);                                   // 第 3 格機會：0.7 → 小寶箱，0.99 → 3 星
+  let r = store.rollDice(a.id, 'd6');
+  assert.match(r.event.text, /小寶箱/); assert.equal(r.event.stars, 3);
+  store.setPlayerTile(a.id, 8);
+  push(face(1), 0.9);                                         // 第 9 格機會：0.9 → 溜冰鞋
+  r = store.rollDice(a.id, 'd6');
+  assert.deepEqual(r.event.items, { skates: 1 });
+});
+
+test('神秘寶箱（次數用完轉換）：每天最多 2 個、隔天才出現在前方 2～8 格、經過就撿到、要黃金鑰匙才能開', () => {
+  const { store, a, push, setDate } = p3Store();
+  const p = store.getPlayer(a.id);
+  store.data.adventure.minigames.push({ id: 'm0', childId: a.id, date: store.today(), status: 'done', caught: 0, stars: 0, ts: 1 });
+  p.bag.d12 = 3;
+  for (const from of [4, 14, 21]) { store.setPlayerTile(a.id, from); push(face(3, 12)); store.rollDice(a.id, 'd12'); }   // 第 7、17、24 格小遊戲
+  assert.equal(store.data.adventure.mapChests.length, 2, '每天最多 2 個');
+  assert.equal(store.placeMapChests(a.id), 0, '當天不出現');
+  setDate('2026-11-07T10:00:00');
+  store.setPlayerTile(a.id, 3);
+  store.random = () => 0;                                     // 前方 2 格
+  assert.equal(store.placeMapChests(a.id), 2);
+  assert.deepEqual(store.getMapChests(a.id).map(c => c.n), [5, 5]);
+  assert.equal(store.takeChestHint(a.id), 2, '進地圖提示一次');
+  assert.equal(store.takeChestHint(a.id), 0);
+  const it = store.addItem({ kind: 'bonus', name: 'x', points: 10 }); store.recordItem(a.id, it.id); store.settleToday(a.id);
+  p.bag.skates = 1;
+  store.random = () => 0.5;
+  const r = store.useSkates(a.id);                             // 3 → 6：經過第 5 格
+  assert.equal(r.found, 2, '經過就撿到');
+  assert.equal(p.bag.mysteryChest, 2);
+  assert.equal(store.getMapChests(a.id).length, 0);
+  assert.throws(() => store.openChest(a.id, 'mysteryChest'), /黃金鑰匙/);
+  p.bag.goldenKey = 1;
+  const o = store.openChest(a.id, 'mysteryChest');
+  assert.ok(o.item);
+  assert.deepEqual([p.bag.goldenKey, p.bag.mysteryChest], [0, 1]);
+});
+
+test('神秘寶箱：沒撿到一直留著；在後面時後退經過也會撿到', () => {
+  const { store, a, push } = p3Store();
+  const p = store.getPlayer(a.id);
+  store._addMapChest(a.id, 'milestone');
+  store.setPlayerTile(a.id, 10);
+  store.random = () => 0;
+  store.placeMapChests(a.id);                                 // 第 12 格
+  p.bag.door = 1;
+  store.useDoor(a.id, 13);                                    // 傳送過頭（第 13 格普通格）
+  assert.equal(store.getMapChests(a.id).length, 1, '沒撿到一直留著');
+  p.bag.d6 = 1;
+  const seq = [face(1), 0.8, 0.9];                            // 第 14 格命運：後退 2 格 → 13、12
+  store.random = () => seq.shift();
+  store.rollDice(a.id, 'd6');
+  assert.equal(p.bag.mysteryChest, 1, '後退經過撿到');
+});
+
+test('累計得分里程碑：每 +500 黃金鑰匙、每 +1000 神秘寶箱；不補發、不重複、新孩子從起始點數開始', () => {
+  const { store } = makeStore();
+  const big = store.addItem({ kind: 'bonus', name: '大', points: 300 });
+  const pen = store.addItem({ kind: 'penalty', name: '扣', points: 300 });
+  const a = store.addChild({ name: 'A', startPoints: 2400 });
+  assert.deepEqual(store.data.milestones[a.id], { base: 2400, keys: 0, chests: 0 }, '從起始點數開始算（不補發）');
+  store.recordItem(a.id, big.id);                             // +300
+  assert.equal(store.getPlayer(a.id).bag.goldenKey, 0);
+  const r = store.recordItem(a.id, big.id);                   // +600
+  assert.deepEqual(r.milestone, { keys: 1, chests: 0 });
+  assert.equal(store.getPlayer(a.id).bag.goldenKey, 1);
+  store.recordItem(a.id, pen.id);                             // +300
+  store.recordItem(a.id, big.id);                             // +600：不重複發
+  assert.equal(store.getPlayer(a.id).bag.goldenKey, 1, '同一門檻不重複發');
+  store.recordItem(a.id, big.id);                             // +900
+  const r2 = store.recordItem(a.id, big.id);                  // +1200
+  assert.deepEqual(r2.milestone, { keys: 1, chests: 1 });
+  assert.equal(store.getPlayer(a.id).bag.goldenKey, 2);
+  const chest = store.data.adventure.mapChests.find(c => c.source === 'milestone');
+  assert.ok(chest && !chest.tileId, '里程碑寶箱等下次進地圖出現');
+  assert.equal(store.placeMapChests(a.id), 1, '同一天就可以出現');
+  // 舊存檔：載入時從當下累計得分開始，不補發
+  const d = migrate({ children: [{ id: 'c', name: 'B', startPoints: 5000 }] });
+  const s2 = new Store({ storage: memoryStorage(), seed: false });
+  s2.data = d; s2._initMilestones();
+  assert.deepEqual(s2.data.milestones.c, { base: 5000, keys: 0, chests: 0 });
+});
+
+test('寶物磁鐵：吸前後 5 格內的神秘寶箱或一般寶箱格；吸過的寶箱格再停上去沒有獎勵', () => {
+  const { store, a, push } = p3Store();
+  const p = store.getPlayer(a.id);
+  p.bag.magnet = 3; p.bag.d6 = 1;
+  store._addMapChest(a.id, 'milestone');
+  store.setPlayerTile(a.id, 8);
+  store.random = () => 0.2;                                   // 前方 3 格 → 第 11 格
+  store.placeMapChests(a.id);
+  const targets = store.getMagnetTargets(a.id);
+  assert.deepEqual(targets.map(t => [t.type, t.n]), [['tile', 5], ['mystery', 11], ['tile', 12]]);
+  const r1 = store.useMagnet(a.id, 'mystery', targets[1].id);
+  assert.equal(p.bag.mysteryChest, 1);
+  store.random = () => 0.1;
+  const r2 = store.useMagnet(a.id, 'tile', 'gold-01-012');
+  assert.ok(r2.stars >= 1);
+  assert.ok(p.looted.includes('gold-01-012'));
+  assert.throws(() => store.useMagnet(a.id, 'tile', 'gold-01-019'), /不在磁鐵範圍/);
+  assert.equal(p.bag.magnet, 1);
+  const bal = store.getStarBalance(a.id);
+  const seq = [face(4)];                                      // 停到第 12 格（已被吸走）
+  store.random = () => seq.shift();
+  const r = store.rollDice(a.id, 'd6');
+  assert.match(r.event.text, /被寶物磁鐵吸走/);
+  assert.equal(store.getStarBalance(a.id), bal, '沒有獎勵');
+});
+
+test('星星商店新增黃金鑰匙、寶物磁鐵（各 10 星）', () => {
+  const { store, a } = p3Store();
+  assert.deepEqual(G.SHOP.map(x => [x.id, x.price]), [['d6', 5], ['d12', 10], ['skates', 4], ['goldenKey', 10], ['magnet', 10]]);
+  store.buyItem(a.id, 'goldenKey'); store.buyItem(a.id, 'magnet');
+  assert.deepEqual([store.getPlayer(a.id).bag.goldenKey, store.getPlayer(a.id).bag.magnet, store.getStarBalance(a.id)], [1, 1, 0]);
+});
+
+test('Phase 4B 存檔遷移：地圖寶箱、被吸走的寶箱格、里程碑', () => {
+  const d = migrate({ children: [{ id: 'c', name: 'B' }], milestones: { c: { base: 100, keys: 2, chests: 1 }, x: { base: 1 } },
+    adventure: { mapChests: [{ id: 'm', childId: 'c', source: 'overflow', createdDate: '2026-11-06', tileId: 'gold-01-005', n: 5 }],
+      players: { c: { looted: ['gold-01-005'], bag: {} } } } });
+  assert.deepEqual(d.milestones, { c: { base: 100, keys: 2, chests: 1 } });
+  assert.deepEqual([d.adventure.mapChests[0].n, d.adventure.mapChests[0].source], [5, 'overflow']);
+  assert.deepEqual(d.adventure.players.c.looted, ['gold-01-005']);
+  assert.equal(d.adventure.players.c.bag.mysteryChest, 0);
 });

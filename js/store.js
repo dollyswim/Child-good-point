@@ -54,7 +54,7 @@
   var SPECIAL_TASK_POINTS = 20;
   /** 冒險背包的道具代號（穩定、唯一；不以中文名稱判斷） */
   var BAG_KEYS = ['d6', 'd12', 'skates', 'shield', 'magicDice', 'luckyMedal', 'wings', 'door', 'airplane', 'goldenKey', 'magnet', 'rerollTicket', 'bonusPlay',
-    'chest', 'giftMysteryChest']; // 寶箱庫存：一般寶箱、神諭祝福送的神秘寶箱（免鑰匙）
+    'chest', 'giftMysteryChest', 'mysteryChest']; // 寶箱庫存：一般寶箱、神諭祝福的神秘寶箱（免鑰匙）、地圖撿到的神秘寶箱（要鑰匙）
   function emptyBag() { var b = {}; BAG_KEYS.forEach(function (k) { b[k] = 0; }); return b; }
   var SPECIAL_TASK_DAYS = 3;
   /** 8 種冒險夥伴代號：孩子的頭像與冒險棋子共用（child.avatar） */
@@ -90,7 +90,7 @@
   // ---------- 預設資料 ----------
   function emptyData() {
     return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null,
-      adventure: { settlements: [], ledger: [], rolls: [], minigames: [], bonusQuota: [], blessings: [], itemLog: [], players: {} } };
+      milestones: {}, adventure: { settlements: [], ledger: [], rolls: [], minigames: [], bonusQuota: [], mapChests: [], blessings: [], itemLog: [], players: {} } };
   }
 
   function defaultData() {
@@ -231,6 +231,15 @@
         startDate: x.startDate, endDate: x.endDate, cancelled: !!x.cancelled, ts: toInt(x.ts, Date.now()) };
     });
 
+    // 累計得分里程碑：base＝開始計算時的累計得分；keys／chests＝已發的黃金鑰匙／神秘寶箱數
+    d.milestones = (function () {
+      var src = d.milestones && typeof d.milestones === 'object' ? d.milestones : {}, out = {};
+      Object.keys(src).forEach(function (cid) {
+        if (!childIdSet.has(cid) || !src[cid]) return;
+        out[cid] = { base: toInt(src[cid].base, 0), keys: Math.max(0, toInt(src[cid].keys, 0)), chests: Math.max(0, toInt(src[cid].chests, 0)) };
+      });
+      return out;
+    })();
     // 家長密碼（只存雜湊與鹽，不存原文）
     d.parentPin = d.parentPin && typeof d.parentPin === 'object' && /^[0-9a-f]{8}$/.test(d.parentPin.hash) && d.parentPin.salt
       ? { salt: String(d.parentPin.salt), hash: d.parentPin.hash } : null;
@@ -286,6 +295,14 @@
             ts: toInt(x.ts, Date.now()), doneTs: x.doneTs ? toInt(x.doneTs, 0) : undefined };
         });
       })(),
+      // 地圖上的神秘寶箱：tileId 為空＝還沒出現（下次冒險時出現在角色前方 2～8 格）
+      mapChests: (Array.isArray(adv.mapChests) ? adv.mapChests : []).filter(function (x) {
+        return x && x.id && childIdSet.has(String(x.childId));
+      }).map(function (x) {
+        return { id: String(x.id), childId: String(x.childId), island: String(x.island || 'gold'), source: String(x.source || 'overflow'),
+          createdDate: String(x.createdDate || ''), tileId: x.tileId ? String(x.tileId) : '', n: x.tileId ? toInt(x.n, 0) : 0,
+          hinted: !!x.hinted, ts: toInt(x.ts, Date.now()) };
+      }),
       // 再來 3 次：今天的額外擲骰／小遊戲次數（只在當天有效）
       bonusQuota: (Array.isArray(adv.bonusQuota) ? adv.bonusQuota : []).filter(function (x) {
         return x && x.id && childIdSet.has(String(x.childId)) && /^\d{4}-\d{2}-\d{2}$/.test(x.date);
@@ -320,6 +337,7 @@
             tileId: p.tileId ? String(p.tileId) : '',  // 穩定格子 ID；舊存檔沒有時由 game.js 依 pos 對應
             character: String(p.character || ''),
             medalArmed: !!p.medalArmed,   // 好運金牌已啟用（下一次寶箱／機會效果 2 次）
+            looted: Array.isArray(p.looted) ? p.looted.map(String) : [],   // 被寶物磁鐵吸走的一般寶箱格（這一輪停上去不再給獎勵）
             pendingRoll: p.pendingRoll && p.pendingRoll.rollId ? {   // 已擲出還沒前進（命運重骰券可用）
               rollId: String(p.pendingRoll.rollId), die: ['d6', 'd12', 'magic'].indexOf(p.pendingRoll.die) >= 0 ? p.pendingRoll.die : 'd6',
               kind: String(p.pendingRoll.kind || 'base'), sides: toInt(p.pendingRoll.sides, 6) === 12 ? 12 : 6,
@@ -384,6 +402,7 @@
     this.seed = opts.seed !== false;
     this.listeners = [];
     this.load();
+    if (this._initMilestones && this._initMilestones()) this.save();   // 舊存檔：里程碑從功能上線當下開始算（不補發）
     this.dailySnapshot();
   }
 
@@ -436,6 +455,7 @@
     try { data = migrate(JSON.parse(snap.data)); } catch (e) { throw new Error('這份備份已損毀，無法還原'); }
     this._snapBefore();
     this.data = data;
+    if (this._initMilestones) this._initMilestones();
     this.save();
     return snap;
   };
@@ -493,6 +513,7 @@
       createdAt: this.now().getTime()
     };
     this.data.children.push(c);
+    if (this._initMilestones) this._initMilestones();   // 新孩子：里程碑從起始點數開始算
     this.save();
     return c;
   };
@@ -536,6 +557,8 @@
     adv.rolls = adv.rolls.filter(function (x) { return x.childId !== id; });
     adv.minigames = adv.minigames.filter(function (x) { return x.childId !== id; });
     adv.bonusQuota = adv.bonusQuota.filter(function (x) { return x.childId !== id; });
+    adv.mapChests = adv.mapChests.filter(function (x) { return x.childId !== id; });
+    delete this.data.milestones[id];
     adv.blessings = adv.blessings.filter(function (x) { return x.childId !== id; });
     adv.itemLog = adv.itemLog.filter(function (x) { return x.childId !== id; });
     delete adv.players[id];
@@ -760,6 +783,7 @@
       ts: Math.max(now.getTime(), last + 1) // 保證順序嚴格遞增
     };
     this.data.records.push(rec);
+    if (this._checkMilestones) rec.milestone = this._checkMilestones(childId);   // 累計得分里程碑（黃金鑰匙、神秘寶箱）
     this.save();
     return rec;
   };
@@ -990,6 +1014,7 @@
     };
     this.data.records.push(rec);
     this._sortRecords();
+    if (this._checkMilestones) rec.milestone = this._checkMilestones(childId);
     this.save();
     return rec;
   };
@@ -1045,6 +1070,7 @@
     delete data.app;
     this._snapBefore();   // 覆蓋前先自動備份目前狀態
     this.data = data;
+    if (this._initMilestones) this._initMilestones();
     this.save();
     return data;
   };

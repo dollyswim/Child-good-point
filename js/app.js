@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-26';
+  var APP_VERSION = '2026.11.07-27';
   var store;
   try {
     store = new CGP.Store();
@@ -145,7 +145,10 @@
   /** 記錄後提示文字，例如「主動幫忙 +5 ⭐5」「好好表達心情 ⭐10」 */
   function recText(rec) {
     var p = (rec.points || !rec.stars) ? ' ' + signed(rec.points) : '';
-    return rec.name + p + (rec.stars ? ' ⭐' + rec.stars : '');
+    var m = rec.milestone || {};
+    return rec.name + p + (rec.stars ? ' ⭐' + rec.stars : '') +
+      (m.keys ? '・🎉 累計得分里程碑：得到 🔑 黃金鑰匙' + (m.keys > 1 ? ' ×' + m.keys : '') : '') +
+      (m.chests ? '・🎁 地圖上會出現神秘寶箱' : '');
   }
 
   function avatar(child, size) {
@@ -219,6 +222,7 @@
       var child = store.getChild(r.arg);
       if (!child) { location.replace('#home'); return; }
       setCurrent(child.id);
+      if (r.name === 'map' && store.canPlayToday(child.id)) store.placeMapChests(child.id);   // 下次冒險時神秘寶箱出現在前方
       html = r.name === 'child' ? renderChild(child) : r.name === 'challenge' ? renderChallenge(child)
         : r.name === 'shop' ? renderShop(child) : r.name === 'map' ? renderMap(child) : renderAdventure(child);
     } else if (r.name === 'settings') {
@@ -236,7 +240,10 @@
     }
     app.innerHTML = html;
     app.dataset.view = r.name;
-    if (r.name === 'map') setupMap(store.getChild(r.arg));
+    if (r.name === 'map') {
+      setupMap(store.getChild(r.arg));
+      if (store.takeChestHint(r.arg)) toast('✨ 附近似乎藏著神秘寶物……', 'pos');
+    }
     if (r.name === 'minigame-test') openMinigame(null, null, { practice: true });
     if (r.name === 'adventure') showBlessings(r.arg);
     if (r.name === 'settings') {
@@ -612,6 +619,10 @@
       '<picture><source srcset="' + region.background.webp + '" type="image/webp">' +
       '<img class="map-bg" src="' + region.background.jpg + '" width="' + W + '" height="' + H + '" alt="" draggable="false"></picture>' +
       tiles +
+      store.getMapChests(child.id).map(function (c) {
+        var cp = worldXY(region, board.tiles[c.n]);
+        return '<div class="map-chest" data-chest="' + c.n + '" style="left:' + cp.x.toFixed(1) + 'px;top:' + cp.y.toFixed(1) + 'px" title="神秘寶箱"><img src="images/items/mystery_chest.webp" alt="神秘寶箱" width="256" height="256" draggable="false"></div>';
+      }).join('') +
       '<div class="pawn" id="pawn" data-pos="' + player.pos + '" data-tile="' + h(player.tileId) + '" style="left:' + pp.x.toFixed(1) + 'px;top:' + pp.y.toFixed(1) + 'px">' +
       '<div class="pawn-inner">' + characterArt(child) + '</div></div>' +
       '</div>' +
@@ -854,8 +865,35 @@
     var mgEv = ev && ev.minigame ? ev : (ev && ev.then && ev.then.minigame ? ev.then : null);
     if (mgEv) { openMinigame(childId, head + '・停在第 ' + store.getPlayer(childId).pos + ' 格'); return; }
     var msg = eventText(res.event);
+    if (res.found) msg = '🎁 撿到 ' + res.found + ' 個神秘寶箱！放進冒險背包了，用 🔑 黃金鑰匙打開。' + (msg ? '\n\n' + msg : '');
     if (msg) showInfo(head + '・停在第 ' + store.getPlayer(childId).pos + ' 格', msg);
     else toast(head + '，停在第 ' + store.getPlayer(childId).pos + ' 格');
+  }
+
+  /** 寶物磁鐵：列出前後 5 格內的寶箱讓孩子選 */
+  function openMagnet(childId) {
+    var targets = store.getMagnetTargets(childId), pos = store.getPlayer(childId).pos;
+    if (!targets.length) { toast('前後 ' + GAME.MAGNET_RANGE + ' 格內沒有寶箱', 'neg'); return; }
+    confirmEl.innerHTML = '<div class="confirm-box magnet-box"><h2>🧲 寶物磁鐵</h2><p class="muted small">選一個前後 ' + GAME.MAGNET_RANGE + ' 格內的寶箱吸過來：</p>' +
+      '<div class="magnet-list">' + targets.map(function (t) {
+        var d = t.n - pos;
+        return '<button type="button" class="magnet-opt" data-type="' + t.type + '" data-id="' + h(t.id) + '">' +
+          '<img src="' + (t.type === 'mystery' ? 'images/items/mystery_chest.webp' : 'images/tiles/chest.webp') + '" alt="" width="48" height="48">' +
+          '<span><b>第 ' + t.n + ' 格・' + t.name + '</b><small>' + (d > 0 ? '前方 ' + d + ' 格' : '後方 ' + (-d) + ' 格') + '</small></span></button>';
+      }).join('') + '</div><div class="modal-actions"><button type="button" class="btn" data-no>取消</button></div></div>';
+    confirmEl.querySelectorAll('.magnet-opt').forEach(function (b) {
+      b.onclick = function () {
+        confirmEl.close();
+        try {
+          var r = store.useMagnet(childId, b.getAttribute('data-type'), b.getAttribute('data-id'));
+          render();
+          showReward('🧲 寶物磁鐵', r.text, r.type === 'mystery' ? 'images/items/mystery_chest.webp' : 'images/tiles/chest.webp', r.type === 'mystery' ? 'mystery' : 'chest');
+        } catch (err) { toast(err.message, 'neg'); render(); }
+      };
+    });
+    confirmEl.querySelector('[data-no]').onclick = function () { confirmEl.close(); };
+    confirmEl.oncancel = null;
+    if (typeof confirmEl.showModal === 'function') confirmEl.showModal(); else confirmEl.setAttribute('open', '');
   }
 
 
@@ -1245,6 +1283,7 @@
     if (bag.door) btn('door', 'pick-door', '任意門', '×' + bag.door, busy);
     if (bag.luckyMedal) btn('luckyMedal', 'activate-medal', '好運金牌', player.medalArmed ? '已啟用・×' + bag.luckyMedal : '×' + bag.luckyMedal + '・點我啟用', !!player.medalArmed);
     if (bag.bonusPlay) btn('bonusPlay', 'activate-bonus', '再來 3 次', '×' + bag.bonusPlay + '・點我啟用', busy);
+    if (bag.magnet) btn('magnet', 'use-magnet', '寶物磁鐵', '×' + bag.magnet + '・前後 ' + GAME.MAGNET_RANGE + ' 格', busy);
     if (bag.shield) btn('shield', 'item-info', '防護罩', '×' + bag.shield + '・自動抵擋', false);
     if (bag.rerollTicket) btn('rerollTicket', 'item-info', '命運重骰券', '×' + bag.rerollTicket + '・擲骰後可用', false);
     if (bag.airplane) btn('airplane', 'item-info', '呼叫專機', '×' + bag.airplane + '・其他島嶼開放後', false);
@@ -1254,7 +1293,8 @@
   var ITEM_INFO = {
     shield: '🛡️ 防護罩：停在命運格抽到「後退」時，會自動擋住，不用手動使用。',
     rerollTicket: '🎲 命運重骰券：擲骰後會先問你要不要重擲；重擲以新的點數為準，同一次只能用 1 張。',
-    airplane: '✈️ 呼叫專機：可以直接飛到其他島嶼的入口，其他島嶼開放後才能使用。'
+    airplane: '✈️ 呼叫專機：可以直接飛到其他島嶼的入口，其他島嶼開放後才能使用。',
+    goldenKey: '🔑 黃金鑰匙：打開地圖上撿到的神秘寶箱。累計得分每 +500 點送 1 把，星星商店也有賣。'
   };
 
   /** 冒險寶物商店：用生活點數兌換冒險寶物（每週 3 件、同款持有 2 件） */
@@ -1285,10 +1325,13 @@
     wings: { name: '飛行翼', img: 'images/items/flying_wings.webp', note: '地圖上使用' },
     door: { name: '任意門', img: 'images/items/magic_door.webp', note: '地圖上使用' },
     airplane: { name: '呼叫專機', img: 'images/items/airplane.webp', note: '其他島嶼開放後可用' },
+    goldenKey: { name: '黃金鑰匙', img: 'images/items/golden_key.webp', note: '開神秘寶箱' },
+    magnet: { name: '寶物磁鐵', img: 'images/items/treasure_magnet.webp', note: '地圖上使用' },
     rerollTicket: { name: '命運重骰券', icon: '🎲', note: '擲骰後可用' },
     bonusPlay: { name: '再來 3 次', icon: '🎮', note: '地圖上啟用' },
     chest: { name: '一般寶箱', img: 'images/tiles/chest.webp', open: true },
-    giftMysteryChest: { name: '神秘寶箱', img: 'images/items/mystery_chest.webp', open: true }
+    giftMysteryChest: { name: '神秘寶箱', img: 'images/items/mystery_chest.webp', open: true },
+    mysteryChest: { name: '神秘寶箱（要鑰匙）', img: 'images/items/mystery_chest.webp', open: true }
   };
   function bagPanel(child) {
     var bag = store.getPlayer(child.id).bag;
@@ -2050,7 +2093,7 @@
         }
         case 'open-chest': {
           var cres = store.openChest(childId, id);
-          showReward(id === 'chest' ? '📦 一般寶箱' : '🎁 神秘寶箱', cres.text, id === 'chest' ? 'images/tiles/chest.webp' : 'images/items/mystery_chest.webp', id === 'chest' ? 'chest' : 'mystery');
+          showReward(id === 'chest' ? '📦 一般寶箱' : '🎁 神秘寶箱', (id === 'mysteryChest' ? '🔑 用掉 1 把黃金鑰匙・' : '') + cres.text, id === 'chest' ? 'images/tiles/chest.webp' : 'images/items/mystery_chest.webp', id === 'chest' ? 'chest' : 'mystery');
           render();
           break;
         }
@@ -2125,6 +2168,7 @@
         case 'roll': { var rk = el.getAttribute('data-kind'); playMove(childId, rk === 'magicDice' ? 'magic' : rk); break; }   // 神奇骰子按鈕代號 magicDice → 擲骰種類 magic
         case 'use-skates': playMove(childId, 'skates'); break;
         case 'use-item': playMove(childId, el.getAttribute('data-kind')); break;
+        case 'use-magnet': openMagnet(childId); break;
         case 'pick-door': ui.doorPick = childId; render(); break;
         case 'cancel-door': ui.doorPick = null; render(); break;
         case 'activate-medal':

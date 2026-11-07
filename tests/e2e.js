@@ -974,6 +974,61 @@ async function main() {
     await c12.close();
   }
 
+  // ---------- 寶物商店 Phase 4B：地圖神秘寶箱、黃金鑰匙、寶物磁鐵、里程碑 ----------
+  {
+    const c13 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 800 }, serviceWorkers: 'block' });
+    const q = await c13.newPage();
+    await q.clock.setFixedTime(new Date('2026-11-06T10:00:00'));
+    q.on('pageerror', (e) => errors.push(e.message));
+    q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
+    await q.goto(url);
+    const id = await q.evaluate(() => {
+      const s = window.__cgpStore;
+      const a = s.addChild({ name: '端端' });
+      const it = s.addItem({ kind: 'bonus', name: '大加分', points: 100 });
+      s.recordItem(a.id, it.id); s.settleToday(a.id);
+      s._addMapChest(a.id, 'milestone');
+      Object.assign(s.getPlayer(a.id).bag, { skates: 1, magnet: 1 });
+      s.setPlayerTile(a.id, 1); s.random = () => 0; s.save();      // 寶箱出現在前方 2 格（第 3 格）
+      return a.id;
+    });
+    await q.goto(url + '#map-' + id);
+    await q.waitForSelector('.map-chest[data-chest="3"]');
+    assert.match(await q.locator('#toast').innerText(), /附近似乎藏著神秘寶物/);
+    // 寶物磁鐵：列出前後 5 格內的寶箱
+    await q.click('.item-btn[data-kind=magnet]');
+    await q.waitForSelector('#confirm .magnet-box');
+    assert.match(await q.locator('#confirm .magnet-box').innerText(), /第 3 格・神秘寶箱[\s\S]*前方 2 格[\s\S]*第 5 格・一般寶箱/);
+    await q.click('#confirm [data-no]');
+    // 溜冰鞋經過第 3 格 → 撿到神秘寶箱
+    await q.evaluate(() => { window.__cgpStore.random = () => 0.3; });
+    await q.click('.dice-btn.skates');
+    await q.waitForSelector('#confirm[open]', { timeout: 10000 });
+    assert.match(await q.locator('#confirm').innerText(), /撿到 1 個神秘寶箱/);
+    await q.click('#confirm [data-yes]');
+    assert.equal(await q.locator('.map-chest').count(), 0);
+    // 背包：沒有鑰匙打不開；有鑰匙就能開
+    await q.goto(url + '#adventure-' + id);
+    await q.waitForSelector('[data-bag=mysteryChest]');
+    await q.click('[data-bag=mysteryChest] [data-action=open-chest]');
+    assert.match(await q.locator('#toast').innerText(), /黃金鑰匙/);
+    await q.evaluate((cid) => { window.__cgpStore.getPlayer(cid).bag.goldenKey = 1; window.__cgpStore.save(); }, id);
+    await q.reload(); await q.waitForSelector('[data-bag=mysteryChest]');
+    await q.click('[data-bag=mysteryChest] [data-action=open-chest]');
+    await q.waitForSelector('#confirm .reward-box');
+    assert.match(await q.locator('#confirm .reward-box').innerText(), /用掉 1 把黃金鑰匙[\s\S]*得到/);
+    await q.click('#confirm [data-yes]');
+    // 里程碑：累計得分 +500 → 黃金鑰匙（提示訊息）
+    await q.evaluate(() => { const s = window.__cgpStore; s.addItem({ kind: 'bonus', name: '超級幫忙', points: 500 }); });
+    await q.goto(url + '#child-' + id);
+    await q.fill('#score-search', '超級幫忙');
+    await q.click('.score-btn:has-text("超級幫忙")');
+    await q.waitForFunction(() => /黃金鑰匙/.test(document.getElementById('toast').textContent));
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.goldenKey, id), 1);
+    console.log('✔ 寶物商店 Phase 4B：地圖神秘寶箱與提示、經過撿到、寶物磁鐵選單、鑰匙開箱、里程碑黃金鑰匙');
+    await c13.close();
+  }
+
   // ---------- 設定：還原資料（每日自動備份、載入備份檔覆蓋） ----------
   {
     const c11 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 780 }, serviceWorkers: 'block' });
@@ -1005,7 +1060,7 @@ async function main() {
     const f = path.join(require('os').tmpdir(), 'cgp-restore-' + Date.now() + '.json');
     fs.writeFileSync(f, JSON.stringify({ children: [{ id: 'x1', name: '波妞', startPoints: 9 }] }));
     await q.setInputFiles('input[data-action=import]', f);
-    assert.match(await q.locator('#confirm').innerText(), /取代目前所有資料[\s\S]*先自動備份/);
+    await q.waitForFunction(() => /取代目前所有資料[\s\S]*先自動備份/.test(document.getElementById('confirm').textContent));   // 讀檔是非同步的
     await q.click('#confirm [data-yes]');
     await q.waitForFunction(() => window.__cgpStore.getChildren().map((c) => c.name).join() === '波妞');
     console.log('✔ 還原資料：備份頁最上方、還原到今天開始時、可再還原回來、載入備份檔覆蓋前自動備份');
@@ -1095,7 +1150,7 @@ async function main() {
         return { src: img.getAttribute('src'), ok: img.complete && img.naturalWidth === 256 && img.naturalHeight === 256,
           fit: getComputedStyle(img).objectFit, bg: getComputedStyle(img.parentElement).backgroundColor, w: box.width, h: box.height };
       }));
-      assert.deepEqual(info.map((i) => i.src), ['images/items/dice_6.webp', 'images/items/dice_12.webp', 'images/items/roller_skate.webp'], label + ' 圖片對應');
+      assert.deepEqual(info.map((i) => i.src).slice(0, 3), ['images/items/dice_6.webp', 'images/items/dice_12.webp', 'images/items/roller_skate.webp'], label + ' 圖片對應');
       for (const i of info) {
         assert.ok(i.ok, label + ' 圖片載入失敗：' + i.src);
         assert.equal(i.fit, 'contain', label + ' 應使用 contain');
@@ -1113,7 +1168,7 @@ async function main() {
     await q.waitForFunction(() => [...document.querySelectorAll('#confirm .shop-row img')].every((i) => i.complete && i.naturalWidth));
     await checkArt('#confirm .shop-row .item-art img', '商店');
     const prices = await q.$$eval('#confirm [data-buy]', (bs) => bs.map((b) => b.getAttribute('data-buy') + b.textContent.trim()));
-    assert.deepEqual(prices, ['d6⭐5', 'd12⭐10', 'skates⭐4']);
+    assert.deepEqual(prices, ['d6⭐5', 'd12⭐10', 'skates⭐4', 'goldenKey⭐10', 'magnet⭐10']);
     assert.match(await q.locator('#confirm [data-item=d12]').innerText(), /12 面骰/);
     if (SHOT_DIR) await q.locator('#confirm .shop-box').screenshot({ path: path.join(SHOT_DIR, '17-shop-items-' + width + '.png') });
     await q.click('#confirm [data-buy=d12]');
@@ -1129,7 +1184,7 @@ async function main() {
     if (SHOT_DIR) await q.locator('.dice-bar').screenshot({ path: path.join(SHOT_DIR, '18-dice-bar-' + width + '.png') });
 
     // 溜冰鞋：前進 3 格、不算擲骰次數、背包 -1（第 3 格是機會格，固定抽到「發現礦石 +2 星」）
-    await q.evaluate(() => { window.__cgpStore.random = () => 0.5; });
+    await q.evaluate(() => { window.__cgpStore.random = () => 0.3; });   // 5 種機會卡：0.3 → 發光礦石
     await q.click('.dice-btn.skates');
     await q.waitForFunction(() => document.querySelector('[data-testid=pos]') && document.querySelector('[data-testid=pos]').textContent.startsWith('3 '), null, { timeout: 8000 });
     await q.waitForSelector('.dice-btn.skates[disabled]');

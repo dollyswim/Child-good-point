@@ -43,7 +43,9 @@
   var SHOP = [
     { id: 'd6', name: '6 面骰', icon: '🎲', img: 'images/items/dice_6.webp', price: 5, desc: '擲出 1～6 步' },
     { id: 'd12', name: '12 面骰', icon: '🎲', img: 'images/items/dice_12.webp', price: 10, desc: '擲出 1～12 步' },
-    { id: 'skates', name: '溜冰鞋', icon: '🛼', img: 'images/items/roller_skate.webp', price: 4, desc: '直接前進 3 格（不算擲骰次數）' }
+    { id: 'skates', name: '溜冰鞋', icon: '🛼', img: 'images/items/roller_skate.webp', price: 4, desc: '直接前進 3 格（不算擲骰次數）' },
+    { id: 'goldenKey', name: '黃金鑰匙', icon: '🔑', img: 'images/items/golden_key.webp', price: 10, desc: '打開地圖上撿到的神秘寶箱' },
+    { id: 'magnet', name: '寶物磁鐵', icon: '🧲', img: 'images/items/treasure_magnet.webp', price: 10, desc: '吸取前後 5 格內的寶箱' }
   ];
 
   /** 8 種原創冒險夥伴（家長提供的原創設計），圖檔在 images/characters/<id>.webp */
@@ -122,6 +124,7 @@
     }
     var p = adv.players[childId];
     CGP.BAG_KEYS.forEach(function (k) { if (!(p.bag[k] >= 0)) p.bag[k] = 0; });   // 新道具代號補 0
+    if (!Array.isArray(p.looted)) p.looted = [];
     // 位置以穩定格子 ID 為準；舊存檔只有整數格號時對應到同號的格子（第 n 格 → gold-01-00n）
     var board = BOARDS[p.island] || GOLD;
     var idx = p.tileId ? board.tiles.findIndex(function (t) { return t.id === p.tileId; }) : -1;
@@ -219,15 +222,142 @@
    */
   Store.prototype.openChest = function (childId, kind) {
     if (!this.getChild(childId)) throw new Error('找不到孩子');
-    if (kind !== 'chest' && kind !== 'giftMysteryChest') throw new Error('沒有這種寶箱');
+    if (kind !== 'chest' && kind !== 'giftMysteryChest' && kind !== 'mysteryChest') throw new Error('沒有這種寶箱');
     var p = this.getPlayer(childId);
     if (!(p.bag[kind] > 0)) throw new Error('背包裡沒有這種寶箱');
+    if (kind === 'mysteryChest') {
+      if (!(p.bag.goldenKey > 0)) throw new Error('需要 1 把 🔑 黃金鑰匙才能打開（星星商店有賣）');
+      p.bag.goldenKey--;
+      this._logItem(childId, 'use', 'goldenKey', 1, '背包', '打開神秘寶箱');
+    }
     p.bag[kind]--;
     var res = kind === 'chest' ? this._rollRegularChest(childId, '一般寶箱') : this._rollMysteryChest(childId);
     res.kind = kind;
     this._logItem(childId, 'open', kind, 1, '背包', res.text);
     this.save();
     return res;
+  };
+
+  // ---------- 地圖上的神秘寶箱 ----------
+  var OVERFLOW_CHEST_DAILY = 2, MILESTONE_KEY = 500, MILESTONE_CHEST = 1000, MAGNET_RANGE = 5;
+  /** 新增一個還沒出現的神秘寶箱；source：overflow（次數用完轉換，每天最多 2 個）、milestone、island */
+  Store.prototype._addMapChest = function (childId, source) {
+    var today = this.today();
+    if (source === 'overflow' && this.data.adventure.mapChests.filter(function (x) {
+      return x.childId === childId && x.source === 'overflow' && x.createdDate === today;
+    }).length >= OVERFLOW_CHEST_DAILY) return null;
+    var c = { id: uid(), childId: childId, island: this.getPlayer(childId).island, source: source, createdDate: today, tileId: '', n: 0, hinted: false, ts: this.now().getTime() };
+    this.data.adventure.mapChests.push(c);
+    this._logItem(childId, 'grant', 'mapChest', 1, source === 'overflow' ? '次數用完轉換' : source === 'milestone' ? '點數里程碑' : '新島嶼', '下次冒險時出現在地圖上');
+    return c;
+  };
+  /**
+   * 讓等待中的神秘寶箱出現在角色前方 2～8 格（最遠第 29 格）。
+   * 次數用完轉換的寶箱要等到之後的日子才出現；里程碑的下次進入地圖就出現。
+   * @returns 這次新出現的寶箱數
+   */
+  Store.prototype.placeMapChests = function (childId) {
+    var p = this.getPlayer(childId), today = this.today(), self = this;
+    var tiles = this.getBoard(childId).tiles, last = tiles.length - 2;
+    var placed = 0;
+    this.data.adventure.mapChests.forEach(function (c) {
+      if (c.childId !== childId || c.tileId || c.island !== p.island) return;
+      if (c.source === 'overflow' && !(today > c.createdDate)) return;
+      if (p.pos + 2 > last) return;                          // 前方沒有位置：等下一區開放
+      var n = Math.min(last, p.pos + rint(self.random, 2, 8));
+      c.n = n; c.tileId = tiles[n].id; c.hinted = false;
+      placed++;
+    });
+    if (placed) this.save();
+    return placed;
+  };
+  /** 地圖上已出現、還沒撿的神秘寶箱 */
+  Store.prototype.getMapChests = function (childId) {
+    var p = this.getPlayer(childId);
+    return this.data.adventure.mapChests.filter(function (c) { return c.childId === childId && c.tileId && c.island === p.island; });
+  };
+  /** 進入地圖時的提示「附近似乎藏著神秘寶物……」只顯示一次 */
+  Store.prototype.takeChestHint = function (childId) {
+    var list = this.getMapChests(childId).filter(function (c) { return !c.hinted; });
+    list.forEach(function (c) { c.hinted = true; });
+    if (list.length) this.save();
+    return list.length;
+  };
+  /** 經過或停在有神秘寶箱的格子：撿起來放進背包（未開啟，要鑰匙） */
+  Store.prototype._collectAt = function (childId, positions) {
+    var p = this.getPlayer(childId), got = 0, self = this;
+    this.data.adventure.mapChests = this.data.adventure.mapChests.filter(function (c) {
+      if (c.childId === childId && c.tileId && c.island === p.island && positions.indexOf(c.n) >= 0) {
+        p.bag.mysteryChest++; got++;
+        self._logItem(childId, 'grant', 'mysteryChest', 1, '地圖第 ' + c.n + ' 格', '撿到神秘寶箱');
+        return false;
+      }
+      return true;
+    });
+    return got;
+  };
+
+  // ---------- 寶物磁鐵 ----------
+  /** 前後 5 格內可以吸的寶物：地圖上的神秘寶箱、還沒被吸走的一般寶箱格 */
+  Store.prototype.getMagnetTargets = function (childId) {
+    var p = this.getPlayer(childId), tiles = this.getBoard(childId).tiles, out = [];
+    this.getMapChests(childId).forEach(function (c) {
+      if (Math.abs(c.n - p.pos) <= MAGNET_RANGE) out.push({ type: 'mystery', id: c.id, n: c.n, name: '神秘寶箱' });
+    });
+    tiles.forEach(function (t) {
+      if (t.type === 'chest' && t.n !== p.pos && Math.abs(t.n - p.pos) <= MAGNET_RANGE && p.looted.indexOf(t.id) < 0) out.push({ type: 'tile', id: t.id, n: t.n, name: '一般寶箱' });
+    });
+    return out.sort(function (a, b) { return a.n - b.n; });
+  };
+  /** 使用寶物磁鐵吸取一個目標（{ type, id }） */
+  Store.prototype.useMagnet = function (childId, type, id) {
+    this._requirePlay(childId);
+    var p = this.getPlayer(childId);
+    if (!(p.bag.magnet > 0)) throw new Error('背包裡沒有寶物磁鐵');
+    var target = this.getMagnetTargets(childId).find(function (t) { return t.type === type && t.id === id; });
+    if (!target) throw new Error('這個寶物不在磁鐵範圍內（前後 ' + MAGNET_RANGE + ' 格）');
+    p.bag.magnet--;
+    var res = { type: type, n: target.n, stars: 0, items: {}, text: '' };
+    if (type === 'mystery') {
+      this.data.adventure.mapChests = this.data.adventure.mapChests.filter(function (c) { return c.id !== id; });
+      p.bag.mysteryChest++;
+      res.items.mysteryChest = 1;
+      res.text = '吸到第 ' + target.n + ' 格的 🎁 神秘寶箱！（用黃金鑰匙打開）';
+    } else {
+      var cr = this._rollRegularChest(childId, '寶物磁鐵');
+      p.looted.push(id);
+      res.stars = cr.stars; res.items = cr.items;
+      res.text = '吸到第 ' + target.n + ' 格的寶箱：' + cr.text;
+    }
+    this._logItem(childId, 'use', 'magnet', 1, '背包', res.text);
+    this.save();
+    return res;
+  };
+
+  // ---------- 累計得分里程碑：每 +500 黃金鑰匙、每 +1000 神秘寶箱（不補發、不重複） ----------
+  /** 還沒有里程碑紀錄的孩子，從目前的累計得分開始算 */
+  Store.prototype._initMilestones = function () {
+    var self = this, ms = this.data.milestones, changed = false;
+    this.data.children.forEach(function (c) {
+      if (!ms[c.id]) { ms[c.id] = { base: self.getEarned(c.id), keys: 0, chests: 0 }; changed = true; }
+    });
+    return changed;
+  };
+  /** 加紀錄後呼叫：跨過新的門檻就發獎（同一門檻只發一次） @returns {{ keys, chests }} 這次新發的數量 */
+  Store.prototype._checkMilestones = function (childId) {
+    var ms = this.data.milestones[childId];
+    if (!ms) { this._initMilestones(); return { keys: 0, chests: 0 }; }
+    var gain = this.getEarned(childId) - ms.base, out = { keys: 0, chests: 0 };
+    var p = this.getPlayer(childId);
+    while (ms.keys < Math.floor(gain / MILESTONE_KEY)) {
+      ms.keys++; out.keys++; p.bag.goldenKey++;
+      this._logItem(childId, 'grant', 'goldenKey', 1, '點數里程碑', '累計得分 +' + (ms.keys * MILESTONE_KEY));
+    }
+    while (ms.chests < Math.floor(gain / MILESTONE_CHEST)) {
+      ms.chests++; out.chests++;
+      this._addMapChest(childId, 'milestone');
+    }
+    return out;
   };
 
   // ---------- 神諭祝福（媽媽加碼） ----------
@@ -311,6 +441,7 @@
     // 抵達目前開放區域的最後一格（第 30 格木門）即停止，多餘步數捨棄
     for (var i = 0; i < steps && p.pos < end; i++) { p.pos++; path.push(p.pos); }
     p.tileId = this.getBoard(childId).tiles[p.pos].id;
+    this._found = (this._found || 0) + this._collectAt(childId, path);   // 經過或停在神秘寶箱的格子就撿起來
     return path;
   };
 
@@ -321,9 +452,12 @@
     var rand = this.random;
     var ev = { tile: tile.n, type: tile.type, title: '', text: '', stars: 0, items: {}, extraPath: [], backPath: [] };
     // 好運金牌：下一次停在寶箱或機會格，效果發生 2 次
-    var medal = !!(p.medalArmed && (tile.type === 'chest' || tile.type === 'chance'));
+    var looted = tile.type === 'chest' && p.looted.indexOf(tile.id) >= 0;
+    var medal = !!(p.medalArmed && ((tile.type === 'chest' && !looted) || tile.type === 'chance'));
     if (medal) { p.medalArmed = false; ev.medal = true; }
-    if (tile.type === 'chest') {
+    if (looted) {
+      ev.title = '🎁 寶箱'; ev.text = '這個寶箱已經被寶物磁鐵吸走了，裡面空空的。';
+    } else if (tile.type === 'chest') {
       ev.title = (medal ? '🥇 好運金牌！' : '') + '🎁 寶箱！';
       var texts = [];
       for (var ci = 0; ci < (medal ? 2 : 1); ci++) {
@@ -336,15 +470,21 @@
       ev.title = (medal ? '🥇 好運金牌！' : '') + '❓ 機會';
       var lines = [], cart = false;
       for (var k = 0; k < (medal ? 2 : 1); k++) {
-        var c = rint(rand, 0, 2);
+        // 機會卡（全部正向）：0 礦車前進 2 格、1 發光礦石 +2 星、2 撿到 6 面骰、3 小寶箱 +1～3 星、4 撿到溜冰鞋
+        var c = rint(rand, 0, 4);
         if (c === 0 && depth < 1) {
           lines.push('礦車載你額外前進 2 格！');
           ev.extraPath = ev.extraPath.concat(this._advance(childId, 2));
           cart = true;
         } else if (c === 1 || (c === 0 && depth >= 1)) {
           ev.stars += 2; this._ledger(childId, 2, '機會：發現礦石'); lines.push('發現發光礦石，得到 ⭐2');
-        } else {
+        } else if (c === 2) {
           p.bag.d6++; ev.items.d6 = (ev.items.d6 || 0) + 1; lines.push('撿到一顆 🎲 6 面骰');
+        } else if (c === 3) {
+          var sm = rint(rand, 1, 3);
+          ev.stars += sm; this._ledger(childId, sm, '機會：小寶箱'); lines.push('找到一個小寶箱，得到 ⭐' + sm);
+        } else {
+          p.bag.skates++; ev.items.skates = (ev.items.skates || 0) + 1; lines.push('撿到一雙 🛼 溜冰鞋');
         }
       }
       ev.text = lines.join('\n');
@@ -367,6 +507,7 @@
         // 後退：不退到起點之前；落點不觸發事件
         for (var b = 0; b < n && p.pos > 0; b++) { p.pos--; ev.backPath.push(p.pos); }
         p.tileId = this.getBoard(childId).tiles[p.pos].id;
+        this._found = (this._found || 0) + this._collectAt(childId, ev.backPath);
         ev.text = '一陣大風吹來，往回退了 ' + ev.backPath.length + ' 格！';
       } else if (card.id === 'roadblock') {
         ev.text = '路障：' + ROADBLOCKS[Math.floor(rand() * ROADBLOCKS.length)] + '（這次沒有影響，下次繼續前進）';
@@ -395,9 +536,12 @@
         ev.minigame = { id: mg.id, bonus: true };
         ev.text = '🎮 再來 3 次：額外的小遊戲！點星星收集能量星星。';
       } else {
-        // 今天已玩過：每天最多 1 次（之後會改為產生神秘寶箱）
+        // 今天已玩過：每天最多 1 次 → 這次機會轉成神秘寶箱（下次冒險時出現在前方；每天最多 2 個）
         ev.minigameOverflow = true;
-        ev.text = '今天已經玩過小遊戲了（每天 1 次），明天再來挑戰！';
+        if (this._addMapChest(childId, 'overflow')) {
+          ev.overflowChest = true;
+          ev.text = '今天已經玩過小遊戲了（每天 1 次）。\n這次的機會變成了一個 🎁 神秘寶箱，下次冒險時會出現在你前方！';
+        } else ev.text = '今天已經玩過小遊戲了（每天 1 次），明天再來挑戰！';
       }
     } else if (tile.type === 'boundary') {
       ev.title = '🚪 抵達礦場木門！'; ev.text = '你走完金島第一區「黃金沙灘與初級礦場」了！門後的第二區即將開放。';
@@ -517,13 +661,14 @@
   Store.prototype.commitRoll = function (childId) {
     var p = this.getPlayer(childId), pr = p.pendingRoll;
     if (!pr) throw new Error('沒有待前進的擲骰');
+    this._found = 0;
     var path = this._advance(childId, pr.value);
     var event = this._resolveTile(childId, 0);
     var roll = this.data.adventure.rolls.find(function (r) { return r.id === pr.rollId; });
     if (roll) roll.to = p.pos;
     p.pendingRoll = null;
     this.save();
-    return { die: pr.die === 'magic' ? 'magic' : pr.die, kind: pr.kind, value: pr.value, from: pr.from, path: path, event: event, rollsLeft: this.getRollsLeft(childId) };
+    return { die: pr.die === 'magic' ? 'magic' : pr.die, kind: pr.kind, value: pr.value, from: pr.from, path: path, event: event, rollsLeft: this.getRollsLeft(childId), found: this._found };
   };
   /**
    * 擲骰並直接前進（沒有重骰券時使用）：每天基本 3 次，用完後可用「再來 3 次」的額外次數
@@ -545,11 +690,12 @@
     if (!(p.bag[item] > 0)) throw new Error('背包裡沒有' + MOVE_ITEMS[item].name);
     var from = p.pos;
     p.bag[item]--;
+    this._found = 0;
     var path = this._advance(childId, MOVE_ITEMS[item].steps);
     if (item !== 'skates') this._logItem(childId, 'use', item, 1, '背包', '第 ' + from + ' → ' + p.pos + ' 格');
     var event = this._resolveTile(childId, 0);
     this.save();
-    return { die: item, value: MOVE_ITEMS[item].steps, from: from, path: path, event: event };
+    return { die: item, value: MOVE_ITEMS[item].steps, from: from, path: path, event: event, found: this._found };
   };
   /** 溜冰鞋：前進 3 格，不算擲骰次數 */
   Store.prototype.useSkates = function (childId) { return this._useMoveItem(childId, 'skates'); };
@@ -570,9 +716,10 @@
     p.bag.door--;
     p.pos = n; p.tileId = tiles[n].id;
     this._logItem(childId, 'use', 'door', 1, '背包', '第 ' + from + ' → ' + n + ' 格');
+    this._found = this._collectAt(childId, [n]);
     var event = this._resolveTile(childId, 0);
     this.save();
-    return { die: 'door', value: 0, from: from, path: [n], event: event };
+    return { die: 'door', value: 0, from: from, path: [n], event: event, found: this._found };
   };
   /** 好運金牌：啟用後，下一次停在寶箱格或機會格時效果發生 2 次 */
   Store.prototype.activateMedal = function (childId) {
@@ -597,7 +744,7 @@
     return this.getBonusQuota(childId);
   };
 
-  var api = { BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { MAGNET_RANGE: MAGNET_RANGE, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);
