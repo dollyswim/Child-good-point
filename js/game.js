@@ -153,7 +153,12 @@
   };
   /** 今天是否可以玩（已解鎖並結算） */
   Store.prototype.canPlayToday = function (childId) {
-    return !!this.getSettlement(childId);
+    return !!this.getSettlement(childId) && !this.isAdventureEnded(childId);
+  };
+  /** 今天的冒險是否已按「結束今日冒險」 */
+  Store.prototype.isAdventureEnded = function (childId) {
+    var today = this.today();
+    return this.data.adventure.dayEnds.some(function (x) { return x.childId === childId && x.date === today; });
   };
 
   Store.prototype.setCharacter = function (childId, charId) {
@@ -164,6 +169,7 @@
 
   Store.prototype._requirePlay = function (childId) {
     if (!this.getChild(childId)) throw new Error('找不到孩子');
+    if (this.isAdventureEnded(childId)) throw new Error('今天的冒險已經結束了，明天再來！');
     if (!this.canPlayToday(childId)) throw new Error('今日冒險尚未出發：先在任務頁按「進入今日冒險」');
   };
 
@@ -197,6 +203,7 @@
     } else {
       p.bag.d6++; out.items.d6 = 1; out.text = '得到一顆 🎲 6 面骰';
     }
+    Object.keys(out.items).forEach(function (k) { this._logItem(childId, 'grant', k, out.items[k], reason, out.text); }, this);
     return out;
   };
   /** 神秘寶箱獎勵池：7 種特殊道具（呼叫專機為稀有獎勵） */
@@ -480,11 +487,13 @@
           ev.stars += 2; this._ledger(childId, 2, '機會：發現礦石'); lines.push('發現發光礦石，得到 ⭐2');
         } else if (c === 2) {
           p.bag.d6++; ev.items.d6 = (ev.items.d6 || 0) + 1; lines.push('撿到一顆 🎲 6 面骰');
+          this._logItem(childId, 'grant', 'd6', 1, '機會卡', '撿到 6 面骰');
         } else if (c === 3) {
           var sm = rint(rand, 1, 3);
           ev.stars += sm; this._ledger(childId, sm, '機會：小寶箱'); lines.push('找到一個小寶箱，得到 ⭐' + sm);
         } else {
           p.bag.skates++; ev.items.skates = (ev.items.skates || 0) + 1; lines.push('撿到一雙 🛼 溜冰鞋');
+          this._logItem(childId, 'grant', 'skates', 1, '機會卡', '撿到溜冰鞋');
         }
       }
       ev.text = lines.join('\n');
@@ -549,6 +558,56 @@
       ev.title = '🏁 抵達金島終點！'; ev.text = '你走完金島測試版 30 格了！下一座島即將開放。';
     }
     return ev;
+  };
+
+  // ---------- 結束今日冒險與今日小結 ----------
+  /** 每天第一次移動前記下起點（今日小結用） */
+  Store.prototype._markDayStart = function (childId) {
+    var p = this.getPlayer(childId), today = this.today();
+    if (!p.dayStart || p.dayStart.date !== today) p.dayStart = { date: today, pos: p.pos };
+  };
+  /** 今日小結：走了幾格、擲骰次數、能量星星、道具、小遊戲、特殊任務、神秘寶箱提示 */
+  Store.prototype.getDaySummary = function (childId, date) {
+    date = date || this.today();
+    var adv = this.data.adventure, p = this.getPlayer(childId);
+    var mine = function (x) { return x.childId === childId && x.date === date; };
+    var settle = adv.settlements.filter(mine).reduce(function (s, x) { return s + x.stars; }, 0);
+    var led = adv.ledger.filter(mine);
+    var gained = led.filter(function (x) { return x.delta > 0; }).reduce(function (s, x) { return s + x.delta; }, 0);
+    var spent = led.filter(function (x) { return x.delta < 0; }).reduce(function (s, x) { return s - x.delta; }, 0);
+    function group(action) {
+      var o = {};
+      adv.itemLog.filter(function (x) { return mine(x) && x.action === action && x.item !== 'mapChest'; }).forEach(function (x) { o[x.item] = (o[x.item] || 0) + (x.qty || 1); });
+      return o;
+    }
+    var games = adv.minigames.filter(function (m) { return mine(m) && m.status === 'done'; });
+    var start = p.dayStart && p.dayStart.date === date ? p.dayStart.pos : p.pos;
+    var waiting = adv.mapChests.filter(function (c) { return c.childId === childId; });
+    return {
+      date: date, startPos: start, endPos: p.pos, moved: p.pos - start,
+      rolls: adv.rolls.filter(mine).length,
+      stars: { settle: settle, gained: gained, spent: spent },
+      itemsGained: group('grant'), itemsUsed: group('use'),
+      minigames: games.map(function (m) { return { caught: m.caught, stars: m.stars }; }),
+      specialTasks: this.data.specialTasks.filter(function (t) { return t.childId === childId && t.createdDate === date; }).map(function (t) { return t.name; }),
+      chests: { onMap: waiting.filter(function (c) { return c.tileId; }).length, coming: waiting.filter(function (c) { return !c.tileId; }).length },
+      ended: adv.dayEnds.some(mine)
+    };
+  };
+  /**
+   * 結束今日冒險：當天鎖住（不能再擲骰、玩小遊戲、用道具、星星商店購買）；
+   * 沒用完的擲骰次數與「再來 3 次」作廢，背包道具保留。
+   */
+  Store.prototype.endAdventure = function (childId) {
+    this._requirePlay(childId);
+    var p = this.getPlayer(childId);
+    if (p.pendingRoll) throw new Error('先完成這一次擲骰再結束');
+    var today = this.today();
+    this.data.adventure.dayEnds.push({ id: uid(), childId: childId, date: today, ts: this.now().getTime() });
+    this.data.adventure.bonusQuota.forEach(function (q) { if (q.childId === childId && q.date === today) { q.rolls = 0; q.games = 0; } });
+    this.data.adventure.minigames.forEach(function (m) { if (m.childId === childId && m.date === today && m.status === 'pending') m.status = 'expired'; });
+    this.save();
+    return this.getDaySummary(childId);
   };
 
   // ---------- 小遊戲「抓住星星」 ----------
@@ -631,6 +690,7 @@
       }
       if (p.bag[die] <= 0) throw new Error('背包裡沒有' + (die === 'd6' ? ' 6 面骰' : ' 12 面骰'));
     }
+    this._markDayStart(childId);
     var sides = die === 'd6' ? 6 : 12;
     var value = rint(this.random, 1, sides);
     if (kind === 'bonus') this._useBonus(childId, 'rolls');
@@ -688,6 +748,7 @@
     var end = this.getBoard(childId).tiles.length - 1;
     if (p.pos >= end) throw new Error('已經抵達第一區的木門，第二區即將開放');
     if (!(p.bag[item] > 0)) throw new Error('背包裡沒有' + MOVE_ITEMS[item].name);
+    this._markDayStart(childId);
     var from = p.pos;
     p.bag[item]--;
     this._found = 0;
@@ -712,6 +773,7 @@
     if (n === p.pos) throw new Error('你已經在這一格了');
     if (tiles[n].regionId !== tiles[p.pos].regionId) throw new Error('任意門只能傳送到目前區域');
     if (!(p.bag.door > 0)) throw new Error('背包裡沒有任意門');
+    this._markDayStart(childId);
     var from = p.pos;
     p.bag.door--;
     p.pos = n; p.tileId = tiles[n].id;

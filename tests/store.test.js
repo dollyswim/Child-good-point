@@ -1685,3 +1685,58 @@ test('Phase 4B 存檔遷移：地圖寶箱、被吸走的寶箱格、里程碑',
   assert.deepEqual(d.adventure.players.c.looted, ['gold-01-005']);
   assert.equal(d.adventure.players.c.bag.mysteryChest, 0);
 });
+
+// ---------- Phase 5：結束今日冒險與今日小結 ----------
+test('結束今日冒險：當天鎖住、作廢剩餘擲骰與再來 3 次、道具保留；隔天可再玩', () => {
+  const { store, a, push, setDate } = p3Store();
+  const p = store.getPlayer(a.id);
+  Object.assign(p.bag, { d6: 3, wings: 1, goldenKey: 0 });
+  p.bag.bonusPlay = 1; store.activateBonusPlay(a.id);
+  push(face(2));
+  store.rollDice(a.id, 'd6');
+  push(face(1));
+  store.prepareRoll(a.id, 'd6');
+  assert.throws(() => store.endAdventure(a.id), /先完成這一次擲骰/);
+  store.commitRoll(a.id);
+  const sum = store.endAdventure(a.id);
+  assert.ok(sum.ended);
+  assert.equal(store.isAdventureEnded(a.id), true);
+  assert.equal(store.canPlayToday(a.id), false);
+  assert.throws(() => store.rollDice(a.id, 'd6'), /已經結束/);
+  assert.throws(() => store.useWings(a.id), /已經結束/);
+  assert.throws(() => store.buyItem(a.id, 'd6'), /已經結束/);
+  assert.throws(() => store.endAdventure(a.id), /已經結束/);
+  assert.deepEqual(store.getBonusQuota(a.id), { rolls: 0, games: 0 }, '再來 3 次作廢');
+  assert.deepEqual([p.bag.d6, p.bag.wings], [1, 1], '道具保留');
+  setDate('2026-11-07T10:00:00');
+  assert.equal(store.isAdventureEnded(a.id), false);
+  const it = store.addItem({ kind: 'bonus', name: 'x', points: 10 }); store.recordItem(a.id, it.id); store.settleToday(a.id);
+  assert.ok(store.canPlayToday(a.id), '隔天可再玩');
+});
+
+test('今日小結：走了幾格、擲骰次數、星星、道具、小遊戲、特殊任務、神秘寶箱', () => {
+  const { store, a, push } = p3Store();
+  const p = store.getPlayer(a.id);
+  p.bag.d6 = 2; p.bag.wings = 1;
+  push(face(5), 0.1, 0.99);                                   // 第 5 格寶箱：+3 星
+  store.rollDice(a.id, 'd6');
+  store.buyItem(a.id, 'd6');                                  // 用掉 5 星
+  store.random = () => 0.2;                                   // 飛到第 25 格
+  store.useWings(a.id);
+  store.addSpecialTask(a.id, 'praise');
+  store._addMapChest(a.id, 'milestone');
+  const s = store.getDaySummary(a.id);
+  assert.deepEqual([s.startPos, s.endPos, s.moved, s.rolls], [0, 25, 25, 1]);
+  assert.deepEqual(s.stars, { settle: 20, gained: 3, spent: 5 });
+  assert.deepEqual(s.itemsUsed, { wings: 1 });
+  assert.deepEqual(s.specialTasks, ['和所有家人說一句讚美的話和感謝的話']);
+  assert.deepEqual(s.chests, { onMap: 0, coming: 1 });
+});
+
+test('Phase 5 存檔遷移：結束紀錄、今日起點', () => {
+  const d = migrate({ children: [{ id: 'c', name: 'B' }], adventure: {
+    dayEnds: [{ id: 'e', childId: 'c', date: '2026-11-06' }, { id: 'x', childId: 'zz', date: '2026-11-06' }],
+    players: { c: { dayStart: { date: '2026-11-06', pos: 4 }, bag: {} } } } });
+  assert.equal(d.adventure.dayEnds.length, 1);
+  assert.deepEqual(d.adventure.players.c.dayStart, { date: '2026-11-06', pos: 4 });
+});

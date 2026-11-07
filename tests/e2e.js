@@ -1044,6 +1044,53 @@ async function main() {
     await c13.close();
   }
 
+  // ---------- Phase 5：結束今日冒險與今日小結 ----------
+  {
+    const c14 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 800 }, serviceWorkers: 'block' });
+    const q = await c14.newPage();
+    await q.clock.setFixedTime(new Date('2026-11-06T10:00:00'));
+    q.on('pageerror', (e) => errors.push(e.message));
+    q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
+    await q.goto(url);
+    const id = await q.evaluate(() => {
+      const s = window.__cgpStore;
+      const a = s.addChild({ name: '端端' });
+      const it = s.addItem({ kind: 'bonus', name: '大加分', points: 100 });
+      s.recordItem(a.id, it.id); s.settleToday(a.id);
+      s.getPlayer(a.id).bag.d6 = 2; s.save();
+      return a.id;
+    });
+    await q.goto(url + '#map-' + id);
+    await q.evaluate(() => { const seq = [1.5 / 6]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0.5); });
+    await q.click('.dice-btn.d6');
+    await q.waitForFunction(() => document.querySelector('[data-testid=pos]').textContent.startsWith('2 '), null, { timeout: 10000 });
+    if (await q.locator('#confirm[open] [data-yes]').count()) await q.click('#confirm [data-yes]');
+    await q.click('[data-action=end-day]');
+    assert.match(await q.locator('#confirm').innerText(), /結束今日冒險[\s\S]*2 次擲骰會作廢[\s\S]*道具會保留/);
+    await q.click('#confirm [data-yes]');
+    await q.waitForSelector('#confirm .summary-box');
+    const sum = await q.locator('#confirm .summary-box').innerText();
+    assert.match(sum, /今天的冒險結束了[\s\S]*今天走了[\s\S]*2 格（第 0 → 2 格）[\s\S]*擲骰[\s\S]*1 次[\s\S]*能量星星[\s\S]*20 顆/);
+    await q.click('#confirm [data-yes]');
+    assert.equal(await q.locator('.dice-btn.d6').isDisabled(), true, '結束後不能擲骰');
+    assert.match(await q.locator('.map-hint').innerText(), /已經結束/);
+    assert.equal(await q.locator('[data-action=end-day]').count(), 0);
+    // 冒險大廳：顯示已結束，可再看小結
+    await q.goto(url + '#adventure-' + id);
+    await q.click('.map-card [data-action=show-summary]');
+    await q.waitForSelector('#confirm .summary-box');
+    assert.match(await q.locator('#confirm .summary-box h2').innerText(), /今日小結/);
+    await q.click('#confirm [data-yes]');
+    // 重新整理仍然鎖住；任務頁顯示已結束
+    await q.goto(url + '#child-' + id); await q.reload();
+    assert.match(await q.locator('[data-testid=adventure]').innerText(), /今日冒險已結束/);
+    // 機器貓回首頁
+    await q.click('.mascot-link');
+    await q.waitForSelector('.hero .mascot-link');
+    console.log('✔ Phase 5：結束今日冒險（作廢提示、今日小結、當天鎖住、冒險大廳再看小結、重新整理仍鎖住）、機器貓回首頁');
+    await c14.close();
+  }
+
   // ---------- 設定：還原資料（每日自動備份、載入備份檔覆蓋） ----------
   {
     const c11 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 780 }, serviceWorkers: 'block' });

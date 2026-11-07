@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-29';
+  var APP_VERSION = '2026.11.07-30';
   var store;
   try {
     store = new CGP.Store();
@@ -273,7 +273,7 @@
     var c = currentChild() || store.getChildren()[0];
     var href = onHome ? (c ? '#adventure-' + c.id : '#home') : '#home';
     var label = onHome ? (c ? '冒險大廳' : '首頁') : '首頁';
-    return '<a class="hero-link mascot-link" href="' + href + '" aria-label="' + label + '">' + MASCOT + '<span class="hero-label">' + label + '</span></a>';
+    return '<a class="hero-link mascot-link" href="' + href + '" aria-label="' + (onHome ? label : '回首頁') + '">' + MASCOT + '<span class="hero-label">' + label + '</span></a>';
   }
   function plaque(title, sub) {
     return '<div class="plaque"><h1>' + h(title) + '</h1>' + (sub ? '<div class="ribbon">' + sub.split('・').map(function (t, i, arr) {
@@ -289,7 +289,7 @@
       return '<a class="kid ' + (c.id === child.id ? 'active' : '') + '" href="#' + tab + '-' + h(c.id) + '" style="--c:' + h(c.color) + '">' +
         avatar(c, 'xs') + h(c.name) + '</a>';
     }).join('') + '</nav>' : '';
-    return sky('<a class="icon-btn back" href="#home" aria-label="回首頁">‹</a>' + plaque(title) + gear() + sw, true);
+    return sky(mascotLink(false) + plaque(title) + gear() + sw, true);   // 機器貓取代「‹」：回首頁
   }
 
   var NAV = [['home', '🏠', '首頁'], ['child', '📋', '任務'], ['challenge', '🏆', '挑戰'], ['shop', '🎁', '兌換'], ['report', '📊', '紀錄']];
@@ -442,8 +442,9 @@
     var st = store.getAdventureStatus(child.id);
     if (st.settled) {
       var x = st.settlement;
+      var endedToday = store.isAdventureEnded(child.id);
       return '<section class="adv-banner is-settled" data-testid="adventure">' +
-        '<span class="adv-icon">🗺️</span><div class="adv-text"><b>今日冒險已出發</b>' +
+        '<span class="adv-icon">' + (endedToday ? '🏁' : '🗺️') + '</span><div class="adv-text"><b>' + (endedToday ? '今日冒險已結束' : '今日冒險已出發') + '</b>' +
         '<small>今天得到 ⭐' + x.stars + ' 能量星星' + (x.bonusStars ? '（含額外 ⭐' + x.bonusStars + '）' : '') + '</small></div>' +
         '<a class="btn primary" href="#adventure-' + h(child.id) + '">進入冒險大廳</a></section>';
     }
@@ -482,7 +483,6 @@
 
     // 1. Hero header
     var hero = '<header class="sky adv-hero"><span class="cloud c1"></span><span class="cloud c2"></span>' +
-      '<a class="round-btn back" href="#child-' + h(child.id) + '" aria-label="回到今日任務">‹</a>' +
       '<div class="adv-hero-main">' + mascotLink(false) + plaque('冒險大廳', '完成任務・累積星星・解鎖新冒險') + '</div>' +
       gear('float-island') + '</header>';
 
@@ -540,9 +540,12 @@
       '<img src="' + isl.jpg + '" alt="' + h(isl.alt) + '" width="1200" height="675" loading="lazy" decoding="async"></picture></div>' +
       '<div class="map-info">' +
       '<p>擲骰子、走格子、開寶箱！目前在第 ' + store.getPlayer(child.id).pos + ' / 30 格</p>' +
-      (x ? '<span class="lock-pill open">🔓 今天可以玩</span>' : '<span class="lock-pill">🔒 先進入今日冒險</span>') +
-      (x ? '<a class="btn primary map-cta" href="#map-' + h(child.id) + '">開始冒險 ›</a>'
-        : '<button class="btn primary map-cta" disabled>開始冒險 ›</button>') + '</div>' +
+      (store.isAdventureEnded(child.id)
+        ? '<span class="lock-pill">🏁 今天的冒險已結束</span><button class="btn primary map-cta" data-action="show-summary">📋 查看今日小結</button>' +
+          '<a class="btn small map-view-link" href="#map-' + h(child.id) + '">看地圖</a>'
+        : (x ? '<span class="lock-pill open">🔓 今天可以玩</span>' : '<span class="lock-pill">🔒 先進入今日冒險</span>') +
+          (x ? '<a class="btn primary map-cta" href="#map-' + h(child.id) + '">開始冒險 ›</a>'
+            : '<button class="btn primary map-cta" disabled>開始冒險 ›</button>')) + '</div>' +
       '<span class="compass" aria-hidden="true">🧭</span></section>' +
       '<div class="island-dots" aria-label="五座島">' + ISLANDS.map(function (is) {
         return '<span class="dot ' + (is.id === isl.id ? 'active' : '') + '" data-island="' + is.id + '" style="--d:' + is.color + '" title="' + is.name + '"></span>';
@@ -619,7 +622,8 @@
       return '<button class="dice-btn ' + kind + '" data-action="' + (kind === 'skates' ? 'use-skates' : 'roll') + '" data-kind="' + kind + '"' +
         (disabled ? ' disabled' : '') + '>' + itemArt(kind, 'dice-icon') + '<b>' + label + '</b><small>背包 ×' + count + '</small></button>';
     }
-    var reason = !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
+    var ended = store.isAdventureEnded(child.id);
+    var reason = ended ? '🏁 今天的冒險已經結束了，明天見！' : !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
       : picking ? '🚪 任意門：點地圖上的格子選擇要去的地方'
       : atEnd ? '🚪 已抵達第一區的礦場木門！第二區即將開放'
         : noRolls ? '今天的 3 次骰子用完了，明天再來！（溜冰鞋還可以用）'
@@ -670,6 +674,8 @@
       act('skates', '溜冰鞋 +3', bag.skates, !canPlay || atEnd || !bag.skates || !!pending || picking) +
       '</section>' +
       itemBar(child, player, { canPlay: canPlay, atEnd: atEnd, pending: !!pending, picking: picking, quota: quota }) +
+      (canPlay ? '<button type="button" class="btn block end-day" data-action="end-day"' + (pending || picking ? ' disabled' : '') + '>🏁 結束今日冒險</button>' : '') +
+      (ended ? '<button type="button" class="btn primary block" data-action="show-summary">📋 查看今日小結</button>' : '') +
       '<div class="legend">' + [['chest', '寶箱'], ['chance', '機會'], ['fate', '命運'], ['minigame', '小遊戲'], ['boundary', '第一區終點']].map(function (l) {
         return '<span>' + tileArt(l[0], 'legend-art') + l[1] + '</span>';
       }).join('') + '</div>' +
@@ -896,6 +902,32 @@
     if (res.found) msg = '🎁 撿到 ' + res.found + ' 個神秘寶箱！放進冒險背包了，用 🔑 黃金鑰匙打開。' + (msg ? '\n\n' + msg : '');
     if (msg) showInfo(head + '・停在第 ' + store.getPlayer(childId).pos + ' 格', msg);
     else toast(head + '，停在第 ' + store.getPlayer(childId).pos + ' 格');
+  }
+
+  /** 今日小結（結束今日冒險時、或之後在冒險大廳查看） */
+  function showSummary(childId, justEnded) {
+    var s = store.getDaySummary(childId), child = store.getChild(childId);
+    var nameOf = function (k) { return (BAG_INFO[k] && BAG_INFO[k].name) || (k === 'goldenKey' ? '黃金鑰匙' : k); };
+    var list = function (o) { return Object.keys(o).map(function (k) { return nameOf(k) + ' ×' + o[k]; }).join('、'); };
+    var stars = s.stars.settle + s.stars.gained;
+    var rows = [
+      ['👣', '今天走了', s.moved > 0 ? s.moved + ' 格（第 ' + s.startPos + ' → ' + s.endPos + ' 格）' : s.moved < 0 ? '往回 ' + (-s.moved) + ' 格' : '還沒移動'],
+      ['🎲', '擲骰', s.rolls + ' 次'],
+      ['⭐', '得到能量星星', stars + ' 顆' + (s.stars.spent ? '（用掉 ' + s.stars.spent + ' 顆）' : '')]
+    ];
+    if (s.minigames.length) rows.push(['🎮', '抓住星星', s.minigames.map(function (m) { return '抓到 ' + m.caught + ' 顆'; }).join('、')]);
+    var got = list(s.itemsGained), used = list(s.itemsUsed);
+    if (got) rows.push(['🎒', '得到的道具', got]);
+    if (used) rows.push(['✨', '用掉的道具', used]);
+    if (s.specialTasks.length) rows.push(['🔮', '新的特殊任務', s.specialTasks.join('、')]);
+    if (s.chests.onMap || s.chests.coming) rows.push(['🎁', '神秘寶箱', s.chests.onMap ? '地圖上還有 ' + s.chests.onMap + ' 個等你去撿' + (s.chests.coming ? '，另外 ' + s.chests.coming + ' 個下次出現' : '') : s.chests.coming + ' 個神秘寶箱下次冒險時會出現在你前方！']);
+    confirmEl.innerHTML = '<div class="confirm-box summary-box"><h2>' + (justEnded ? '🏁 今天的冒險結束了！' : '📋 今日小結') + '</h2>' +
+      '<p class="muted small">' + h(child.name) + '，今天辛苦了！明天繼續冒險吧～</p>' +
+      '<ul class="summary-list">' + rows.map(function (r) { return '<li><span class="sum-ico">' + r[0] + '</span><b>' + r[1] + '</b><span>' + h(r[2]) + '</span></li>'; }).join('') + '</ul>' +
+      '<div class="modal-actions"><button type="button" class="btn primary" data-yes>好！</button></div></div>';
+    confirmEl.querySelector('[data-yes]').onclick = function () { confirmEl.close(); render(); };
+    confirmEl.oncancel = null;
+    if (typeof confirmEl.showModal === 'function') confirmEl.showModal(); else confirmEl.setAttribute('open', '');
   }
 
   /** 寶物磁鐵：列出前後 5 格內的寶箱讓孩子選 */
@@ -1545,7 +1577,7 @@
         g.items.map(function (r) { return recordRow(r, !cid); }).join('');
     }).join('') + '</ul>' : '<p class="muted small">這段期間沒有紀錄</p>';
 
-    return sky('<a class="icon-btn back" href="#home" aria-label="回首頁">‹</a>' + plaque('記分總覽') + gear(), true) +
+    return sky(mascotLink(false) + plaque('記分總覽') + gear(), true) +
       '<main class="page report">' +
       '<div class="report-controls">' + chips + seg + nav + '</div>' +
       '<section><h2>📈 統計</h2><div class="stat-cards">' + cards + '</div></section>' +
@@ -2203,6 +2235,17 @@
         case 'use-skates': playMove(childId, 'skates'); break;
         case 'use-item': playMove(childId, el.getAttribute('data-kind')); break;
         case 'use-magnet': openMagnet(childId); break;
+        case 'end-day': {
+          var left = store.getRollsLeft(childId), q = store.getBonusQuota(childId);
+          confirmThen('結束今日冒險？\n結束後今天就不能再擲骰、玩小遊戲或使用道具' +
+            (left ? '，還沒用的 ' + left + ' 次擲骰會作廢' : '') + (q.games ? '、' + q.games + ' 次額外小遊戲也會作廢' : '') +
+            '。\n背包裡的道具會保留到明天。', '結束', false, function () {
+            store.endAdventure(childId);
+            setTimeout(function () { showSummary(childId, true); }, 0);
+          });
+          break;
+        }
+        case 'show-summary': showSummary(childId, false); break;
         case 'pick-door': ui.doorPick = childId; render(); break;
         case 'cancel-door': ui.doorPick = null; render(); break;
         case 'activate-medal':

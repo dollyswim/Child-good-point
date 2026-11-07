@@ -1349,3 +1349,22 @@ body.mg-open { overflow: hidden; }
   border: 2px solid #fff; background: #e9dce6; color: #8a6f86; font: inherit; font-size: .72rem; font-weight: 900; cursor: pointer;
   box-shadow: 0 1px 2px rgba(0, 0, 0, .15);
 }
+
+/* Phase 5：結束今日冒險與今日小結 */
+.end-day { border: 2px dashed #e0b97a; color: #9a6a20; background: #fff8ea; font-weight: 900; }
+.summary-box { gap: 8px; }
+.summary-box h2 { text-align: center; font-size: 1.3rem; }
+.summary-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.summary-list li { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 8px 10px; border-radius: 14px; background: #fbf4e8; animation: bless-in .4s ease-out both; }
+.summary-list li:nth-child(2) { animation-delay: .06s; } .summary-list li:nth-child(3) { animation-delay: .12s; } .summary-list li:nth-child(4) { animation-delay: .18s; }
+.summary-list li:nth-child(5) { animation-delay: .24s; } .summary-list li:nth-child(6) { animation-delay: .3s; } .summary-list li:nth-child(7) { animation-delay: .36s; }
+.summary-list .sum-ico { font-size: 1.3rem; }
+.summary-list b { font-size: .86rem; white-space: nowrap; }
+.summary-list span:last-child { font-size: .86rem; color: var(--text); font-weight: 700; text-align: right; }
+.map-view-link { grid-column: 1 / -1; justify-self: center; }
+@media (prefers-reduced-motion: reduce) { .summary-list li { animation: none; } }
+/* 小頁首：機器貓取代「‹」返回鍵 */
+.sky-sm .mascot-link { position: relative; z-index: 2; flex: none; margin-left: 2px; }
+.sky-sm .mascot-link img.mascot, .sky-sm .mascot-link .mascot { width: 46px; height: auto; animation: none; }
+.sky-sm .mascot-link .hero-label { margin-top: -4px; font-size: .62rem; }
+.sky-sm .plaque { margin-right: 54px; }

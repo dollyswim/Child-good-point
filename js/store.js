@@ -90,7 +90,7 @@
   // ---------- 預設資料 ----------
   function emptyData() {
     return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null,
-      milestones: {}, adventure: { settlements: [], ledger: [], rolls: [], minigames: [], bonusQuota: [], mapChests: [], blessings: [], itemLog: [], players: {} } };
+      milestones: {}, adventure: { settlements: [], ledger: [], rolls: [], minigames: [], bonusQuota: [], mapChests: [], dayEnds: [], blessings: [], itemLog: [], players: {} } };
   }
 
   function defaultData() {
@@ -291,10 +291,14 @@
           return true;
         }).map(function (x) {
           return { id: String(x.id), childId: String(x.childId), date: x.date, tile: toInt(x.tile, 0), bonus: !!x.bonus,
-            status: x.status === 'done' ? 'done' : 'pending', caught: Math.max(0, toInt(x.caught, 0)), stars: Math.max(0, toInt(x.stars, 0)),
+            status: x.status === 'done' || x.status === 'expired' ? x.status : 'pending', caught: Math.max(0, toInt(x.caught, 0)), stars: Math.max(0, toInt(x.stars, 0)),
             ts: toInt(x.ts, Date.now()), doneTs: x.doneTs ? toInt(x.doneTs, 0) : undefined };
         });
       })(),
+      // 結束今日冒險（當天鎖住）
+      dayEnds: (Array.isArray(adv.dayEnds) ? adv.dayEnds : []).filter(function (x) {
+        return x && x.id && childIdSet.has(String(x.childId)) && /^\d{4}-\d{2}-\d{2}$/.test(x.date);
+      }).map(function (x) { return { id: String(x.id), childId: String(x.childId), date: x.date, ts: toInt(x.ts, Date.now()) }; }),
       // 地圖上的神秘寶箱：tileId 為空＝還沒出現（下次冒險時出現在角色前方 2～8 格）
       mapChests: (Array.isArray(adv.mapChests) ? adv.mapChests : []).filter(function (x) {
         return x && x.id && childIdSet.has(String(x.childId));
@@ -337,7 +341,8 @@
             tileId: p.tileId ? String(p.tileId) : '',  // 穩定格子 ID；舊存檔沒有時由 game.js 依 pos 對應
             character: String(p.character || ''),
             medalArmed: !!p.medalArmed,   // 好運金牌已啟用（下一次寶箱／機會效果 2 次）
-            looted: Array.isArray(p.looted) ? p.looted.map(String) : [],   // 被寶物磁鐵吸走的一般寶箱格（這一輪停上去不再給獎勵）
+            looted: Array.isArray(p.looted) ? p.looted.map(String) : [],
+            dayStart: p.dayStart && /^\d{4}-\d{2}-\d{2}$/.test(p.dayStart.date) ? { date: p.dayStart.date, pos: Math.max(0, toInt(p.dayStart.pos, 0)) } : null,   // 被寶物磁鐵吸走的一般寶箱格（這一輪停上去不再給獎勵）
             pendingRoll: p.pendingRoll && p.pendingRoll.rollId ? {   // 已擲出還沒前進（命運重骰券可用）
               rollId: String(p.pendingRoll.rollId), die: ['d6', 'd12', 'magic'].indexOf(p.pendingRoll.die) >= 0 ? p.pendingRoll.die : 'd6',
               kind: String(p.pendingRoll.kind || 'base'), sides: toInt(p.pendingRoll.sides, 6) === 12 ? 12 : 6,
@@ -558,6 +563,7 @@
     adv.minigames = adv.minigames.filter(function (x) { return x.childId !== id; });
     adv.bonusQuota = adv.bonusQuota.filter(function (x) { return x.childId !== id; });
     adv.mapChests = adv.mapChests.filter(function (x) { return x.childId !== id; });
+    adv.dayEnds = adv.dayEnds.filter(function (x) { return x.childId !== id; });
     delete this.data.milestones[id];
     adv.blessings = adv.blessings.filter(function (x) { return x.childId !== id; });
     adv.itemLog = adv.itemLog.filter(function (x) { return x.childId !== id; });
