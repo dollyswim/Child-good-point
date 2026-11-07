@@ -585,6 +585,7 @@ async function main() {
       await q.click('[data-action=roll][data-kind=d6]');
       await q.waitForFunction((n) => document.querySelector('[data-testid=rolls]').textContent.startsWith(n + ' '), i + 2, { timeout: 8000 });
       await q.waitForFunction(() => !document.querySelector('.dice-btn.d6[disabled]') || document.querySelector('[data-testid=rolls]').textContent.startsWith('3'), null, { timeout: 8000 });
+      await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 8000 });   // 等角色動畫（例如開寶箱）播完
       if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
     }
     await q.waitForTimeout(400);

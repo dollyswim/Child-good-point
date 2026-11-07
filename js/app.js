@@ -1071,7 +1071,7 @@
     } finally { ui.busy = false; }
     render();
     var react = pawnReaction(res);
-    if (react) { ui.busy = true; try { await pawnPlay(react); } finally { ui.busy = false; } }   // 角色先反應，再顯示事件說明
+    if (react) { ui.busy = true; document.body.classList.add('pawn-acting'); try { await pawnPlay(react); } finally { ui.busy = false; document.body.classList.remove('pawn-acting'); } }   // 角色先反應，再顯示事件說明（pawn-acting：動作中，骰子暫停）
     var head = kind === 'skates' ? '🛼 前進 3 格' : kind === 'wings' ? '🪽 飛行翼' : kind === 'door' ? '🚪 任意門'
       : (kind === 'magic' || (pr && pr.die === 'magic') ? '✨ 神奇骰子擲出 ' : '🎲 擲出 ') + res.value;
     // 停在小遊戲格（或礦車載到小遊戲格）：直接開始「抓住星星」
