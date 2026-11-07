@@ -584,6 +584,7 @@ async function main() {
       return { left: s.left - v.left, bottom: v.bottom - s.bottom, w: s.width, overlap: s.right > c.left };
     });
     assert.ok(box.left < 20 && box.bottom < 20 && box.w >= 64 && !box.overlap, '商店在左下角：' + JSON.stringify(box));
+    assert.ok(await q.evaluate(() => { const i = document.querySelector('.map-shop img'); return i && i.complete && i.naturalWidth === 192 && getComputedStyle(i).objectFit === 'contain'; }), '商店圖載入、contain');
     await q.click('.map-shop');
     await q.waitForSelector('#confirm .shop-box');
     console.log('✔ 今日冒險出發：勾選多位孩子一起結算、未解鎖不可選、已出發打勾；商店在地圖左下角');
