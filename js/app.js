@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-55';
+  var APP_VERSION = '2026.11.07-56';
   var store;
   try {
     store = new CGP.Store();
@@ -702,7 +702,7 @@
     var ended = store.isAdventureEnded(child.id);
     var reason = ended ? '🏁 今天的冒險已經結束了，明天見！' : !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
       : picking ? '🚪 任意門：點地圖上的格子選擇要去的地方'
-      : atEnd ? (board.tiles[player.pos].type === 'end' ? '🏁 已抵達金冠城堡、通關金島！下次出發從起點開始新的一輪' : '🚪 已抵達目前開放區域的終點！下次出發從起點開始新的一輪')
+      : atEnd ? (board.tiles[player.pos].type === 'end' ? '🏁 已抵達' + (board.goalName || '終點') + '、通關' + board.name + '！' + (GAME.nextIsland(player.island) ? '下次出發前往「' + GAME.BOARDS[GAME.nextIsland(player.island)].name + '」' : '下次出發從起點開始新的一輪') : '🚪 已抵達目前開放區域的終點！下次出發從起點開始新的一輪')
         : noRolls ? '今天的 3 次骰子用完了，明天再來！' + (lim.move && (bag.skates || bag.wings) ? '（前進道具今天還可以用 ' + lim.move + ' 次）' : '')
           : (!bag.d6 && !bag.d12 && !bag.skates ? '背包是空的，點左下角的商店用能量星星購買骰子' : '選一個道具出發吧！');
     var tiles = board.tiles.map(function (t) {   // 長地圖：所有已開放區域的格子都顯示
@@ -716,7 +716,7 @@
         (TILE_LABEL[t.type] ? ' title="' + TILE_LABEL[t.type] + '"' : '') + '>' + tileArt(t.type, 'mtile-icon') + '</div>';
     }).join('');
     var pp = worldXY(region, board.tiles[player.pos]);
-    return pageHeader('金島', child, 'map') +
+    return pageHeader(board.name, child, 'map') +
       '<main class="page map-page">' +
       '<section class="hud">' +
       '<span class="hud-cell"><small>能量星星</small><b class="gold" data-testid="stars">' + STAR_IMG + ' ' + num(store.getStarBalance(child.id)) + '</b></span>' +
@@ -724,7 +724,7 @@
       '<span class="hud-cell"><small>位置</small><b data-testid="pos">' + player.pos + ' / ' + end + '</b></span>' +
       '</section>' +
       '<p class="region-name">🏝️ ' + REGION_NO[board.regions.indexOf(region)] + '・' + h(region.name) + '</p>' +
-      '<section class="map-view' + (picking ? ' picking' : '') + '" id="map-view" aria-label="金島地圖，可拖曳與縮放">' +
+      '<section class="map-view' + (picking ? ' picking' : '') + '" id="map-view" aria-label="' + h(board.name) + '地圖，可拖曳與縮放">' +
       '<div class="map-world" id="map-world" style="width:' + W + 'px;height:' + H + 'px" data-w="' + W + '" data-h="' + H + '">' +
       mapStrips(board) +
       tiles +
@@ -957,7 +957,11 @@
     } catch (err) { ui.busy = false; toast(err.message, 'neg'); render(); return; }
     var ev = res.event;
     try {
-      if (res.lap) {   // 從木門回到起點開始新的一輪
+      if (res.travel) {   // 通關後前往下一座島：換成新島嶼的地圖，從起點出發
+        toast('🛶 出發前往' + res.travel.name + '！', 'pos');
+        render();
+        await sleep(500);
+      } else if (res.lap) {   // 從終點回到起點開始新的一輪
         toast('🔄 新的一輪開始！從起點出發', 'pos');
         await hopAlong(child, [0]);
         await sleep(300);
@@ -1201,13 +1205,13 @@
     var el = document.createElement('div');
     el.className = 'clear-screen'; el.id = 'clear-screen';
     el.innerHTML = '<div class="confetti" aria-hidden="true">' + new Array(25).join('<i></i>') + '</div>' +
-      '<div class="clear-card"><div class="clear-crown">👑</div><h2>恭喜通關金島！</h2>' +
-      '<p class="clear-sub">' + h(child.name) + '和' + h(characterName(child)) + '抵達了金冠城堡' + (ev.clear.count > 1 ? '（第 ' + ev.clear.count + ' 次）' : '') + '</p>' +
+      '<div class="clear-card"><div class="clear-crown">👑</div><h2>恭喜通關' + h(ev.clear.name || '金島') + '！</h2>' +
+      '<p class="clear-sub">' + h(child.name) + '和' + h(characterName(child)) + '抵達了' + h(ev.clear.goal || '終點') + (ev.clear.count > 1 ? '（第 ' + ev.clear.count + ' 次）' : '') + '</p>' +
       '<span class="clear-pawn">' + characterArt(child) + '</span>' +
       '<ul class="clear-rewards">' + (ev.clear.first
-        ? '<li><img src="images/items/mystery_chest.webp" alt="" width="48" height="48"> 神秘寶箱 ×1（不用鑰匙）</li><li><span>🏅</span> 成就「金島通關」</li>'
+        ? '<li><img src="images/items/mystery_chest.webp" alt="" width="48" height="48"> 神秘寶箱 ×1（不用鑰匙）</li>' + (ev.clear.island === 'gold' || !ev.clear.island ? '<li><span>🏅</span> 成就「金島通關」</li>' : '')
         : '<li>' + STAR_IMG + ' 能量星星 +' + GAME.GOLD_CLEAR_STARS + '</li>') + '</ul>' +
-      '<p class="muted small">下次出發會從起點開始新的一輪</p>' +
+      '<p class="muted small">' + (ev.clear.next ? '下次出發會前往「' + h(ev.clear.next) + '」！' : '下次出發會從起點開始新的一輪') + '</p>' +
       '<button type="button" class="btn primary block" data-clear-ok>太棒了！</button></div>';
     document.body.appendChild(el);
     toastEl.hidden = true;   // 通關畫面已列出成就，不另外跳提示

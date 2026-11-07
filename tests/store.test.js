@@ -1896,7 +1896,7 @@ test('金島通關：第一次＝神秘寶箱 ×1（免鑰匙）＋成就；之�
     store.setPlayerTile(a.id, END - 3);
     store.random = () => 0.99;                               // 擲 6 → 停在第 100 格（全島終點）
     const r = store.rollDice(a.id, 'd6');
-    assert.deepEqual(r.event.clear, { count: 1, first: true });
+    assert.deepEqual(r.event.clear, { count: 1, first: true, island: 'gold', name: '金島', goal: '金冠城堡', next: '' }, '木島還沒開放：next 為空');
     assert.equal(p.bag.giftMysteryChest, 1);
     assert.equal(p.goldClears, 1);
     assert.deepEqual(store.checkAchievements(a.id).map(x => x.id).filter(x => x.startsWith('goldClear')), ['goldClear1']);
@@ -1907,7 +1907,7 @@ test('金島通關：第一次＝神秘寶箱 ×1（免鑰匙）＋成就；之�
     store.setPlayerTile(a.id, END - 3);
     store.random = () => 0.99;
     const r3 = store.rollDice(a.id, 'd6');
-    assert.deepEqual(r3.event.clear, { count: 2, first: false });
+    assert.deepEqual([r3.event.clear.count, r3.event.clear.first], [2, false]);
     assert.equal(r3.event.stars, 10);
     assert.equal(p.bag.giftMysteryChest, 1, '第二次不再給寶箱');
     assert.ok(store.getStarBalance(a.id) >= bal + 10);
@@ -2055,4 +2055,56 @@ test('撤銷、取消勾選、刪除、修改紀錄：收回條件不成立的�
   assert.ok(store.getAchievements(a.id).find(x => x.id === 'advStart').done);
   store.getPlayer(a.id).maxReached = 0;
   assert.deepEqual(store.revokeAchievements(a.id), [], '冒險進度回到起點也不收回');
+});
+
+// ---------- 換島機制（木島等地圖到貨後開放） ----------
+/** 測試用：複製金島地圖當作「木島」（格子 ID 改成 wood-…） */
+function fakeWood() {
+  const g = G.buildGold();
+  return { name: '木島', goalName: '精靈巨樹', totalTiles: 100, world: g.world, regions: g.regions,
+    tiles: g.tiles.map(t => Object.assign({}, t, { id: t.id.replace('gold', 'wood'), regionId: t.regionId.replace('gold', 'wood') })) };
+}
+test('換島：木島未開放時通關金島後繼續在金島繞圈；開放後第一次通關 → 下一次出發到木島起點，各島進度分開保存、金島成就不受影響', () => {
+  assert.deepEqual(G.ISLAND_ORDER, ['gold', 'wood', 'water', 'fire', 'earth']);
+  assert.equal(G.nextIsland('gold'), null, '目前只有金島');
+  const { store, a, storage } = p3Store();
+  const p = store.getPlayer(a.id);
+  p.bag.d6 = 5;
+  store.setPlayerTile(a.id, END - 3);
+  store.random = () => 0.99;
+  const r = store.rollDice(a.id, 'd6');
+  assert.equal(r.event.type, 'end');
+  assert.match(r.event.text, /從起點開始新的一輪/);
+  const wood = G.registerBoard('wood', fakeWood());
+  try {
+    assert.equal(G.nextIsland('gold'), 'wood');
+    assert.equal(G.nextIsland('wood'), 'gold', '環狀：木島之後（水火土未開放）回到金島');
+    assert.ok(store.checkAchievements(a.id).some(x => x.id === 'reachR4'));
+    store.random = () => 0.1;                                   // 擲 1
+    const t = store.rollDice(a.id, 'd6');
+    assert.deepEqual(t.travel, { island: 'wood', name: '木島' }, '前往木島');
+    assert.deepEqual([p.island, p.pos, p.tileId], ['wood', 1, 'wood-01-001'], '從木島起點出發');
+    assert.equal(store.getBoard(a.id), wood);
+    assert.equal(p.islands.gold.maxReached, 100, '金島進度保存');
+    assert.equal(p.maxReached, 1, '木島最遠格子從頭算');
+    p.maxReached = 0;
+    assert.equal(store.revokeAchievements(a.id).length, 0, '在木島時金島區域成就不受影響');
+    assert.equal(store.getAchievements(a.id).find(x => x.id === 'reachR4').done, true);
+    // 通關木島：獎勵照算（第一次神秘寶箱），不給「金島通關」；下一次回到金島
+    store.data.adventure.rolls = [];                            // 測試用：重設今天的擲骰次數（每日 3 次）
+    store.setPlayerTile(a.id, END - 3);
+    store.random = () => 0.99;
+    const before = p.bag.giftMysteryChest, gc = p.goldClears;
+    const w = store.rollDice(a.id, 'd6');
+    assert.equal(w.event.title, '🏁 恭喜通關木島！');
+    assert.match(w.event.text, /精靈巨樹[\s\S]*前往「金島」/);
+    assert.deepEqual([p.islandClears.wood, p.goldClears, p.bag.giftMysteryChest], [1, gc, before + 1]);
+    store.random = () => 0.1;
+    const back = store.rollDice(a.id, 'd6');
+    assert.deepEqual([back.travel.island, p.island, p.pos, p.maxReached], ['gold', 'gold', 1, 100], '回到金島起點，金島最遠紀錄還在');
+    // 重新開啟（存檔）後位置正確
+    store.save();
+    const s2 = new Store({ storage, seed: false, now: () => store.now() });
+    assert.deepEqual([s2.getPlayer(a.id).island, s2.getPlayer(a.id).tileId], ['gold', 'gold-01-001']);
+  } finally { delete G.BOARDS.wood; }
 });

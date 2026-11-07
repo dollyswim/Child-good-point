@@ -143,10 +143,27 @@
     }
     // 只有最後一格保留邊界；前面區域的邊界改為一般格
     tiles.forEach(function (t, k) { if (t.type === 'boundary' && k !== tiles.length - 1) t.type = 'normal'; });
-    return { id: 'gold', name: '金島', totalTiles: 100, world: WORLD, regions: REGIONS, tiles: tiles };
+    return { id: 'gold', name: '金島', goalName: '金冠城堡', totalTiles: 100, world: WORLD, regions: REGIONS, tiles: tiles };
   }
   var GOLD = buildGold();
   var BOARDS = { gold: GOLD };
+  /**
+   * 五座島環狀順序（規格書 Phase 6）：金 → 木 → 水 → 火 → 土 → 金。
+   * 島嶼地圖資料到貨後用 registerBoard() 加入 BOARDS 就會開放；還沒開放的島會被跳過。
+   */
+  var ISLAND_ORDER = ['gold', 'wood', 'water', 'fire', 'earth'];
+  function registerBoard(id, board) { board.id = id; BOARDS[id] = board; return board; }
+  /** 下一座已開放的島（沒有其他已開放的島時回傳 null＝留在原島繞下一輪） */
+  function nextIsland(id) {
+    var i = ISLAND_ORDER.indexOf(id);
+    for (var k = 1; k < ISLAND_ORDER.length; k++) {
+      var n = ISLAND_ORDER[(i + k) % ISLAND_ORDER.length];
+      if (n !== id && BOARDS[n]) return n;
+    }
+    return null;
+  }
+  /** 金島的最遠格子（金島區域成就用；人在其他島時讀金島的保存進度） */
+  function goldMax(p) { return p.island === 'gold' ? p.maxReached : (((p.islands || {}).gold || {}).maxReached || 0); }
 
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function rint(rand, min, max) { return min + Math.floor(rand() * (max - min + 1)); }
@@ -164,6 +181,9 @@
     if (!p.stats) p.stats = { chests: 0, mystery: 0 };
     if (!(p.goldClears >= 0)) p.goldClears = 0;
     if (!(p.maxReached >= p.pos)) p.maxReached = p.pos || 0;
+    if (!p.islands || typeof p.islands !== 'object') p.islands = {};           // 其他島的保存進度 { 島: { laps, maxReached } }
+    if (!p.islandClears || typeof p.islandClears !== 'object') p.islandClears = {};   // 金島以外的通關次數（金島沿用 goldClears）
+    if (!BOARDS[p.island]) p.island = 'gold';
     // 位置以穩定格子 ID 為準；舊存檔只有整數格號時對應到同號的格子（第 n 格 → gold-01-00n）
     var board = BOARDS[p.island] || GOLD;
     var idx = p.tileId ? board.tiles.findIndex(function (t) { return t.id === p.tileId; }) : -1;
@@ -600,20 +620,22 @@
       ev.title = '🚪 抵達' + lastR.name + '的終點！';
       ev.text = '你走完金島第 1～' + lastR.to + ' 格了！' + (nextR ? '前方的「' + nextR.name + '」即將開放。' : '') + '\n下次出發會從起點開始新的一輪，寶箱也會重新放滿！';
     } else if (tile.type === 'end') {
-      // 金島通關：第一次＝神秘寶箱 ×1（免鑰匙）＋「金島通關」成就；之後＝ +10 能量星星；下一次移動從起點開始新的一輪
-      p.goldClears++;
-      var first = p.goldClears === 1;
-      ev.title = '🏁 恭喜通關金島！';
-      ev.clear = { count: p.goldClears, first: first };
+      // 島嶼通關：第一次＝神秘寶箱 ×1（免鑰匙）（金島另得「金島通關」成就）；之後＝ +10 能量星星；
+      // 下一次移動前往下一座已開放的島（沒有就從起點開始新的一輪）
+      var bd = this.getBoard(childId), isGold = p.island === 'gold';
+      var count = isGold ? ++p.goldClears : (p.islandClears[p.island] = (p.islandClears[p.island] || 0) + 1);
+      var first = count === 1, nx = nextIsland(p.island);
+      ev.title = '🏁 恭喜通關' + bd.name + '！';
+      ev.clear = { count: count, first: first, island: p.island, name: bd.name, goal: bd.goalName || '', next: nx ? BOARDS[nx].name : '' };
       if (first) {
         p.bag.giftMysteryChest++; ev.items.giftMysteryChest = 1;
-        this._logItem(childId, 'grant', 'giftMysteryChest', 1, '金島通關', '第一次通關');
-        ev.text = '你走完金島 100 格，抵達金冠城堡了！\n通關獎勵：🎁 神秘寶箱 ×1（不用鑰匙）＋ 🏅 成就「金島通關」';
+        this._logItem(childId, 'grant', 'giftMysteryChest', 1, bd.name + '通關', '第一次通關');
+        ev.text = '你走完' + bd.name + ' ' + (bd.tiles.length - 1) + ' 格' + (bd.goalName ? '，抵達' + bd.goalName : '') + '了！\n通關獎勵：🎁 神秘寶箱 ×1（不用鑰匙）' + (isGold ? '＋ 🏅 成就「金島通關」' : '');
       } else {
-        ev.stars = GOLD_CLEAR_STARS; this._ledger(childId, GOLD_CLEAR_STARS, '金島通關（第 ' + p.goldClears + ' 次）');
-        ev.text = '第 ' + p.goldClears + ' 次通關金島！通關獎勵：⭐' + GOLD_CLEAR_STARS + ' 能量星星';
+        ev.stars = GOLD_CLEAR_STARS; this._ledger(childId, GOLD_CLEAR_STARS, bd.name + '通關（第 ' + count + ' 次）');
+        ev.text = '第 ' + count + ' 次通關' + bd.name + '！通關獎勵：⭐' + GOLD_CLEAR_STARS + ' 能量星星';
       }
-      ev.text += '\n下次出發會從起點開始新的一輪。';
+      ev.text += nx ? '\n下次出發會前往「' + BOARDS[nx].name + '」！' : '\n下次出發會從起點開始新的一輪。';
     }
     return ev;
   };
@@ -695,9 +717,9 @@
     { id: 'advStart', cat: 'adventure', icon: '🧭', name: '冒險開始', desc: '第一次進入今日冒險', check: function (s, c) {
       return s.data.adventure.settlements.some(function (x) { return x.childId === c; }); } },
     { id: 'goldClear1', cat: 'adventure', icon: '🏅', name: '金島通關', desc: '走完金島 100 格，抵達金冠城堡', check: function (s, c) { return s.getPlayer(c).goldClears >= 1; } },
-    { id: 'reachR2', cat: 'adventure', icon: '💎', name: '抵達水晶礦谷', desc: '走到第 31 格以後', check: function (s, c) { return s.getPlayer(c).maxReached >= 31; } },
-    { id: 'reachR3', cat: 'adventure', icon: '⚙️', name: '抵達齒輪工坊', desc: '走到第 56 格以後', check: function (s, c) { return s.getPlayer(c).maxReached >= 56; } },
-    { id: 'reachR4', cat: 'adventure', icon: '👑', name: '抵達金冠城堡', desc: '走到第 81 格以後', check: function (s, c) { return s.getPlayer(c).maxReached >= 81; } },
+    { id: 'reachR2', cat: 'adventure', icon: '💎', name: '抵達水晶礦谷', desc: '走到第 31 格以後', check: function (s, c) { return goldMax(s.getPlayer(c)) >= 31; } },
+    { id: 'reachR3', cat: 'adventure', icon: '⚙️', name: '抵達齒輪工坊', desc: '走到第 56 格以後', check: function (s, c) { return goldMax(s.getPlayer(c)) >= 56; } },
+    { id: 'reachR4', cat: 'adventure', icon: '👑', name: '抵達金冠城堡', desc: '走到第 81 格以後', check: function (s, c) { return goldMax(s.getPlayer(c)) >= 81; } },
     { id: 'chest1', cat: 'collect', icon: '🧰', name: '第一個寶箱', desc: '開過第一個一般寶箱', check: function (s, c) { return s.getPlayer(c).stats.chests >= 1; } },
     { id: 'chests10', cat: 'collect', icon: '📦', name: '寶箱獵人', desc: '開過 10 個一般寶箱', check: function (s, c) { return s.getPlayer(c).stats.chests >= 10; } },
     { id: 'mystery1', cat: 'collect', icon: '🎁', name: '一個大秘寶', desc: '打開第一個神秘寶箱', check: function (s, c) { return s.getPlayer(c).stats.mystery >= 1; } },
@@ -844,14 +866,14 @@
       if (p.bag[die] <= 0) throw new Error('背包裡沒有' + (die === 'd6' ? ' 6 面骰' : ' 12 面骰'));
     }
     this._markDayStart(childId);
-    if (needLap) this._newLap(childId);
+    var travel = needLap ? this._startNext(childId) : null;
     var sides = die === 'd6' ? 6 : 12;
     var value = rint(this.random, 1, sides);
     if (kind === 'bonus') this._useBonus(childId, 'rolls');
     if (die === 'magic') { p.bag.magicDice--; this._logItem(childId, 'use', 'magicDice', 1, '背包', '擲出 ' + value); } else p.bag[die]--;
     var roll = { id: uid(), childId: childId, date: this.today(), die: die === 'magic' ? 'd12' : die, kind: kind, value: value, from: p.pos, to: p.pos, ts: this.now().getTime() };
     this.data.adventure.rolls.push(roll);
-    p.pendingRoll = { rollId: roll.id, die: die, kind: kind, sides: sides, value: value, from: p.pos, rerolled: false, lap: needLap };
+    p.pendingRoll = { rollId: roll.id, die: die, kind: kind, sides: sides, value: value, from: p.pos, rerolled: false, lap: needLap, travel: travel };
     this.save();
     return Object.assign({}, p.pendingRoll);
   };
@@ -882,7 +904,7 @@
     if (roll) roll.to = p.pos;
     p.pendingRoll = null;
     this.save();
-    return { die: pr.die === 'magic' ? 'magic' : pr.die, kind: pr.kind, value: pr.value, from: pr.from, path: path, event: event, rollsLeft: this.getRollsLeft(childId), found: this._found, lap: !!pr.lap };
+    return { die: pr.die === 'magic' ? 'magic' : pr.die, kind: pr.kind, value: pr.value, from: pr.from, path: path, event: event, rollsLeft: this.getRollsLeft(childId), found: this._found, lap: !!pr.lap, travel: pr.travel || null };
   };
   /**
    * 擲骰並直接前進（沒有重骰券時使用）：每天基本 3 次，用完後可用「再來 3 次」的額外次數
@@ -901,6 +923,21 @@
     var p = this.getPlayer(childId), tiles = this.getBoard(childId).tiles;
     p.pos = 0; p.tileId = tiles[0].id; p.looted = [];
     p.laps = (p.laps || 0) + 1;
+  };
+  /**
+   * 在最後一格時的下一次移動：停在全島終點且有下一座已開放的島 → 前往該島起點；否則從起點開始新的一輪。
+   * @returns {{ island: string, name: string }|null} 換島時回傳目的地
+   */
+  Store.prototype._startNext = function (childId) {
+    var p = this.getPlayer(childId), board = this.getBoard(childId);
+    var to = board.tiles[p.pos].type === 'end' ? nextIsland(p.island) : null;
+    if (!to) { this._newLap(childId); return null; }
+    p.islands[p.island] = { laps: p.laps || 0, maxReached: p.maxReached || 0 };   // 保存原島進度（回來時從起點出發）
+    var keep = p.islands[to] || {}, nb = BOARDS[to];
+    p.island = to; p.pos = 0; p.tileId = nb.tiles[0].id; p.looted = [];
+    p.laps = keep.laps || 0; p.maxReached = keep.maxReached || 0;
+    this._logItem(childId, 'travel', to, 1, board.name, '前往' + nb.name);
+    return { island: to, name: nb.name };
   };
   /** 移動類道具：溜冰鞋 3 格、飛行翼 20 格（不算擲骰次數；到目前開放的最後一格就停） */
   var MOVE_ITEMS = { skates: { steps: 3, name: '溜冰鞋' }, wings: { steps: 20, name: '飛行翼' } };
@@ -927,7 +964,7 @@
     if (!(p.bag[item] > 0)) throw new Error('背包裡沒有' + MOVE_ITEMS[item].name);
     if (!this.getItemLimitsToday(childId).move) throw new Error('今天的前進道具（溜冰鞋、飛行翼）已經用了 ' + MOVE_DAILY_LIMIT + ' 次，明天再用！');
     this._markDayStart(childId);
-    if (needLap) this._newLap(childId);
+    var travel = needLap ? this._startNext(childId) : null;
     var from = p.pos;
     p.bag[item]--;
     this._found = 0;
@@ -935,7 +972,7 @@
     this._logItem(childId, 'use', item, 1, '背包', '第 ' + from + ' → ' + p.pos + ' 格');   // 溜冰鞋也記錄，用來計算每日上限
     var event = this._resolveTile(childId, 0);
     this.save();
-    return { die: item, value: MOVE_ITEMS[item].steps, from: from, path: path, event: event, found: this._found, lap: needLap };
+    return { die: item, value: MOVE_ITEMS[item].steps, from: from, path: path, event: event, found: this._found, lap: needLap, travel: travel };
   };
   /** 溜冰鞋：前進 3 格，不算擲骰次數 */
   Store.prototype.useSkates = function (childId) { return this._useMoveItem(childId, 'skates'); };
@@ -986,7 +1023,7 @@
     return this.getBonusQuota(childId);
   };
 
-  var api = { ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

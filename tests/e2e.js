@@ -1254,6 +1254,20 @@ async function main() {
     await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'gold-end.png') : path.join(require('os').tmpdir(), 'ge.png') });
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.giftMysteryChest, id), 1);
     assert.ok(await q.evaluate((cid) => window.__cgpStore.getAchievements(cid).find((a) => a.id === 'goldClear1').done, id));
+    // 換島：模擬木島開放（複製金島地圖）→ 在終點再擲一次 → 前往木島起點，地圖標題換成木島
+    await q.evaluate((cid) => {
+      const G = window.CGPGame, g = G.buildGold(), s = window.__cgpStore;
+      G.registerBoard('wood', { name: '木島', goalName: '精靈巨樹', totalTiles: 100, world: g.world, regions: g.regions,
+        tiles: g.tiles.map((t) => Object.assign({}, t, { id: t.id.replace('gold', 'wood'), regionId: t.regionId.replace('gold', 'wood') })) });
+      s.getPlayer(cid).bag.d6 = 1; s.data.adventure.rolls = []; s.random = () => 0.1; s.save();
+    }, id);
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);
+    assert.match(await q.locator('.map-hint').innerText(), /下次出發前往「木島」/);
+    await q.click('.dice-btn.d6');
+    await q.waitForFunction(() => (document.querySelector('#pawn') || {}).dataset && document.querySelector('#pawn').dataset.tile === 'wood-01-001', null, { timeout: 10000 });
+    assert.match(await q.locator('.plaque h1').innerText(), /木島/);
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).islands.gold.maxReached, id), 100, '金島進度保存');
+    console.log('✔ 換島：木島開放後通關金島 → 下一次出發到木島起點、地圖換成木島、金島進度保存');
     console.log('✔ 成就：冒險大廳成就區、解鎖提示、說明；金島通關全螢幕慶祝、第一次通關獎勵與成就');
     await c16.close();
   }
