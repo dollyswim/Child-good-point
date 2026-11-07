@@ -1118,7 +1118,8 @@ img.mascot { width: 64px; height: auto; object-fit: contain; flex: none; }
 
 /* 商店按鈕：透明去背插圖，不用白框，直接浮在地圖上 */
 .map-shop { width: auto; padding: 0; background: none; border: none; box-shadow: none; gap: 0; }
-.map-shop-art { width: 76px; height: 76px; filter: drop-shadow(0 3px 3px rgba(60, 35, 10, .45)); }
+.map-shop-art { width: 152px; height: 152px; filter: drop-shadow(0 4px 4px rgba(60, 35, 10, .45)); }
+.map-shop b { margin-top: -14px; }
 .map-shop b { margin-top: -6px; padding: 0 10px; border-radius: 99px; background: #fff; border: 2px solid #f3d9a8; box-shadow: 0 2px 0 rgba(150, 100, 50, .3); font-size: .8rem; }
 .map-shop:active { transform: translateY(2px); box-shadow: none; }
 
