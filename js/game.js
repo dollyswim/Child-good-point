@@ -21,10 +21,11 @@
 
   var DAILY_DICE_LIMIT = 3;
 
+  /** 道具圖示：家長提供的白底插圖（images/items/，256×256 WebP，原圖 1024×1024 PNG），介面以白色圖示框＋contain 顯示 */
   var SHOP = [
-    { id: 'd6', name: '6 面骰', icon: '🎲', price: 5, desc: '擲出 1～6 步' },
-    { id: 'd12', name: '12 面骰', icon: '🎯', price: 10, desc: '擲出 1～12 步' },
-    { id: 'skates', name: '溜冰鞋', icon: '🛼', price: 4, desc: '直接前進 3 格（不算擲骰次數）' }
+    { id: 'd6', name: '6 面骰', icon: '🎲', img: 'images/items/dice_6.webp', price: 5, desc: '擲出 1～6 步' },
+    { id: 'd12', name: '12 面骰', icon: '🎲', img: 'images/items/dice_12.webp', price: 10, desc: '擲出 1～12 步' },
+    { id: 'skates', name: '溜冰鞋', icon: '🛼', img: 'images/items/roller_skate.webp', price: 4, desc: '直接前進 3 格（不算擲骰次數）' }
   ];
 
   /** 8 種原創冒險夥伴（家長提供的原創設計），圖檔在 images/characters/<id>.webp */

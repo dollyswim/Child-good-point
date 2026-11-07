@@ -1049,3 +1049,12 @@ img.mascot { width: 64px; height: auto; object-fit: contain; flex: none; }
 .mtile { margin: -24.5px 0 0 -34px; }          /* 外框中心 = JSON 座標 */
 .mtile::before { inset: 3.5px 0 -3.5px; }      /* 石板圖下移：頂面中心落在座標上，厚度在下方 */
 .mt-normal::before { filter: brightness(1.08) drop-shadow(0 4px 3px rgba(80, 50, 20, .35)); }
+
+/* 道具圖示（6 面骰、12 面骰、溜冰鞋）：白底插圖放在白色圖示框，contain 保持比例、不裁切 */
+.item-art {
+  display: grid; place-items: center; flex: none; overflow: hidden;
+  background: #fff; border-radius: 14px; box-shadow: inset 0 0 0 2px rgba(214, 180, 130, .35);
+}
+.item-art img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.dice-icon.item-art { width: 56px; height: 56px; margin-bottom: 2px; }
+.shop-row-icon.item-art { width: 52px; height: 52px; }

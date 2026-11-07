@@ -531,6 +531,83 @@ async function main() {
     await c3.close();
   }
 
+  // ---------- 道具圖示：商店、背包（道具列）圖片載入、contain 不變形、價格與效果不變 ----------
+  for (const width of [360, 430]) {
+    const c4 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width, height: 800 }, serviceWorkers: 'block' });
+    const q = await c4.newPage();
+    await q.clock.setFixedTime(new Date('2026-11-06T10:00:00'));
+    q.on('pageerror', (e) => errors.push(e.message));
+    q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
+    await q.goto(url);
+    const id = await q.evaluate(() => {
+      const s = window.__cgpStore;
+      const a = s.addChild({ name: '乙' });
+      const b = s.addItem({ kind: 'bonus', name: '大加分', points: 100 });
+      s.recordItem(a.id, b.id);
+      s.recordItem(a.id, b.id);
+      return a.id;
+    });
+    await q.goto(url + '#child-' + id);
+    await q.click('[data-action=enter-adventure]');
+    await q.click('#confirm [data-yes]');
+    await q.waitForSelector('.map-cta[href]');
+    await q.click('.map-cta[href]');
+    await q.waitForSelector('#pawn');
+    assert.equal(await q.locator('[data-testid=stars]').innerText(), '⭐ 40');
+
+    // 圖片載入、正方形、object-fit: contain、白色圖示框、手機上至少 48px
+    const checkArt = async (sel, label) => {
+      const info = await q.$$eval(sel, (els) => els.map((img) => {
+        const box = img.parentElement.getBoundingClientRect();
+        return { src: img.getAttribute('src'), ok: img.complete && img.naturalWidth === 256 && img.naturalHeight === 256,
+          fit: getComputedStyle(img).objectFit, bg: getComputedStyle(img.parentElement).backgroundColor, w: box.width, h: box.height };
+      }));
+      assert.deepEqual(info.map((i) => i.src), ['images/items/dice_6.webp', 'images/items/dice_12.webp', 'images/items/roller_skate.webp'], label + ' 圖片對應');
+      for (const i of info) {
+        assert.ok(i.ok, label + ' 圖片載入失敗：' + i.src);
+        assert.equal(i.fit, 'contain', label + ' 應使用 contain');
+        assert.equal(i.bg, 'rgb(255, 255, 255)', label + ' 應為白色圖示框');
+        assert.ok(i.w >= 48 && Math.abs(i.w - i.h) < 1, label + ' 圖示框應為正方形且夠大：' + i.w + '×' + i.h);
+      }
+    };
+    await q.waitForFunction(() => [...document.querySelectorAll('.dice-bar img')].every((i) => i.complete && i.naturalWidth));
+    await checkArt('.dice-bar .item-art img', '道具列');
+    const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert.ok(over <= 0, '道具列 ' + width + 'px 出現橫向捲動');
+
+    // 商店：圖示＋名稱＋價格；價格 5／10／4 星不變
+    await q.click('[data-action=open-shop]');
+    await q.waitForFunction(() => [...document.querySelectorAll('#confirm .shop-row img')].every((i) => i.complete && i.naturalWidth));
+    await checkArt('#confirm .shop-row .item-art img', '商店');
+    const prices = await q.$$eval('#confirm [data-buy]', (bs) => bs.map((b) => b.getAttribute('data-buy') + b.textContent.trim()));
+    assert.deepEqual(prices, ['d6⭐5', 'd12⭐10', 'skates⭐4']);
+    assert.match(await q.locator('#confirm [data-item=d12]').innerText(), /12 面骰/);
+    if (SHOT_DIR) await q.locator('#confirm .shop-box').screenshot({ path: path.join(SHOT_DIR, '17-shop-items-' + width + '.png') });
+    await q.click('#confirm [data-buy=d12]');
+    assert.match(await q.locator('.shop-bal').innerText(), /⭐ 30/);
+    await q.click('#confirm [data-buy=skates]');
+    assert.match(await q.locator('.shop-bal').innerText(), /⭐ 26/);
+    assert.match(await q.locator('#confirm [data-item=skates]').innerText(), /背包 ×1/);
+    await q.click('#confirm [data-no]');
+    assert.equal(await q.locator('[data-testid=stars]').innerText(), '⭐ 26');
+    assert.match(await q.locator('.dice-btn.d12').innerText(), /×1/);
+    assert.match(await q.locator('.dice-btn.skates').innerText(), /×1/);
+    assert.ok(await q.locator('.dice-btn.d6').isDisabled(), '沒有 6 面骰時不可按');
+    if (SHOT_DIR) await q.locator('.dice-bar').screenshot({ path: path.join(SHOT_DIR, '18-dice-bar-' + width + '.png') });
+
+    // 溜冰鞋：前進 3 格、不算擲骰次數、背包 -1（第 3 格是機會格，固定抽到「發現礦石 +2 星」）
+    await q.evaluate(() => { window.__cgpStore.random = () => 0.5; });
+    await q.click('.dice-btn.skates');
+    await q.waitForFunction(() => document.querySelector('[data-testid=pos]') && document.querySelector('[data-testid=pos]').textContent.startsWith('3 '), null, { timeout: 8000 });
+    await q.waitForSelector('.dice-btn.skates[disabled]');
+    assert.equal(await q.locator('[data-testid=rolls]').innerText(), '0 / 3');
+    assert.match(await q.locator('.dice-btn.skates').innerText(), /×0/);
+    assert.equal(await q.locator('[data-testid=stars]').innerText(), '⭐ 28');
+    await checkArt('.dice-bar .item-art img', '使用後道具列');
+    console.log('✔ 道具圖示 ' + width + 'px：商店與道具列圖片載入、contain、白框、價格 5／10／4、溜冰鞋前進 3 格不算擲骰');
+    await c4.close();
+  }
+
   // ---------- 金島第一區地圖：手機顯示、對齊、逐格移動、重新整理恢復、舊存檔遷移、第 30 格停止 ----------
   {
     const REGION = require('../js/board-gold.js');
@@ -626,8 +703,9 @@ async function main() {
         assert.equal(await q.locator('#pawn').getAttribute('data-tile'), 'gold-01-012', '舊整數格號遷移');
         assert.equal(await q.locator('[data-testid=pos]').innerText(), '12 / 30');
         // 第 30 格安全停止：從第 27 格擲 12，只走到 30，多餘步數捨棄，不能再擲
-        await q.evaluate((cid) => { const s = window.__cgpStore; s.setPlayerTile(cid, 27); s.save(); s.random = () => 0.99; }, id);
+        await q.evaluate((cid) => { const s = window.__cgpStore; s.setPlayerTile(cid, 27); s.save(); }, id);
         await q.reload(); await q.waitForSelector('#pawn');
+        await q.evaluate(() => { window.__cgpStore.random = () => 0.99; }); // 重新整理後才固定亂數（擲出 12）
         await q.click('[data-action=roll][data-kind=d12]');
         await q.waitForSelector('#confirm[open]', { timeout: 8000 });
         assert.match(await q.locator('#confirm').innerText(), /木門[\s\S]*第二區即將開放/);

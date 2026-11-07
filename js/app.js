@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-6';
+  var APP_VERSION = '2026.11.07-7';
   var store;
   try {
     store = new CGP.Store();
@@ -487,6 +487,12 @@
     return '<img class="' + (cls || 'char-img') + '" src="images/characters/' + id + '.webp" alt="' + h(c.name) + '" width="300" height="310" decoding="async">';
   }
   function characterArt(child) { return charImg(characterId(child)); }
+  /** 道具圖示（白底圖放在白色圖示框中，contain 不裁切）；名稱與價格由介面另外顯示 */
+  function itemArt(id, cls) {
+    var it = GAME.SHOP.filter(function (x) { return x.id === id; })[0];
+    if (!it || !it.img) return '<span class="' + cls + '">' + (it ? it.icon : '') + '</span>';
+    return '<span class="item-art ' + cls + '"><img src="' + it.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async" draggable="false"></span>';
+  }
   function characterName(child) {
     var id = characterId(child);
     return GAME.CHARACTERS.find(function (c) { return c.id === id; }).name;
@@ -515,9 +521,9 @@
     var end = board.tiles.length - 1;
     var atEnd = player.pos >= end;
     var noRolls = used >= limit;
-    function act(kind, icon, label, count, disabled) {
+    function act(kind, label, count, disabled) {
       return '<button class="dice-btn ' + kind + '" data-action="' + (kind === 'skates' ? 'use-skates' : 'roll') + '" data-kind="' + kind + '"' +
-        (disabled ? ' disabled' : '') + '><span class="dice-icon">' + icon + '</span><b>' + label + '</b><small>背包 ×' + count + '</small></button>';
+        (disabled ? ' disabled' : '') + '>' + itemArt(kind, 'dice-icon') + '<b>' + label + '</b><small>背包 ×' + count + '</small></button>';
     }
     var reason = !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
       : atEnd ? '🚪 已抵達第一區的礦場木門！第二區即將開放'
@@ -555,9 +561,9 @@
       '</section>' +
       '<p class="map-hint">' + reason + '</p>' +
       '<section class="dice-bar">' +
-      act('d6', '🎲', '6 面骰', bag.d6, !canPlay || atEnd || noRolls || !bag.d6) +
-      act('d12', '🎯', '12 面骰', bag.d12, !canPlay || atEnd || noRolls || !bag.d12) +
-      act('skates', '🛼', '溜冰鞋 +3', bag.skates, !canPlay || atEnd || !bag.skates) +
+      act('d6', '6 面骰', bag.d6, !canPlay || atEnd || noRolls || !bag.d6) +
+      act('d12', '12 面骰', bag.d12, !canPlay || atEnd || noRolls || !bag.d12) +
+      act('skates', '溜冰鞋 +3', bag.skates, !canPlay || atEnd || !bag.skates) +
       '</section>' +
       '<div class="legend"><span>🎁 寶箱</span><span>❓ 機會</span><span>🎮 小遊戲（即將開放）</span><span>🚪 第一區終點</span></div>' +
       '<a class="btn block" href="#adventure-' + h(child.id) + '">‹ 回冒險大廳</a>' +
@@ -716,7 +722,7 @@
         '<p class="shop-bal">目前有 <b>⭐ ' + num(bal) + '</b></p>' +
         GAME.SHOP.map(function (it) {
           var ok = bal >= it.price;
-          return '<div class="shop-row"><span class="shop-row-icon">' + it.icon + '</span>' +
+          return '<div class="shop-row" data-item="' + it.id + '">' + itemArt(it.id, 'shop-row-icon') +
             '<span class="shop-row-main"><b>' + h(it.name) + '</b><small>' + h(it.desc) + '・背包 ×' + bag[it.id] + '</small></span>' +
             '<button class="btn ' + (ok ? 'primary' : '') + ' small" data-buy="' + it.id + '"' + (ok ? '' : ' disabled') + '>⭐' + it.price + '</button></div>';
         }).join('') +
@@ -724,7 +730,7 @@
         '<div class="modal-actions"><button type="button" class="btn" data-no>完成</button></div></div>';
       confirmEl.querySelectorAll('[data-buy]').forEach(function (b) {
         b.onclick = function () {
-          try { var it = store.buyItem(childId, b.getAttribute('data-buy')); toast('買到 ' + it.icon + ' ' + it.name + '！', 'pos'); }
+          try { var it = store.buyItem(childId, b.getAttribute('data-buy')); toast('買到 ' + it.name + '！', 'pos'); }
           catch (err) { toast(err.message, 'neg'); }
           draw();
         };
