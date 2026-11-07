@@ -450,7 +450,7 @@ body {
 .page { padding-bottom: calc(env(safe-area-inset-bottom) + 100px); }
 .page.has-undo { padding-bottom: calc(env(safe-area-inset-bottom) + 170px); }
 .app[data-view="settings"] .page { padding-bottom: calc(env(safe-area-inset-bottom) + 24px); }
-.panel, .card, .week-card {
+.panel, .card, .week-card, .ach-home {
   background: var(--surface); border-radius: var(--radius); padding: 14px; box-shadow: var(--card-shadow);
   border: 3px solid #fff;
 }
@@ -1407,7 +1407,7 @@ body.mg-open { overflow: hidden; }
 .br-acts .btn { flex: none; width: auto; white-space: nowrap; min-width: 0; padding-inline: 14px; }
 
 /* 冒險大廳：成就 */
-.ach-panel h2 small { font-size: .75rem; color: var(--muted); font-weight: 800; }
+.ach-details h2 small { font-size: .75rem; color: var(--muted); font-weight: 800; }
 .ach-cat h3 { margin: 8px 0 6px; font-size: .88rem; color: var(--wood-2); }
 .ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
 .ach { display: grid; justify-items: center; gap: 2px; padding: 8px 2px 6px; border-radius: 16px; border: 2px solid #eee3d2; background: #f6f1ea; font: inherit; cursor: pointer; }
@@ -1508,3 +1508,25 @@ body.mg-open { overflow: hidden; }
 .fw-ribbons i:nth-child(18) { left: 84px; animation-delay: 0.36s; }
 @keyframes fw-fall { 0% { transform: translateY(0) rotate(0); opacity: 1; } 100% { transform: translateY(290px) rotate(540deg); opacity: .2; } }
 @media (prefers-reduced-motion: reduce) { .fw-burst, .fw-ribbons i { animation: none; opacity: 0; } }
+
+/* 首頁：最近得到的成就（每位孩子一列，最近 3 個） */
+.ach-home { margin-bottom: 14px; display: grid; gap: 8px; }
+.ach-home h2 { margin: 0; }
+.ach-home-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%;
+  padding: 6px 8px; border: 2px solid #f1e6d4; border-radius: 16px; background: #fffaf2; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ach-home-name { display: grid; line-height: 1.2; }
+.ach-home-name small { color: var(--muted); font-weight: 800; font-size: .72rem; }
+.ach-home-badges { display: flex; gap: 6px; min-width: 0; justify-content: flex-start; }
+.ach-mini { display: grid; justify-items: center; width: 54px; padding: 3px 2px; border-radius: 12px; border: 2px solid #ffd23f; background: linear-gradient(#fffbe9, #ffefc2); }
+.ach-mini i { font-style: normal; font-size: 1.3rem; line-height: 1.15; }
+.ach-mini small { font-size: .58rem; font-weight: 800; color: #8a5a00; max-width: 100%; text-align: center; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ach-mini.ach-adventure { border-color: #5cbf4a; background: linear-gradient(#f3fff0, #d6f5c9); } .ach-mini.ach-adventure small { color: #2f7a22; }
+.ach-mini.ach-collect { border-color: #a070e0; background: linear-gradient(#faf4ff, #e9d8ff); } .ach-mini.ach-collect small { color: #6a3aaa; }
+.ach-home-go { font-size: 1.4rem; color: var(--muted); font-weight: 800; }
+/* 小孩頁面：全部成就（點選展開） */
+.ach-details summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+.ach-details summary::-webkit-details-marker { display: none; }
+.ach-details summary h2 { margin: 0; }
+.ach-details summary::after { content: "▾"; color: var(--muted); font-size: 1.1rem; transition: transform .2s; }
+.ach-details[open] summary::after { transform: rotate(180deg); }
+.ach-details[open] summary { margin-bottom: 8px; }

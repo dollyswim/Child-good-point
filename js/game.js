@@ -729,7 +729,7 @@
   /** 成就列表（含是否達成、達成日期） */
   Store.prototype.getAchievements = function (childId) {
     var mine = this.data.achievements[childId] || {};
-    return ACHIEVEMENTS.map(function (a) { return { id: a.id, cat: a.cat, icon: a.icon, name: a.name, desc: a.desc, done: !!mine[a.id], date: mine[a.id] ? mine[a.id].date : '' }; });
+    return ACHIEVEMENTS.map(function (a) { return { id: a.id, cat: a.cat, icon: a.icon, name: a.name, desc: a.desc, done: !!mine[a.id], date: mine[a.id] ? mine[a.id].date : '', ts: mine[a.id] ? mine[a.id].ts || 0 : 0 }; });
   };
 
   // ---------- 小遊戲「抓住星星」 ----------

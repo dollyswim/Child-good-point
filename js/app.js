@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-45';
+  var APP_VERSION = '2026.11.07-46';
   var store;
   try {
     store = new CGP.Store();
@@ -232,6 +232,7 @@
     } else if (r.name === 'report') {
       html = renderReport();
     } else {
+      store.getChildren().forEach(function (c) { store.checkAchievements(c.id); });   // 首頁成就欄顯示最新狀態
       html = renderHome();
     }
     if (r.name !== 'map') ui.doorPick = null;
@@ -295,7 +296,7 @@
     return sky(mascotLink(false) + plaque(title) + gear() + sw, true);   // 機器貓取代「‹」：回首頁
   }
 
-  var NAV = [['home', '🏠', '首頁'], ['child', '📋', '任務'], ['challenge', '🏆', '挑戰'], ['shop', '🎁', '兌換'], ['report', '📊', '紀錄']];
+  var NAV = [['home', '🏠', '首頁'], ['child', '📋', '小孩'], ['challenge', '🏆', '挑戰'], ['shop', '🎁', '兌換'], ['report', '📊', '紀錄']];
   function bottomNav(active) {
     var c = currentChild();
     return '<nav class="bottom-nav" aria-label="主要分頁">' + NAV.map(function (n) {
@@ -328,7 +329,7 @@
       return n + store.getTodayTasks(c.id).filter(function (t) { return t.status.canComplete; }).length;
     }, 0);
     var tiles = children.length ? '<div class="tiles">' +
-      '<button class="tile t-task" data-action="pick-child" data-kind="child"><span class="tile-icon">📋</span>今日任務' + (left ? '<span class="badge-num">' + left + '</span>' : '') + '</button>' +
+      '<button class="tile t-task" data-action="pick-child" data-kind="child"><span class="tile-icon">📋</span>小孩' + (left ? '<span class="badge-num">' + left + '</span>' : '') + '</button>' +
       '<button class="tile t-challenge" data-action="pick-child" data-kind="challenge"><span class="tile-icon">🏆</span>本週挑戰</button>' +
       '<button class="tile t-shop" data-action="pick-child" data-kind="shop"><span class="tile-icon">🎁</span>獎勵兌換</button>' +
       '<a class="tile t-report" href="#report"><span class="tile-icon">📊</span>記分總覽</a></div>' : '';
@@ -350,7 +351,7 @@
       (children.length
         ? '<div class="child-list">' + cards + '</div>'
         : '<div class="empty card"><p class="big-emoji">👋</p><p><b>還沒有孩子資料</b></p><p class="muted">先新增孩子，就可以開始記錄生活積分。</p></div>') +
-      storageWarning() + tiles + week + backupReminder() +
+      storageWarning() + tiles + homeAchievements(children) + week + backupReminder() +
       '<button class="btn add-child" data-action="add-child">＋ 新增孩子</button>' +
       '</main>';
   }
@@ -422,7 +423,7 @@
       return '<li class="rec-date">' + h(dateLabel(g.date)) + '</li>' + g.items.map(function (x) { return recordRow(x); }).join('');
     }).join('') + '</ul>' : '<p class="muted small">還沒有紀錄</p>';
 
-    return pageHeader('今日任務', child, 'child') +
+    return pageHeader('小孩', child, 'child') +
       '<main class="page has-undo">' +
       adventureBanner(child) +
       summaryCard(child) +
@@ -432,6 +433,7 @@
       '<input type="search" id="score-search" class="search" data-search="score" placeholder="🔍 搜尋規定，例如：功課" ' +
       'autocomplete="off" enterkeyhint="search" value="' + h(ui.query) + '">' +
       '<div id="score-list">' + renderScoreList(id) + '</div></section>' +
+      achievementDetails(child) +
       '<section class="panel"><h2>🕘 最近紀錄</h2>' + recHtml +
       (allCount > 8 ? '<button class="btn link" data-action="toggle-history">' +
         (ui.showAllRecords ? '只顯示最近幾筆' : '顯示全部 ' + allCount + ' 筆') + '</button>' : '') +
@@ -582,7 +584,7 @@
       }).join('') + '</div>';
 
     summary = summary.replace(/<\/div>$/, log + '</div>');
-    return hero + '<main class="page adventure">' + tabs + starCard + summary + map + achievementPanel(child) + '</main>';
+    return hero + '<main class="page adventure">' + tabs + starCard + summary + map + '</main>';
   }
 
   // ---------- 金島棋盤（Phase 3） ----------
@@ -952,14 +954,35 @@
   /** 冒險大廳：成就（徽章先用表情符號；點一下看說明與達成日期） */
   var ACH_CATS = [['adventure', '🗺️ 冒險'], ['collect', '🎒 收集'], ['life', '🌱 生活']];
   function achievementPanel(child) {
-    var list = store.getAchievements(child.id), done = list.filter(function (a) { return a.done; }).length;
-    return '<section class="panel ach-panel" data-testid="achievements"><h2>🏆 成就 <small>已解鎖 ' + done + ' / ' + list.length + '</small></h2>' +
+    var list = store.getAchievements(child.id);
+    return '<div class="ach-panel">' +
       ACH_CATS.map(function (c) {
         return '<div class="ach-cat"><h3>' + c[1] + '</h3><div class="ach-grid">' + list.filter(function (a) { return a.cat === c[0]; }).map(function (a) {
           return '<button type="button" class="ach ach-' + a.cat + (a.done ? ' done' : '') + '" data-action="ach-info" data-id="' + a.id + '" aria-label="' + h(a.name) + (a.done ? '（已解鎖）' : '（未解鎖）') + '">' +
             '<span class="ach-badge">' + (a.done ? a.icon : '🔒') + '</span><small>' + h(a.name) + '</small></button>';
         }).join('') + '</div></div>';
-      }).join('') + '</section>';
+      }).join('') + '</div>';
+  }
+  /** 首頁成就欄：每位孩子最近得到的 3 個成就（還沒有成就的孩子不顯示；都沒有就整欄不出現），點一列進到小孩頁面並展開全部成就 */
+  function homeAchievements(children) {
+    var rows = children.map(function (c) {
+      var list = store.getAchievements(c.id), done = list.filter(function (a) { return a.done; });
+      if (!done.length) return '';
+      var recent = done.slice().sort(function (x, y) { return y.ts - x.ts; }).slice(0, 3);
+      return '<button type="button" class="ach-home-row" data-action="open-achievements" data-id="' + h(c.id) + '" aria-label="' + h(c.name) + '的全部成就">' +
+        avatar(c, 'sm') + '<span class="ach-home-name"><b>' + h(c.name) + '</b><small>' + done.length + ' / ' + list.length + '</small></span>' +
+        '<span class="ach-home-badges">' + recent.map(function (a) {
+          return '<span class="ach-mini ach-' + a.cat + '" title="' + h(a.name) + '"><i aria-hidden="true">' + a.icon + '</i><small>' + h(a.name) + '</small></span>';
+        }).join('') + '</span><span class="ach-home-go" aria-hidden="true">›</span></button>';
+    }).join('');
+    return rows ? '<section class="ach-home" data-testid="home-achievements"><h2>🏆 最近得到的成就</h2>' + rows + '</section>' : '';
+  }
+  /** 小孩頁面：全部成就（點選才展開；從首頁成就欄進來時自動展開） */
+  function achievementDetails(child) {
+    var list = store.getAchievements(child.id), done = list.filter(function (a) { return a.done; }).length;
+    var open = ui.achOpen === child.id;
+    return '<details class="panel ach-details" id="ach-details" data-testid="achievements"' + (open ? ' open' : '') + '>' +
+      '<summary><h2>🏆 全部成就 <small>已解鎖 ' + done + ' / ' + list.length + '</small></h2></summary>' + achievementPanel(child) + '</details>';
   }
   /** 新解鎖的成就：提示一次 */
   function announceAchievements(childId) {
@@ -1812,7 +1835,7 @@
   function pickChild(tab) {
     var kids = store.getChildren();
     if (kids.length === 1) { go('#' + tab + '-' + kids[0].id); return; }
-    var title = { child: '今日任務', challenge: '本週挑戰', shop: '獎勵兌換' }[tab];
+    var title = { child: '小孩', challenge: '本週挑戰', shop: '獎勵兌換' }[tab];
     confirmEl.innerHTML = '<div class="confirm-box"><h2>' + h(title) + '：要看誰的？</h2><div class="pick-kids">' +
       kids.map(function (c) {
         return '<a class="pick-kid" href="#' + tab + '-' + h(c.id) + '" style="--c:' + h(c.color) + '">' + avatar(c, 'lg') + '<b>' + h(c.name) + '</b></a>';
@@ -2343,6 +2366,7 @@
           break;
         }
         case 'show-summary': showSummary(childId, false); break;
+        case 'open-achievements': ui.achOpen = id; ui.achScroll = true; go('#child-' + id); break;
         case 'ach-info': {
           var ach = store.getAchievements(childId).find(function (a) { return a.id === id; });
           showInfo((ach.done ? ach.icon : '🔒') + ' ' + ach.name, ach.desc + '\n' + (ach.done ? '✅ ' + shortDate(ach.date) + ' 達成' : '還沒達成，繼續加油！'));
@@ -2412,6 +2436,7 @@
   // 記住冒險大廳「結算紀錄」展開狀態（toggle 事件不冒泡，用捕獲）
   app.addEventListener('toggle', function (e) {
     if (e.target.id === 'settle-log') ui.logOpen = e.target.open;
+    if (e.target.id === 'ach-details') ui.achOpen = e.target.open ? route().arg : null;
   }, true);
 
   // 密碼輸入框按 Enter（手機鍵盤的「前往」）直接送出
@@ -2444,8 +2469,10 @@
   window.addEventListener('hashchange', function () {
     if (modal.open) modal.close();
     ui.settingsQuery = '';
+    var wantAch = ui.achScroll; ui.achScroll = false;
     render();
-    window.scrollTo(0, 0);
+    var ad = wantAch && document.getElementById('ach-details');   // 從首頁成就欄進來：捲到全部成就
+    if (ad) ad.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0);
   });
 
   // 其他分頁修改資料時同步
