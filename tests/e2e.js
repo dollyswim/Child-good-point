@@ -663,13 +663,22 @@ async function main() {
     await q.waitForSelector('.special-check.on');
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), before + 20);
     assert.match(await q.locator('.records').innerText(), /特殊任務：和所有家人說一句讚美的話和感謝的話/);
-    await q.click('[data-action=special-toggle]');                 // 再點一次：取消勾選
+    await q.click('[data-action=special-toggle]');                 // 再點一次：取消勾選 → 提醒會收回成就
+    await q.waitForSelector('#confirm[open]');
+    assert.match(await q.locator('#confirm').innerText(), /取消[\s\S]*\+20[\s\S]*會一起收回成就[\s\S]*第一個特殊任務/);
+    await q.click('#confirm [data-yes]');
     await q.waitForSelector('.special-check:not(.on)');
+    assert.match(await q.locator('#toast').innerText(), /收回成就[\s\S]*第一個特殊任務/);
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), before);
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getAchievements(cid).find((a) => a.id === 'special1').done, id), false);
     await q.click('[data-action=special-toggle]');
     await q.waitForSelector('.special-check.on');
-    await q.click('[data-action=undo]');                           // 撤銷上一筆 → 恢復未完成
+    await q.click('[data-action=undo]');                           // 撤銷上一筆 → 提醒 → 恢復未完成
+    await q.waitForSelector('#confirm[open]');
+    assert.match(await q.locator('#confirm').innerText(), /撤銷「特殊任務：[\s\S]*會一起收回成就[\s\S]*第一個特殊任務/);
+    await q.click('#confirm [data-yes]');
     await q.waitForSelector('.special-check:not(.on)');
+    await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'undo-revoke.png') : path.join(require('os').tmpdir(), 'ur.png') });
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), before);
     await q.click('[data-action=special-cancel]');
     await q.click('#confirm [data-yes]');

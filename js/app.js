@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-50';
+  var APP_VERSION = '2026.11.07-51';
   var store;
   try {
     store = new CGP.Store();
@@ -99,7 +99,7 @@
   var toastTimer;
   function toast(msg, kind) {
     toastEl.textContent = msg;
-    toastEl.className = 'toast ' + (kind || '');
+    toastEl.className = 'toast ' + (kind || '') + (msg.indexOf('\n') >= 0 || msg.length > 28 ? ' multi' : '');   // 多行提示用圓角方框，不擠成一團
     toastEl.hidden = false;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { toastEl.hidden = true; }, Math.max(1800, msg.length * 120));
@@ -1015,6 +1015,18 @@
     return '<details class="panel ach-details" id="ach-details" data-testid="achievements"' + (open ? ' open' : '') + '>' +
       '<summary><span class="ach-sum"><h2>🏆 全部成就 <small>已解鎖 ' + done.length + ' / ' + list.length + '</small></h2>' + peek + '</span></summary>' +
       (done.length ? achievementPanel(child) : '') + '</details>';
+  }
+  /** 撤銷／刪除會收回成就時先提醒；沒有影響就直接執行 */
+  function achNames(list) { return list.map(function (a) { return a.icon + ' ' + a.name; }).join('、'); }
+  function confirmAchLoss(loss, message, okLabel, fn) {
+    if (!loss.length) { fn(); render(); return; }
+    confirmThen(message + '\n\n⚠️ 會一起收回成就：' + achNames(loss) + '\n（之後再次達成可以重新獲得）', okLabel, true, fn);
+  }
+  /** 執行後提示收回了哪些成就 */
+  function revokedNote() {
+    var lost = store.lastRevoked || [];
+    store.lastRevoked = [];
+    return lost.length ? '\n🏆 收回成就：' + achNames(lost) : '';
   }
   /** 新解鎖的成就：提示一次 */
   function announceAchievements(childId) {
@@ -2085,16 +2097,28 @@
       '<label class="field">日期<input type="date" name="date" id="rec-date" max="' + store.today() + '" required value="' + rec.date + '"></label>' +
       '<label class="field">' + (neg ? (rec.type === 'reward' ? '扣除點數' : '扣除點數') : '點數') +
       '<input type="number" name="points" id="rec-points" min="0" step="1" inputmode="numeric" required value="' + Math.abs(rec.points) + '"></label>' +
+      '<p class="muted small ach-warn" id="rec-ach-warn" hidden></p>' +
       '<button type="button" class="btn danger block" id="rec-delete">🗑 刪除這筆紀錄</button>';
     openModal(rec.name, fields, function (fd) {
       store.updateRecord(rec.id, { childId: fd.get('childId'), date: fd.get('date'), points: fd.get('points') });
-      toast('已更正：' + rec.name, 'pos');
+      toast('已更正：' + rec.name + revokedNote(), 'pos');
     });
+    // 改點數或改孩子會收回成就時，視窗內即時提醒
+    function warnLoss() {
+      var w = document.getElementById('rec-ach-warn');
+      var loss = store.achievementLossIfChanged(rec.id, { childId: document.getElementById('rec-child').value, points: document.getElementById('rec-points').value });
+      w.hidden = !loss.length;
+      w.textContent = loss.length ? '⚠️ 這樣修改會收回成就：' + achNames(loss) : '';
+    }
+    document.getElementById('rec-points').addEventListener('input', warnLoss);
+    document.getElementById('rec-child').addEventListener('change', warnLoss);
     document.getElementById('rec-delete').onclick = function () {
       modal.close();
-      confirmThen('確定刪除「' + rec.name + ' ' + signed(rec.points) + '」這筆紀錄？\n總點數會一起更新。', '刪除', true, function () {
+      var loss = store.achievementLossIfChanged(rec.id);
+      confirmThen('確定刪除「' + rec.name + ' ' + signed(rec.points) + '」這筆紀錄？\n總點數會一起更新。' +
+        (loss.length ? '\n\n⚠️ 會一起收回成就：' + achNames(loss) + '\n（之後再次達成可以重新獲得）' : ''), '刪除', true, function () {
         store.deleteRecord(rec.id);
-        toast('已刪除紀錄');
+        toast('已刪除紀錄' + revokedNote());
       });
     };
   }
@@ -2282,8 +2306,13 @@
         case 'special-toggle': {
           var stt = store.getSpecialTasks(childId).find(function (t) { return t.id === id; });
           if (stt && stt.status === 'done') {
-            store.uncompleteSpecialTask(id);
-            toast('已取消「' + stt.name + '」');
+            var srec = store.getSpecialDoneRecord(id);
+            confirmAchLoss(srec ? store.achievementLossIfChanged(srec.id) : [], '取消「' + stt.name + '」的完成？\n會撤銷這筆 +' + (srec ? srec.points : 20) + ' 分。', '取消完成', function () {
+              store.uncompleteSpecialTask(id);
+              toast('已取消「' + stt.name + '」' + revokedNote());
+              ui.pulse = true;
+            });
+            break;
           } else {
             var sr = store.completeSpecialTask(id);
             toast('完成 ' + recText(sr), 'pos');
@@ -2302,10 +2331,13 @@
           break;
         }
         case 'undo': {
-          var undone = store.undoLast(childId);
-          if (undone) toast('已撤銷：' + undone.name + ' ' + signed(undone.points));
-          ui.pulse = true;
-          render();
+          var lastRec = store.getLastRecord(childId);
+          if (!lastRec) break;
+          confirmAchLoss(store.achievementLossIfChanged(lastRec.id), '撤銷「' + lastRec.name + ' ' + signed(lastRec.points) + '」？', '撤銷', function () {
+            var undone = store.undoLast(childId);
+            if (undone) toast('已撤銷：' + undone.name + ' ' + signed(undone.points) + revokedNote());
+            ui.pulse = true;
+          });
           break;
         }
         case 'open-chest': {

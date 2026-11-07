@@ -2019,3 +2019,40 @@ test('前進道具每日上限：溜冰鞋＋飛行翼合計 5 次（不占擲�
   assert.equal(store.getRollsToday(a.id), 0, '不占每日 3 次擲骰');
   assert.equal(store.getDaySummary(a.id).itemsUsed.skates, 4, '今日小結列出溜冰鞋使用次數');
 });
+
+test('撤銷、取消勾選、刪除、修改紀錄：收回條件不成立的分數與特殊任務成就；冒險類不收回；再達成可重新獲得', () => {
+  const { store, a } = p3Store();
+  store.allowPinReset();
+  const t1 = store.addSpecialTask(a.id, 'chore').task;
+  store.completeSpecialTask(t1.id);
+  assert.ok(store.checkAchievements(a.id).some(x => x.id === 'special1'));
+  const rec = store.getSpecialDoneRecord(t1.id);
+  assert.deepEqual(store.achievementLossIfChanged(rec.id).map(x => x.id), ['special1'], '預覽：撤銷會收回「第一個特殊任務」');
+  assert.ok(store.getAchievements(a.id).find(x => x.id === 'special1').done, '預覽不改資料');
+  const u = store.undoLast(a.id);
+  assert.equal(u.refId, 'special:' + t1.id);
+  assert.deepEqual(store.lastRevoked.map(x => x.id), ['special1']);
+  assert.ok(!store.getAchievements(a.id).find(x => x.id === 'special1').done, '撤銷後成就收回');
+  assert.equal(store.getSpecialTasks(a.id).find(x => x.id === t1.id).status, 'active', '特殊任務恢復未完成');
+  // 再完成一次：重新獲得
+  store.completeSpecialTask(t1.id);
+  assert.ok(store.checkAchievements(a.id).some(x => x.id === 'special1'), '再達成可以重新獲得');
+  store.uncompleteSpecialTask(t1.id);
+  assert.deepEqual(store.lastRevoked.map(x => x.id), ['special1'], '取消勾選也收回');
+  // 分數成就：刪除或改小紀錄
+  const big = store.addItem({ kind: 'bonus', name: '大', points: 1000 });
+  const r2 = store.recordItem(a.id, big.id);
+  store.getPlayer(a.id).maxReached = 40;
+  assert.ok(store.checkAchievements(a.id).some(x => x.id === 'earn1000'));
+  assert.deepEqual(store.achievementLossIfChanged(r2.id, { points: 10 }).map(x => x.id), ['earn1000'], '預覽：改小會收回');
+  store.updateRecord(r2.id, { points: 10 });
+  assert.deepEqual(store.lastRevoked.map(x => x.id), ['earn1000']);
+  store.updateRecord(r2.id, { points: 1000 });
+  store.checkAchievements(a.id);
+  store.deleteRecord(r2.id);
+  assert.deepEqual(store.lastRevoked.map(x => x.id), ['earn1000'], '刪除也收回');
+  assert.ok(store.getAchievements(a.id).find(x => x.id === 'reachR2').done, '冒險類成就不收回');
+  assert.ok(store.getAchievements(a.id).find(x => x.id === 'advStart').done);
+  store.getPlayer(a.id).maxReached = 0;
+  assert.deepEqual(store.revokeAchievements(a.id), [], '冒險進度回到起點也不收回');
+});

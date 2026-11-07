@@ -704,10 +704,10 @@
     { id: 'catch5', cat: 'collect', icon: '⭐', name: '星星捕手', desc: '「抓住星星」單局抓到 5 顆以上', check: function (s, c) { return bestCatch(s, c) >= 5; } },
     { id: 'catch10', cat: 'collect', icon: '🌟', name: '星海傳說', desc: '「抓住星星」單局抓到 10 顆以上', check: function (s, c) { return bestCatch(s, c) >= 10; } }
   ].concat([1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000].map(function (n) {
-    return { id: 'earn' + n, cat: 'life', icon: '🥇', name: '獲得 ' + n + ' 分', desc: '起始點數＋累計得分達到 ' + n, check: function (s, c) { return s.getEarned(c) >= n; } };
+    return { id: 'earn' + n, cat: 'life', icon: '🥇', name: '獲得 ' + n + ' 分', desc: '起始點數＋累計得分達到 ' + n, revocable: true, check: function (s, c) { return s.getEarned(c) >= n; } };
   })).concat([
-    { id: 'special1', cat: 'life', icon: '🔮', name: '第一個特殊任務', desc: '完成 1 個特殊任務', check: function (s, c) { return specialDone(s, c) >= 1; } },
-    { id: 'special5', cat: 'life', icon: '💠', name: '特殊任務達人', desc: '完成 5 個特殊任務', check: function (s, c) { return specialDone(s, c) >= 5; } },
+    { id: 'special1', cat: 'life', icon: '🔮', name: '第一個特殊任務', desc: '完成 1 個特殊任務', revocable: true, check: function (s, c) { return specialDone(s, c) >= 1; } },
+    { id: 'special5', cat: 'life', icon: '💠', name: '特殊任務達人', desc: '完成 5 個特殊任務', revocable: true, check: function (s, c) { return specialDone(s, c) >= 5; } },
     { id: 'streak7', cat: 'life', icon: '📅', name: '連續 7 天冒險', desc: '連續 7 天出發冒險', check: function (s, c) {
       return longestStreak(s.data.adventure.settlements.filter(function (x) { return x.childId === c; }).map(function (x) { return x.date; })) >= 7; } }
   ]);
@@ -720,8 +720,37 @@
     return s.data.records.filter(function (r) { return r.childId === c && /^special:/.test(r.refId || ''); }).length;
   }
   /** 檢查並記錄新達成的成就（已達成的不會消失）@returns 這次新達成的成就 */
+  /**
+   * 收回條件已不成立的成就（只限 revocable：依生活紀錄計算的分數與特殊任務成就；冒險、收集類拿到就不會消失）
+   * 撤銷、刪除、修改紀錄後呼叫 @returns 這次收回的成就
+   */
+  Store.prototype.revokeAchievements = function (childId) {
+    var self = this, mine = this.data.achievements[childId];
+    if (!mine || !this.getChild(childId)) return [];
+    var lost = ACHIEVEMENTS.filter(function (a) { return a.revocable && mine[a.id] && !a.check(self, childId); });
+    lost.forEach(function (a) { delete mine[a.id]; });
+    if (lost.length) this.save();
+    return lost;
+  };
+  /** 預覽：如果刪掉這筆紀錄（或改成 patch 的點數／孩子），會收回哪些成就（不改資料） */
+  Store.prototype.achievementLossIfChanged = function (recordId, patch) {
+    var rec = this.data.records.find(function (r) { return r.id === recordId; });
+    if (!rec) return [];
+    var self = this, mine = this.data.achievements[rec.childId] || {}, orig = this.data.records;
+    this.data.records = orig.filter(function (r) { return r.id !== recordId; });
+    if (patch) {
+      var copy = Object.assign({}, rec);
+      if (patch.childId != null) copy.childId = String(patch.childId);
+      if (patch.points != null && patch.points !== '') copy.points = (rec.points < 0 ? -1 : 1) * Math.abs(Number(patch.points) || 0);
+      this.data.records = this.data.records.concat([copy]);
+    }
+    try {
+      return ACHIEVEMENTS.filter(function (a) { return a.revocable && mine[a.id] && !a.check(self, rec.childId); });
+    } finally { this.data.records = orig; }
+  };
   Store.prototype.checkAchievements = function (childId) {
     if (!this.getChild(childId)) return [];
+    this.revokeAchievements(childId);   // 先收回條件不成立的（例如家長在別處修改了紀錄）
     var self = this, mine = this.data.achievements[childId] || (this.data.achievements[childId] = {});
     var fresh = ACHIEVEMENTS.filter(function (a) { return !mine[a.id] && a.check(self, childId); });
     fresh.forEach(function (a) { mine[a.id] = { date: self.today(), ts: self.now().getTime() }; });

@@ -1047,6 +1047,7 @@
     this._takeBackTreasure(last);
     this.data.records = this.data.records.filter(function (r) { return r.id !== last.id; });
     this.save();
+    this._afterRecordChange([last.childId]);
     return last;
   };
 
@@ -1106,6 +1107,7 @@
       if (patch.points === '' || !Number.isFinite(Number(patch.points))) throw new Error('請輸入點數');
       r.points = signedFor(r.type, patch.points);
     }
+    var oldChild = r.childId;
     r.childId = childId;
     if (date !== r.date) {
       r.date = date;
@@ -1113,7 +1115,16 @@
       this._sortRecords();
     }
     this.save();
+    this._afterRecordChange([oldChild]);
     return r;
+  };
+
+  /** 紀錄被撤銷、刪除或修改後：收回條件不成立的成就，結果放在 lastRevoked（介面提示用） */
+  Store.prototype._afterRecordChange = function (childIds) {
+    var self = this, out = [];
+    if (this.revokeAchievements) childIds.forEach(function (c) { out = out.concat(self.revokeAchievements(c)); });
+    this.lastRevoked = out;
+    return out;
   };
 
   Store.prototype.deleteRecord = function (id) {
@@ -1122,6 +1133,7 @@
     this._takeBackTreasure(r);
     this.data.records = this.data.records.filter(function (x) { return x.id !== id; });
     this.save();
+    this._afterRecordChange([r.childId]);
     return r;
   };
 

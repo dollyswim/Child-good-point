@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.07-50`｜Service Worker 快取 `cgp-shell-v60`
+> 最後更新：2026-11-07｜App 版本 `2026.11.07-51`｜Service Worker 快取 `cgp-shell-v61`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---
@@ -148,7 +148,7 @@
 - 離線快取只放 WebP 背景（JPG 為備援、不預先快取），共 61 個檔案約 3.3MB。
 
 ### 成就與金島通關
-- 成就 23 項（冒險 5、收集 5、生活 13；2026-11-07 加「冒險開始」advStart：第一次進入今日冒險），2026-11-07 家長定稿（`docs/art/achievement_badges.csv`），定義在 `js/game.js` 的 `ACHIEVEMENTS`；外框顏色依類別：冒險綠、收集紫、生活金。紀錄 `data.achievements[childId][成就代號] = { date, ts }`，達成後不會消失；舊版的 goldClear3、goldClear5 已移除（舊紀錄留在存檔中但不顯示）。每次畫孩子相關頁面前 `store.checkAchievements()`，新達成的顯示提示。徽章先用表情符號，正式圖規格見 `docs/art/CODEX_ACHIEVEMENT_BADGES_BRIEF.md`。
+- 成就 23 項（冒險 5、收集 5、生活 13；2026-11-07 加「冒險開始」advStart：第一次進入今日冒險），2026-11-07 家長定稿（`docs/art/achievement_badges.csv`），定義在 `js/game.js` 的 `ACHIEVEMENTS`；外框顏色依類別：冒險綠、收集紫、生活金。紀錄 `data.achievements[childId][成就代號] = { date, ts }`，冒險、收集類達成後不會消失；**依生活紀錄計算的成就（獲得 N 分、特殊任務）標 `revocable`**：撤銷、取消勾選、刪除、修改紀錄後條件不成立就收回（`revokeAchievements`、`store.lastRevoked`），操作前用 `achievementLossIfChanged()` 預覽並提醒家長，再次達成可重新獲得；舊版的 goldClear3、goldClear5 已移除（舊紀錄留在存檔中但不顯示）。每次畫孩子相關頁面前 `store.checkAchievements()`，新達成的顯示提示。徽章先用表情符號，正式圖規格見 `docs/art/CODEX_ACHIEVEMENT_BADGES_BRIEF.md`。
 - 成就介面（2026-11-07 家長決定）：首頁「🏆 最近得到的成就」在本週進度上方，每位孩子一列、最近 3 個（沒有成就的孩子不顯示）；點一列進小孩頁面並展開「全部成就」（在最近紀錄上方，平常收起；摺疊時顯示最近得到的一個，展開只列已得到的成就）。冒險大廳不再顯示成就。底部導覽「任務」與頁面標題「今日任務」改為「小孩」（任務清單區塊仍叫「常用・今日任務」）。
 - 角色統計：`players[id].goldClears`（通關次數）、`maxReached`（最遠格子）、`stats.chests／mystery`（開過的寶箱數）。
 - 金島通關（第 100 格 `type: 'end'`）：第一次＝神秘寶箱 ×1（免鑰匙，`giftMysteryChest`）＋成就「金島通關」；之後每次 ＋10 能量星星；全螢幕慶祝畫面；下一次移動從起點開始新的一輪。已可實際走到第 100 格（E2E 從第 97 格擲骰走到終點驗證）。

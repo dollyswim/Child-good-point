@@ -1536,3 +1536,5 @@ body.mg-open { overflow: hidden; }
 .ach-latest .ach-mini { width: auto; grid-auto-flow: column; align-items: center; gap: 4px; padding: 2px 8px; }
 .ach-details[open] .ach-latest { display: none; }   /* 展開後下方已列出全部，不重複顯示 */
 .ach-latest .ach-mini small { font-size: .72rem; -webkit-line-clamp: 1; }
+.ach-warn { color: #c0392b; font-weight: 800; }
+.toast.multi { border-radius: 18px; text-align: left; line-height: 1.5; padding: 10px 16px; width: max-content; max-width: calc(100vw - 48px); }
