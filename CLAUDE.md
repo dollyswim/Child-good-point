@@ -7,7 +7,7 @@
 - 每階段完成後回報：修改檔案、新增功能、測試結果、已知問題、下一步。
 
 ## 專案
-- 先讀 `PROJECT_SPEC.md`、`docs/HANDOFF.md`，Phase 4 進度見 `docs/PHASE4_PLAN.md`，美術提示詞見 `docs/art-prompts.md`。
+- 先讀 `PROJECT_SPEC.md`、`docs/HANDOFF.md`，Phase 4 進度見 `docs/PHASE4_PLAN.md`、寶物商店與神諭祝福見 `docs/TREASURE_SHOP_PLAN.md`，美術提示詞見 `docs/art-prompts.md`。
 - 純 HTML／CSS／JS 的 PWA，不需建置。測試：`npm test`（單元）、`npm run test:e2e`（Playwright 手機尺寸）。
 - 改圖片或 JS 時：新檔加入 `sw.js` 的 `SHELL`，並升 `CACHE` 版本與 `js/app.js` 的 `APP_VERSION`。
 - 保留既有存檔：新欄位在 `migrate()` 補預設值，不改既有規則（每日 3 骰、小遊戲 1 次、道具價格）。
