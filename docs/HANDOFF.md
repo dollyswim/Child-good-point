@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.07-39`｜Service Worker 快取 `cgp-shell-v49`
+> 最後更新：2026-11-07｜App 版本 `2026.11.07-40`｜Service Worker 快取 `cgp-shell-v50`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---
@@ -132,10 +132,15 @@
 - 第 3 步用的 9 張道具圖已放在 `images/items/`（mystery_chest、golden_key、treasure_magnet、lucky_medal、magic_dice、flying_wings、shield、magic_door、airplane，256px 白底），**尚未接入、也未加入 `sw.js` 快取**；第 3 步接入時再加入 `SHELL`。
 
 ### 自動備份與還原
-- 每天第一次開啟 App 時自動備份完整資料到 `localStorage['cgp-data-snapshots']`，保留最近 7 天（`store.dailySnapshot()`）。
-- 設定 → 備份 →「♻️ 還原資料」：選一天整個 App 回到那天開始時（`store.restoreSnapshot()`，需家長解鎖）。
-- 還原或「載入備份檔（覆蓋全部資料）」前，先存一份「還原前的狀態」（只保留最新一份），按錯可以還原回來。
-- 空間不足時先刪最舊的每日備份；主資料 `cgp-data` 不受影響。注意：自動備份和主資料在同一支手機，**換手機或清除瀏覽器資料仍需要匯出 JSON**。
+- 每天第一次開啟 App 時自動備份完整資料，保留最近 7 天；還原或「載入備份檔」前另存「還原前的狀態」（只保留最新一份）。
+- **備份放在 IndexedDB**（資料庫 `cgp-snapshots`），不和主資料搶 localStorage（約 5MB）；舊版放在 `localStorage['cgp-data-snapshots']` 的備份會自動搬過去並刪除。沒有 IndexedDB（例如無痕模式）時退回 localStorage，空間不足時先刪最舊的。
+- 備份是非同步的：`store.snapReady`（啟動完成）、`store.restoreSnapshot()` 回傳 Promise；`store.getSnapshots()` 讀記憶體中的清單。
+- 注意：自動備份和主資料在同一支手機，**換手機或清除瀏覽器資料仍需要匯出 JSON**。
+
+### 儲存空間健檢（2026-11-07）
+- 模擬兩位孩子各每天約 12 筆紀錄、一年後：主資料約 2.4MB（localStorage 上限約 5MB，約可用 2 年）；中階 Android 速度：首頁約 0.5 秒、任務頁約 0.6 秒、其他頁 0.2～0.3 秒、記一筆加分約 0.23 秒。
+- 主資料超過約 3.5MB 時首頁顯示「資料量快到手機上限」；存不進去時顯示紅色警告（`store.storageNearFull`、`store.storageError`）。之後如需長期使用，可加「封存舊紀錄」功能。
+- 離線快取只放 WebP 背景（JPG 為備援、不預先快取），共 61 個檔案約 3.3MB。
 
 ### 成就與金島通關
 - 成就 14 項（冒險 6、收集 3、生活 5），定義在 `js/game.js` 的 `ACHIEVEMENTS`；紀錄 `data.achievements[childId][成就代號] = { date, ts }`，達成後不會消失。每次畫孩子相關頁面前 `store.checkAchievements()`，新達成的顯示提示。徽章先用表情符號。

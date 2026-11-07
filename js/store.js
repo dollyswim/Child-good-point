@@ -426,62 +426,152 @@
     this.load();
     if (this._initMilestones && this._initMilestones()) this.save();   // 舊存檔：里程碑從功能上線當下開始算（不補發）
     if (this._initBackup()) this.save();
-    this.dailySnapshot();
+    this.snapReady = this._initSnapshots(opts.snapBackend);   // 自動備份（非同步）
   }
 
   // ----- 自動備份（每天第一次開啟時存一份完整資料，保留最近 7 天；還原或載入備份檔前另存「還原前」） -----
-  var SNAP_KEY = STORAGE_KEY + '-snapshots', SNAP_DAYS = 7;
-  Store.prototype._readSnaps = function () {
-    try { var a = JSON.parse(this.storage.getItem(SNAP_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
-  };
-  Store.prototype._writeSnaps = function (list) {
-    // 空間不足時，從最舊的每日備份開始刪，直到存得進去
-    for (;;) {
-      try { this.storage.setItem(SNAP_KEY, JSON.stringify(list)); return true; } catch (e) {
-        var i = list.findIndex(function (x) { return x.kind === 'daily'; });
-        if (i < 0 || list.filter(function (x) { return x.kind === 'daily'; }).length <= 1) return false;
-        list.splice(i, 1);
+  // 備份放在 IndexedDB（容量大，不和主資料搶 localStorage 的約 5MB 空間）；沒有 IndexedDB 時退回 localStorage 並限制大小。
+  var SNAP_KEY = STORAGE_KEY + '-snapshots', SNAP_DAYS = 7, SNAP_DB = 'cgp-snapshots';
+  /** 記憶體備份區（測試用） */
+  function memorySnapBackend() {
+    var m = {};
+    return {
+      kind: 'memory',
+      list: function () { return Promise.resolve(Object.keys(m).map(function (k) { return m[k]; })); },
+      get: function (id) { return Promise.resolve(m[id] || null); },
+      put: function (x) { m[x.id] = x; return Promise.resolve(true); },
+      remove: function (id) { delete m[id]; return Promise.resolve(); },
+      clear: function () { m = {}; return Promise.resolve(); }
+    };
+  }
+  /** localStorage 備份區（沒有 IndexedDB 時；空間不足時從最舊的每日備份開始刪） */
+  function localSnapBackend(storage) {
+    function read() { try { var a = JSON.parse(storage.getItem(SNAP_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+    function write(list) {
+      for (;;) {
+        try { storage.setItem(SNAP_KEY, JSON.stringify(list)); return true; } catch (e) {
+          var i = list.findIndex(function (x) { return x.kind === 'daily'; });
+          if (i < 0 || list.filter(function (x) { return x.kind === 'daily'; }).length <= 1) return false;
+          list.splice(i, 1);
+        }
       }
     }
+    return {
+      kind: 'local',
+      list: function () { return Promise.resolve(read()); },
+      get: function (id) { return Promise.resolve(read().find(function (x) { return x.id === id; }) || null); },
+      put: function (x) { var l = read().filter(function (y) { return y.id !== x.id; }); l.push(x); return Promise.resolve(write(l)); },
+      remove: function (id) { write(read().filter(function (x) { return x.id !== id; })); return Promise.resolve(); },
+      clear: function () { try { storage.removeItem(SNAP_KEY); } catch (e) { /* ignore */ } return Promise.resolve(); }
+    };
+  }
+  /** IndexedDB 備份區 */
+  function idbSnapBackend(idb) {
+    var dbp = null;
+    function db() {
+      if (!dbp) dbp = new Promise(function (resolve, reject) {
+        var rq = idb.open(SNAP_DB, 1);
+        rq.onupgradeneeded = function () { rq.result.createObjectStore('snaps', { keyPath: 'id' }); };
+        rq.onsuccess = function () { resolve(rq.result); };
+        rq.onerror = function () { reject(rq.error); };
+      });
+      return dbp;
+    }
+    function run(mode, fn) {
+      return db().then(function (d) {
+        return new Promise(function (resolve, reject) {
+          var tx = d.transaction('snaps', mode), st = tx.objectStore('snaps'), out;
+          var rq = fn(st);
+          if (rq) rq.onsuccess = function () { out = rq.result; };
+          tx.oncomplete = function () { resolve(out); };
+          tx.onerror = tx.onabort = function () { reject(tx.error); };
+        });
+      });
+    }
+    return {
+      kind: 'indexeddb',
+      list: function () { return run('readonly', function (st) { return st.getAll(); }).then(function (a) { return a || []; }); },
+      get: function (id) { return run('readonly', function (st) { return st.get(id); }).then(function (x) { return x || null; }); },
+      put: function (x) { return run('readwrite', function (st) { st.put(x); }).then(function () { return true; }); },
+      remove: function (id) { return run('readwrite', function (st) { st.delete(id); }); },
+      clear: function () { return run('readwrite', function (st) { st.clear(); }); }
+    };
+  }
+  function indexOf(x) { return { id: x.id, kind: x.kind, date: x.date, ts: x.ts, summary: x.summary }; }
+  /** 啟動：選備份區、把舊的 localStorage 備份搬到 IndexedDB、讀索引、存今天的備份 */
+  Store.prototype._initSnapshots = function (backend) {
+    var self = this;
+    this._snapIndex = [];
+    this._snaps = backend || (typeof indexedDB !== 'undefined' && indexedDB ? idbSnapBackend(indexedDB) : localSnapBackend(this.storage));
+    var chain = Promise.resolve();
+    if (this._snaps.kind === 'indexeddb') {
+      var legacy = localSnapBackend(this.storage);
+      chain = legacy.list().then(function (old) {
+        if (!old.length) return;
+        return Promise.all(old.map(function (x) { return self._snaps.put(x); })).then(function () { return legacy.clear(); });
+      });
+    }
+    return chain.then(function () { return self._snaps.list(); })
+      .then(function (all) { self._snapIndex = all.map(indexOf); return self.dailySnapshot(); })
+      .catch(function (e) {
+        // IndexedDB 無法使用（例如無痕模式）：改用 localStorage
+        if (self._snaps.kind !== 'indexeddb') return false;
+        self._snaps = localSnapBackend(self.storage);
+        return self._snaps.list().then(function (all) { self._snapIndex = all.map(indexOf); return self.dailySnapshot(); });
+      });
   };
   Store.prototype._snap = function (kind) {
     var d = this.data, now = this.now();
     return { id: uid(), kind: kind, date: dateKey(now), ts: now.getTime(),
       summary: { children: d.children.length, records: d.records.length }, data: JSON.stringify(d) };
   };
-  /** 今天還沒有自動備份就存一份（＝今天開始時的狀態） */
+  Store.prototype._putSnap = function (snap) {
+    var self = this;
+    this._snapIndex = this._snapIndex.filter(function (x) { return x.id !== snap.id; }).concat([indexOf(snap)]);
+    return this._snaps.put(snap).then(function (ok) {
+      if (ok === false) self._snapIndex = self._snapIndex.filter(function (x) { return x.id !== snap.id; });   // 存不進去
+      return self._snaps.kind === 'local' ? self._snaps.list().then(function (all) { self._snapIndex = all.map(indexOf); return ok; }) : ok;
+    });
+  };
+  /** 今天還沒有自動備份就存一份（＝今天開始時的狀態），只保留最近 7 天 @returns Promise<boolean> */
   Store.prototype.dailySnapshot = function () {
-    var today = this.today(), list = this._readSnaps();
-    if (list.some(function (x) { return x.kind === 'daily' && x.date === today; })) return false;
-    list.push(this._snap('daily'));
-    var daily = list.filter(function (x) { return x.kind === 'daily'; }).sort(function (a, b) { return a.ts - b.ts; });
-    var drop = daily.slice(0, Math.max(0, daily.length - SNAP_DAYS)).map(function (x) { return x.id; });
-    return this._writeSnaps(list.filter(function (x) { return drop.indexOf(x.id) < 0; }));
+    var self = this, today = this.today();
+    if (this._snapIndex.some(function (x) { return x.kind === 'daily' && x.date === today; })) return Promise.resolve(false);
+    var snap = this._snap('daily');
+    return this._putSnap(snap).then(function (ok) {
+      var daily = self._snapIndex.filter(function (x) { return x.kind === 'daily'; }).sort(function (a, b) { return a.ts - b.ts; });
+      var drop = daily.slice(0, Math.max(0, daily.length - SNAP_DAYS));
+      self._snapIndex = self._snapIndex.filter(function (x) { return drop.indexOf(x) < 0; });
+      return Promise.all(drop.map(function (x) { return self._snaps.remove(x.id); })).then(function () { return ok !== false; });
+    });
   };
   /** 備份清單（新的在前，不含資料本體） */
   Store.prototype.getSnapshots = function () {
-    return this._readSnaps().map(function (x) { return { id: x.id, kind: x.kind, date: x.date, ts: x.ts, summary: x.summary }; })
-      .sort(function (a, b) { return b.ts - a.ts; });
+    return this._snapIndex.map(function (x) { return Object.assign({}, x); }).sort(function (a, b) { return b.ts - a.ts; });
   };
-  /** 覆蓋資料前先存「還原前」的狀態（只保留最新一份），按錯可以還原回來 */
+  /** 覆蓋資料前先存「還原前」的狀態（只保留最新一份）。內容當下就複製，寫入在背景完成 */
   Store.prototype._snapBefore = function () {
-    var list = this._readSnaps().filter(function (x) { return x.kind !== 'before'; });
-    list.push(this._snap('before'));
-    this._writeSnaps(list);
+    var self = this, snap = this._snap('before');
+    var old = this._snapIndex.filter(function (x) { return x.kind === 'before'; });
+    this._snapIndex = this._snapIndex.filter(function (x) { return x.kind !== 'before'; }).concat([indexOf(snap)]);   // 清單立即更新
+    this._snapWrite = Promise.all(old.map(function (x) { return self._snaps.remove(x.id); })).then(function () { return self._putSnap(snap); });
+    return this._snapWrite;
   };
-  /** 還原到某一份自動備份（需家長解鎖）；整個 App 回到那時的狀態 */
+  /** 還原到某一份自動備份（需家長解鎖）；整個 App 回到那時的狀態 @returns Promise */
   Store.prototype.restoreSnapshot = function (id) {
     this._requireParent();
-    var snap = this._readSnaps().find(function (x) { return x.id === id; });
-    if (!snap) throw new Error('找不到這份備份');
-    var data;
-    try { data = migrate(JSON.parse(snap.data)); } catch (e) { throw new Error('這份備份已損毀，無法還原'); }
-    this._snapBefore();
-    this.data = data;
-    if (this._initMilestones) this._initMilestones();
-    this._initBackup();
-    this.save();
-    return snap;
+    var self = this;
+    return (this._snapWrite || Promise.resolve()).then(function () { return self._snaps.get(id); }).then(function (snap) {   // 等背景寫入完成
+      if (!snap) throw new Error('找不到這份備份');
+      var data;
+      try { data = migrate(JSON.parse(snap.data)); } catch (e) { throw new Error('這份備份已損毀，無法還原'); }
+      var before = self._snapBefore();
+      self.data = data;
+      if (self._initMilestones) self._initMilestones();
+      self._initBackup();
+      self.save();
+      return before.then(function () { return snap; });
+    });
   };
 
   Store.prototype.load = function () {
@@ -500,9 +590,14 @@
     this.save();
   };
 
+  /** 主資料接近 localStorage 上限（約 5MB）的警示門檻（字元數） */
+  var STORAGE_WARN_CHARS = 3500000;
   Store.prototype.save = function () {
     try {
-      this.storage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+      var text = JSON.stringify(this.data);
+      this.storageUsed = text.length;
+      this.storageNearFull = text.length > STORAGE_WARN_CHARS;
+      this.storage.setItem(STORAGE_KEY, text);
       this.storageError = null;
     } catch (e) {
       // 儲存空間已滿或被封鎖：資料仍保留在記憶體中，介面可提示使用者匯出備份
@@ -1451,6 +1546,8 @@
     SCHEMA_VERSION: SCHEMA_VERSION,
     levelThreshold: levelThreshold,
     SPECIAL_TASKS: SPECIAL_TASKS,
+    memorySnapBackend: memorySnapBackend,
+    STORAGE_WARN_CHARS: STORAGE_WARN_CHARS,
     BAG_KEYS: BAG_KEYS,
     emptyBag: emptyBag,
     SPECIAL_TASK_POINTS: SPECIAL_TASK_POINTS,

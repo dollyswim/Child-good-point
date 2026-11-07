@@ -4,10 +4,11 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-39';
+  var APP_VERSION = '2026.11.07-40';
   var store;
   try {
     store = new CGP.Store();
+    store.snapReady.then(function () { if (route().name === 'settings') render(); });   // 自動備份清單載入後更新設定頁
   } catch (e) {
     document.getElementById('app').innerHTML =
       '<p class="fatal">無法讀取本機儲存空間：' + String(e.message) + '</p>';
@@ -349,9 +350,24 @@
       (children.length
         ? '<div class="child-list">' + cards + '</div>'
         : '<div class="empty card"><p class="big-emoji">👋</p><p><b>還沒有孩子資料</b></p><p class="muted">先新增孩子，就可以開始記錄生活積分。</p></div>') +
-      tiles + week + backupReminder() +
+      storageWarning() + tiles + week + backupReminder() +
       '<button class="btn add-child" data-action="add-child">＋ 新增孩子</button>' +
       '</main>';
+  }
+
+  /** 首頁：手機儲存空間不足（存不進去）或接近上限時警告 */
+  function storageWarning() {
+    if (store.storageError) {
+      return '<section class="storage-warn error" data-testid="storage-warn"><b>⚠️ 資料存不進手機了！</b>' +
+        '<small>手機瀏覽器的儲存空間已滿，最近的紀錄可能沒有存到。請立刻匯出備份，並聯絡協助整理資料。</small>' +
+        '<button class="btn primary small" data-action="export">立即匯出備份</button></section>';
+    }
+    if (store.storageNearFull) {
+      return '<section class="storage-warn" data-testid="storage-warn"><b>💾 資料量快到手機上限了（約 ' + Math.round(store.storageUsed / 52429) + '%）</b>' +
+        '<small>請先匯出備份；之後可以考慮清理很久以前的紀錄。</small>' +
+        '<button class="btn small" data-action="export">匯出備份</button></section>';
+    }
+    return '';
   }
 
   /** 首頁：超過 7 天沒匯出備份時提醒（匯出不改資料，不需家長密碼） */
@@ -2239,8 +2255,9 @@
           var sn = store.getSnapshots().find(function (x) { return x.id === id; });
           var what = sn.kind === 'before' ? '還原前的狀態' : shortDate(sn.date) + ' 開始時的狀態';
           confirmThen('要把整個 App 還原到「' + what + '」嗎？\n之後的點數紀錄、星星、冒險進度、背包都會回到那時。\n目前狀態會先自動備份，可以再還原回來。', '還原', true, function () {
-            store.restoreSnapshot(id);
-            toast('♻️ 已還原到' + what, 'pos');
+            toast('♻️ 還原中…');
+            store.restoreSnapshot(id).then(function () { toast('♻️ 已還原到' + what, 'pos'); render(); })
+              .catch(function (err) { toast('還原失敗：' + err.message, 'neg'); render(); });
           });
           break;
         }

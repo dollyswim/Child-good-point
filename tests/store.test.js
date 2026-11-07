@@ -1,7 +1,7 @@
 // 資料層單元測試：node --test tests/
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { Store, memoryStorage, migrate, STORAGE_KEY } = require('../js/store.js');
+const { Store, memoryStorage, migrate, STORAGE_KEY, memorySnapBackend, STORAGE_WARN_CHARS } = require('../js/store.js');
 
 /** 建立可控制時間的 Store */
 function makeStore(dateStr = '2026-11-06T10:00:00', storage = memoryStorage()) {
@@ -1347,81 +1347,106 @@ test('神諭祝福／寶箱紀錄：存檔遷移、刪除孩子一併刪除', ()
 });
 
 // ---------- 設定：自動備份與還原 ----------
-test('自動備份：每天第一次開啟存一份、同一天不重複、保留最近 7 天', () => {
-  const storage = memoryStorage();
+test('自動備份：每天第一次開啟存一份、同一天不重複、保留最近 7 天', async () => {
+  const storage = memoryStorage(), snapBackend = memorySnapBackend();
   const clock = { t: new Date('2026-11-01T09:00:00').getTime() };
-  const open = () => new Store({ storage, seed: false, now: () => new Date(clock.t) });
-  let s = open();
+  const open = async () => { const st = new Store({ storage, seed: false, now: () => new Date(clock.t), snapBackend }); await st.snapReady; return st; };
+  let s = await open();
   s.addChild({ name: '端端' });
   assert.equal(s.getSnapshots().length, 1, '第一次開啟有 1 份');
-  open(); open();
-  assert.equal(open().getSnapshots().length, 1, '同一天不重複');
-  for (let d = 2; d <= 10; d++) { clock.t = new Date('2026-11-' + String(d).padStart(2, '0') + 'T09:00:00').getTime(); s = open(); }
+  await open(); await open();
+  assert.equal((await open()).getSnapshots().length, 1, '同一天不重複');
+  for (let d = 2; d <= 10; d++) { clock.t = new Date('2026-11-' + String(d).padStart(2, '0') + 'T09:00:00').getTime(); s = await open(); }
   const snaps = s.getSnapshots();
   assert.equal(snaps.length, 7, '只保留 7 天');
   assert.deepEqual(snaps.map(x => x.date), ['2026-11-10', '2026-11-09', '2026-11-08', '2026-11-07', '2026-11-06', '2026-11-05', '2026-11-04']);
   assert.ok(!('data' in snaps[0]), '清單不含資料本體');
   assert.equal(snaps[0].summary.children, 1);
+  assert.equal((await snapBackend.list()).length, 7, '備份區實際也只剩 7 份');
 });
 
-test('還原到前一天：整個 App 回到那天開始時；需家長密碼；還原前自動備份，可再還原回來', () => {
-  const storage = memoryStorage();
+test('還原到前一天：整個 App 回到那天開始時；需家長密碼；還原前自動備份，可再還原回來', async () => {
+  const storage = memoryStorage(), snapBackend = memorySnapBackend();
   const clock = { t: new Date('2026-11-06T09:00:00').getTime() };
-  const open = () => new Store({ storage, seed: false, now: () => new Date(clock.t) });
-  let s = open();
+  const open = async () => { const st = new Store({ storage, seed: false, now: () => new Date(clock.t), snapBackend }); await st.snapReady; return st; };
+  let s = await open();
   const c = s.addChild({ name: '端端', startPoints: 100 });
   const it = s.addItem({ kind: 'bonus', name: '加', points: 20 });
   s.recordItem(c.id, it.id);                                  // 11/6：120 點
   clock.t = new Date('2026-11-07T09:00:00').getTime();
-  s = open();                                                 // 11/7 開始時備份（120 點）
+  s = await open();                                           // 11/7 開始時備份（120 點）
   s.recordItem(c.id, it.id); s.recordItem(c.id, it.id);      // 11/7：160 點
   s.getPlayer(c.id).bag.shield = 2; s.save();
   const snap7 = s.getSnapshots().find(x => x.date === '2026-11-07');
   assert.throws(() => s.restoreSnapshot(snap7.id), /需要家長密碼/);
   s.setParentPin('1234');
-  s.restoreSnapshot(snap7.id);
+  await s.restoreSnapshot(snap7.id);
   assert.equal(s.getTotal(c.id), 120, '回到 11/7 開始時');
   assert.equal(s.getPlayer(c.id).bag.shield, 0, '背包也回去');
   const before = s.getSnapshots().find(x => x.kind === 'before');
   assert.ok(before, '還原前自動備份');
-  s.restoreSnapshot(before.id);
+  await s.restoreSnapshot(before.id);
   assert.equal(s.getTotal(c.id), 160, '可以再還原回來');
   assert.equal(s.getSnapshots().filter(x => x.kind === 'before').length, 1, '還原前只保留最新一份');
-  // 重新開啟後仍是還原後的資料
-  assert.equal(open().getTotal(c.id), 160);
+  assert.equal((await open()).getTotal(c.id), 160, '重新開啟後仍是還原後的資料');
+  await assert.rejects(s.restoreSnapshot('nope'), /找不到/);
 });
 
-test('載入備份檔覆蓋前，自動備份目前狀態', () => {
-  const { store } = makeStore();
-  const c = store.addChild({ name: '端端', startPoints: 77 });
-  const json = JSON.stringify({ children: [{ id: 'z', name: '新的' }] });
-  store.importJSON(json);
-  assert.equal(store.getChildren()[0].name, '新的');
-  const before = store.getSnapshots().find(x => x.kind === 'before');
-  assert.ok(before);
-  store.setParentPin('1234');
-  store.restoreSnapshot(before.id);
-  assert.equal(store.getTotal(c.id), 77, '覆蓋前的資料可以找回');
+test('載入備份檔覆蓋前，自動備份目前狀態', async () => {
+  const s = new Store({ storage: memoryStorage(), seed: false, now: () => new Date('2026-11-06T10:00:00'), snapBackend: memorySnapBackend() });
+  await s.snapReady;
+  const c = s.addChild({ name: '端端', startPoints: 77 });
+  s.importJSON(JSON.stringify({ children: [{ id: 'z', name: '新的' }] }));
+  assert.equal(s.getChildren()[0].name, '新的');
+  const before = s.getSnapshots().find(x => x.kind === 'before');
+  assert.ok(before, '覆蓋前的狀態已複製');
+  s.setParentPin('1234');
+  await s.restoreSnapshot(before.id);
+  assert.equal(s.getTotal(c.id), 77, '覆蓋前的資料可以找回');
 });
 
-test('自動備份：空間不足時先刪最舊的每日備份，主資料不受影響', () => {
+test('自動備份（沒有 IndexedDB 時改用 localStorage）：空間不足時先刪最舊的每日備份，主資料不受影響', async () => {
   const inner = memoryStorage();
   let limit = Infinity;
   const storage = { getItem: (k) => inner.getItem(k), setItem: (k, v) => { if (k.endsWith('-snapshots') && v.length > limit) throw new Error('QuotaExceeded'); inner.setItem(k, v); }, removeItem: (k) => inner.removeItem && inner.removeItem(k) };
   const clock = { t: new Date('2026-11-01T09:00:00').getTime() };
-  const open = () => new Store({ storage, seed: false, now: () => new Date(clock.t) });
-  let s = open(); s.addChild({ name: '端端' });
-  for (let d = 2; d <= 4; d++) { clock.t = new Date('2026-11-0' + d + 'T09:00:00').getTime(); s = open(); }
+  const open = async () => { const st = new Store({ storage, seed: false, now: () => new Date(clock.t) }); await st.snapReady; return st; };
+  let s = await open(); s.addChild({ name: '端端' });
+  assert.equal(s._snaps.kind, 'local', 'Node 沒有 IndexedDB → localStorage');
+  for (let d = 2; d <= 4; d++) { clock.t = new Date('2026-11-0' + d + 'T09:00:00').getTime(); s = await open(); }
   assert.equal(s.getSnapshots().length, 4);
-  limit = JSON.stringify(s._readSnaps()).length;              // 剛好放得下 4 份
-  clock.t = new Date('2026-11-05T09:00:00').getTime(); s = open();
+  limit = inner.getItem('cgp-data-snapshots').length;          // 剛好放得下 4 份
+  clock.t = new Date('2026-11-05T09:00:00').getTime(); s = await open();
   const dates = s.getSnapshots().map(x => x.date);
   assert.equal(dates[0], '2026-11-05', '最新的有存進去');
   assert.ok(!dates.includes('2026-11-01'), '最舊的被刪掉');
   assert.equal(s.getChildren().length, 1, '主資料不受影響');
 });
 
-// ---------- 寶物商店 Phase 4A：道具實際效果 ----------
+test('舊版存在 localStorage 的備份會搬到新的備份區並釋放空間', async () => {
+  const storage = memoryStorage();
+  storage.setItem('cgp-data-snapshots', JSON.stringify([{ id: 'old1', kind: 'daily', date: '2026-11-05', ts: 1, summary: { children: 0, records: 0 }, data: '{"children":[]}' }]));
+  const backend = memorySnapBackend(); backend.kind = 'indexeddb';   // 模擬 IndexedDB
+  const s = new Store({ storage, seed: false, now: () => new Date('2026-11-06T09:00:00'), snapBackend: backend });
+  await s.snapReady;
+  assert.deepEqual(s.getSnapshots().map(x => x.id).sort().filter(x => x === 'old1'), ['old1'], '舊備份搬過來');
+  assert.equal(storage.getItem('cgp-data-snapshots'), null, 'localStorage 的舊備份已刪除');
+});
+
+test('容量警告：主資料超過約 3.5MB 標記接近上限；存不進去時記錄錯誤', () => {
+  const inner = memoryStorage();
+  let fail = false;
+  const storage = { getItem: (k) => inner.getItem(k), setItem: (k, v) => { if (fail) throw new Error('QuotaExceeded'); inner.setItem(k, v); }, removeItem: (k) => inner.removeItem(k) };
+  const s = new Store({ storage, seed: false, snapBackend: memorySnapBackend() });
+  s.addChild({ name: '端端' });
+  assert.equal(s.storageNearFull, false);
+  s.data.items.push({ id: 'big', kind: 'bonus', name: 'x'.repeat(STORAGE_WARN_CHARS), points: 1, childIds: 'all' });
+  s.save();
+  assert.equal(s.storageNearFull, true);
+  fail = true; s.save();
+  assert.ok(s.storageError, '存不進去時有錯誤');
+});
+
 test('神奇骰子：12 面、不占每日 3 次、每天最多 1 顆、隔天可再用', () => {
   const { store, a, push, setDate } = p3Store();
   const bag = store.getPlayer(a.id).bag;

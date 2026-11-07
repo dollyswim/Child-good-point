@@ -1181,8 +1181,8 @@ async function main() {
     q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
     await q.goto(url);
     const cid = await q.evaluate(() => { const s = window.__cgpStore; const c = s.addChild({ name: '端端', startPoints: 100 }); return c.id; });
-    await q.evaluate(() => localStorage.removeItem('cgp-data-snapshots'));
-    await q.reload();                                            // 重新開啟：建立今天的自動備份（含端端 100 點）
+    // 清空備份區後重建今天的自動備份（含端端 100 點）；備份放在 IndexedDB
+    assert.equal(await q.evaluate(async () => { const s = window.__cgpStore; await s.snapReady; await s._snaps.clear(); s._snapIndex = []; await s.dailySnapshot(); return s._snaps.kind; }), 'indexeddb');
     await q.evaluate((id) => { const s = window.__cgpStore; const it = s.addItem({ kind: 'bonus', name: '加', points: 50 }); s.recordItem(id, it.id); }, cid);
     await q.goto(url + '#rules-backup');
     await passPin(q);

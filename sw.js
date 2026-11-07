@@ -1,8 +1,8 @@
 /* 親子集點 Service Worker：離線可用。資料存在 localStorage，不受快取影響。 */
-var CACHE = 'cgp-shell-v49';
+var CACHE = 'cgp-shell-v50';
 var SHELL = [
   './', 'index.html', 'css/style.css', 'js/store.js', 'js/rules-csv.js', 'js/report.js', 'js/board-gold.js', 'js/board-gold-02.js', 'js/board-gold-03.js', 'js/game.js', 'js/art.js', 'js/app.js',
-  'manifest.webmanifest', 'images/gold-island.webp', 'images/gold-island.jpg', 'images/gold/region01.webp', 'images/gold/region01.jpg', 'images/gold/region02.webp', 'images/gold/region02.jpg', 'images/gold/region03.webp', 'images/gold/region03.jpg', 'images/gold/stone.webp', 'images/mascot.webp', 'images/float-castle.webp', 'images/chest.webp',
+  'manifest.webmanifest', 'images/gold-island.webp', 'images/gold/region01.webp', 'images/gold/region02.webp', 'images/gold/region03.webp', 'images/gold/stone.webp', 'images/mascot.webp', 'images/float-castle.webp', 'images/chest.webp',
   'images/characters/roundear.webp', 'images/characters/longear.webp', 'images/characters/horn.webp', 'images/characters/wing.webp',
   'images/characters/drop.webp', 'images/characters/sprout.webp', 'images/characters/flame.webp', 'images/characters/stone.webp', 'images/items/dice_6.webp', 'images/items/dice_12.webp', 'images/items/roller_skate.webp', 'images/islands/wood.webp', 'images/islands/water.webp', 'images/islands/fire.webp', 'images/islands/earth.webp', 'images/items/star.webp', 'images/tiles/start.webp', 'images/tiles/chest.webp', 'images/tiles/chance.webp', 'images/tiles/minigame.webp', 'images/tiles/finish.webp', 'images/tiles/door.webp', 'images/tiles/shop.webp', 'images/tiles/fate.webp', 'images/minigame/bg.webp', 'images/minigame/star.webp', 'images/items/shield.webp', 'images/items/magic_dice.webp', 'images/items/lucky_medal.webp', 'images/items/flying_wings.webp', 'images/items/magic_door.webp', 'images/items/mystery_chest.webp', 'images/items/airplane.webp', 'images/items/golden_key.webp', 'images/items/treasure_magnet.webp', 'images/items/reroll_ticket.webp', 'images/items/bonus_play.webp', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'
 ];

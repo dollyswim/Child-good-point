@@ -1458,3 +1458,10 @@ body.mg-open { overflow: hidden; }
 .confetti i:nth-child(24) { left: 88%; animation-delay: 0.04s; }
 @keyframes confetti-fall { to { transform: translateY(110vh) rotate(540deg); } }
 @media (prefers-reduced-motion: reduce) { .confetti i, .clear-crown, .clear-card { animation: none; } }
+
+/* 首頁：儲存空間警告 */
+.storage-warn { display: grid; gap: 4px; padding: 12px; border-radius: 18px; background: #fff4e0; border: 3px solid #ffd08a; }
+.storage-warn.error { background: #ffe5e5; border-color: #ff8a8a; }
+.storage-warn b { color: #9a3b00; }
+.storage-warn small { color: var(--muted); font-weight: 700; }
+.storage-warn .btn { justify-self: end; flex: none; width: auto; white-space: nowrap; }
