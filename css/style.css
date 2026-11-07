@@ -1402,3 +1402,4 @@ body.mg-open { overflow: hidden; }
 .br-main b { color: #9a5b00; }
 .br-main small { color: var(--muted); font-weight: 700; font-size: .78rem; line-height: 1.4; }
 .br-acts { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+.br-acts .btn { flex: none; width: auto; white-space: nowrap; min-width: 0; padding-inline: 14px; }
