@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.07-17`｜Service Worker 快取 `cgp-shell-v27`
+> 最後更新：2026-11-07｜App 版本 `2026.11.07-18`｜Service Worker 快取 `cgp-shell-v28`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---
@@ -112,7 +112,7 @@
 
 ### 近期介面調整
 - 「進入今日冒險」改為一個視窗列出所有孩子：可出發的預設勾選、未解鎖灰色顯示原因、已出發打 ✅，一次結算多位（`enterAdventure()`）。
-- 星星商店移到地圖左下角大按鈕（`.map-shop`），上方 HUD 只剩星星、骰子、位置；商店插圖 `images/tiles/shop.webp`（`SHOP_ART`，透明去背＋白色描邊（貼紙效果，384px），顯示 152px，直接浮在地圖左下角）。
+- 星星商店移到地圖左下角大按鈕（`.map-shop`），上方 HUD 只剩星星、骰子、位置；商店插圖 `images/tiles/shop.webp`（`SHOP_ART`，透明去背＋白色描邊（貼紙效果，384px），顯示 92px，「商店」字在圖下方，直接浮在地圖左下角）。
 
 ### 路由（hash，只用英數與連字號）
 `#home`、`#child-<id>`（任務）、`#challenge-<id>`、`#shop-<id>`（兌換）、`#adventure-<id>`（冒險大廳）、`#map-<id>`（金島地圖）、`#report`、`#rules`、`#rules-<分頁>`。舊格式 `#/child/<id>` 仍相容。
