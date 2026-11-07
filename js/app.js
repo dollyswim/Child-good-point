@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-18';
+  var APP_VERSION = '2026.11.07-19';
   var store;
   try {
     store = new CGP.Store();
@@ -525,9 +525,9 @@
   var STAR_IMG = '<img class="star-ico" src="images/items/star.webp" alt="⭐" width="256" height="256" decoding="async" draggable="false">';
   /** 地圖格子事件圖示（白底圖放在白色圓角圖示框，contain 不裁切） */
   var TILE_ART = { start: 'images/tiles/start.webp', chest: 'images/tiles/chest.webp', chance: 'images/tiles/chance.webp',
-    minigame: 'images/tiles/minigame.webp', boundary: 'images/tiles/door.webp' }; // 第一區終點：礦場木門（終點旗 finish.webp 保留給全島終點）
-  /** 圖未到前的暫代表情符號（命運格水晶球圖到貨後改放進 TILE_ART） */
-  var TILE_EMOJI = { fate: '🔮' };
+    minigame: 'images/tiles/minigame.webp', fate: 'images/tiles/fate.webp', boundary: 'images/tiles/door.webp' }; // 第一區終點：礦場木門（終點旗 finish.webp 保留給全島終點）
+  /** 圖未到前的暫代表情符號（新格子類型先放這裡，圖到貨後改放進 TILE_ART） */
+  var TILE_EMOJI = {};
   function tileArt(type, cls) {
     if (TILE_ART[type]) return '<span class="tile-art ' + (cls || '') + '"><img src="' + TILE_ART[type] + '" alt="" aria-hidden="true" width="192" height="192" decoding="async" draggable="false"></span>';
     return TILE_EMOJI[type] ? '<span class="tile-emoji ' + (cls || '') + '" aria-hidden="true">' + TILE_EMOJI[type] + '</span>' : '';

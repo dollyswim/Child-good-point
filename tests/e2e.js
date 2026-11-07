@@ -611,7 +611,8 @@ async function main() {
     await q.waitForSelector('#pawn');
     // 地圖：4 個命運格（暫用 🔮）＋圖例
     assert.deepEqual(await q.$$eval('.mtile.mt-fate', (els) => els.map((e) => +e.dataset.n)), [11, 14, 21, 27]);
-    assert.equal(await q.locator('.mt-fate .tile-emoji').count(), 4);
+    assert.equal(await q.locator('.mt-fate .tile-art img[src="images/tiles/fate.webp"]').count(), 4, '命運格用水晶球圖');
+    await q.waitForFunction(() => [...document.querySelectorAll('.mt-fate img')].every((i) => i.complete && i.naturalWidth === 192));
     assert.match(await q.locator('.legend').innerText(), /命運/);
     // 擲 4 → 第 14 格命運格 → 後退 2 格到第 12 格（寶箱格不觸發）
     await q.evaluate(() => { const seq = [3.5 / 6, 0.8, 0.9]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0); });
@@ -826,9 +827,9 @@ async function main() {
         };
       });
       const count = (t) => arts.types.filter((x) => x === t).length;
-      assert.deepEqual([count('start'), count('chest'), count('chance'), count('minigame'), count('boundary')], [1, 4, 5, 3, 1], '格子圖示數量');
+      assert.deepEqual([count('start'), count('chest'), count('chance'), count('fate'), count('minigame'), count('boundary')], [1, 4, 5, 4, 3, 1], '格子圖示數量');
       assert.deepEqual(arts.fit, ['contain']); assert.deepEqual(arts.bg, ['rgb(255, 255, 255)']);
-      assert.deepEqual(arts.legend, ['chest.webp', 'chance.webp', 'minigame.webp', 'door.webp']);
+      assert.deepEqual(arts.legend, ['chest.webp', 'chance.webp', 'fate.webp', 'minigame.webp', 'door.webp']);
       assert.ok(arts.startHere, '角色在起點：起點旗讓位');
       console.log('  ・' + width + 'px 預設縮放：格子圖示約 ' + arts.px + 'px');
       // 30 格依 JSON 座標、與背景同一縮放：比對畫面位置
