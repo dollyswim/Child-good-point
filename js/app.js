@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-56';
+  var APP_VERSION = '2026.11.07-57';
   var store;
   try {
     store = new CGP.Store();
@@ -2067,6 +2067,7 @@
       '<ul class="rows">' + (snapRows || '<li class="muted">還沒有自動備份</li>') + '</ul>' +
       '<h3>📥 載入備份檔（覆蓋全部資料）</h3><p class="muted small">選擇先前匯出的 JSON 備份檔，<b>取代</b>目前所有資料。覆蓋前會先自動備份目前狀態。</p>' +
       '<label class="btn block file-btn">選擇備份 JSON 檔<input type="file" accept="application/json,.json" data-action="import" hidden></label></div>' +
+      archiveCard() +
       '<div class="card">' +
       '<h2>📤 匯出備份</h2><p class="muted small">下載包含所有孩子、規則、獎勵與紀錄的 JSON 檔。</p>' +
       '<button class="btn primary block" data-action="export">匯出 JSON</button></div>' +
@@ -2078,6 +2079,42 @@
       '<p class="muted small center">App 版本：' + APP_VERSION + '</p>' +
       '<p class="muted small center">目前資料：' + d.children.length + ' 位孩子・' + d.items.length + ' 個規則・' +
       d.rewards.length + ' 個獎勵・' + d.records.length + ' 筆紀錄</p>';
+  }
+
+  /** 設定 → 備份：封存舊紀錄（只封存生活紀錄；點數、等級、成就不變） */
+  function archiveCard() {
+    var max = store.getArchiveMaxCutoff();
+    var cut = ui.archiveCut && ui.archiveCut <= max ? ui.archiveCut : store.getArchiveDefaultCutoff();
+    var n = store.getArchivableRecords(cut).length;
+    var carried = Object.keys(store.data.carry || {}).map(function (cid) {
+      var c = store.data.carry[cid], ch = store.getChild(cid);
+      return ch && c.count ? h(ch.name) + '：' + c.count + ' 筆（' + shortDate(c.until) + ' 以前）' : '';
+    }).filter(Boolean);
+    return '<div class="card archive-card" data-testid="archive"><h2>📦 封存舊紀錄</h2>' +
+      '<p class="muted small">使用很久以後資料會越來越大。可以把<b>某天以前的生活加扣分紀錄</b>存成檔案，再從手機移除。' +
+      '<b>目前點數、等級、累計得分、成就都不會改變</b>；只是紀錄頁看不到那些舊明細。本週與本月的紀錄不能封存；冒險紀錄不受影響。</p>' +
+      '<label class="field">封存這一天以前的紀錄<input type="date" id="archive-date" max="' + max + '" value="' + cut + '"></label>' +
+      '<p class="small archive-count" data-testid="archive-count">' + (n ? '會封存 <b>' + n + '</b> 筆（' + shortDate(cut) + ' 以前）' : '這一天以前沒有可以封存的紀錄') + '</p>' +
+      '<button class="btn block danger" data-action="archive"' + (n ? '' : ' disabled') + '>📦 匯出封存檔並移除舊紀錄</button>' +
+      (carried.length ? '<p class="muted small">已封存：' + carried.join('、') + '</p>' : '') + '</div>';
+  }
+  /** 封存：先下載封存檔（被移除的紀錄），再從手機移除 */
+  function doArchive() {
+    var cut = (document.getElementById('archive-date') || {}).value || '';
+    var list = store.getArchivableRecords(cut);
+    if (!list.length) { toast('這一天以前沒有可以封存的紀錄', 'neg'); return; }
+    confirmThen('封存 ' + shortDate(cut) + ' 以前的 ' + list.length + ' 筆生活紀錄？\n\n會先下載一個封存檔，請存到雲端硬碟或電腦。\n移除後目前點數、等級、成就都不變，只是紀錄頁看不到這些舊明細。', '匯出並封存', true, function () {
+      var file = { type: 'cgp-archive', version: 1, appVersion: APP_VERSION, createdAt: new Date(store.now()).toISOString(), cutoff: cut,
+        children: store.getChildren().map(function (c) { return { id: c.id, name: c.name }; }), records: list };
+      var blob = new Blob([JSON.stringify(file, null, 1)], { type: 'application/json' });
+      var url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = 'child-points-archive-before-' + cut + '.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      var res = store.archiveRecords(cut);
+      ui.archiveCut = null;
+      toast('已封存 ' + res.count + ' 筆舊紀錄，點數與成就都沒有變', 'pos');
+    });
   }
 
   // ---------- 表單 ----------
@@ -2494,6 +2531,7 @@
           render();
           break;
         }
+        case 'archive': doArchive(); break;
         case 'pin-submit': submitPin(); break;
         case 'pin-forgot': ui.pinMode = 'forgot'; ui.pinQuiz = null; render(); break;
         case 'pin-quiz': {
@@ -2670,6 +2708,10 @@
   });
 
   app.addEventListener('change', function (e) {
+    if (e.target.id === 'archive-date') {   // 封存日期：更新會封存幾筆
+      ui.archiveCut = e.target.value; render();
+      return;
+    }
     if (e.target.matches('[data-action="import"]') && e.target.files[0]) {
       importData(e.target.files[0]);
       e.target.value = '';

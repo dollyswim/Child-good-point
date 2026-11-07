@@ -738,7 +738,8 @@
   }
   /** 完成的特殊任務數 */
   function specialDone(s, c) {
-    return s.data.records.filter(function (r) { return r.childId === c && /^special:/.test(r.refId || ''); }).length;
+    var carry = (s.data.carry || {})[c];
+    return s.data.records.filter(function (r) { return r.childId === c && /^special:/.test(r.refId || ''); }).length + (carry ? carry.special : 0);   // 含封存結轉
   }
   /** 檢查並記錄新達成的成就（已達成的不會消失）@returns 這次新達成的成就 */
   /**

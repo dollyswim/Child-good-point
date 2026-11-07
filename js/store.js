@@ -89,7 +89,7 @@
 
   // ---------- 預設資料 ----------
   function emptyData() {
-    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null, achievements: {}, backup: { lastExportAt: 0, since: 0, snoozeUntil: '' },
+    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null, achievements: {}, carry: {}, backup: { lastExportAt: 0, since: 0, snoozeUntil: '' },
       milestones: {}, adventure: { settlements: [], ledger: [], rolls: [], minigames: [], bonusQuota: [], mapChests: [], dayEnds: [], blessings: [], itemLog: [], players: {} } };
   }
 
@@ -228,7 +228,7 @@
     }).map(function (x) {
       return { id: String(x.id), childId: String(x.childId), kind: x.kind, name: String(x.name || SPECIAL_TASKS[x.kind].name),
         points: Math.max(0, toInt(x.points, SPECIAL_TASK_POINTS)), createdDate: String(x.createdDate || x.startDate),
-        startDate: x.startDate, endDate: x.endDate, cancelled: !!x.cancelled, ts: toInt(x.ts, Date.now()) };
+        startDate: x.startDate, endDate: x.endDate, cancelled: !!x.cancelled, doneArchived: !!x.doneArchived, ts: toInt(x.ts, Date.now()) };
     });
 
     // 累計得分里程碑：base＝開始計算時的累計得分；keys／chests＝已發的黃金鑰匙／神秘寶箱數
@@ -237,6 +237,17 @@
       Object.keys(src).forEach(function (cid) {
         if (!childIdSet.has(cid) || !src[cid]) return;
         out[cid] = { base: toInt(src[cid].base, 0), keys: Math.max(0, toInt(src[cid].keys, 0)), chests: Math.max(0, toInt(src[cid].chests, 0)) };
+      });
+      return out;
+    })();
+    // 封存結轉：{ childId: { total, earned, special, count, until } }（封存掉的舊紀錄總和，讓點數、等級、成就維持不變）
+    d.carry = (function () {
+      var src = d.carry && typeof d.carry === 'object' ? d.carry : {}, out = {};
+      Object.keys(src).forEach(function (cid) {
+        var c = src[cid];
+        if (!childIdSet.has(cid) || !c || typeof c !== 'object') return;
+        out[cid] = { total: toInt(c.total, 0), earned: toInt(c.earned, 0), special: Math.max(0, toInt(c.special, 0)),
+          count: Math.max(0, toInt(c.count, 0)), until: /^\d{4}-\d{2}-\d{2}$/.test(c.until) ? c.until : '' };
       });
       return out;
     })();
@@ -679,6 +690,7 @@
     adv.mapChests = adv.mapChests.filter(function (x) { return x.childId !== id; });
     adv.dayEnds = adv.dayEnds.filter(function (x) { return x.childId !== id; });
     delete this.data.milestones[id];
+    if (this.data.carry) delete this.data.carry[id];
     delete this.data.achievements[id];
     adv.blessings = adv.blessings.filter(function (x) { return x.childId !== id; });
     adv.itemLog = adv.itemLog.filter(function (x) { return x.childId !== id; });
@@ -834,7 +846,7 @@
   function addDaysKey(key, n) { var d = parseDateKey(key); d.setDate(d.getDate() + n); return dateKey(d); }
   /** 狀態：active（可完成）、done、expired、cancelled；抽到當天就可以完成（舊資料的開始日若是隔天，也從抽到當天起可完成） */
   Store.prototype._specialStatus = function (t, today) {
-    var done = this.data.records.some(function (r) { return r.refId === 'special:' + t.id; });
+    var done = t.doneArchived || this.data.records.some(function (r) { return r.refId === 'special:' + t.id; });   // 完成紀錄已封存的仍算完成
     if (done) return 'done';
     if (t.cancelled) return 'cancelled';
     if (today < (t.createdDate || t.startDate)) return 'upcoming';
@@ -1178,12 +1190,61 @@
     return limit ? recs.slice(0, limit) : recs;
   };
 
+  // ----- 封存舊紀錄（2026-11-07 家長決定：只封存生活紀錄、家長選日期、數字結轉不變） -----
+  /** 最晚能封存到哪一天之前：本週與本月的紀錄都不能封存 */
+  Store.prototype.getArchiveMaxCutoff = function () {
+    var now = this.now(), ms = dateKey(new Date(now.getFullYear(), now.getMonth(), 1)), ws = weekStartKey(now);
+    return ms < ws ? ms : ws;
+  };
+  /** 預設封存日：保留最近 6 個月（6 個月前的那個月 1 號），不晚於最晚日期 */
+  Store.prototype.getArchiveDefaultCutoff = function () {
+    var now = this.now(), d = dateKey(new Date(now.getFullYear(), now.getMonth() - 6, 1)), max = this.getArchiveMaxCutoff();
+    return d < max ? d : max;
+  };
+  /**
+   * 會被封存的紀錄：日期早於 cutoff 的生活紀錄（還沒發放的額外星星紀錄不封存，避免少發星星）
+   * @returns {Array} 紀錄（依時間）
+   */
+  Store.prototype.getArchivableRecords = function (cutoff) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(cutoff))) return [];
+    var self = this, unpaid = {};
+    this.data.children.forEach(function (c) { self._unpaidStarRecords(c.id).forEach(function (r) { unpaid[r.id] = true; }); });
+    return this.data.records.filter(function (r) { return r.date < cutoff && !unpaid[r.id]; });
+  };
+  /**
+   * 封存（需家長密碼）：把 cutoff 以前的生活紀錄從手機移除，總和記入結轉，點數、等級、累計得分、特殊任務次數都不變
+   * @returns {{ cutoff, records, count }} records 給介面存成封存檔
+   */
+  Store.prototype.archiveRecords = function (cutoff) {
+    if (this._requireParent) this._requireParent();
+    cutoff = String(cutoff || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(cutoff) || dateKey(parseDateKey(cutoff)) !== cutoff) throw new Error('日期格式不正確');
+    if (cutoff > this.getArchiveMaxCutoff()) throw new Error('本週與本月的紀錄不能封存');
+    var list = this.getArchivableRecords(cutoff);
+    if (!list.length) throw new Error('這個日期以前沒有可以封存的紀錄');
+    var ids = {}, carry = this.data.carry || (this.data.carry = {}), done = {};
+    list.forEach(function (r) {
+      ids[r.id] = true;
+      var c = carry[r.childId] || (carry[r.childId] = { total: 0, earned: 0, special: 0, count: 0, until: '' });
+      c.total += r.points;
+      if (SCORE_TYPES.indexOf(r.type) >= 0) c.earned += r.points;
+      if (/^special:/.test(r.refId || '')) { c.special++; done[r.refId.slice(8)] = true; }
+      c.count++;
+      if (cutoff > c.until) c.until = cutoff;
+    });
+    this.data.specialTasks.forEach(function (t) { if (done[t.id]) t.doneArchived = true; });
+    this.data.records = this.data.records.filter(function (r) { return !ids[r.id]; });
+    this.save();
+    return { cutoff: cutoff, records: list, count: list.length };
+  };
+
   Store.prototype.getTotal = function (childId) {
     var c = this.getChild(childId);
     if (!c) return 0;
+    var carry = (this.data.carry || {})[childId];
     return this.data.records.reduce(function (sum, r) {
       return r.childId === childId ? sum + r.points : sum;
-    }, c.startPoints);
+    }, c.startPoints + (carry ? carry.total : 0));   // 加上封存結轉
   };
 
   Store.prototype.getNetForDate = function (childId, key) {
@@ -1361,9 +1422,10 @@
   /** 等級用的總分＝起始點數＋累計得分（加分、每日任務累加，扣分抵銷；兌換獎勵不影響），最少 0 */
   Store.prototype.getEarned = function (childId) {
     var child = this.getChild(childId);
+    var carry = (this.data.carry || {})[childId];
     var total = this.data.records.reduce(function (sum, r) {
       return (r.childId === childId && SCORE_TYPES.indexOf(r.type) >= 0) ? sum + r.points : sum;
-    }, child ? child.startPoints || 0 : 0);
+    }, (child ? child.startPoints || 0 : 0) + (carry ? carry.earned : 0));   // 加上封存結轉
     return Math.max(0, total);
   };
 

@@ -2108,3 +2108,44 @@ test('換島：木島未開放時通關金島後繼續在金島繞圈；開放�
     assert.deepEqual([s2.getPlayer(a.id).island, s2.getPlayer(a.id).tileId], ['gold', 'gold-01-001']);
   } finally { delete G.BOARDS.wood; }
 });
+
+// ---------- 封存舊紀錄 ----------
+test('封存舊紀錄：只封存選定日期以前的生活紀錄；點數、等級、累計得分、特殊任務成就、星星都不變；本週本月不能封存；存檔重開保留', () => {
+  const { store, a, setDate, storage } = p3Store(undefined, '2026-03-02T10:00:00');
+  store.allowPinReset();
+  const it = store.addItem({ kind: 'bonus', name: '好', points: 600 });
+  const pen = store.addItem({ kind: 'penalty', name: '壞', points: -50 });
+  const rw = store.addReward({ name: '玩具', cost: 100 });
+  const t1 = store.addSpecialTask(a.id, 'chore').task;
+  store.completeSpecialTask(t1.id);
+  store.recordItem(a.id, it.id); store.recordItem(a.id, pen.id);
+  store.redeemReward(a.id, rw.id);
+  setDate('2026-11-07T10:00:00');
+  store.recordItem(a.id, it.id);                                      // 今天也有一筆
+  const before = { total: store.getTotal(a.id), earned: store.getEarned(a.id), level: store.getLevel(a.id).level, stars: store.getStarBalance(a.id) };
+  store.checkAchievements(a.id);
+  assert.ok(store.getAchievements(a.id).find(x => x.id === 'special1').done);
+  assert.ok(store.getAchievements(a.id).find(x => x.id === 'earn1000').done);
+  // 本週、本月不能封存
+  assert.equal(store.getArchiveMaxCutoff(), '2026-11-01');
+  assert.equal(store.getArchiveDefaultCutoff(), '2026-05-01', '預設保留最近 6 個月');
+  assert.throws(() => store.archiveRecords('2026-11-05'), /本週與本月/);
+  store.lockParent();
+  assert.throws(() => store.archiveRecords('2026-05-01'), /家長密碼/);
+  store.allowPinReset();
+  const n = store.getArchivableRecords('2026-05-01').length;
+  assert.ok(n >= 3, '3 月的紀錄可以封存（' + n + ' 筆）');
+  const res = store.archiveRecords('2026-05-01');
+  assert.equal(res.count, n);
+  assert.ok(res.records.every(r => r.date < '2026-05-01'));
+  assert.equal(store.data.records.filter(r => r.date < '2026-05-01').length, 0, '舊紀錄已移除');
+  assert.ok(store.data.records.some(r => r.date === '2026-11-07'), '新紀錄保留');
+  assert.deepEqual({ total: store.getTotal(a.id), earned: store.getEarned(a.id), level: store.getLevel(a.id).level, stars: store.getStarBalance(a.id) }, before, '點數、累計得分、等級、星星都不變');
+  assert.deepEqual(store.revokeAchievements(a.id), [], '成就不會因封存被收回');
+  assert.equal(store.getSpecialTasks(a.id).find(x => x.id === t1.id).status, 'done', '特殊任務仍是完成');
+  assert.throws(() => store.archiveRecords('2026-05-01'), /沒有可以封存/);
+  // 存檔重開
+  const s2 = new Store({ storage, seed: false, now: () => store.now() });
+  assert.equal(s2.getTotal(a.id), before.total);
+  assert.equal(s2.data.carry[a.id].until, '2026-05-01');
+});

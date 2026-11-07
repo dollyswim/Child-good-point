@@ -1607,6 +1607,46 @@ async function main() {
     }
   }
 
+  // ---------- 設定 → 備份：封存舊紀錄 ----------
+  {
+    const ca = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', acceptDownloads: true });
+    const q = await ca.newPage();
+    await q.clock.setFixedTime(new Date('2026-11-07T10:00:00'));
+    q.on('pageerror', (e) => errors.push(e.message));
+    q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
+    await q.goto(url);
+    const id = await q.evaluate(() => {
+      const s = window.__cgpStore, a = s.addChild({ name: '端端', startPoints: 100 });
+      const it = s.addItem({ kind: 'bonus', name: '舊加分', points: 30 });
+      ['2026-03-03', '2026-03-10', '2026-04-20'].forEach((d) => s.addRecordOn(a.id, it.id, d));
+      s.addRecordOn(a.id, it.id, '2026-11-06');
+      return a.id;
+    });
+    const total = await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id);
+    await q.goto(url + '#rules-backup');
+    await passPin(q);
+    await q.waitForSelector('[data-testid=archive]');
+    assert.equal(await q.locator('#archive-date').inputValue(), '2026-05-01', '預設保留最近 6 個月');
+    assert.equal(await q.locator('#archive-date').getAttribute('max'), '2026-11-01', '本週與本月不能封存');
+    assert.match(await q.locator('[data-testid=archive-count]').innerText(), /會封存 3 筆/);
+    await q.fill('#archive-date', '2026-04-01');
+    await q.locator('#archive-date').dispatchEvent('change');
+    await q.waitForFunction(() => /會封存 2 筆/.test(document.querySelector('[data-testid=archive-count]').textContent));
+    await q.click('[data-action=archive]');
+    assert.match(await q.locator('#confirm').innerText(), /封存 4\/1 以前的 2 筆[\s\S]*點數、等級、成就都不變/);
+    const [dl] = await Promise.all([q.waitForEvent('download'), q.click('#confirm [data-yes]')]);
+    assert.equal(dl.suggestedFilename(), 'child-points-archive-before-2026-04-01.json');
+    const file = JSON.parse(require('fs').readFileSync(await dl.path(), 'utf8'));
+    assert.deepEqual([file.type, file.records.length, file.cutoff], ['cgp-archive', 2, '2026-04-01'], '封存檔包含被移除的紀錄');
+    await q.waitForFunction(() => /已封存/.test(document.querySelector('[data-testid=archive]').textContent));
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), total, '目前點數不變');
+    assert.equal(await q.evaluate(() => window.__cgpStore.data.records.length), 2, '只移除 4/1 以前的 2 筆');
+    await q.reload(); await passPin(q);
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), total, '重新整理後點數仍不變');
+    console.log('✔ 封存舊紀錄：預設 6 個月、本週本月不能封存、選日期更新筆數、下載封存檔、點數不變');
+    await ca.close();
+  }
+
   // ---------- 星光成就劇場：成就解鎖演出 ----------
   {
     async function unlockOn(opts, startPoints) {
