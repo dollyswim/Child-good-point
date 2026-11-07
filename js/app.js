@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-46';
+  var APP_VERSION = '2026.11.07-47';
   var store;
   try {
     store = new CGP.Store();
@@ -243,13 +243,15 @@
     }
     app.innerHTML = html;
     app.dataset.view = r.name;
+    var notes = [];   // 同時有多則提示時合併顯示，避免互相蓋掉
     if (r.name === 'map') {
       setupMap(store.getChild(r.arg));
-      if (store.takeChestHint(r.arg)) toast('✨ 附近似乎藏著神秘寶物……', 'pos');
+      if (store.takeChestHint(r.arg)) notes.push('✨ 附近似乎藏著神秘寶物……');
     }
     if (r.name === 'minigame-test') openMinigame(null, null, { practice: true });
     if (r.name === 'adventure') showBlessings(r.arg);
-    if (freshAch && freshAch.length) toast('🏆 解鎖成就：' + freshAch.map(function (a) { return a.icon + ' ' + a.name; }).join('、'), 'pos');
+    if (freshAch && freshAch.length) notes.push('🏆 解鎖成就：' + freshAch.map(function (a) { return a.icon + ' ' + a.name; }).join('、'));
+    if (notes.length) toast(notes.join('\n'), 'pos');
     if (r.name === 'settings') {
       var pi = app.querySelector('#pin-1'); if (pi) pi.focus();
       var at = app.querySelector('.tabs .tab.active'); if (at && at.parentNode.scrollTo) at.parentNode.scrollTo({ left: at.offsetLeft - 40 });   // 分頁多：目前分頁捲進畫面

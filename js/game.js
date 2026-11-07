@@ -692,6 +692,8 @@
   /** 成就清單：cat＝adventure（冒險）／collect（收集）／life（生活）；check 回傳是否達成 */
   // 成就清單（2026-11-07 家長定稿：docs/art/achievement_badges.csv）；冒險＝綠框、收集＝紫框、生活＝金框
   var ACHIEVEMENTS = [
+    { id: 'advStart', cat: 'adventure', icon: '🧭', name: '冒險開始', desc: '第一次進入今日冒險', check: function (s, c) {
+      return s.data.adventure.settlements.some(function (x) { return x.childId === c; }); } },
     { id: 'goldClear1', cat: 'adventure', icon: '🏅', name: '金島通關', desc: '走完金島 100 格，抵達金冠城堡', check: function (s, c) { return s.getPlayer(c).goldClears >= 1; } },
     { id: 'reachR2', cat: 'adventure', icon: '💎', name: '抵達水晶礦谷', desc: '走到第 31 格以後', check: function (s, c) { return s.getPlayer(c).maxReached >= 31; } },
     { id: 'reachR3', cat: 'adventure', icon: '⚙️', name: '抵達齒輪工坊', desc: '走到第 56 格以後', check: function (s, c) { return s.getPlayer(c).maxReached >= 56; } },

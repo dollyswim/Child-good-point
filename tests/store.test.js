@@ -1906,21 +1906,21 @@ test('金島通關：第一次＝神秘寶箱 ×1（免鑰匙）＋成就；之�
   });
 });
 
-test('成就：22 項三類（冒險 4、收集 5、生活 13）；達成後記錄日期、不重複、不會消失；兩位孩子各自計算', () => {
+test('成就：23 項三類（冒險 5、收集 5、生活 13）；達成後記錄日期、不重複、不會消失；兩位孩子各自計算', () => {
   const { store, a } = p3Store();
   const b2 = store.addChild({ name: 'B', startPoints: 6000 });
-  assert.equal(G.ACHIEVEMENTS.length, 22);
-  assert.deepEqual(['adventure', 'collect', 'life'].map(c => G.ACHIEVEMENTS.filter(x => x.cat === c).length), [4, 5, 13]);
-  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.id)).size, 22, '代號不重複');
-  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.name)).size, 22, '名稱不重複');
+  assert.equal(G.ACHIEVEMENTS.length, 23);
+  assert.deepEqual(['adventure', 'collect', 'life'].map(c => G.ACHIEVEMENTS.filter(x => x.cat === c).length), [5, 5, 13]);
+  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.id)).size, 23, '代號不重複');
+  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.name)).size, 23, '名稱不重複');
   assert.deepEqual([...new Set(G.ACHIEVEMENTS.map(x => x.cat))], ['adventure', 'collect', 'life']);
-  assert.deepEqual(store.checkAchievements(b2.id).map(x => x.id), ['earn1000', 'earn2000', 'earn3000', 'earn4000', 'earn5000', 'earn6000'], '起始點數也算累計得分；每 1000 分一個');
+  assert.deepEqual(store.checkAchievements(b2.id).map(x => x.id), ['earn1000', 'earn2000', 'earn3000', 'earn4000', 'earn5000', 'earn6000'], '起始點數也算累計得分；每 1000 分一個；還沒進入冒險：沒有「冒險開始」');
   assert.deepEqual(store.checkAchievements(b2.id), [], '不重複');
   assert.equal(store.getAchievements(a.id).filter(x => x.done).length, 0, '另一位孩子不受影響');
   const p = store.getPlayer(a.id);
   p.maxReached = 40; p.stats.chests = 10; p.stats.mystery = 1;
   store.data.adventure.minigames.push({ id: 'm', childId: a.id, date: store.today(), status: 'done', caught: 12, stars: 12, ts: 1 });
-  assert.deepEqual(store.checkAchievements(a.id).map(x => x.id), ['reachR2', 'chest1', 'chests10', 'mystery1', 'catch5', 'catch10']);
+  assert.deepEqual(store.checkAchievements(a.id).map(x => x.id), ['advStart', 'reachR2', 'chest1', 'chests10', 'mystery1', 'catch5', 'catch10'], '進入過冒險：得到「冒險開始」');
   p.maxReached = 0;
   assert.equal(store.getAchievements(a.id).find(x => x.id === 'reachR2').done, true, '達成後不會消失');
   assert.equal(store.getAchievements(a.id).find(x => x.id === 'reachR2').date, '2026-11-06');
