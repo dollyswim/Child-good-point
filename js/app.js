@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-51';
+  var APP_VERSION = '2026.11.07-52';
   var store;
   try {
     store = new CGP.Store();
@@ -295,6 +295,14 @@
     c.style.right = (mr.left - sr.left).toFixed(2) + 'px';
     var ml = app.querySelector('.mascot-link .hero-label'), cl = c.querySelector('.hero-label');
     if (ml && cl) { var cs = getComputedStyle(ml); cl.style.marginTop = cs.marginTop; cl.style.fontSize = cs.fontSize; }
+    // 小孩頁面的「新增孩子」按鈕：和城堡中心對齊（在城堡正下方）
+    var ak = app.querySelector('.add-kid');
+    if (ak) {
+      ak.style.marginRight = '';
+      var ar = ak.getBoundingClientRect(), cr = c.getBoundingClientRect();
+      var d = (ar.left + ar.right) / 2 - (cr.left + cr.right) / 2;
+      if (Math.abs(d) > 0.5) ak.style.marginRight = d.toFixed(2) + 'px';
+    }
     // 標題牌不可蓋到城堡：不夠寬時加大右側留白
     var hero = app.querySelector('.hero'), pl = hero && hero.querySelector('.plaque');
     if (hero && pl) {
@@ -317,7 +325,11 @@
       return '<a class="kid ' + (c.id === child.id ? 'active' : '') + '" href="#' + tab + '-' + h(c.id) + '" style="--c:' + h(c.color) + '">' +
         avatar(c, 'xs') + h(c.name) + '</a>';
     }).join('') + '</nav>' : '';
-    return sky(mascotLink(false) + plaque(title) + gear() + sw, true);   // 機器貓取代「‹」：回首頁
+    // 小孩頁面：設定城堡下方放小的「新增孩子」按鈕（圖示＋文字），和切換孩子同一列靠右
+    var add = tab === 'child' ? '<button type="button" class="add-kid" data-action="add-child" aria-label="新增孩子">' +
+      '<span class="add-kid-icon" aria-hidden="true">🧒<i>＋</i></span><span>新增孩子</span></button>' : '';
+    var row = sw || add ? '<div class="kid-row">' + (sw || '<span class="kid-row-fill"></span>') + add + '</div>' : '';
+    return sky(mascotLink(false) + plaque(title) + gear() + row, true);   // 機器貓取代「‹」：回首頁
   }
 
   var NAV = [['home', '🏠', '首頁'], ['child', '📋', '小孩'], ['challenge', '🏆', '挑戰'], ['shop', '🎁', '兌換'], ['report', '📊', '紀錄']];
@@ -376,7 +388,7 @@
         ? '<div class="child-list">' + cards + '</div>'
         : '<div class="empty card"><p class="big-emoji">👋</p><p><b>還沒有孩子資料</b></p><p class="muted">先新增孩子，就可以開始記錄生活積分。</p></div>') +
       storageWarning() + tiles + homeAchievements(children) + week + backupReminder() +
-      '<button class="btn add-child" data-action="add-child">＋ 新增孩子</button>' +
+      (children.length ? '' : '<button class="btn add-child" data-action="add-child">＋ 新增孩子</button>') +   // 有孩子後改在小孩頁面右上角新增
       '</main>';
   }
 

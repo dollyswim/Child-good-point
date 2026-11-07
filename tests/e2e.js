@@ -60,8 +60,16 @@ async function main() {
     await page.fill('input[name="startPoints"]', String(start));
     await page.click('#modal-form button[type="submit"]');
   }
-  await addChild('端端', 100);
+  await addChild('端端', 100);                                         // 沒有孩子時：首頁的「新增孩子」
+  assert.equal(await page.locator('main [data-action="add-child"]').count(), 0, '有孩子後首頁不再顯示新增孩子');
+  await page.click('.child-card >> nth=0');                            // 小孩頁面：設定城堡下方的新增孩子（圖示＋文字）
+  await page.waitForSelector('.sky .add-kid');
+  assert.match(await text('.add-kid'), /新增孩子/);
+  const ak = await page.evaluate(() => { const a = document.querySelector('.add-kid').getBoundingClientRect(), c = document.querySelector('.castle-link').getBoundingClientRect(); return { dx: Math.abs((a.left + a.right) / 2 - (c.left + c.right) / 2), below: a.top >= c.bottom - 2, h: a.height }; });
+  assert.ok(ak.dx < 1.5 && ak.below, '新增孩子在設定城堡正下方');
+  assert.ok(ak.h < 60, '按鈕縮小（高度 ' + ak.h + 'px）');
   await addChild('波妞', 0);
+  await page.goto(url + '#home');
   assert.equal(await page.locator('.child-card').count(), 2);
   assert.match(await text('.child-card >> nth=0'), /100 點/);
   assert.match(await text('.child-card >> nth=0'), /今日 0/);

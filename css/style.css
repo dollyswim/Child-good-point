@@ -1538,3 +1538,17 @@ body.mg-open { overflow: hidden; }
 .ach-latest .ach-mini small { font-size: .72rem; -webkit-line-clamp: 1; }
 .ach-warn { color: #c0392b; font-weight: 800; }
 .toast.multi { border-radius: 18px; text-align: left; line-height: 1.5; padding: 10px 16px; width: max-content; max-width: calc(100vw - 48px); }
+
+/* 小孩頁面：設定城堡下方的「新增孩子」小按鈕（圖示＋文字），和切換孩子同一列 */
+.kid-row { position: relative; z-index: 1; flex-basis: 100%; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.kid-row .kid-switch { flex: 1 1 auto; flex-basis: auto; min-width: 0; }
+.kid-row-fill { flex: 1; }
+.add-kid {
+  flex: none; display: inline-grid; justify-items: center; gap: 1px; padding: 0; margin-top: 2px; border: none; background: none;
+  font: inherit; font-size: .62rem; font-weight: 900; color: var(--wood-3, #6b4a2b); cursor: pointer; white-space: nowrap;
+}
+.add-kid > span:last-child { padding: 0 6px; border-radius: 99px; background: #fff; line-height: 1.5; box-shadow: 0 2px 0 rgba(0, 0, 0, .12); margin-top: -4px; position: relative; }
+.add-kid:active { transform: translateY(1px); }
+.add-kid-icon { position: relative; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: #fff3d6; border: 2px dashed rgba(107, 74, 43, .35); font-size: 1.05rem; }
+.add-kid-icon i { position: absolute; right: -3px; bottom: -3px; width: 14px; height: 14px; border-radius: 50%; display: grid; place-items: center;
+  background: #5cbf4a; color: #fff; font-style: normal; font-size: .62rem; font-weight: 900; line-height: 1; }
