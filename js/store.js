@@ -247,6 +247,7 @@
         var c = src[cid];
         if (!childIdSet.has(cid) || !c || typeof c !== 'object') return;
         out[cid] = { total: toInt(c.total, 0), earned: toInt(c.earned, 0), special: Math.max(0, toInt(c.special, 0)),
+          stars: toInt(c.stars, 0), bestCatch: Math.max(0, toInt(c.bestCatch, 0)), settled: !!c.settled, advCount: Math.max(0, toInt(c.advCount, 0)),
           count: Math.max(0, toInt(c.count, 0)), until: /^\d{4}-\d{2}-\d{2}$/.test(c.until) ? c.until : '' };
       });
       return out;
@@ -1201,41 +1202,76 @@
     var now = this.now(), d = dateKey(new Date(now.getFullYear(), now.getMonth() - 6, 1)), max = this.getArchiveMaxCutoff();
     return d < max ? d : max;
   };
+  /** 冒險紀錄中可以封存的種類（地圖寶箱、背包、位置不封存） */
+  var ARCHIVE_ADV = ['settlements', 'ledger', 'rolls', 'minigames', 'bonusQuota', 'dayEnds', 'itemLog', 'blessings'];
+  function addDays(key, n) { var d = parseDateKey(key); d.setDate(d.getDate() + n); return dateKey(d); }
   /**
-   * 會被封存的紀錄：日期早於 cutoff 的生活紀錄（還沒發放的額外星星紀錄不封存，避免少發星星）
-   * @returns {Array} 紀錄（依時間）
+   * 封存計畫：日期早於 cutoff 的生活紀錄與冒險紀錄
+   * - 還沒發放的額外星星紀錄不封存（避免少發星星）
+   * - 結算保留封存日前 7 天（連續 7 天冒險不被切斷）；孩子還沒看過的媽媽加碼保留
+   * @returns {{ records, adventure: { 種類: [] }, count }}
    */
-  Store.prototype.getArchivableRecords = function (cutoff) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(cutoff))) return [];
-    var self = this, unpaid = {};
+  Store.prototype.getArchivePlan = function (cutoff) {
+    var plan = { records: [], adventure: {}, count: 0 };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(cutoff))) return plan;
+    var self = this, unpaid = {}, adv = this.data.adventure, keepSettle = addDays(cutoff, -7);
     this.data.children.forEach(function (c) { self._unpaidStarRecords(c.id).forEach(function (r) { unpaid[r.id] = true; }); });
-    return this.data.records.filter(function (r) { return r.date < cutoff && !unpaid[r.id]; });
+    plan.records = this.data.records.filter(function (r) { return r.date < cutoff && !unpaid[r.id]; });
+    plan.count = plan.records.length;
+    ARCHIVE_ADV.forEach(function (k) {
+      plan.adventure[k] = (adv[k] || []).filter(function (x) {
+        if (!(x.date < cutoff)) return false;
+        if (k === 'settlements') return x.date < keepSettle;
+        if (k === 'blessings') return !!x.seen;
+        if (k === 'minigames') return x.status !== 'pending';
+        return true;
+      });
+      plan.count += plan.adventure[k].length;
+    });
+    return plan;
   };
+  /** 相容：只回傳會封存的生活紀錄 */
+  Store.prototype.getArchivableRecords = function (cutoff) { return this.getArchivePlan(cutoff).records; };
   /**
-   * 封存（需家長密碼）：把 cutoff 以前的生活紀錄從手機移除，總和記入結轉，點數、等級、累計得分、特殊任務次數都不變
-   * @returns {{ cutoff, records, count }} records 給介面存成封存檔
+   * 封存（需家長密碼）：把 cutoff 以前的生活與冒險紀錄從手機移除，總和記入結轉；
+   * 點數、等級、累計得分、能量星星、特殊任務與小遊戲成就都不變
+   * @returns {{ cutoff, records, adventure, count }} 給介面存成封存檔
    */
   Store.prototype.archiveRecords = function (cutoff) {
     if (this._requireParent) this._requireParent();
     cutoff = String(cutoff || '');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(cutoff) || dateKey(parseDateKey(cutoff)) !== cutoff) throw new Error('日期格式不正確');
     if (cutoff > this.getArchiveMaxCutoff()) throw new Error('本週與本月的紀錄不能封存');
-    var list = this.getArchivableRecords(cutoff);
-    if (!list.length) throw new Error('這個日期以前沒有可以封存的紀錄');
-    var ids = {}, carry = this.data.carry || (this.data.carry = {}), done = {};
-    list.forEach(function (r) {
-      ids[r.id] = true;
-      var c = carry[r.childId] || (carry[r.childId] = { total: 0, earned: 0, special: 0, count: 0, until: '' });
+    var plan = this.getArchivePlan(cutoff);
+    if (!plan.count) throw new Error('這個日期以前沒有可以封存的紀錄');
+    var carry = this.data.carry || (this.data.carry = {}), done = {}, adv = this.data.adventure;
+    function cc(cid) { return carry[cid] || (carry[cid] = { total: 0, earned: 0, special: 0, stars: 0, bestCatch: 0, settled: false, advCount: 0, count: 0, until: '' }); }
+    plan.records.forEach(function (r) {
+      var c = cc(r.childId);
       c.total += r.points;
       if (SCORE_TYPES.indexOf(r.type) >= 0) c.earned += r.points;
       if (/^special:/.test(r.refId || '')) { c.special++; done[r.refId.slice(8)] = true; }
       c.count++;
-      if (cutoff > c.until) c.until = cutoff;
     });
+    ARCHIVE_ADV.forEach(function (k) {
+      plan.adventure[k].forEach(function (x) {
+        var c = cc(x.childId);
+        if (k === 'settlements') { c.stars += x.stars || 0; c.settled = true; }
+        if (k === 'ledger') c.stars += x.delta || 0;
+        if (k === 'minigames' && x.status === 'done' && x.caught > c.bestCatch) c.bestCatch = x.caught;
+        c.advCount++;
+      });
+      var ids = {};
+      plan.adventure[k].forEach(function (x) { ids[x.id] = true; });
+      adv[k] = (adv[k] || []).filter(function (x) { return !ids[x.id]; });
+    });
+    Object.keys(carry).forEach(function (cid) { if (cutoff > carry[cid].until && (carry[cid].count || carry[cid].advCount)) carry[cid].until = cutoff; });
     this.data.specialTasks.forEach(function (t) { if (done[t.id]) t.doneArchived = true; });
-    this.data.records = this.data.records.filter(function (r) { return !ids[r.id]; });
+    var rid = {};
+    plan.records.forEach(function (r) { rid[r.id] = true; });
+    this.data.records = this.data.records.filter(function (r) { return !rid[r.id]; });
     this.save();
-    return { cutoff: cutoff, records: list, count: list.length };
+    return { cutoff: cutoff, records: plan.records, adventure: plan.adventure, count: plan.count };
   };
 
   Store.prototype.getTotal = function (childId) {
@@ -1332,7 +1368,8 @@
     var adv = this.data.adventure;
     var fromSettle = adv.settlements.reduce(function (sum, x) { return x.childId === childId ? sum + x.stars : sum; }, 0);
     var fromLedger = adv.ledger.reduce(function (sum, x) { return x.childId === childId ? sum + x.delta : sum; }, 0);
-    return fromSettle + fromLedger;
+    var carry = (this.data.carry || {})[childId];
+    return fromSettle + fromLedger + (carry ? carry.stars : 0);   // 加上封存結轉
   };
 
   /**

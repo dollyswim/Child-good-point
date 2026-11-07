@@ -1633,11 +1633,11 @@ async function main() {
     await q.locator('#archive-date').dispatchEvent('change');
     await q.waitForFunction(() => /會封存 2 筆/.test(document.querySelector('[data-testid=archive-count]').textContent));
     await q.click('[data-action=archive]');
-    assert.match(await q.locator('#confirm').innerText(), /封存 4\/1 以前的 2 筆[\s\S]*點數、等級、成就都不變/);
+    assert.match(await q.locator('#confirm').innerText(), /封存 4\/1 以前的 2 筆[\s\S]*生活 2 筆、冒險 0 筆[\s\S]*點數、等級、能量星星、成就都不變/);
     const [dl] = await Promise.all([q.waitForEvent('download'), q.click('#confirm [data-yes]')]);
     assert.equal(dl.suggestedFilename(), 'child-points-archive-before-2026-04-01.json');
     const file = JSON.parse(require('fs').readFileSync(await dl.path(), 'utf8'));
-    assert.deepEqual([file.type, file.records.length, file.cutoff], ['cgp-archive', 2, '2026-04-01'], '封存檔包含被移除的紀錄');
+    assert.deepEqual([file.type, file.records.length, file.cutoff, typeof file.adventure], ['cgp-archive', 2, '2026-04-01', 'object'], '封存檔包含被移除的生活與冒險紀錄');
     await q.waitForFunction(() => /已封存/.test(document.querySelector('[data-testid=archive]').textContent));
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), total, '目前點數不變');
     assert.equal(await q.evaluate(() => window.__cgpStore.data.records.length), 2, '只移除 4/1 以前的 2 筆');

@@ -714,7 +714,7 @@
   // 成就清單（2026-11-07 家長定稿：docs/art/achievement_badges.csv）；冒險＝綠框、收集＝紫框、生活＝金框
   var ACHIEVEMENTS = [
     { id: 'advStart', cat: 'adventure', icon: '🧭', name: '冒險開始', desc: '第一次進入今日冒險', check: function (s, c) {
-      return s.data.adventure.settlements.some(function (x) { return x.childId === c; }); } },
+      return s.data.adventure.settlements.some(function (x) { return x.childId === c; }) || !!((s.data.carry || {})[c] || {}).settled; } },   // 含封存結轉
     { id: 'goldClear1', cat: 'adventure', icon: '🏅', name: '金島通關', desc: '走完金島 100 格，抵達金冠城堡', check: function (s, c) { return s.getPlayer(c).goldClears >= 1; } },
     { id: 'reachR2', cat: 'adventure', icon: '💎', name: '抵達水晶礦谷', desc: '走到第 31 格以後', check: function (s, c) { return goldMax(s.getPlayer(c)) >= 31; } },
     { id: 'reachR3', cat: 'adventure', icon: '⚙️', name: '抵達齒輪工坊', desc: '走到第 56 格以後', check: function (s, c) { return goldMax(s.getPlayer(c)) >= 56; } },
@@ -734,7 +734,7 @@
   ]);
   /** 「抓住星星」單局最多抓到幾顆 */
   function bestCatch(s, c) {
-    return s.data.adventure.minigames.reduce(function (m, g) { return g.childId === c && g.status === 'done' && g.caught > m ? g.caught : m; }, 0);
+    return s.data.adventure.minigames.reduce(function (m, g) { return g.childId === c && g.status === 'done' && g.caught > m ? g.caught : m; }, ((s.data.carry || {})[c] || {}).bestCatch || 0);   // 含封存結轉
   }
   /** 完成的特殊任務數 */
   function specialDone(s, c) {

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-57';
+  var APP_VERSION = '2026.11.07-58';
   var store;
   try {
     store = new CGP.Store();
@@ -2085,14 +2085,14 @@
   function archiveCard() {
     var max = store.getArchiveMaxCutoff();
     var cut = ui.archiveCut && ui.archiveCut <= max ? ui.archiveCut : store.getArchiveDefaultCutoff();
-    var n = store.getArchivableRecords(cut).length;
+    var n = store.getArchivePlan(cut).count;
     var carried = Object.keys(store.data.carry || {}).map(function (cid) {
       var c = store.data.carry[cid], ch = store.getChild(cid);
-      return ch && c.count ? h(ch.name) + '：' + c.count + ' 筆（' + shortDate(c.until) + ' 以前）' : '';
+      return ch && (c.count || c.advCount) ? h(ch.name) + '：' + (c.count + c.advCount) + ' 筆（' + shortDate(c.until) + ' 以前）' : '';
     }).filter(Boolean);
     return '<div class="card archive-card" data-testid="archive"><h2>📦 封存舊紀錄</h2>' +
-      '<p class="muted small">使用很久以後資料會越來越大。可以把<b>某天以前的生活加扣分紀錄</b>存成檔案，再從手機移除。' +
-      '<b>目前點數、等級、累計得分、成就都不會改變</b>；只是紀錄頁看不到那些舊明細。本週與本月的紀錄不能封存；冒險紀錄不受影響。</p>' +
+      '<p class="muted small">使用很久以後資料會越來越大。可以把<b>某天以前的生活加扣分紀錄與冒險紀錄</b>（擲骰、道具、星星收支、結算、小遊戲）存成檔案，再從手機移除。' +
+      '<b>目前點數、等級、累計得分、能量星星、成就都不會改變</b>；只是紀錄頁和冒險大廳看不到那些舊明細。本週與本月的紀錄不能封存；冒險位置、背包、地圖上的寶箱不受影響。</p>' +
       '<label class="field">封存這一天以前的紀錄<input type="date" id="archive-date" max="' + max + '" value="' + cut + '"></label>' +
       '<p class="small archive-count" data-testid="archive-count">' + (n ? '會封存 <b>' + n + '</b> 筆（' + shortDate(cut) + ' 以前）' : '這一天以前沒有可以封存的紀錄') + '</p>' +
       '<button class="btn block danger" data-action="archive"' + (n ? '' : ' disabled') + '>📦 匯出封存檔並移除舊紀錄</button>' +
@@ -2101,11 +2101,11 @@
   /** 封存：先下載封存檔（被移除的紀錄），再從手機移除 */
   function doArchive() {
     var cut = (document.getElementById('archive-date') || {}).value || '';
-    var list = store.getArchivableRecords(cut);
-    if (!list.length) { toast('這一天以前沒有可以封存的紀錄', 'neg'); return; }
-    confirmThen('封存 ' + shortDate(cut) + ' 以前的 ' + list.length + ' 筆生活紀錄？\n\n會先下載一個封存檔，請存到雲端硬碟或電腦。\n移除後目前點數、等級、成就都不變，只是紀錄頁看不到這些舊明細。', '匯出並封存', true, function () {
-      var file = { type: 'cgp-archive', version: 1, appVersion: APP_VERSION, createdAt: new Date(store.now()).toISOString(), cutoff: cut,
-        children: store.getChildren().map(function (c) { return { id: c.id, name: c.name }; }), records: list };
+    var plan = store.getArchivePlan(cut);
+    if (!plan.count) { toast('這一天以前沒有可以封存的紀錄', 'neg'); return; }
+    confirmThen('封存 ' + shortDate(cut) + ' 以前的 ' + plan.count + ' 筆紀錄？（生活 ' + plan.records.length + ' 筆、冒險 ' + (plan.count - plan.records.length) + ' 筆）\n\n會先下載一個封存檔，請存到雲端硬碟或電腦。\n移除後目前點數、等級、能量星星、成就都不變，只是看不到這些舊明細。', '匯出並封存', true, function () {
+      var file = { type: 'cgp-archive', version: 2, appVersion: APP_VERSION, createdAt: new Date(store.now()).toISOString(), cutoff: cut,
+        children: store.getChildren().map(function (c) { return { id: c.id, name: c.name }; }), records: plan.records, adventure: plan.adventure };
       var blob = new Blob([JSON.stringify(file, null, 1)], { type: 'application/json' });
       var url = URL.createObjectURL(blob), a = document.createElement('a');
       a.href = url; a.download = 'child-points-archive-before-' + cut + '.json';
