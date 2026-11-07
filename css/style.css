@@ -1274,3 +1274,17 @@ body.mg-open { overflow: hidden; }
 /* 還原資料 */
 .restore-card h3 { margin: 14px 0 4px; font-size: 1rem; }
 .snap-row .row-main b { font-size: .92rem; }
+
+/* Phase 4：地圖上的特殊道具列 */
+.item-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.item-btn { display: grid; justify-items: center; gap: 0; padding: 6px 2px; border-radius: 14px; border: 2px solid #fff; background: linear-gradient(#fdf6ff, #efe2ff); box-shadow: 0 3px 0 rgba(120, 80, 160, .2); font: inherit; cursor: pointer; }
+.item-btn:disabled { filter: grayscale(.7); opacity: .55; cursor: not-allowed; }
+.item-btn-art.item-art { width: 40px; height: 40px; border-radius: 10px; }
+.item-btn-art .bag-emoji { font-size: 1.6rem; }
+.item-btn b { font-size: .74rem; font-weight: 900; }
+.item-btn small { font-size: .62rem; color: var(--muted); font-weight: 700; line-height: 1.2; text-align: center; }
+.medal-on { margin: 0; padding: 6px 10px; border-radius: 12px; background: #fff6d6; color: #9a6700; font-weight: 800; font-size: .82rem; text-align: center; }
+.hud-bonus { display: block; color: #8a4fd0 !important; font-weight: 900 !important; }
+.map-view.picking .mtile::after { content: ""; position: absolute; inset: -4px; border-radius: 14px; border: 3px dashed rgba(255, 90, 160, .9); animation: pick-blink 1s ease-in-out infinite; }
+@keyframes pick-blink { 50% { opacity: .3; } }
+.reroll-box small { color: var(--muted); }

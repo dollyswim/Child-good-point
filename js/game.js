@@ -148,10 +148,6 @@
     p.pos = Math.max(0, Math.min(n, tiles.length - 1));
     p.tileId = tiles[p.pos].id;
   };
-  Store.prototype.getRollsToday = function (childId) {
-    var today = this.today();
-    return this.data.adventure.rolls.filter(function (r) { return r.childId === childId && r.date === today; }).length;
-  };
   /** 今天是否可以玩（已解鎖並結算） */
   Store.prototype.canPlayToday = function (childId) {
     return !!this.getSettlement(childId);
@@ -324,30 +320,49 @@
     var tile = this.getBoard(childId).tiles[p.pos];
     var rand = this.random;
     var ev = { tile: tile.n, type: tile.type, title: '', text: '', stars: 0, items: {}, extraPath: [], backPath: [] };
+    // 好運金牌：下一次停在寶箱或機會格，效果發生 2 次
+    var medal = !!(p.medalArmed && (tile.type === 'chest' || tile.type === 'chance'));
+    if (medal) { p.medalArmed = false; ev.medal = true; }
     if (tile.type === 'chest') {
-      ev.title = '🎁 寶箱！';
-      var cr = this._rollRegularChest(childId, '寶箱');
-      ev.stars = cr.stars; ev.items = cr.items; ev.text = cr.text;
+      ev.title = (medal ? '🥇 好運金牌！' : '') + '🎁 寶箱！';
+      var texts = [];
+      for (var ci = 0; ci < (medal ? 2 : 1); ci++) {
+        var cr = this._rollRegularChest(childId, '寶箱');
+        ev.stars += cr.stars; texts.push(cr.text);
+        Object.keys(cr.items).forEach(function (k) { ev.items[k] = (ev.items[k] || 0) + cr.items[k]; });
+      }
+      ev.text = texts.join('\n');
     } else if (tile.type === 'chance') {
-      ev.title = '❓ 機會';
-      var c = rint(rand, 0, 2);
-      if (c === 0 && depth < 1) {
-        ev.text = '礦車載你額外前進 2 格！';
-        ev.extraPath = this._advance(childId, 2);
-        if (ev.extraPath.length) {
-          var next = this._resolveTile(childId, depth + 1);
-          if (next.type !== 'normal' && next.type !== 'start') ev.then = next;
+      ev.title = (medal ? '🥇 好運金牌！' : '') + '❓ 機會';
+      var lines = [], cart = false;
+      for (var k = 0; k < (medal ? 2 : 1); k++) {
+        var c = rint(rand, 0, 2);
+        if (c === 0 && depth < 1) {
+          lines.push('礦車載你額外前進 2 格！');
+          ev.extraPath = ev.extraPath.concat(this._advance(childId, 2));
+          cart = true;
+        } else if (c === 1 || (c === 0 && depth >= 1)) {
+          ev.stars += 2; this._ledger(childId, 2, '機會：發現礦石'); lines.push('發現發光礦石，得到 ⭐2');
+        } else {
+          p.bag.d6++; ev.items.d6 = (ev.items.d6 || 0) + 1; lines.push('撿到一顆 🎲 6 面骰');
         }
-      } else if (c === 1 || (c === 0 && depth >= 1)) {
-        ev.stars = 2; this._ledger(childId, 2, '機會：發現礦石'); ev.text = '發現發光礦石，得到 ⭐2';
-      } else {
-        p.bag.d6++; ev.items.d6 = 1; ev.text = '撿到一顆 🎲 6 面骰';
+      }
+      ev.text = lines.join('\n');
+      if (cart && ev.extraPath.length) {
+        var next = this._resolveTile(childId, depth + 1);
+        if (next.type !== 'normal' && next.type !== 'start') ev.then = next;
       }
     } else if (tile.type === 'fate') {
       ev.title = '🔮 命運卡';
       var card = pickWeighted(rand, FATE_CARDS);
       ev.card = card.id;
-      if (card.id === 'back') {
+      if (card.id === 'back' && p.bag.shield > 0) {
+        // 防護罩自動抵擋後退（路障沒有實際影響，不消耗防護罩）
+        p.bag.shield--;
+        ev.shielded = true;
+        ev.text = '一陣大風吹來，🛡️ 防護罩擋住了！沒有後退。';
+        this._logItem(childId, 'use', 'shield', 1, '背包', '擋住命運卡後退');
+      } else if (card.id === 'back') {
         var n = rint(rand, 1, 2);
         // 後退：不退到起點之前；落點不觸發事件
         for (var b = 0; b < n && p.pos > 0; b++) { p.pos--; ev.backPath.push(p.pos); }
@@ -373,8 +388,14 @@
       } else if (mg.status === 'pending') {
         ev.minigame = { id: mg.id };
         ev.text = '今天的小遊戲還沒玩完，現在開始吧！';
+      } else if (this._useBonus(childId, 'games')) {
+        // 再來 3 次：額外的小遊戲（不轉神秘寶箱）
+        mg = { id: uid(), childId: childId, date: this.today(), tile: tile.n, status: 'pending', bonus: true, caught: 0, stars: 0, ts: this.now().getTime() };
+        this.data.adventure.minigames.push(mg);
+        ev.minigame = { id: mg.id, bonus: true };
+        ev.text = '🎮 再來 3 次：額外的小遊戲！點星星收集能量星星。';
       } else {
-        // 今天已玩過：每天最多 1 次（第 3 步會改為產生神秘寶箱）
+        // 今天已玩過：每天最多 1 次（之後會改為產生神秘寶箱）
         ev.minigameOverflow = true;
         ev.text = '今天已經玩過小遊戲了（每天 1 次），明天再來挑戰！';
       }
@@ -390,12 +411,12 @@
   /** 今天的小遊戲紀錄（pending＝已停在小遊戲格但還沒玩完；done＝已領取） */
   Store.prototype.getMinigameToday = function (childId) {
     var today = this.today();
-    return this.data.adventure.minigames.find(function (m) { return m.childId === childId && m.date === today; }) || null;
+    return this.data.adventure.minigames.find(function (m) { return m.childId === childId && m.date === today && !m.bonus; }) || null;
   };
   /** 今天還有沒玩完的小遊戲（重新整理後可繼續） */
   Store.prototype.getPendingMinigame = function (childId) {
-    var m = this.getMinigameToday(childId);
-    return m && m.status === 'pending' ? m : null;
+    var today = this.today();
+    return this.data.adventure.minigames.find(function (m) { return m.childId === childId && m.date === today && m.status === 'pending'; }) || null;
   };
   /**
    * 小遊戲結束：每抓 1 顆得 1 顆能量星星（最多 15 顆），只能領取一次；caught 記實際抓到數
@@ -413,41 +434,167 @@
     return m;
   };
 
+  // ---------- 擲骰（分兩步：擲出點數 → 前進；中間可用命運重骰券） ----------
+  /** 今天已用的「基本」擲骰次數（神奇骰子、再來 3 次的額外次數不算） */
+  Store.prototype.getRollsToday = function (childId) {
+    var today = this.today();
+    return this.data.adventure.rolls.filter(function (r) { return r.childId === childId && r.date === today && (!r.kind || r.kind === 'base'); }).length;
+  };
+  /** 再來 3 次：今天剩下的額外擲骰／小遊戲次數 */
+  Store.prototype.getBonusQuota = function (childId) {
+    var today = this.today();
+    return this.data.adventure.bonusQuota.reduce(function (o, q) {
+      if (q.childId === childId && q.date === today) { o.rolls += q.rolls; o.games += q.games; }
+      return o;
+    }, { rolls: 0, games: 0 });
+  };
+  Store.prototype._useBonus = function (childId, field) {
+    var today = this.today();
+    var q = this.data.adventure.bonusQuota.find(function (x) { return x.childId === childId && x.date === today && x[field] > 0; });
+    if (!q) return false;
+    q[field]--;
+    return true;
+  };
+  /** 今天還能擲幾次（基本 3 次剩餘＋額外次數；不含神奇骰子） */
+  Store.prototype.getRollsLeft = function (childId) {
+    return Math.max(0, DAILY_DICE_LIMIT - this.getRollsToday(childId)) + this.getBonusQuota(childId).rolls;
+  };
+  /** 今天是否已用過神奇骰子（每天最多 1 顆） */
+  Store.prototype.magicUsedToday = function (childId) {
+    var today = this.today();
+    return this.data.adventure.rolls.some(function (r) { return r.childId === childId && r.date === today && r.kind === 'magic'; });
+  };
   /**
-   * 擲骰：每天最多 3 次（6 面、12 面都算）
+   * 第一步：擲出點數（計入次數、消耗骰子），還沒前進。
+   * die：'d6'、'd12'、'magic'（神奇骰子：12 面、不占每日 3 次、每天最多 1 顆）
+   */
+  Store.prototype.prepareRoll = function (childId, die) {
+    this._requirePlay(childId);
+    if (die !== 'd6' && die !== 'd12' && die !== 'magic') throw new Error('沒有這種骰子');
+    var p = this.getPlayer(childId);
+    if (p.pendingRoll) throw new Error('先完成上一次擲骰');
+    var end = this.getBoard(childId).tiles.length - 1;
+    if (p.pos >= end) throw new Error('已經抵達第一區的木門，第二區即將開放');
+    var kind = 'base';
+    if (die === 'magic') {
+      if (!(p.bag.magicDice > 0)) throw new Error('背包裡沒有神奇骰子');
+      if (this.magicUsedToday(childId)) throw new Error('神奇骰子每天最多用 1 顆，明天再來！');
+      kind = 'magic';
+    } else {
+      if (this.getRollsToday(childId) >= DAILY_DICE_LIMIT) {
+        if (this.getBonusQuota(childId).rolls > 0) kind = 'bonus';
+        else throw new Error('今天已經擲了 ' + DAILY_DICE_LIMIT + ' 次骰子，明天再來！');
+      }
+      if (p.bag[die] <= 0) throw new Error('背包裡沒有' + (die === 'd6' ? ' 6 面骰' : ' 12 面骰'));
+    }
+    var sides = die === 'd6' ? 6 : 12;
+    var value = rint(this.random, 1, sides);
+    if (kind === 'bonus') this._useBonus(childId, 'rolls');
+    if (die === 'magic') { p.bag.magicDice--; this._logItem(childId, 'use', 'magicDice', 1, '背包', '擲出 ' + value); } else p.bag[die]--;
+    var roll = { id: uid(), childId: childId, date: this.today(), die: die === 'magic' ? 'd12' : die, kind: kind, value: value, from: p.pos, to: p.pos, ts: this.now().getTime() };
+    this.data.adventure.rolls.push(roll);
+    p.pendingRoll = { rollId: roll.id, die: die, kind: kind, sides: sides, value: value, from: p.pos, rerolled: false };
+    this.save();
+    return Object.assign({}, p.pendingRoll);
+  };
+  /** 命運重骰券：對剛擲出、還沒前進的結果重擲一次（用原本的骰子），新結果取代舊結果；同一次只能用 1 張 */
+  Store.prototype.rerollPending = function (childId) {
+    var p = this.getPlayer(childId), pr = p.pendingRoll;
+    if (!pr) throw new Error('沒有可以重擲的結果');
+    if (pr.rerolled) throw new Error('同一次擲骰只能用 1 張命運重骰券');
+    if (!(p.bag.rerollTicket > 0)) throw new Error('背包裡沒有命運重骰券');
+    var old = pr.value;
+    pr.value = rint(this.random, 1, pr.sides);
+    pr.rerolled = true;
+    p.bag.rerollTicket--;
+    var roll = this.data.adventure.rolls.find(function (r) { return r.id === pr.rollId; });
+    if (roll) roll.value = pr.value;
+    this._logItem(childId, 'use', 'rerollTicket', 1, '背包', old + ' → ' + pr.value);
+    this.save();
+    return Object.assign({ old: old }, pr);
+  };
+  /** 第二步：依點數前進並觸發停格事件 */
+  Store.prototype.commitRoll = function (childId) {
+    var p = this.getPlayer(childId), pr = p.pendingRoll;
+    if (!pr) throw new Error('沒有待前進的擲骰');
+    var path = this._advance(childId, pr.value);
+    var event = this._resolveTile(childId, 0);
+    var roll = this.data.adventure.rolls.find(function (r) { return r.id === pr.rollId; });
+    if (roll) roll.to = p.pos;
+    p.pendingRoll = null;
+    this.save();
+    return { die: pr.die === 'magic' ? 'magic' : pr.die, kind: pr.kind, value: pr.value, from: pr.from, path: path, event: event, rollsLeft: this.getRollsLeft(childId) };
+  };
+  /**
+   * 擲骰並直接前進（沒有重骰券時使用）：每天基本 3 次，用完後可用「再來 3 次」的額外次數
    * @returns {{ die, value, from, path, event, rollsLeft }}
    */
   Store.prototype.rollDice = function (childId, die) {
-    this._requirePlay(childId);
-    if (die !== 'd6' && die !== 'd12') throw new Error('沒有這種骰子');
-    var p = this.getPlayer(childId);
-    var end = this.getBoard(childId).tiles.length - 1;
-    if (p.pos >= end) throw new Error('已經抵達第一區的木門，第二區即將開放');
-    if (this.getRollsToday(childId) >= DAILY_DICE_LIMIT) throw new Error('今天已經擲了 ' + DAILY_DICE_LIMIT + ' 次骰子，明天再來！');
-    if (p.bag[die] <= 0) throw new Error('背包裡沒有' + (die === 'd6' ? ' 6 面骰' : ' 12 面骰'));
-    var value = rint(this.random, 1, die === 'd6' ? 6 : 12);
-    var from = p.pos;
-    p.bag[die]--;
-    var path = this._advance(childId, value);
-    var event = this._resolveTile(childId, 0);
-    this.data.adventure.rolls.push({ id: uid(), childId: childId, date: this.today(), die: die, value: value, from: from, to: p.pos, ts: this.now().getTime() });
-    this.save();
-    return { die: die, value: value, from: from, path: path, event: event, rollsLeft: DAILY_DICE_LIMIT - this.getRollsToday(childId) };
+    this.prepareRoll(childId, die);
+    return this.commitRoll(childId);
   };
 
-  /** 溜冰鞋：前進 3 格，不算擲骰次數 */
-  Store.prototype.useSkates = function (childId) {
+  /** 移動類道具：溜冰鞋 3 格、飛行翼 20 格（不算擲骰次數；到第 30 格就停） */
+  var MOVE_ITEMS = { skates: { steps: 3, name: '溜冰鞋' }, wings: { steps: 20, name: '飛行翼' } };
+  Store.prototype._useMoveItem = function (childId, item) {
     this._requirePlay(childId);
     var p = this.getPlayer(childId);
+    if (p.pendingRoll) throw new Error('先完成上一次擲骰');
     var end = this.getBoard(childId).tiles.length - 1;
     if (p.pos >= end) throw new Error('已經抵達第一區的木門，第二區即將開放');
-    if (p.bag.skates <= 0) throw new Error('背包裡沒有溜冰鞋');
+    if (!(p.bag[item] > 0)) throw new Error('背包裡沒有' + MOVE_ITEMS[item].name);
     var from = p.pos;
-    p.bag.skates--;
-    var path = this._advance(childId, 3);
+    p.bag[item]--;
+    var path = this._advance(childId, MOVE_ITEMS[item].steps);
+    if (item !== 'skates') this._logItem(childId, 'use', item, 1, '背包', '第 ' + from + ' → ' + p.pos + ' 格');
     var event = this._resolveTile(childId, 0);
     this.save();
-    return { die: 'skates', value: 3, from: from, path: path, event: event };
+    return { die: item, value: MOVE_ITEMS[item].steps, from: from, path: path, event: event };
+  };
+  /** 溜冰鞋：前進 3 格，不算擲骰次數 */
+  Store.prototype.useSkates = function (childId) { return this._useMoveItem(childId, 'skates'); };
+  /** 飛行翼：前進 20 格（第一區到第 30 格就停） */
+  Store.prototype.useWings = function (childId) { return this._useMoveItem(childId, 'wings'); };
+  /** 任意門：傳送到本區指定的格子（不含起點、目前位置與第 30 格），落點觸發事件 */
+  Store.prototype.useDoor = function (childId, n) {
+    this._requirePlay(childId);
+    var p = this.getPlayer(childId);
+    if (p.pendingRoll) throw new Error('先完成上一次擲骰');
+    var tiles = this.getBoard(childId).tiles, end = tiles.length - 1;
+    n = Math.floor(Number(n));
+    if (!(n >= 1 && n < end)) throw new Error('任意門不能傳送到這一格');
+    if (n === p.pos) throw new Error('你已經在這一格了');
+    if (tiles[n].regionId !== tiles[p.pos].regionId) throw new Error('任意門只能傳送到目前區域');
+    if (!(p.bag.door > 0)) throw new Error('背包裡沒有任意門');
+    var from = p.pos;
+    p.bag.door--;
+    p.pos = n; p.tileId = tiles[n].id;
+    this._logItem(childId, 'use', 'door', 1, '背包', '第 ' + from + ' → ' + n + ' 格');
+    var event = this._resolveTile(childId, 0);
+    this.save();
+    return { die: 'door', value: 0, from: from, path: [n], event: event };
+  };
+  /** 好運金牌：啟用後，下一次停在寶箱格或機會格時效果發生 2 次 */
+  Store.prototype.activateMedal = function (childId) {
+    if (!this.getChild(childId)) throw new Error('找不到孩子');
+    var p = this.getPlayer(childId);
+    if (p.medalArmed) throw new Error('好運金牌已經啟用了');
+    if (!(p.bag.luckyMedal > 0)) throw new Error('背包裡沒有好運金牌');
+    p.bag.luckyMedal--;
+    p.medalArmed = true;
+    this._logItem(childId, 'use', 'luckyMedal', 1, '背包', '已啟用');
+    this.save();
+  };
+  /** 再來 3 次：今天額外 +3 次擲骰、+3 次小遊戲（今天沒用完就失效，不跨日、不轉神秘寶箱） */
+  Store.prototype.activateBonusPlay = function (childId) {
+    this._requirePlay(childId);
+    var p = this.getPlayer(childId);
+    if (!(p.bag.bonusPlay > 0)) throw new Error('背包裡沒有「再來 3 次」');
+    p.bag.bonusPlay--;
+    this.data.adventure.bonusQuota.push({ id: uid(), childId: childId, date: this.today(), rolls: 3, games: 3, ts: this.now().getTime() });
+    this._logItem(childId, 'use', 'bonusPlay', 1, '背包', '今天 +3 擲骰、+3 小遊戲');
+    this.save();
+    return this.getBonusQuota(childId);
   };
 
   var api = { BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };

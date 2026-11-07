@@ -1394,3 +1394,155 @@ test('自動備份：空間不足時先刪最舊的每日備份，主資料不�
   assert.ok(!dates.includes('2026-11-01'), '最舊的被刪掉');
   assert.equal(s.getChildren().length, 1, '主資料不受影響');
 });
+
+// ---------- 寶物商店 Phase 4A：道具實際效果 ----------
+test('神奇骰子：12 面、不占每日 3 次、每天最多 1 顆、隔天可再用', () => {
+  const { store, a, push, setDate } = p3Store();
+  const bag = store.getPlayer(a.id).bag;
+  bag.magicDice = 2; bag.d6 = 3;
+  push(face(2), face(2), face(2));
+  store.rollDice(a.id, 'd6'); store.rollDice(a.id, 'd6'); store.rollDice(a.id, 'd6');
+  assert.equal(store.getRollsLeft(a.id), 0);
+  push(face(5, 12));
+  const r = store.rollDice(a.id, 'magic');
+  assert.deepEqual([r.value, r.from, store.getPlayer(a.id).pos], [5, 6, 11]);
+  assert.equal(store.getRollsToday(a.id), 3, '不占每日 3 次');
+  assert.throws(() => store.rollDice(a.id, 'magic'), /每天最多用 1 顆/);
+  assert.equal(bag.magicDice, 1);
+  setDate('2026-11-07T10:00:00');
+  const it = store.addItem({ kind: 'bonus', name: 'x', points: 10 }); store.recordItem(a.id, it.id); store.settleToday(a.id);
+  push(face(1, 12));
+  assert.equal(store.rollDice(a.id, 'magic').value, 1, '隔天可再用');
+  assert.ok(store.data.adventure.itemLog.some(x => x.action === 'use' && x.item === 'magicDice'));
+});
+
+test('命運重骰券：擲出後可重擲一次（用原骰子）、以新結果為準、不加次數、重新整理後可繼續', () => {
+  const { store, a, push, storage } = p3Store();
+  const bag = store.getPlayer(a.id).bag;
+  bag.d6 = 2; bag.rerollTicket = 2;
+  push(face(2), face(5));
+  const pr = store.prepareRoll(a.id, 'd6');
+  assert.deepEqual([pr.value, pr.sides, store.getPlayer(a.id).pos], [2, 6, 0], '擲出但還沒前進');
+  assert.throws(() => store.prepareRoll(a.id, 'd6'), /先完成上一次擲骰/);
+  assert.throws(() => store.useSkates(a.id), /先完成上一次擲骰/);
+  // 重新整理：待前進的結果仍在
+  const s2 = new Store({ storage, seed: false, now: () => store.now() });
+  assert.equal(s2.getPlayer(a.id).pendingRoll.value, 2);
+  const rr = store.rerollPending(a.id);
+  assert.deepEqual([rr.old, rr.value, rr.sides], [2, 5, 6], '用 6 面骰重擲');
+  assert.throws(() => store.rerollPending(a.id), /只能用 1 張/);
+  const res = store.commitRoll(a.id);
+  assert.deepEqual([res.value, store.getPlayer(a.id).pos], [5, 5], '以新結果前進');
+  assert.equal(store.getRollsToday(a.id), 1, '重擲不額外占次數');
+  assert.equal(bag.rerollTicket, 1);
+  assert.equal(store.data.adventure.rolls[0].value, 5, '擲骰紀錄更新為新結果');
+  assert.throws(() => store.rerollPending(a.id), /沒有可以重擲/);
+});
+
+test('再來 3 次：今天額外 +3 擲骰、+3 小遊戲；不跨日', () => {
+  const { store, a, push, setDate } = p3Store();
+  const bag = store.getPlayer(a.id).bag;
+  bag.d6 = 10; bag.bonusPlay = 1;
+  push(face(1), face(1), face(1));
+  store.rollDice(a.id, 'd6'); store.rollDice(a.id, 'd6'); store.rollDice(a.id, 'd6');
+  assert.throws(() => store.rollDice(a.id, 'd6'), /今天已經擲了 3 次/);
+  assert.deepEqual(store.activateBonusPlay(a.id), { rolls: 3, games: 3 });
+  assert.equal(bag.bonusPlay, 0);
+  push(face(1));
+  const r = store.rollDice(a.id, 'd6');
+  assert.equal(r.kind, 'bonus');
+  assert.equal(store.getRollsToday(a.id), 3, '基本次數不變');
+  assert.deepEqual(store.getBonusQuota(a.id), { rolls: 2, games: 3 });
+  // 小遊戲：今天已玩過基本 1 次後，停到小遊戲格可用額外場次
+  store.data.adventure.minigames.push({ id: 'm0', childId: a.id, date: store.today(), status: 'done', caught: 1, stars: 1, ts: 1 });
+  store.setPlayerTile(a.id, 6);
+  push(face(1));
+  const r2 = store.rollDice(a.id, 'd6');                       // 第 7 格小遊戲
+  assert.ok(r2.event.minigame && r2.event.minigame.bonus, '額外場次');
+  assert.equal(store.getBonusQuota(a.id).games, 2);
+  assert.equal(store.finishMinigame(a.id, 4).stars, 4);
+  setDate('2026-11-07T10:00:00');
+  assert.deepEqual(store.getBonusQuota(a.id), { rolls: 0, games: 0 }, '隔天失效');
+});
+
+test('飛行翼：前進 20 格、到第 30 格就停、落點觸發事件、不算擲骰', () => {
+  const { store, a } = p3Store();
+  const bag = store.getPlayer(a.id).bag;
+  bag.wings = 2;
+  store.setPlayerTile(a.id, 2);
+  store.random = () => 0.5;                                  // 機會卡抽到礦石（不移動）
+  const r = store.useWings(a.id);
+  assert.deepEqual([r.from, store.getPlayer(a.id).pos, r.path.length], [2, 22, 20]);
+  assert.equal(r.event.type, 'chance', '第 22 格機會格觸發');
+  store.useWings(a.id);
+  assert.equal(store.getPlayer(a.id).pos, 30, '第 30 格就停');
+  assert.equal(store.getRollsToday(a.id), 0);
+  assert.throws(() => store.useWings(a.id), /木門/);
+});
+
+test('任意門：傳送到本區指定格子、落點觸發事件；不能到終點、目前位置、起點', () => {
+  const { store, a } = p3Store();
+  const bag = store.getPlayer(a.id).bag;
+  bag.door = 1;
+  store.setPlayerTile(a.id, 3);
+  assert.throws(() => store.useDoor(a.id, 30), /不能傳送/);
+  assert.throws(() => store.useDoor(a.id, 0), /不能傳送/);
+  assert.throws(() => store.useDoor(a.id, 3), /已經在這一格/);
+  assert.equal(bag.door, 1, '失敗不消耗');
+  store.random = () => 0.1;
+  const r = store.useDoor(a.id, 12);
+  assert.deepEqual([store.getPlayer(a.id).pos, store.getPlayer(a.id).tileId, r.event.type], [12, 'gold-01-012', 'chest']);
+  assert.equal(bag.door, 0);
+  assert.throws(() => store.useDoor(a.id, 5), /沒有任意門/);
+});
+
+test('好運金牌：啟用後下一次寶箱效果 2 次、機會卡抽 2 張，用完失效', () => {
+  const { store, a, push } = p3Store();
+  const p = store.getPlayer(a.id);
+  p.bag.luckyMedal = 2; p.bag.d6 = 3;
+  store.activateMedal(a.id);
+  assert.throws(() => store.activateMedal(a.id), /已經啟用/);
+  assert.ok(p.medalArmed);
+  store.setPlayerTile(a.id, 4);
+  push(face(1), 0.1, 0.5, 0.1, 0.99);                        // 第 5 格寶箱：兩次都開星星（2 星＋3 星）
+  const r = store.rollDice(a.id, 'd6');
+  assert.ok(r.event.medal);
+  assert.equal(r.event.stars, 5);
+  assert.equal(p.medalArmed, false, '用完失效');
+  push(face(4), 0.99);                                        // 第 9 格機會：沒有金牌只抽 1 張
+  assert.equal(store.rollDice(a.id, 'd6').event.text.split('\n').length, 1);
+  store.activateMedal(a.id);
+  store.setPlayerTile(a.id, 14);
+  push(face(1), 0.5, 0.99);                                   // 第 15 格機會：礦石 ＋ 6 面骰
+  const r3 = store.rollDice(a.id, 'd6');
+  assert.equal(r3.event.text.split('\n').length, 2, '機會卡抽 2 張');
+  assert.deepEqual([r3.event.stars, r3.event.items.d6], [2, 1]);
+});
+
+test('防護罩：自動擋住命運卡後退並消耗；路障不消耗', () => {
+  const { store, a, push } = p3Store();
+  const p = store.getPlayer(a.id);
+  p.bag.shield = 1; p.bag.d6 = 2;
+  store.setPlayerTile(a.id, 11);
+  push(face(3), 0.8, 0.9);                                    // 第 14 格命運：後退
+  const r = store.rollDice(a.id, 'd6');
+  assert.ok(r.event.shielded);
+  assert.deepEqual([store.getPlayer(a.id).pos, r.event.backPath.length, p.bag.shield], [14, 0, 0]);
+  store.setPlayerTile(a.id, 18);
+  p.bag.shield = 1;
+  push(face(3), 0.95, 0);                                     // 第 21 格命運：路障
+  store.rollDice(a.id, 'd6');
+  assert.equal(p.bag.shield, 1, '路障不消耗防護罩');
+});
+
+test('Phase 4A 存檔遷移：擲骰種類、好運金牌、待前進擲骰、額外次數', () => {
+  const d = migrate({ children: [{ id: 'c', name: 'B' }], adventure: {
+    rolls: [{ id: 'r', childId: 'c', date: '2026-11-06', die: 'd6', value: 3 }],
+    bonusQuota: [{ id: 'q', childId: 'c', date: '2026-11-06', rolls: 2, games: 1 }],
+    players: { c: { pos: 3, medalArmed: true, pendingRoll: { rollId: 'r', die: 'd12', sides: 12, value: 9 }, bag: {} } } } });
+  assert.equal(d.adventure.rolls[0].kind, 'base', '舊擲骰紀錄算基本次數');
+  assert.deepEqual(d.adventure.bonusQuota.map(q => [q.rolls, q.games]), [[2, 1]]);
+  assert.equal(d.adventure.players.c.medalArmed, true);
+  assert.deepEqual([d.adventure.players.c.pendingRoll.value, d.adventure.players.c.pendingRoll.sides], [9, 12]);
+  assert.equal(migrate({ children: [{ id: 'c' }], adventure: { players: { c: {} } } }).adventure.players.c.pendingRoll, null);
+});

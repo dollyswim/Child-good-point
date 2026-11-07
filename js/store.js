@@ -90,7 +90,7 @@
   // ---------- 預設資料 ----------
   function emptyData() {
     return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null,
-      adventure: { settlements: [], ledger: [], rolls: [], minigames: [], blessings: [], itemLog: [], players: {} } };
+      adventure: { settlements: [], ledger: [], rolls: [], minigames: [], bonusQuota: [], blessings: [], itemLog: [], players: {} } };
   }
 
   function defaultData() {
@@ -267,6 +267,7 @@
         return x && x.id && childIdSet.has(String(x.childId)) && /^\d{4}-\d{2}-\d{2}$/.test(x.date);
       }).map(function (x) {
         return { id: String(x.id), childId: String(x.childId), date: x.date, die: x.die === 'd12' ? 'd12' : 'd6',
+          kind: x.kind === 'bonus' || x.kind === 'magic' ? x.kind : 'base',   // base＝每日 3 次；bonus＝再來 3 次；magic＝神奇骰子
           value: toInt(x.value, 0), from: toInt(x.from, 0), to: toInt(x.to, 0), ts: toInt(x.ts, Date.now()) };
       }),
       // Phase 4：小遊戲「抓住星星」（每孩子每天 1 筆；pending＝停在小遊戲格還沒玩完）
@@ -274,16 +275,23 @@
         var seen = {};
         return (Array.isArray(adv.minigames) ? adv.minigames : []).filter(function (x) {
           if (!x || !x.id || !childIdSet.has(String(x.childId)) || !/^\d{4}-\d{2}-\d{2}$/.test(x.date)) return false;
+          if (x.bonus) return true;                          // 再來 3 次的額外場次不受每天 1 筆限制
           var key = x.childId + '|' + x.date;
           if (seen[key]) return false;
           seen[key] = true;
           return true;
         }).map(function (x) {
-          return { id: String(x.id), childId: String(x.childId), date: x.date, tile: toInt(x.tile, 0),
+          return { id: String(x.id), childId: String(x.childId), date: x.date, tile: toInt(x.tile, 0), bonus: !!x.bonus,
             status: x.status === 'done' ? 'done' : 'pending', caught: Math.max(0, toInt(x.caught, 0)), stars: Math.max(0, toInt(x.stars, 0)),
             ts: toInt(x.ts, Date.now()), doneTs: x.doneTs ? toInt(x.doneTs, 0) : undefined };
         });
       })(),
+      // 再來 3 次：今天的額外擲骰／小遊戲次數（只在當天有效）
+      bonusQuota: (Array.isArray(adv.bonusQuota) ? adv.bonusQuota : []).filter(function (x) {
+        return x && x.id && childIdSet.has(String(x.childId)) && /^\d{4}-\d{2}-\d{2}$/.test(x.date);
+      }).map(function (x) {
+        return { id: String(x.id), childId: String(x.childId), date: x.date, rolls: Math.max(0, toInt(x.rolls, 0)), games: Math.max(0, toInt(x.games, 0)), ts: toInt(x.ts, Date.now()) };
+      }),
       // 神諭祝福（媽媽加碼）發送紀錄：時間、對象、獎勵、數量、鼓勵文字；seen＝孩子已看過領取畫面
       blessings: (Array.isArray(adv.blessings) ? adv.blessings : []).filter(function (x) {
         return x && x.id && childIdSet.has(String(x.childId)) && x.kind;
@@ -311,6 +319,11 @@
             pos: Math.max(0, toInt(p.pos, 0)),
             tileId: p.tileId ? String(p.tileId) : '',  // 穩定格子 ID；舊存檔沒有時由 game.js 依 pos 對應
             character: String(p.character || ''),
+            medalArmed: !!p.medalArmed,   // 好運金牌已啟用（下一次寶箱／機會效果 2 次）
+            pendingRoll: p.pendingRoll && p.pendingRoll.rollId ? {   // 已擲出還沒前進（命運重骰券可用）
+              rollId: String(p.pendingRoll.rollId), die: ['d6', 'd12', 'magic'].indexOf(p.pendingRoll.die) >= 0 ? p.pendingRoll.die : 'd6',
+              kind: String(p.pendingRoll.kind || 'base'), sides: toInt(p.pendingRoll.sides, 6) === 12 ? 12 : 6,
+              value: Math.max(1, toInt(p.pendingRoll.value, 1)), from: Math.max(0, toInt(p.pendingRoll.from, 0)), rerolled: !!p.pendingRoll.rerolled } : null,
             bag: BAG_KEYS.reduce(function (o, k) { o[k] = Math.max(0, toInt(bag[k], 0)); return o; }, {})
           };
         });
@@ -522,6 +535,7 @@
     adv.ledger = adv.ledger.filter(function (x) { return x.childId !== id; });
     adv.rolls = adv.rolls.filter(function (x) { return x.childId !== id; });
     adv.minigames = adv.minigames.filter(function (x) { return x.childId !== id; });
+    adv.bonusQuota = adv.bonusQuota.filter(function (x) { return x.childId !== id; });
     adv.blessings = adv.blessings.filter(function (x) { return x.childId !== id; });
     adv.itemLog = adv.itemLog.filter(function (x) { return x.childId !== id; });
     delete adv.players[id];

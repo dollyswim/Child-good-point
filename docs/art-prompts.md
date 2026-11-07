@@ -288,6 +288,32 @@ large open empty space in the middle for gameplay, no characters, no text, no UI
 
 ---
 
+## 神諭祝福道具（請 Codex 製作，2 張）
+
+規格同前：正方形 1024×1024、白底、單一物件、置中、不要任何文字／數字。會放在白色卡片裡，顯示約 40～56px。
+
+### G-1 命運重骰券（`reroll_ticket`）
+
+```
+A cute golden admission ticket with scalloped edges and a small round punched hole,
+a glossy sky-blue twelve-sided dice (pentagon faces with tiny white stars) printed in the center,
+curved circular arrow swirling around the dice to show "roll again", soft sparkles, magical
+```
+
+中文：可愛的金色票券，邊緣是波浪形，一角有圓形打孔；票面中央是一顆天藍色 12 面骰（五邊形面、白色小星星），骰子外圍有一個弧形的「重來」循環箭頭，周圍有柔和閃光。（**不要寫任何字或數字**）
+
+### G-2 再來 3 次（`bonus_play`）
+
+```
+Three small cute dice and a round sky-blue game controller grouped together on a little
+golden pedestal, the three dice glowing one after another, three small golden stars above them,
+celebratory confetti, joyful and exciting
+```
+
+中文：三顆可愛的小骰子和一個圓形天藍色遊戲手把，一起放在金色小台座上，三顆骰子依序發光，上方有三顆金色小星星，周圍有慶祝彩帶；歡樂又興奮。（**用「三顆骰子＋三顆星星」表示 3 次，不要寫數字 3**）
+
+---
+
 ## 選做：金島俯瞰棋盤底圖（1 張）
 
 尺寸：**直式 1080 × 1350**。這張**不要用白色背景**，背景就是海。

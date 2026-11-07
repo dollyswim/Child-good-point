@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-25';
+  var APP_VERSION = '2026.11.07-26';
   var store;
   try {
     store = new CGP.Store();
@@ -228,6 +228,7 @@
     } else {
       html = renderHome();
     }
+    if (r.name !== 'map') ui.doorPick = null;
     if (r.name !== 'settings') {
       if (store.isParentUnlocked()) store.lockParent();   // 離開設定就上鎖
       ui.pinMode = null;
@@ -575,12 +576,16 @@
     var limit = GAME.DAILY_DICE_LIMIT;
     var end = board.tiles.length - 1;
     var atEnd = player.pos >= end;
-    var noRolls = used >= limit;
+    var quota = store.getBonusQuota(child.id);
+    var noRolls = store.getRollsLeft(child.id) <= 0;
+    var pending = player.pendingRoll;
+    var picking = ui.doorPick === child.id;
     function act(kind, label, count, disabled) {
       return '<button class="dice-btn ' + kind + '" data-action="' + (kind === 'skates' ? 'use-skates' : 'roll') + '" data-kind="' + kind + '"' +
         (disabled ? ' disabled' : '') + '>' + itemArt(kind, 'dice-icon') + '<b>' + label + '</b><small>背包 ×' + count + '</small></button>';
     }
     var reason = !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
+      : picking ? '🚪 任意門：點地圖上的格子選擇要去的地方'
       : atEnd ? '🚪 已抵達第一區的礦場木門！第二區即將開放'
         : noRolls ? '今天的 3 次骰子用完了，明天再來！（溜冰鞋還可以用）'
           : (!bag.d6 && !bag.d12 && !bag.skates ? '背包是空的，點左下角的商店用能量星星購買骰子' : '選一個道具出發吧！');
@@ -598,11 +603,11 @@
       '<main class="page map-page">' +
       '<section class="hud">' +
       '<span class="hud-cell"><small>能量星星</small><b class="gold" data-testid="stars">' + STAR_IMG + ' ' + num(store.getStarBalance(child.id)) + '</b></span>' +
-      '<span class="hud-cell"><small>今日骰子</small><b data-testid="rolls">' + used + ' / ' + limit + '</b></span>' +
+      '<span class="hud-cell"><small>今日骰子</small><b data-testid="rolls">' + used + ' / ' + limit + '</b>' + (quota.rolls ? '<small class="hud-bonus">再來 +' + quota.rolls + '</small>' : '') + '</span>' +
       '<span class="hud-cell"><small>位置</small><b data-testid="pos">' + player.pos + ' / ' + end + '</b></span>' +
       '</section>' +
       '<p class="region-name">🏝️ 第一區・' + h(region.name) + '</p>' +
-      '<section class="map-view" id="map-view" aria-label="金島第一區地圖，可拖曳與縮放">' +
+      '<section class="map-view' + (picking ? ' picking' : '') + '" id="map-view" aria-label="金島第一區地圖，可拖曳與縮放">' +
       '<div class="map-world" id="map-world" style="width:' + W + 'px;height:' + H + 'px" data-w="' + W + '" data-h="' + H + '">' +
       '<picture><source srcset="' + region.background.webp + '" type="image/webp">' +
       '<img class="map-bg" src="' + region.background.jpg + '" width="' + W + '" height="' + H + '" alt="" draggable="false"></picture>' +
@@ -616,12 +621,16 @@
       '<div class="dice-overlay" id="dice-overlay" hidden><div class="die-face" id="die-face">?</div></div>' +
       '</section>' +
       '<p class="map-hint">' + reason + '</p>' +
+      (picking ? '<button type="button" class="btn block" data-action="cancel-door">取消任意門</button>' : '') +
+      (canPlay && pending ? '<button type="button" class="btn primary block" data-action="roll" data-kind="' + pending.die + '">🎲 已擲出 ' + pending.value + '，點這裡繼續</button>' : '') +
+      (player.medalArmed ? '<p class="medal-on">🥇 好運金牌已啟用：下一次停在寶箱或機會格，效果發生 2 次</p>' : '') +
       (canPlay && store.getPendingMinigame(child.id) ? '<button type="button" class="btn primary block mg-resume" data-action="play-minigame">🎮 今天的小遊戲還沒玩完，點這裡開始</button>' : '') +
       '<section class="dice-bar">' +
-      act('d6', '6 面骰', bag.d6, !canPlay || atEnd || noRolls || !bag.d6) +
-      act('d12', '12 面骰', bag.d12, !canPlay || atEnd || noRolls || !bag.d12) +
-      act('skates', '溜冰鞋 +3', bag.skates, !canPlay || atEnd || !bag.skates) +
+      act('d6', '6 面骰', bag.d6, !canPlay || atEnd || noRolls || !bag.d6 || !!pending || picking) +
+      act('d12', '12 面骰', bag.d12, !canPlay || atEnd || noRolls || !bag.d12 || !!pending || picking) +
+      act('skates', '溜冰鞋 +3', bag.skates, !canPlay || atEnd || !bag.skates || !!pending || picking) +
       '</section>' +
+      itemBar(child, player, { canPlay: canPlay, atEnd: atEnd, pending: !!pending, picking: picking, quota: quota }) +
       '<div class="legend">' + [['chest', '寶箱'], ['chance', '機會'], ['fate', '命運'], ['minigame', '小遊戲'], ['boundary', '第一區終點']].map(function (l) {
         return '<span>' + tileArt(l[0], 'legend-art') + l[1] + '</span>';
       }).join('') + '</div>' +
@@ -673,10 +682,12 @@
       c.cx = wx - ox / c.z; c.cy = wy - oy / c.z;
       c.manual = true; applyCam(false);
     }
+    var tap = null;   // 任意門：手指幾乎沒移動就放開＝點選格子
     view.addEventListener('pointerdown', function (e) {
       if (e.target.closest('.map-ctrl, .map-shop')) return;
       view.setPointerCapture(e.pointerId);
       pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      tap = Object.keys(pts).length === 1 ? { x: e.clientX, y: e.clientY } : null;
       last = null;
     });
     view.addEventListener('pointermove', function (e) {
@@ -693,7 +704,11 @@
         last = d;
       }
     });
-    function up(e) { delete pts[e.pointerId]; last = null; }
+    function up(e) {
+      var wasTap = tap && e.type === 'pointerup' && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 8;
+      delete pts[e.pointerId]; last = null; tap = null;
+      if (wasTap && ui.doorPick === child.id) pickDoorAt(child, e.clientX, e.clientY);
+    }
     view.addEventListener('pointerup', up); view.addEventListener('pointercancel', up);
     view.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY); }, { passive: false });
     view.querySelectorAll('[data-map]').forEach(function (btn) {
@@ -753,22 +768,74 @@
     return t;
   }
 
+  /** 任意門：找出被點到的格子並確認傳送 */
+  function pickDoorAt(child, x, y) {
+    var hit = null;
+    app.querySelectorAll('.map-world .mtile').forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) hit = el;
+    });
+    if (!hit) return;
+    var n = Number(hit.dataset.n), p = store.getPlayer(child.id), end = store.getBoard(child.id).tiles.length - 1;
+    if (n === p.pos) { toast('你已經在這一格了'); return; }
+    if (n >= end) { toast('任意門不能傳送到終點木門', 'neg'); return; }
+    var label = TILE_LABEL[hit.className.match(/mt-(\w+)/)[1]];
+    confirmThen('用 🚪 任意門傳送到第 ' + n + ' 格' + (label ? '（' + label + '）' : '') + '？', '傳送', false, function () {
+      ui.doorPick = null;
+      setTimeout(function () { playMove(child.id, 'door', n); }, 0);
+    });
+  }
+
+  /** 擲出點數後，持有命運重骰券時詢問要前進還是重擲 */
+  function askReroll(pr, tickets) {
+    return new Promise(function (resolve) {
+      confirmEl.innerHTML = '<div class="confirm-box reroll-box"><h2>🎲 擲出 ' + pr.value + '</h2>' +
+        '<p class="confirm-msg">要用 <b>命運重骰券</b> 重擲一次嗎？（剩 ' + tickets + ' 張）<br><small>重擲後以新的點數為準，同一次只能用 1 張。</small></p>' +
+        '<div class="modal-actions"><button type="button" class="btn" data-reroll>🎲 重擲</button>' +
+        '<button type="button" class="btn primary" data-go>👉 前進 ' + pr.value + ' 格</button></div></div>';
+      var done = false;
+      function fin(v) { if (done) return; done = true; if (confirmEl.open) confirmEl.close(); resolve(v); }
+      confirmEl.querySelector('[data-reroll]').onclick = function () { fin(true); };
+      confirmEl.querySelector('[data-go]').onclick = function () { fin(false); };
+      confirmEl.oncancel = function (e) { e.preventDefault(); };
+      if (typeof confirmEl.showModal === 'function') confirmEl.showModal(); else confirmEl.setAttribute('open', '');
+    });
+  }
+
   ui.busy = false;
-  async function playMove(childId, kind) {
+  /**
+   * 移動：kind = 'd6'｜'d12'｜'magic'（擲骰，可能先問命運重骰券）、'skates'、'wings'、'door'（arg＝目的地格號）
+   */
+  async function playMove(childId, kind, arg) {
     if (ui.busy) return;
     var child = store.getChild(childId);
-    var res;
-    try { res = kind === 'skates' ? store.useSkates(childId) : store.rollDice(childId, kind); }
-    catch (err) { toast(err.message, 'neg'); render(); return; }
+    var isDie = kind === 'd6' || kind === 'd12' || kind === 'magic';
+    var res, pr = null;
     ui.busy = true;
-    app.querySelectorAll('.dice-btn, .map-shop').forEach(function (b) { b.disabled = true; });
+    app.querySelectorAll('.dice-btn, .map-shop, .item-btn').forEach(function (b) { b.disabled = true; });
     try {
-      if (kind !== 'skates') await showDie(res.value, kind === 'd6' ? 6 : 12);
-      else toast('🛼 溜冰鞋前進 3 格！', 'pos');
+      if (isDie) {
+        var pend = store.getPlayer(childId).pendingRoll;
+        pr = pend ? Object.assign({}, pend) : store.prepareRoll(childId, kind);
+        await showDie(pr.value, pr.sides);
+        var tickets = store.getPlayer(childId).bag.rerollTicket;
+        if (!pr.rerolled && tickets > 0 && await askReroll(pr, tickets)) {
+          var rr = store.rerollPending(childId);
+          await showDie(rr.value, rr.sides);
+          toast('🎲 命運重骰：' + rr.old + ' → ' + rr.value, 'pos');
+          pr = rr;
+        }
+        res = store.commitRoll(childId);
+      } else if (kind === 'skates') { res = store.useSkates(childId); toast('🛼 溜冰鞋前進 3 格！', 'pos'); }
+      else if (kind === 'wings') { res = store.useWings(childId); toast('🪽 飛行翼起飛！', 'pos'); }
+      else if (kind === 'door') { res = store.useDoor(childId, arg); toast('🚪 任意門傳送到第 ' + arg + ' 格！', 'pos'); }
+      else throw new Error('不明的移動方式');
+    } catch (err) { ui.busy = false; toast(err.message, 'neg'); render(); return; }
+    var ev = res.event;
+    try {
       await hopAlong(child, res.path);
-      var ev = res.event;
       if (ev && ev.extraPath && ev.extraPath.length) {
-        toast('🚃 ' + ev.text, 'pos');
+        toast('🚃 ' + ev.text.split('\n')[0], 'pos');
         await sleep(400);
         await hopAlong(child, ev.extraPath);
       }
@@ -781,7 +848,8 @@
       }
     } finally { ui.busy = false; }
     render();
-    var head = kind === 'skates' ? '🛼 前進 3 格' : '🎲 擲出 ' + res.value;
+    var head = kind === 'skates' ? '🛼 前進 3 格' : kind === 'wings' ? '🪽 飛行翼' : kind === 'door' ? '🚪 任意門'
+      : (kind === 'magic' || (pr && pr.die === 'magic') ? '✨ 神奇骰子擲出 ' : '🎲 擲出 ') + res.value;
     // 停在小遊戲格（或礦車載到小遊戲格）：直接開始「抓住星星」
     var mgEv = ev && ev.minigame ? ev : (ev && ev.then && ev.then.minigame ? ev.then : null);
     if (mgEv) { openMinigame(childId, head + '・停在第 ' + store.getPlayer(childId).pos + ' 格'); return; }
@@ -789,6 +857,7 @@
     if (msg) showInfo(head + '・停在第 ' + store.getPlayer(childId).pos + ' 格', msg);
     else toast(head + '，停在第 ' + store.getPlayer(childId).pos + ' 格');
   }
+
 
   // ---------- 小遊戲「抓住星星」 ----------
   /**
@@ -1160,6 +1229,34 @@
     if (typeof confirmEl.showModal === 'function') confirmEl.showModal(); else confirmEl.setAttribute('open', '');
   }
 
+  /** 地圖上的特殊道具列（只顯示持有的道具） */
+  function itemBar(child, player, st) {
+    var bag = player.bag, busy = !st.canPlay || st.pending || st.picking;
+    var magicUsed = store.magicUsedToday(child.id);
+    var list = [];
+    function btn(id, action, label, note, disabled) {
+      var b = BAG_INFO[id];
+      var art = b.img ? '<img src="' + b.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async">' : '<span class="bag-emoji">' + b.icon + '</span>';
+      list.push('<button type="button" class="item-btn" data-action="' + action + '" data-kind="' + id + '"' + (disabled ? ' disabled' : '') + '>' +
+        '<span class="item-art item-btn-art">' + art + '</span><b>' + label + '</b><small>' + note + '</small></button>');
+    }
+    if (bag.magicDice) btn('magicDice', 'roll', '神奇骰子', magicUsed ? '今天已用・×' + bag.magicDice : '×' + bag.magicDice + '・不占次數', busy || st.atEnd || magicUsed);
+    if (bag.wings) btn('wings', 'use-item', '飛行翼 +20', '×' + bag.wings, busy || st.atEnd);
+    if (bag.door) btn('door', 'pick-door', '任意門', '×' + bag.door, busy);
+    if (bag.luckyMedal) btn('luckyMedal', 'activate-medal', '好運金牌', player.medalArmed ? '已啟用・×' + bag.luckyMedal : '×' + bag.luckyMedal + '・點我啟用', !!player.medalArmed);
+    if (bag.bonusPlay) btn('bonusPlay', 'activate-bonus', '再來 3 次', '×' + bag.bonusPlay + '・點我啟用', busy);
+    if (bag.shield) btn('shield', 'item-info', '防護罩', '×' + bag.shield + '・自動抵擋', false);
+    if (bag.rerollTicket) btn('rerollTicket', 'item-info', '命運重骰券', '×' + bag.rerollTicket + '・擲骰後可用', false);
+    if (bag.airplane) btn('airplane', 'item-info', '呼叫專機', '×' + bag.airplane + '・其他島嶼開放後', false);
+    var games = st.quota.games ? '<p class="medal-on">🎮 再來 3 次：今天還有 ' + st.quota.rolls + ' 次擲骰、' + st.quota.games + ' 次小遊戲</p>' : '';
+    return games + (list.length ? '<section class="item-bar" data-testid="item-bar">' + list.join('') + '</section>' : '');
+  }
+  var ITEM_INFO = {
+    shield: '🛡️ 防護罩：停在命運格抽到「後退」時，會自動擋住，不用手動使用。',
+    rerollTicket: '🎲 命運重骰券：擲骰後會先問你要不要重擲；重擲以新的點數為準，同一次只能用 1 張。',
+    airplane: '✈️ 呼叫專機：可以直接飛到其他島嶼的入口，其他島嶼開放後才能使用。'
+  };
+
   /** 冒險寶物商店：用生活點數兌換冒險寶物（每週 3 件、同款持有 2 件） */
   function treasurePanel(child) {
     var bag = store.getPlayer(child.id).bag;
@@ -1182,14 +1279,14 @@
     d6: { name: '6 面骰', img: 'images/items/dice_6.webp', note: '地圖上使用' },
     d12: { name: '12 面骰', img: 'images/items/dice_12.webp', note: '地圖上使用' },
     skates: { name: '溜冰鞋', img: 'images/items/roller_skate.webp', note: '地圖上使用' },
-    shield: { name: '防護罩', img: 'images/items/shield.webp', note: '即將開放' },
-    magicDice: { name: '神奇骰子', img: 'images/items/magic_dice.webp', note: '即將開放' },
-    luckyMedal: { name: '好運金牌', img: 'images/items/lucky_medal.webp', note: '即將開放' },
-    wings: { name: '飛行翼', img: 'images/items/flying_wings.webp', note: '即將開放' },
-    door: { name: '任意門', img: 'images/items/magic_door.webp', note: '即將開放' },
+    shield: { name: '防護罩', img: 'images/items/shield.webp', note: '自動抵擋' },
+    magicDice: { name: '神奇骰子', img: 'images/items/magic_dice.webp', note: '地圖上使用' },
+    luckyMedal: { name: '好運金牌', img: 'images/items/lucky_medal.webp', note: '地圖上啟用' },
+    wings: { name: '飛行翼', img: 'images/items/flying_wings.webp', note: '地圖上使用' },
+    door: { name: '任意門', img: 'images/items/magic_door.webp', note: '地圖上使用' },
     airplane: { name: '呼叫專機', img: 'images/items/airplane.webp', note: '其他島嶼開放後可用' },
-    rerollTicket: { name: '命運重骰券', icon: '🎲', note: '即將開放' },
-    bonusPlay: { name: '再來 3 次', icon: '🎮', note: '即將開放' },
+    rerollTicket: { name: '命運重骰券', icon: '🎲', note: '擲骰後可用' },
+    bonusPlay: { name: '再來 3 次', icon: '🎮', note: '地圖上啟用' },
     chest: { name: '一般寶箱', img: 'images/tiles/chest.webp', open: true },
     giftMysteryChest: { name: '神秘寶箱', img: 'images/items/mystery_chest.webp', open: true }
   };
@@ -2025,8 +2122,22 @@
         case 'export': exportData(); break;
         case 'pick-child': pickChild(el.getAttribute('data-kind')); break;
         case 'enter-adventure': enterAdventure(childId); break;
-        case 'roll': playMove(childId, el.getAttribute('data-kind')); break;
+        case 'roll': { var rk = el.getAttribute('data-kind'); playMove(childId, rk === 'magicDice' ? 'magic' : rk); break; }   // 神奇骰子按鈕代號 magicDice → 擲骰種類 magic
         case 'use-skates': playMove(childId, 'skates'); break;
+        case 'use-item': playMove(childId, el.getAttribute('data-kind')); break;
+        case 'pick-door': ui.doorPick = childId; render(); break;
+        case 'cancel-door': ui.doorPick = null; render(); break;
+        case 'activate-medal':
+          confirmThen('啟用 🥇 好運金牌？\n下一次停在寶箱或機會格時，效果會發生 2 次。', '啟用', false, function () {
+            store.activateMedal(childId); toast('🥇 好運金牌已啟用！', 'pos');
+          });
+          break;
+        case 'activate-bonus':
+          confirmThen('啟用 🎮 再來 3 次？\n今天額外 +3 次擲骰、+3 次小遊戲，今天沒用完就失效。', '啟用', false, function () {
+            store.activateBonusPlay(childId); toast('🎮 今天多了 3 次擲骰和 3 次小遊戲！', 'pos');
+          });
+          break;
+        case 'item-info': showInfo('道具說明', ITEM_INFO[el.getAttribute('data-kind')] || ''); break;
         case 'open-shop': openShop(childId); break;
         case 'play-minigame': openMinigame(childId); break;
         case 'pick-character': openCharacterPicker(childId); break;

@@ -902,6 +902,78 @@ async function main() {
     await c10.close();
   }
 
+  // ---------- 寶物商店 Phase 4A：地圖上使用道具 ----------
+  {
+    const c12 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 800 }, serviceWorkers: 'block' });
+    const q = await c12.newPage();
+    await q.clock.setFixedTime(new Date('2026-11-06T10:00:00'));
+    q.on('pageerror', (e) => errors.push(e.message));
+    q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
+    await q.goto(url);
+    const id = await q.evaluate(() => {
+      const s = window.__cgpStore;
+      const a = s.addChild({ name: '端端' });
+      const it = s.addItem({ kind: 'bonus', name: '大加分', points: 100 });
+      s.recordItem(a.id, it.id); s.settleToday(a.id);
+      Object.assign(s.getPlayer(a.id).bag, { magicDice: 1, rerollTicket: 1, door: 1, wings: 1, luckyMedal: 1, bonusPlay: 1, shield: 1 });
+      s.setPlayerTile(a.id, 1); s.save();
+      return a.id;
+    });
+    await q.goto(url + '#map-' + id);
+    await q.waitForSelector('[data-testid=item-bar]');
+    assert.deepEqual(await q.$$eval('.item-btn', (bs) => bs.map((b) => b.dataset.kind)),
+      ['magicDice', 'wings', 'door', 'luckyMedal', 'bonusPlay', 'shield', 'rerollTicket']);
+    // 神奇骰子＋命運重骰券：擲出 2 → 重擲 → 6（第 1 格 → 第 7 格，小遊戲）
+    await q.evaluate(() => { const seq = [1.5 / 12, 0.5, 5.5 / 12]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0.5); });
+    await q.click('.item-btn[data-kind=magicDice]');
+    await q.waitForSelector('#confirm .reroll-box', { timeout: 10000 });
+    assert.match(await q.locator('#confirm .reroll-box').innerText(), /擲出 2[\s\S]*剩 1 張/);
+    await q.evaluate(() => { const seq = [5.5 / 12]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0.5); });
+    await q.click('#confirm [data-reroll]');
+    await q.waitForSelector('#mg .mg-star.first', { timeout: 10000 });     // 第 7 格：小遊戲
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).pos, id), 7);
+    assert.equal(await q.locator('#mg-sec').count(), 1);
+    await q.click('#mg [data-mg=later]');
+    assert.equal(await q.locator('[data-testid=rolls]').innerText(), '0 / 3', '神奇骰子不占每日次數');
+    assert.ok(await q.locator('.item-btn[data-kind=magicDice]').count() === 0, '用完就不顯示');
+    // 好運金牌：啟用
+    await q.click('.item-btn[data-kind=luckyMedal]');
+    await q.click('#confirm [data-yes]');
+    await q.waitForSelector('.medal-on');
+    // 再來 3 次：啟用 → 上方顯示額外次數
+    await q.click('.item-btn[data-kind=bonusPlay]');
+    await q.click('#confirm [data-yes]');
+    await q.waitForSelector('.hud-bonus');
+    assert.match(await q.locator('.hud-bonus').innerText(), /\+3/);
+    // 任意門：點地圖上的第 12 格（寶箱）→ 傳送，好運金牌讓寶箱效果 2 次
+    await q.click('.item-btn[data-kind=door]');
+    await q.waitForSelector('.map-view.picking');
+    await q.evaluate(() => { window.__cgpStore.random = () => 0.1; });
+    const pt = await q.evaluate(() => {
+      const view = document.getElementById('map-view').getBoundingClientRect();
+      const cand = [...document.querySelectorAll('.mtile')].map((el) => ({ n: +el.dataset.n, r: el.getBoundingClientRect() }))
+        .filter((t) => t.n !== 7 && t.n < 30 && t.r.left > view.left + 10 && t.r.right < view.right - 60 && t.r.top > view.top + 10 && t.r.bottom < view.bottom - 10);
+      const t = cand.find((c) => c.n === 5) || cand[0];
+      return { n: t.n, x: t.r.left + t.r.width / 2, y: t.r.top + t.r.height / 2 };
+    });
+    await q.mouse.click(pt.x, pt.y);
+    assert.match(await q.locator('#confirm').innerText(), new RegExp('傳送到第 ' + pt.n + ' 格'));
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction((n) => document.querySelector('[data-testid=pos]').textContent.startsWith(n + ' '), pt.n, { timeout: 10000 });
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.door, id), 0);
+    await q.waitForSelector('#confirm[open]', { timeout: 10000 }).catch(() => {});
+    if (await q.locator('#confirm[open] [data-yes]').count()) await q.click('#confirm [data-yes]');
+    // 飛行翼：前進 20 格（不超過第 30 格）
+    const before = await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).pos, id);
+    await q.evaluate(() => { window.__cgpStore.random = () => 0.5; });
+    await q.click('.item-btn[data-kind=wings]');
+    await q.waitForFunction((b) => +document.querySelector('[data-testid=pos]').textContent.split(' ')[0] === Math.min(30, b + 20), before, { timeout: 15000 });
+    const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert.ok(over <= 0);
+    console.log('✔ 寶物商店 Phase 4A：道具列、神奇骰子＋命運重骰券、好運金牌、再來 3 次、任意門點選格子、飛行翼');
+    await c12.close();
+  }
+
   // ---------- 設定：還原資料（每日自動備份、載入備份檔覆蓋） ----------
   {
     const c11 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 780 }, serviceWorkers: 'block' });
