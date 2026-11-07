@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-14';
+  var APP_VERSION = '2026.11.07-15';
   var store;
   try {
     store = new CGP.Store();
@@ -499,7 +499,7 @@
     return '<img class="' + (cls || 'char-img') + '" src="images/characters/' + id + '.webp" alt="' + h(c.name) + '" width="300" height="310" decoding="async">';
   }
   function characterArt(child) { return charImg(characterId(child)); }
-  /** 地圖左下角商店按鈕圖（白底插圖，按鈕為純白底） */
+  /** 地圖左下角商店按鈕圖（透明去背插圖，直接浮在地圖上） */
   var SHOP_ART = '<span class="map-shop-art" aria-hidden="true"><img src="images/tiles/shop.webp" alt="" width="192" height="192" decoding="async" draggable="false"></span>';
   /** 能量星星圖示（白底圖，以 mix-blend-mode: multiply 疊在淺色底上；alt 保留 ⭐ 供讀屏） */
   var STAR_IMG = '<img class="star-ico" src="images/items/star.webp" alt="⭐" width="256" height="256" decoding="async" draggable="false">';
