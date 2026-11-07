@@ -722,6 +722,23 @@ async function main() {
     const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(over <= 0, '小遊戲不可橫向溢出');
     console.log('✔ Phase 4：抓住星星（第 1 顆在中央、點到才計時、抓 3 得 3 星、稍後再玩與重新整理後繼續）');
+
+    // 家長試玩網址 #minigame-test：不給星星、不算次數、不動存檔
+    const snap = await q.evaluate(() => localStorage.getItem('cgp-data'));
+    await q.goto(url + '#minigame-test'); await q.reload();       // 模擬直接開啟網址
+    await q.waitForSelector('#mg.practice .mg-star.first');
+    assert.match(await q.locator('#mg-tip').innerText(), /試玩模式/);
+    await q.click('.mg-star.first', { force: true });
+    await q.waitForSelector('.mg-result', { timeout: 15000 });
+    assert.match(await q.locator('.mg-result').innerText(), /試玩模式，不會得到星星/);
+    assert.equal(await q.locator('.mg-result [data-mg=claim]').count(), 0);
+    await q.click('.mg-result [data-mg=again]');
+    await q.waitForSelector('#mg.practice .mg-star.first');
+    assert.equal(await q.locator('#mg').count(), 1, '再玩一次只有一個遊戲畫面');
+    await q.click('#mg [data-mg=later]');
+    await q.waitForFunction(() => !document.getElementById('mg') && location.hash === '#home');
+    assert.equal(await q.evaluate(() => localStorage.getItem('cgp-data')), snap, '試玩不改變存檔');
+    console.log('✔ Phase 4：試玩網址 #minigame-test（不給星星、可再玩一次、離開回首頁、存檔不變）');
     await c8.close();
   }
 

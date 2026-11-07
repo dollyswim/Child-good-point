@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.07-20`｜Service Worker 快取 `cgp-shell-v30`
+> 最後更新：2026-11-07｜App 版本 `2026.11.07-21`｜Service Worker 快取 `cgp-shell-v31`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---
@@ -119,7 +119,7 @@
 - 第 3 步用的 9 張道具圖已放在 `images/items/`（mystery_chest、golden_key、treasure_magnet、lucky_medal、magic_dice、flying_wings、shield、magic_door、airplane，256px 白底），**尚未接入、也未加入 `sw.js` 快取**；第 3 步接入時再加入 `SHELL`。
 
 ### 路由（hash，只用英數與連字號）
-`#home`、`#child-<id>`（任務）、`#challenge-<id>`、`#shop-<id>`（兌換）、`#adventure-<id>`（冒險大廳）、`#map-<id>`（金島地圖）、`#report`、`#rules`、`#rules-<分頁>`。舊格式 `#/child/<id>` 仍相容。
+`#minigame-test`（家長試玩「抓住星星」：不給星星、不算次數、不動存檔）、`#home`、`#child-<id>`（任務）、`#challenge-<id>`、`#shop-<id>`（兌換）、`#adventure-<id>`（冒險大廳）、`#map-<id>`（金島地圖）、`#report`、`#rules`、`#rules-<分頁>`。舊格式 `#/child/<id>` 仍相容。
 
 ### 重要資料規則
 - 總點數 = 起始點數 + 所有紀錄點數（不另存）。今日淨得分不含兌換與起始點數。

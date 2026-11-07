@@ -1193,3 +1193,7 @@ body.mg-open { overflow: hidden; }
 .mg-result .btn { min-width: 60%; margin-top: 6px; }
 .mg-resume { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .mg-star, .mg-star.first, .mg-result { animation: none; } }
+.mg-practice { display: block; color: #ffe27a; font-weight: 800; }
+.mg-practice-note { color: #8a6bd1; font-size: .9rem; }
+.mg-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; margin-top: 6px; }
+.mg-acts .btn { min-width: 0; margin: 0; }
