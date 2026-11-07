@@ -531,6 +531,58 @@ async function main() {
     await c3.close();
   }
 
+  // ---------- 冒險大廳：依孩子所在島嶼輪換地圖關卡卡插圖 ----------
+  {
+    const c5 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 800 }, serviceWorkers: 'block' });
+    const q = await c5.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    const ids = await q.evaluate(() => {
+      const s = window.__cgpStore;
+      return [s.addChild({ name: '丙' }).id, s.addChild({ name: '丁' }).id];
+    });
+    const art = async () => {
+      await q.locator('.map-card .map-art img').scrollIntoViewIfNeeded();
+      await q.waitForFunction(() => { const i = document.querySelector('.map-card .map-art img'); return i && i.complete && i.naturalWidth > 0; });
+      return q.evaluate(() => ({
+        island: document.querySelector('.map-card').dataset.island,
+        src: document.querySelector('.map-card .map-art img').currentSrc.replace(location.origin + location.pathname.replace(/[^/]*$/, ''), ''),
+        w: document.querySelector('.map-card .map-art img').naturalWidth,
+        dots: [...document.querySelectorAll('.island-dots .dot.active')].map((d) => d.dataset.island)
+      }));
+    };
+    // 預設在金島
+    await q.goto(url + '#adventure-' + ids[0]);
+    assert.deepEqual(await art(), { island: 'gold', src: 'images/gold-island.webp', w: 1200, dots: ['gold'] });
+    const setIsland = (cid, island) => q.evaluate(([cid, island]) => {
+      const s = window.__cgpStore; s.getPlayer(cid).island = island; s.save();
+    }, [cid, island]);
+    for (const island of ['wood', 'water', 'fire', 'earth', 'gold']) {
+      await setIsland(ids[0], island);
+      await q.reload();
+      const a = await art();
+      assert.equal(a.island, island);
+      assert.equal(a.src, island === 'gold' ? 'images/gold-island.webp' : 'images/islands/' + island + '.webp', island + ' 插圖');
+      assert.equal(a.w, 1200);
+      assert.deepEqual(a.dots, [island], island + ' 圓點');
+      if (SHOT_DIR) await q.locator('.map-card').screenshot({ path: path.join(SHOT_DIR, '19-island-' + island + '.png') });
+    }
+    // 每個孩子各自依所在島嶼顯示
+    await setIsland(ids[0], 'fire');
+    await setIsland(ids[1], 'water');
+    await q.goto(url + '#adventure-' + ids[0]); await q.reload();
+    assert.equal((await art()).island, 'fire');
+    await q.goto(url + '#adventure-' + ids[1]);
+    assert.equal((await art()).island, 'water');
+    // 未知島嶼代號 → 退回金島
+    await setIsland(ids[1], 'unknown'); await q.reload();
+    assert.equal((await art()).island, 'gold');
+    const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert.ok(over <= 0, '冒險大廳出現橫向捲動');
+    console.log('✔ 冒險大廳依所在島嶼輪換插圖：金／木／水／火／土、各孩子獨立、未知代號退回金島');
+    await c5.close();
+  }
+
   // ---------- 道具圖示：商店、背包（道具列）圖片載入、contain 不變形、價格與效果不變 ----------
   for (const width of [360, 430]) {
     const c4 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width, height: 800 }, serviceWorkers: 'block' });

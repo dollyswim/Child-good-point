@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-7';
+  var APP_VERSION = '2026.11.07-8';
   var store;
   try {
     store = new CGP.Store();
@@ -394,7 +394,18 @@
 
   var CHEST = ART.CHEST;
 
-  var ISLANDS = [['金島', '#ffd23f'], ['木島', '#5cbf4a'], ['水島', '#3fb6e8'], ['火島', '#ff6a3d'], ['土島', '#b07a4a']];
+  /** 五座島：冒險大廳的地圖關卡卡依孩子所在島嶼（players[id].island）顯示對應插圖 */
+  var ISLANDS = [
+    { id: 'gold', name: '金島', color: '#ffd23f', webp: 'images/gold-island.webp', jpg: 'images/gold-island.jpg', alt: '金島：齒輪、礦坑、礦車、金屬橋與發光礦石' },
+    { id: 'wood', name: '木島', color: '#5cbf4a', webp: 'images/islands/wood.webp', jpg: 'images/islands/wood.jpg', alt: '木島：巨樹、樹屋、藤蔓、森林動物與精靈' },
+    { id: 'water', name: '水島', color: '#3fb6e8', webp: 'images/islands/water.webp', jpg: 'images/islands/water.jpg', alt: '水島：海洋、瀑布、珊瑚、小船與泡泡' },
+    { id: 'fire', name: '火島', color: '#ff6a3d', webp: 'images/islands/fire.webp', jpg: 'images/islands/fire.jpg', alt: '火島：火山、熔岩、火焰精靈與礦坑' },
+    { id: 'earth', name: '土島', color: '#b07a4a', webp: 'images/islands/earth.webp', jpg: 'images/islands/earth.jpg', alt: '土島：岩石、洞穴、化石、遺跡與礦石' }
+  ];
+  function islandOf(childId) {
+    var id = store.getPlayer(childId).island;
+    return ISLANDS.filter(function (is) { return is.id === id; })[0] || ISLANDS[0];
+  }
   var DICE_COST = 5; // Phase 3 規格：6 面骰 5 星
 
   function renderAdventure(child) {
@@ -456,17 +467,18 @@
       }).join('') + '</ul>' : '<p class="muted small">還沒有結算紀錄</p>') + '</details>';
 
     // 5. 地圖關卡卡
-    var map = '<section class="map-card">' +
-      '<div class="map-art"><picture><source srcset="images/gold-island.webp" type="image/webp">' +
-      '<img src="images/gold-island.jpg" alt="金島：齒輪、礦坑、礦車、金屬橋與發光礦石" width="1200" height="675" loading="lazy" decoding="async"></picture></div>' +
+    var isl = islandOf(child.id);
+    var map = '<section class="map-card" data-island="' + isl.id + '">' +
+      '<div class="map-art"><picture><source srcset="' + isl.webp + '" type="image/webp">' +
+      '<img src="' + isl.jpg + '" alt="' + h(isl.alt) + '" width="1200" height="675" loading="lazy" decoding="async"></picture></div>' +
       '<div class="map-info">' +
       '<p>擲骰子、走格子、開寶箱！目前在第 ' + store.getPlayer(child.id).pos + ' / 30 格</p>' +
       (x ? '<span class="lock-pill open">🔓 今天可以玩</span>' : '<span class="lock-pill">🔒 先進入今日冒險</span>') +
       (x ? '<a class="btn primary map-cta" href="#map-' + h(child.id) + '">開始冒險 ›</a>'
         : '<button class="btn primary map-cta" disabled>開始冒險 ›</button>') + '</div>' +
       '<span class="compass" aria-hidden="true">🧭</span></section>' +
-      '<div class="island-dots" aria-label="五座島">' + ISLANDS.map(function (is, i) {
-        return '<span class="dot ' + (i === 0 ? 'active' : '') + '" style="--d:' + is[1] + '" title="' + is[0] + '"></span>';
+      '<div class="island-dots" aria-label="五座島">' + ISLANDS.map(function (is) {
+        return '<span class="dot ' + (is.id === isl.id ? 'active' : '') + '" data-island="' + is.id + '" style="--d:' + is.color + '" title="' + is.name + '"></span>';
       }).join('') + '</div>';
 
     // 6. 快速入口
