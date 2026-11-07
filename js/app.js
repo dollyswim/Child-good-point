@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-42';
+  var APP_VERSION = '2026.11.07-43';
   var store;
   try {
     store = new CGP.Store();
@@ -1691,6 +1691,7 @@
       return '<li class="row">' + avatar(c, 'sm') +
         '<span class="row-main"><b>' + h(c.name) + ' ' + (c.badge ? h(c.badge) : '') + '</b><small>' + h((c.title ? c.title + ' ' : '') + 'Lv.' + store.getLevel(c.id).level) +
         '・目前 ' + num(store.getTotal(c.id)) + ' 點' + (c.weeklyGoal ? '・每週目標 ' + num(c.weeklyGoal) : '') + '・起始 ' + c.startPoints + '</small></span>' +
+        (store.getSettlement(c.id) ? '<button class="btn small" data-action="resettle-day" data-id="' + h(c.id) + '">重新結算今天</button>' : '') +
         (store.isAdventureEnded(c.id) ? '<button class="btn small" data-action="reopen-day" data-id="' + h(c.id) + '">解除今天的結束</button>' : '') +
         '<button class="btn small" data-action="edit-child" data-id="' + h(c.id) + '">編輯</button>' +
         '<button class="btn small danger" data-action="delete-child" data-id="' + h(c.id) + '">刪除</button></li>';
@@ -2330,6 +2331,19 @@
         case 'ach-info': {
           var ach = store.getAchievements(childId).find(function (a) { return a.id === id; });
           showInfo((ach.done ? ach.icon : '🔒') + ' ' + ach.name, ach.desc + '\n' + (ach.done ? '✅ ' + shortDate(ach.date) + ' 達成' : '還沒達成，繼續加油！'));
+          break;
+        }
+        case 'resettle-day': {
+          var rc = store.getChild(id), pv = store.getResettlePreview(id);
+          if (!pv) { toast(rc.name + ' 今天還沒結算', 'neg'); break; }
+          if (!pv.added) {
+            showInfo('🔄 重新結算今天', rc.name + ' 今天已結算 ⭐' + pv.settlement.stars + '（今日淨得分 ' + pv.settlement.net + '）。\n目前今日淨得分 ' + pv.net + '，沒有要補發的星星。\n（分數變少不會扣回星星）');
+            break;
+          }
+          confirmThen('重新結算 ' + rc.name + ' 今天的能量星星？\n已結算：⭐' + pv.settlement.stars + '（今日淨得分 ' + pv.settlement.net + '）\n目前今日淨得分 ' + pv.net + '，補發 ⭐' + pv.added +
+            (pv.bonus ? '（含加碼星星 ' + pv.bonus + '）' : '') + '\n只補發差額，不會重複發放。', '補發', false, function () {
+            var r = store.resettleToday(id); toast('已補發 ⭐' + r.added + ' 給 ' + rc.name, 'pos');
+          });
           break;
         }
         case 'reopen-day': {

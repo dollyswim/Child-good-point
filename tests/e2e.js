@@ -1093,6 +1093,17 @@ async function main() {
     await q.click('[data-action=reopen-day]');
     await q.click('#confirm [data-yes]');
     await q.waitForFunction((cid) => !window.__cgpStore.isAdventureEnded(cid), id);
+    // 設定 → 孩子：重新結算今天（結算後又加 20 分 → 補發 4 星）
+    const bal0 = await q.evaluate((cid) => { const s = window.__cgpStore; const it = s.addItem({ kind: 'bonus', name: '補加分', points: 20 }); s.recordItem(cid, it.id); return s.getStarBalance(cid); }, id);
+    await q.goto(url + '#rules-children'); await q.reload();
+    await passPin(q);
+    await q.click('[data-action=resettle-day]');
+    assert.match(await q.locator('#confirm').innerText(), /重新結算[\s\S]*補發 ⭐4[\s\S]*只補發差額/);
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction(([cid, b]) => window.__cgpStore.getStarBalance(cid) === b + 4, [id, bal0]);
+    await q.click('[data-action=resettle-day]');
+    assert.match(await q.locator('#confirm').innerText(), /沒有要補發的星星/);
+    await q.click('#confirm [data-yes]');
     assert.equal(await q.evaluate(() => { try { window.__cgpStore.lockParent(); window.__cgpStore.reopenAdventure('x'); return 'ok'; } catch (e) { return e.message; } }), '需要家長密碼才能執行');
     await q.evaluate((cid) => { window.__cgpStore.endAdventure(cid); }, id);
     // 重新整理仍然鎖住；任務頁顯示已結束

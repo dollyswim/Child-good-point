@@ -1973,3 +1973,25 @@ test('金島第三區資料：25 格（56～80）、穩定 ID、格距 64～76�
     [[60, 67, 74, 78], [58, 64, 70, 77], [66, 69, 76], [62, 72, 79], [80]]);
   assert.deepEqual(t.filter(x => x.backgroundId === 'region02').map(x => x.order), [56, 57], '第 56、57 格在水晶礦谷圖上');
 });
+
+test('重新結算今天：只補發差額（含新的加碼星星）、不重複發放、分數變少不扣回、需要家長密碼', () => {
+  const { store, a } = p3Store();
+  const x = store.getSettlement(a.id), bal = store.getStarBalance(a.id);
+  assert.equal(store.getResettlePreview(a.id).added, 0, '沒有新分數：不用補發');
+  store.lockParent();
+  assert.throws(() => store.resettleToday(a.id), /家長密碼/);
+  store.allowPinReset();                                   // 測試用：直接解鎖家長權限
+  const it = store.addItem({ kind: 'bonus', name: '補', points: 23 });
+  store.recordItem(a.id, it.id);
+  const pv = store.getResettlePreview(a.id);
+  assert.equal(pv.base, Math.ceil((x.net + 23) / 5) - x.baseStars);
+  const r = store.resettleToday(a.id);
+  assert.equal(r.added, pv.added);
+  assert.equal(store.getStarBalance(a.id), bal + pv.added);
+  assert.equal(store.data.adventure.settlements.filter(s => s.childId === a.id).length, 1, '仍是同一筆結算');
+  assert.equal(store.resettleToday(a.id).added, 0, '不重複發放');
+  const pen = store.addItem({ kind: 'penalty', name: '扣', points: -50 });
+  store.recordItem(a.id, pen.id);
+  assert.equal(store.resettleToday(a.id).added, 0, '分數變少不扣回');
+  assert.equal(store.getStarBalance(a.id), bal + pv.added);
+});

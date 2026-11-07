@@ -1306,6 +1306,41 @@
     return x;
   };
 
+  /**
+   * 重新結算今天的預覽：用目前的今日淨得分重算，只補發差額（分數變少不扣星星）
+   * @returns {{ settlement, net, base, bonus, added }|null} 今天還沒結算時回傳 null
+   */
+  Store.prototype.getResettlePreview = function (childId) {
+    var x = this.getSettlement(childId);
+    if (!x) return null;
+    var net = this.getTodayNet(childId);
+    var base = Math.max(0, starsForNet(net) - x.baseStars);
+    var unpaid = this._unpaidStarRecords(childId);
+    var bonus = unpaid.reduce(function (sum, r) { return sum + r.stars; }, 0);
+    return { settlement: x, net: net, base: base, bonus: bonus, added: base + bonus, recordIds: unpaid.map(function (r) { return r.id; }) };
+  };
+
+  /**
+   * 家長重新結算今天（需家長密碼解鎖）：補發差額到今天的結算紀錄，不會重複發放、不會扣回
+   * @returns {{ added, settlement }}
+   */
+  Store.prototype.resettleToday = function (childId) {
+    if (this._requireParent) this._requireParent();
+    var pv = this.getResettlePreview(childId);
+    if (!pv) throw new Error('今天還沒結算，請先進入今日冒險');
+    var x = pv.settlement;
+    if (pv.added > 0) {
+      x.net = Math.max(x.net, pv.net);
+      x.baseStars += pv.base;
+      x.bonusStars += pv.bonus;
+      x.stars += pv.added;
+      x.paidRecordIds = x.paidRecordIds.concat(pv.recordIds);
+      (x.resettles || (x.resettles = [])).push({ net: pv.net, added: pv.added, ts: this.now().getTime() });
+      this.save();
+    }
+    return { added: pv.added, settlement: x };
+  };
+
   // ----- 等級 -----
   /** 升到 Lv.n 需要的累積加分：每 1000 點 1 級，Lv.1 從 0 開始，Lv.2 = 2000、Lv.3 = 3000…Lv.10 = 10000 */
   /** 每 1000 分升 1 級：Lv.1＝0～999、Lv.2＝1000～1999… */
