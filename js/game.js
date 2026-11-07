@@ -37,7 +37,7 @@
     { id: 'magicDice', name: '神奇骰子', icon: '🎲', img: 'images/items/magic_dice.webp', price: 10, desc: '額外擲一次 12 面骰（不占每日 3 次，每天最多用 1 顆）' },
     { id: 'luckyMedal', name: '好運金牌', icon: '🥇', img: 'images/items/lucky_medal.webp', price: 100, desc: '下一次停在寶箱或機會格，效果發生 2 次' },
     { id: 'wings', name: '飛行翼', icon: '🪽', img: 'images/items/flying_wings.webp', price: 100, desc: '向前飛行 20 格' },
-    { id: 'door', name: '任意門', icon: '🚪', img: 'images/items/magic_door.webp', price: 100, desc: '傳送到本區指定的格子' }
+    { id: 'door', name: '任意門', icon: '🚪', img: 'images/items/magic_door.webp', price: 100, desc: '傳送到本島指定的格子' }
   ];
 
   var SHOP = [
@@ -895,7 +895,7 @@
   Store.prototype.useSkates = function (childId) { return this._useMoveItem(childId, 'skates'); };
   /** 飛行翼：前進 20 格（第一區到第 30 格就停） */
   Store.prototype.useWings = function (childId) { return this._useMoveItem(childId, 'wings'); };
-  /** 任意門：傳送到本區指定的格子（不含起點、目前位置與第 30 格），落點觸發事件 */
+  /** 任意門：傳送到本島已開放的指定格子（不含起點、目前位置與最後一格），落點觸發事件 */
   Store.prototype.useDoor = function (childId, n) {
     this._requirePlay(childId);
     var p = this.getPlayer(childId);
