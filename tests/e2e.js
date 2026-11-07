@@ -657,6 +657,74 @@ async function main() {
     await c7.close();
   }
 
+  // ---------- Phase 4 第 2 步：小遊戲「抓住星星」 ----------
+  {
+    const c8 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 760 }, serviceWorkers: 'block' });
+    const q = await c8.newPage();
+    await q.clock.setFixedTime(new Date('2026-11-06T10:00:00'));
+    q.on('pageerror', (e) => errors.push(e.message));
+    q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
+    await q.goto(url);
+    const id = await q.evaluate(() => {
+      const s = window.__cgpStore;
+      const a = s.addChild({ name: '甲' });
+      const it = s.addItem({ kind: 'bonus', name: '大加分', points: 100 });
+      s.recordItem(a.id, it.id); s.settleToday(a.id);
+      s.getPlayer(a.id).bag.d6 = 2; s.setPlayerTile(a.id, 4); s.save();
+      return a.id;
+    });
+    await q.goto(url + '#map-' + id);
+    await q.waitForSelector('#pawn');
+    assert.match(await q.locator('.mt-minigame').first().getAttribute('title'), /抓住星星/);
+    const before = await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id);
+    await q.evaluate(() => { const seq = [2.5 / 6]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0); });
+    await q.click('.dice-btn.d6');                                  // 擲 3 → 第 7 格小遊戲
+    await q.waitForSelector('#mg .mg-star.first', { timeout: 10000 });
+    await q.waitForFunction(() => { const i = getComputedStyle(document.getElementById('mg')).backgroundImage; return /minigame\/bg\.webp/.test(i); });
+    // 第 1 顆在正中央，點到才開始計時
+    const pos = await q.evaluate(() => {
+      const f = document.getElementById('mg-field').getBoundingClientRect(), s = document.querySelector('.mg-star.first').getBoundingClientRect();
+      return { x: (s.left + s.width / 2 - f.left) / f.width, w: document.querySelector('.mg-star.first').offsetWidth };
+    });
+    assert.ok(Math.abs(pos.x - 0.5) < 0.02 && pos.w >= 96, '第 1 顆在正中央且最大：' + JSON.stringify(pos));
+    await q.waitForTimeout(1500);
+    assert.equal(await q.locator('#mg-sec').innerText(), '10', '還沒點第 1 顆不計時');
+    await q.click('.mg-star.first', { force: true });             // 第 1 顆有呼吸動畫
+    // 再抓 2 顆
+    for (let k = 0; k < 2; k++) {
+      const st = q.locator('.mg-star:not(.first):not(.got):not(.miss)').first();
+      await st.waitFor({ timeout: 5000 });
+      await st.click({ force: true });
+    }
+    assert.equal(await q.locator('#mg-count').innerText(), '3');
+    await q.waitForSelector('.mg-result', { timeout: 15000 });
+    assert.match(await q.locator('.mg-result').innerText(), /抓到 3 顆星星[\s\S]*\+3/);
+    await q.click('.mg-result [data-mg=claim]');
+    await q.waitForFunction(() => !document.getElementById('mg'));
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), before + 3, '得到 3 顆能量星星');
+    assert.equal(await q.locator('.mg-resume').count(), 0);
+    // 稍後再玩 → 地圖出現「還沒玩完」按鈕，重新整理後仍可繼續
+    await q.clock.setFixedTime(new Date('2026-11-07T10:00:00'));
+    await q.evaluate((cid) => {
+      const s = window.__cgpStore; const it = s.addItem({ kind: 'bonus', name: 'x', points: 10 });
+      s.recordItem(cid, it.id); s.settleToday(cid); s.setPlayerTile(cid, 14);
+      const seq = [2.5 / 6]; s.random = () => (seq.length ? seq.shift() : 0); s.save();
+    }, id);
+    await q.reload(); await q.waitForSelector('#pawn');
+    await q.evaluate(() => { const seq = [2.5 / 6]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0); });
+    await q.click('.dice-btn.d6');                                  // 擲 3 → 第 17 格小遊戲
+    await q.waitForSelector('#mg .mg-star.first', { timeout: 10000 });
+    await q.click('#mg [data-mg=later]');
+    await q.waitForSelector('.mg-resume');
+    await q.reload(); await q.waitForSelector('.mg-resume');
+    await q.click('.mg-resume');
+    await q.waitForSelector('#mg .mg-star.first');
+    const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert.ok(over <= 0, '小遊戲不可橫向溢出');
+    console.log('✔ Phase 4：抓住星星（第 1 顆在中央、點到才計時、抓 3 得 3 星、稍後再玩與重新整理後繼續）');
+    await c8.close();
+  }
+
   // ---------- 冒險大廳：依孩子所在島嶼輪換地圖關卡卡插圖 ----------
   {
     const c5 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 800 }, serviceWorkers: 'block' });

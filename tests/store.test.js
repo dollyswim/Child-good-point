@@ -1080,3 +1080,65 @@ test('Phase 4：特殊任務存檔遷移、刪除孩子一併刪除', () => {
   store.deleteChild(a.id);
   assert.equal(store.data.specialTasks.length, 0);
 });
+
+// ---------- Phase 4 第 2 步：小遊戲「抓住星星」 ----------
+test('Phase 4：停在小遊戲格 → 產生今天的小遊戲；完成後每抓 1 顆得 1 星、最多 8 星、只能領一次', () => {
+  const { store, a, push } = p3Store();
+  store.buyItem(a.id, 'd6'); store.buyItem(a.id, 'd6');
+  store.setPlayerTile(a.id, 4);
+  push(face(3));                                // 擲 3 → 第 7 格小遊戲
+  const r = store.rollDice(a.id, 'd6');
+  assert.equal(r.event.type, 'minigame');
+  assert.ok(r.event.minigame, '可以開始小遊戲');
+  assert.equal(store.getPendingMinigame(a.id).tile, 7);
+  const bal = store.getStarBalance(a.id);
+  const m = store.finishMinigame(a.id, 5);
+  assert.deepEqual([m.status, m.caught, m.stars], ['done', 5, 5]);
+  assert.equal(store.getStarBalance(a.id), bal + 5);
+  assert.throws(() => store.finishMinigame(a.id, 5), /沒有可以玩/, '只能領一次');
+  assert.equal(store.getTotal(a.id), 100, '不影響生活點數');
+});
+
+test('Phase 4：小遊戲每天 1 次、星星上限 8、隔天可再玩、重新整理後可繼續', () => {
+  const { store, a, push, setDate, storage } = p3Store();
+  store.buyItem(a.id, 'd6'); store.buyItem(a.id, 'd12');
+  store.setPlayerTile(a.id, 4);
+  push(face(3));
+  store.rollDice(a.id, 'd6');
+  // 重新載入（模擬重新整理）：未完成的小遊戲仍在
+  const s2 = new Store({ storage, seed: false, now: () => store.now() });
+  assert.ok(s2.getPendingMinigame(a.id), '重新整理後可繼續');
+  const bal = store.getStarBalance(a.id);
+  assert.equal(store.finishMinigame(a.id, 99).stars, 8, '最多 8 星');
+  assert.equal(store.getStarBalance(a.id), bal + 8);
+  // 同一天再停到小遊戲格：不能再玩
+  store.setPlayerTile(a.id, 7);
+  push(face(10, 12));                          // 擲 10 → 第 17 格小遊戲
+  const r = store.rollDice(a.id, 'd12');
+  assert.equal(r.event.type, 'minigame');
+  assert.ok(!r.event.minigame && r.event.minigameOverflow, '今天已玩過');
+  assert.match(r.event.text, /明天再來/);
+  assert.equal(store.getPendingMinigame(a.id), null);
+  // 隔天：可以再玩
+  setDate('2026-11-07T10:00:00');
+  const it = store.addItem({ kind: 'bonus', name: 'x', points: 10 });
+  store.recordItem(a.id, it.id); store.settleToday(a.id);
+  store.buyItem(a.id, 'd6');
+  store.setPlayerTile(a.id, 21);
+  push(face(3));                                // 第 24 格小遊戲
+  assert.ok(store.rollDice(a.id, 'd6').event.minigame, '隔天可以再玩');
+  assert.equal(store.finishMinigame(a.id, 0).stars, 0, '抓到 0 顆得 0 星');
+});
+
+test('Phase 4：小遊戲存檔遷移（同一孩子同一天只留一筆）、刪除孩子一併刪除', () => {
+  const d = migrate({ children: [{ id: 'c', name: 'B' }], adventure: { minigames: [
+    { id: 'm1', childId: 'c', date: '2026-11-06', status: 'done', caught: 3, stars: 3 },
+    { id: 'm2', childId: 'c', date: '2026-11-06', status: 'pending' },
+    { id: 'm3', childId: 'x', date: '2026-11-06', status: 'pending' }] } });
+  assert.deepEqual(d.adventure.minigames.map(m => [m.id, m.status, m.stars]), [['m1', 'done', 3]]);
+  assert.deepEqual(migrate({ children: [] }).adventure.minigames, []);
+  const { store, a } = p3Store();
+  store.data.adventure.minigames.push({ id: 'z', childId: a.id, date: store.today(), status: 'pending', caught: 0, stars: 0, ts: 1 });
+  store.deleteChild(a.id);
+  assert.equal(store.data.adventure.minigames.length, 0);
+});

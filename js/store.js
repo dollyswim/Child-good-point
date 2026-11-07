@@ -85,7 +85,7 @@
 
   // ---------- 預設資料 ----------
   function emptyData() {
-    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], adventure: { settlements: [], ledger: [], rolls: [], players: {} } };
+    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], adventure: { settlements: [], ledger: [], rolls: [], minigames: [], players: {} } };
   }
 
   function defaultData() {
@@ -260,6 +260,21 @@
         return { id: String(x.id), childId: String(x.childId), date: x.date, die: x.die === 'd12' ? 'd12' : 'd6',
           value: toInt(x.value, 0), from: toInt(x.from, 0), to: toInt(x.to, 0), ts: toInt(x.ts, Date.now()) };
       }),
+      // Phase 4：小遊戲「抓住星星」（每孩子每天 1 筆；pending＝停在小遊戲格還沒玩完）
+      minigames: (function () {
+        var seen = {};
+        return (Array.isArray(adv.minigames) ? adv.minigames : []).filter(function (x) {
+          if (!x || !x.id || !childIdSet.has(String(x.childId)) || !/^\d{4}-\d{2}-\d{2}$/.test(x.date)) return false;
+          var key = x.childId + '|' + x.date;
+          if (seen[key]) return false;
+          seen[key] = true;
+          return true;
+        }).map(function (x) {
+          return { id: String(x.id), childId: String(x.childId), date: x.date, tile: toInt(x.tile, 0),
+            status: x.status === 'done' ? 'done' : 'pending', caught: Math.max(0, toInt(x.caught, 0)), stars: Math.max(0, toInt(x.stars, 0)),
+            ts: toInt(x.ts, Date.now()), doneTs: x.doneTs ? toInt(x.doneTs, 0) : undefined };
+        });
+      })(),
       // Phase 3：每個孩子的棋子位置、角色、背包
       players: (function () {
         var src = adv.players && typeof adv.players === 'object' ? adv.players : {};
@@ -429,6 +444,7 @@
     adv.settlements = adv.settlements.filter(function (x) { return x.childId !== id; });
     adv.ledger = adv.ledger.filter(function (x) { return x.childId !== id; });
     adv.rolls = adv.rolls.filter(function (x) { return x.childId !== id; });
+    adv.minigames = adv.minigames.filter(function (x) { return x.childId !== id; });
     delete adv.players[id];
     this.data.items.concat(this.data.challenges).forEach(function (i) {
       if (Array.isArray(i.childIds)) i.childIds = i.childIds.filter(function (cid) { return cid !== id; });

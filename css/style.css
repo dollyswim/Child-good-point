@@ -1147,3 +1147,49 @@ img.mascot { width: 64px; height: auto; object-fit: contain; flex: none; }
 .special-acts .btn.link { padding: 0 4px; font-size: .75rem; color: var(--muted); min-height: 0; }
 .special-pts { font-weight: 900; color: #b25ea8; font-size: .9rem; }
 .special-row.upcoming { opacity: .8; }
+
+/* Phase 4：小遊戲「抓住星星」（全螢幕） */
+body.mg-open { overflow: hidden; }
+.mg {
+  position: fixed; inset: 0; z-index: 60; display: grid; grid-template-rows: auto 1fr; touch-action: manipulation; user-select: none;
+  background: #2b1b8f url(../images/minigame/bg.webp) center bottom / cover no-repeat; color: #fff;
+}
+.mg-top { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: max(12px, env(safe-area-inset-top)) 14px 10px; }
+.mg-count { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 99px; background: rgba(255, 255, 255, .18); font-weight: 900; font-size: 1.1rem; }
+.mg-ico { width: 1.4em; height: 1.4em; object-fit: contain; }
+.mg-time { height: 12px; border-radius: 99px; background: rgba(255, 255, 255, .22); overflow: hidden; }
+.mg-time i { display: block; height: 100%; width: 100%; border-radius: 99px; background: linear-gradient(90deg, #ffe27a, #ffb21f); transition: width .1s linear; }
+.mg-sec { min-width: 1.6em; text-align: center; font-size: 1.3rem; }
+.mg-field { position: relative; }
+.mg-star {
+  position: absolute; width: 78px; height: 78px; margin: -39px 0 0 -39px; padding: 0; border: 0; cursor: pointer;
+  background: url(../images/minigame/star.webp) center / contain no-repeat; filter: drop-shadow(0 0 10px rgba(255, 220, 90, .8));
+  animation: mg-in .22s ease-out both; -webkit-tap-highlight-color: transparent;
+}
+.mg-star.first { width: 104px; height: 104px; margin: -52px 0 0 -52px; animation: mg-in .3s ease-out both, mg-pulse 1.1s ease-in-out .3s infinite; }
+.mg-star.got { animation: mg-got .26s ease-out forwards; pointer-events: none; }
+.mg-star.miss { animation: mg-miss .25s ease-in forwards; pointer-events: none; }
+@keyframes mg-in { from { transform: scale(.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes mg-pulse { 50% { transform: scale(1.12); } }
+@keyframes mg-got { to { transform: scale(1.6) rotate(20deg); opacity: 0; } }
+@keyframes mg-miss { to { transform: scale(.3); opacity: 0; } }
+.mg-tip {
+  position: absolute; left: 50%; top: 62%; transform: translateX(-50%); width: min(86vw, 340px); display: grid; justify-items: center; gap: 4px;
+  padding: 12px 14px; border-radius: 20px; background: rgba(20, 10, 70, .55); text-align: center; backdrop-filter: blur(4px);
+}
+.mg-tip b { font-size: 1.3rem; }
+.mg-tip small { opacity: .85; font-weight: 700; }
+.mg-tip span { font-weight: 700; }
+.mg-tip .mg-later { color: #d8ccff; font-size: .85rem; min-height: 0; padding: 4px 8px; }
+.mg-result {
+  position: absolute; left: 0; right: 0; top: 30%; margin: 0 auto; width: min(84vw, 320px); display: grid; justify-items: center; gap: 6px; /* 不用 transform 置中，避免被進場動畫覆蓋 */
+  padding: 20px 16px; border-radius: 24px; background: #fff; color: var(--text); box-shadow: 0 10px 30px rgba(0, 0, 0, .35); text-align: center;
+  animation: mg-in .25s ease-out both;
+}
+.mg-result b { font-size: 1.4rem; }
+.mg-result p { margin: 0; font-weight: 800; }
+.mg-result strong { font-size: 1.8rem; color: #e69500; }
+.mg-gain { color: #e69500; font-size: 1.15rem; }
+.mg-result .btn { min-width: 60%; margin-top: 6px; }
+.mg-resume { margin: 0; }
+@media (prefers-reduced-motion: reduce) { .mg-star, .mg-star.first, .mg-result { animation: none; } }

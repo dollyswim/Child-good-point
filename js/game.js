@@ -20,6 +20,10 @@
   var dateKey = CGP.dateKey;
 
   var DAILY_DICE_LIMIT = 3;
+  /** Phase 4「抓住星星」：每天 1 次、約 10 秒、一局最多 8 顆星（每抓 1 顆得 1 顆能量星星） */
+  var DAILY_MINIGAME_LIMIT = 1;
+  var MINIGAME_MAX_STARS = 8;
+  var MINIGAME_SECONDS = 10;
 
   /** 道具圖示：家長提供的白底插圖（images/items/，256×256 WebP，原圖 1024×1024 PNG），介面以白色圖示框＋contain 顯示 */
   var SHOP = [
@@ -230,13 +234,53 @@
           : '得到特殊任務：「' + sp.task.name + '」\n明天起出現在任務頁，3 天內完成可得 +' + sp.task.points + ' 點！';
       }
     } else if (tile.type === 'minigame') {
-      ev.title = '🎮 小遊戲格'; ev.text = '小遊戲即將開放，敬請期待！';
+      ev.title = '🎮 小遊戲：抓住星星';
+      var mg = this.getMinigameToday(childId);
+      if (!mg) {
+        mg = { id: uid(), childId: childId, date: this.today(), tile: tile.n, status: 'pending', caught: 0, stars: 0, ts: this.now().getTime() };
+        this.data.adventure.minigames.push(mg);
+        ev.minigame = { id: mg.id };
+        ev.text = '點星星收集能量星星！第 1 顆在正中央，點到後開始 ' + MINIGAME_SECONDS + ' 秒計時。';
+      } else if (mg.status === 'pending') {
+        ev.minigame = { id: mg.id };
+        ev.text = '今天的小遊戲還沒玩完，現在開始吧！';
+      } else {
+        // 今天已玩過：每天最多 1 次（第 3 步會改為產生神秘寶箱）
+        ev.minigameOverflow = true;
+        ev.text = '今天已經玩過小遊戲了（每天 1 次），明天再來挑戰！';
+      }
     } else if (tile.type === 'boundary') {
       ev.title = '🚪 抵達礦場木門！'; ev.text = '你走完金島第一區「黃金沙灘與初級礦場」了！門後的第二區即將開放。';
     } else if (tile.type === 'end') {
       ev.title = '🏁 抵達金島終點！'; ev.text = '你走完金島測試版 30 格了！下一座島即將開放。';
     }
     return ev;
+  };
+
+  // ---------- 小遊戲「抓住星星」 ----------
+  /** 今天的小遊戲紀錄（pending＝已停在小遊戲格但還沒玩完；done＝已領取） */
+  Store.prototype.getMinigameToday = function (childId) {
+    var today = this.today();
+    return this.data.adventure.minigames.find(function (m) { return m.childId === childId && m.date === today; }) || null;
+  };
+  /** 今天還有沒玩完的小遊戲（重新整理後可繼續） */
+  Store.prototype.getPendingMinigame = function (childId) {
+    var m = this.getMinigameToday(childId);
+    return m && m.status === 'pending' ? m : null;
+  };
+  /**
+   * 小遊戲結束：每抓 1 顆得 1 顆能量星星（最多 8 顆），只能領取一次
+   * @returns 更新後的紀錄 { caught, stars }
+   */
+  Store.prototype.finishMinigame = function (childId, caught) {
+    this._requirePlay(childId);
+    var m = this.getPendingMinigame(childId);
+    if (!m) throw new Error('今天沒有可以玩的小遊戲');
+    var n = Math.max(0, Math.min(MINIGAME_MAX_STARS, Math.floor(Number(caught) || 0)));
+    m.status = 'done'; m.caught = n; m.stars = n; m.doneTs = this.now().getTime();
+    if (n > 0) this._ledger(childId, n, '小遊戲：抓住星星');
+    this.save();
+    return m;
   };
 
   /**
@@ -276,7 +320,7 @@
     return { die: 'skates', value: 3, from: from, path: path, event: event };
   };
 
-  var api = { REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);
