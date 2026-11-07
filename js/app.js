@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-9';
+  var APP_VERSION = '2026.11.07-10';
   var store;
   try {
     store = new CGP.Store();
@@ -437,7 +437,7 @@
       '<button class="partner" data-action="pick-character" aria-label="選擇冒險夥伴"><span class="partner-ring">' + characterArt(child) + '</span>' +
       '<span class="partner-tag">' + h(characterName(child)) + ' ✎</span></button>' +
       '<div class="star-main"><span class="star-label">' + h(child.name) + '的能量星星</span>' +
-      '<b class="star-value" data-testid="stars"><span class="big-star">⭐</span> ' + num(bal) + '</b>' +
+      '<b class="star-value" data-testid="stars"><span class="big-star">' + STAR_IMG + '</span> ' + num(bal) + '</b>' +
       '<span class="star-hint">' + hint + '</span>' + progressBar(bal % DICE_COST, DICE_COST, 'star') + '</div>' +
       '<span class="chest-deco" aria-hidden="true"><small>快去收集吧！</small>' + CHEST + '</span></section>';
 
@@ -446,11 +446,11 @@
     if (x) {
       summary = '<div class="adv-status ok"><span class="sum-state"><i>✅</i>今日已結算</span>' +
         '<span class="sum-cell"><small>淨得分</small><b class="pos">' + signed(x.net) + '</b></span>' +
-        '<span class="sum-cell"><small>獲得星星</small><b class="gold">⭐' + x.stars + '</b>' + (x.bonusStars ? '<small>含額外 ' + x.bonusStars + '</small>' : '') + '</span></div>';
+        '<span class="sum-cell"><small>獲得星星</small><b class="gold">' + STAR_IMG + x.stars + '</b>' + (x.bonusStars ? '<small>含額外 ' + x.bonusStars + '</small>' : '') + '</span></div>';
     } else if (st.unlocked) {
       summary = '<div class="adv-status ready"><span class="sum-state"><i>🔓</i>今日冒險已解鎖</span>' +
         '<span class="sum-cell"><small>淨得分</small><b class="pos">' + signed(st.net) + '</b></span>' +
-        '<span class="sum-cell"><small>可得星星</small><b class="gold">⭐' + st.previewStars + '</b></span>' +
+        '<span class="sum-cell"><small>可得星星</small><b class="gold">' + STAR_IMG + st.previewStars + '</b></span>' +
         '<button class="btn primary sum-cta" data-action="enter-adventure">結算並出發</button></div>';
     } else {
       summary = '<div class="adv-status locked"><span class="sum-state"><i>🔒</i>今日冒險尚未解鎖</span>' +
@@ -499,6 +499,14 @@
     return '<img class="' + (cls || 'char-img') + '" src="images/characters/' + id + '.webp" alt="' + h(c.name) + '" width="300" height="310" decoding="async">';
   }
   function characterArt(child) { return charImg(characterId(child)); }
+  /** 能量星星圖示（白底圖，以 mix-blend-mode: multiply 疊在淺色底上；alt 保留 ⭐ 供讀屏） */
+  var STAR_IMG = '<img class="star-ico" src="images/items/star.webp" alt="⭐" width="256" height="256" decoding="async" draggable="false">';
+  /** 地圖格子事件圖示（白底圖放在白色圓角圖示框，contain 不裁切） */
+  var TILE_ART = { start: 'images/tiles/start.webp', chest: 'images/tiles/chest.webp', chance: 'images/tiles/chance.webp',
+    minigame: 'images/tiles/minigame.webp', boundary: 'images/tiles/finish.webp' };
+  function tileArt(type, cls) {
+    return TILE_ART[type] ? '<span class="tile-art ' + (cls || '') + '"><img src="' + TILE_ART[type] + '" alt="" aria-hidden="true" width="192" height="192" decoding="async" draggable="false"></span>' : '';
+  }
   /** 道具圖示（白底圖放在白色圖示框中，contain 不裁切）；名稱與價格由介面另外顯示 */
   function itemArt(id, cls) {
     var it = GAME.SHOP.filter(function (x) { return x.id === id; })[0];
@@ -511,7 +519,6 @@
   }
 
   // ---------- 金島第一區地圖（背景＋格子＋事件圖示＋角色，同一個座標容器） ----------
-  var TILE_ICON = { start: '', normal: '', chest: '🎁', chance: '❓', minigame: '🎮', boundary: '🚪' };
   var TILE_LABEL = { chest: '寶箱', chance: '機會', minigame: '小遊戲（即將開放）', boundary: '第一區終點：礦場木門' };
 
   /** 目前區域（第一區）的參考尺寸與背景 */
@@ -544,17 +551,17 @@
     var tiles = board.tiles.filter(function (t) { return t.regionId === region.id; }).map(function (t) {
       var p = worldXY(region, t);
       if (t.type === 'start') {
-        return '<div class="mstart" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px" aria-hidden="true">起點</div>';
+        return '<div class="mstart' + (t.id === player.tileId ? ' here' : '') + '" data-tile="' + t.id + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px" aria-hidden="true">' +
+          tileArt('start', 'start-art') + '<span>起點</span></div>';
       }
-      var icon = TILE_ICON[t.type];
-      return '<div class="mtile mt-' + t.type + '" data-n="' + t.n + '" data-tile="' + t.id + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px"' +
-        (TILE_LABEL[t.type] ? ' title="' + TILE_LABEL[t.type] + '"' : '') + '>' + (icon ? '<span class="mtile-icon">' + icon + '</span>' : '') + '</div>';
+      return '<div class="mtile mt-' + t.type + (t.id === player.tileId ? ' here' : '') + '" data-n="' + t.n + '" data-tile="' + t.id + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px"' +
+        (TILE_LABEL[t.type] ? ' title="' + TILE_LABEL[t.type] + '"' : '') + '>' + tileArt(t.type, 'mtile-icon') + '</div>';
     }).join('');
     var pp = worldXY(region, board.tiles[player.pos]);
     return pageHeader('金島', child, 'map') +
       '<main class="page map-page">' +
       '<section class="hud">' +
-      '<span class="hud-cell"><small>能量星星</small><b class="gold" data-testid="stars">⭐ ' + num(store.getStarBalance(child.id)) + '</b></span>' +
+      '<span class="hud-cell"><small>能量星星</small><b class="gold" data-testid="stars">' + STAR_IMG + ' ' + num(store.getStarBalance(child.id)) + '</b></span>' +
       '<span class="hud-cell"><small>今日骰子</small><b data-testid="rolls">' + used + ' / ' + limit + '</b></span>' +
       '<span class="hud-cell"><small>位置</small><b data-testid="pos">' + player.pos + ' / ' + end + '</b></span>' +
       '<button class="btn small hud-shop" data-action="open-shop"' + (canPlay ? '' : ' disabled') + '>🛒 商店</button></section>' +
@@ -577,7 +584,9 @@
       act('d12', '12 面骰', bag.d12, !canPlay || atEnd || noRolls || !bag.d12) +
       act('skates', '溜冰鞋 +3', bag.skates, !canPlay || atEnd || !bag.skates) +
       '</section>' +
-      '<div class="legend"><span>🎁 寶箱</span><span>❓ 機會</span><span>🎮 小遊戲（即將開放）</span><span>🚪 第一區終點</span></div>' +
+      '<div class="legend">' + [['chest', '寶箱'], ['chance', '機會'], ['minigame', '小遊戲（即將開放）'], ['boundary', '第一區終點']].map(function (l) {
+        return '<span>' + tileArt(l[0], 'legend-art') + l[1] + '</span>';
+      }).join('') + '</div>' +
       '<a class="btn block" href="#adventure-' + h(child.id) + '">‹ 回冒險大廳</a>' +
       '</main>';
   }
@@ -663,6 +672,12 @@
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /** 角色依序一格一格跳過去，鏡頭跟隨 */
+  /** 角色所在格：事件圖示縮小移到角落，避免遮住角色 */
+  function markHere(tileId) {
+    app.querySelectorAll('.map-world .here').forEach(function (el) { el.classList.remove('here'); });
+    var el = app.querySelector('.map-world [data-tile="' + tileId + '"]:not(.pawn)');
+    if (el) el.classList.add('here');
+  }
   async function hopAlong(child, path) {
     var pawn = document.getElementById('pawn');
     if (!pawn) return;
@@ -672,6 +687,7 @@
       var t = board.tiles[path[i]], p = worldXY(regionOf(board, t), t);
       pawn.style.left = p.x.toFixed(1) + 'px'; pawn.style.top = p.y.toFixed(1) + 'px';
       pawn.dataset.pos = path[i]; pawn.dataset.tile = t.id;
+      markHere(t.id);
       pawn.classList.remove('hop'); void pawn.offsetWidth; pawn.classList.add('hop');
       followPawn(true);
       await sleep(reduceMotion ? 60 : 340);
@@ -731,7 +747,7 @@
       var bal = store.getStarBalance(childId);
       var bag = store.getPlayer(childId).bag;
       confirmEl.innerHTML = '<div class="confirm-box shop-box"><h2>🛒 星星商店</h2>' +
-        '<p class="shop-bal">目前有 <b>⭐ ' + num(bal) + '</b></p>' +
+        '<p class="shop-bal">目前有 <b>' + STAR_IMG + ' ' + num(bal) + '</b></p>' +
         GAME.SHOP.map(function (it) {
           var ok = bal >= it.price;
           return '<div class="shop-row" data-item="' + it.id + '">' + itemArt(it.id, 'shop-row-icon') +

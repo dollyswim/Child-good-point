@@ -130,6 +130,23 @@ gentle inner light, tiny sparkles, cute and precious (no face)
 
 ---
 
+## 第四優先：礦場木門（第一區終點，地圖第 30 格）
+
+尺寸：正方形 1024 × 1024，白底即可。會縮成約 30px 放在石板上，**輪廓要簡單、門的形狀一眼可認**。
+（目前第 30 格暫用「終點旗」；終點旗之後保留給整座島的終點第 100 格。）
+
+```
+A small cute mine entrance door: a rounded wooden arched door set into a chunky
+golden-brown rock frame, thick wooden support beams on both sides and across the top,
+warm lantern glowing beside the door, a tiny golden gear emblem on the door,
+a few glowing gold crystals at the base, short rail tracks leading into the door,
+door slightly closed (not open), front 3/4 view
+```
+
+中文：小巧可愛的礦坑入口木門：圓拱形木門嵌在厚實的金棕色岩石門框裡，左右和上方有粗木頭支撐梁，門旁掛著發出暖光的小油燈，門上有金色小齒輪徽章，門腳有幾顆發光的金色礦石，一小段鐵軌通向門口；門是關著的（不要打開），正面略側 3/4 視角。
+
+---
+
 ## 選做：金島俯瞰棋盤底圖（1 張）
 
 尺寸：**直式 1080 × 1350**。這張**不要用白色背景**，背景就是海。
@@ -151,6 +168,12 @@ No characters, no text, no UI. Bright sunny, cute children's game map.
 中文：小型金色礦山島的等角 2.5D 俯瞰圖，約 45 度往下看，整座島完整入鏡、四周留一點海。一條清楚的蜿蜒小路，由約 30 塊平坦的方形踏石組成（奶油色石板、間距平均、不要數字），從下方沙灘起點蜿蜒到上方的小城堡。路旁有：礦坑入口加軌道與裝滿金子的礦車、發光的金色礦石、大型金色齒輪、冒煙的蒸汽龐克小工廠、金屬拱橋、椰子樹、花、岩石。路上的石板要清楚、不要被物件擋住。不要角色、文字、介面。晴朗明亮、可愛的兒童遊戲地圖。
 
 > 生成後傳給我，我會依照圖上的石板位置重新對齊 30 格路徑。石板數量不一定剛好 30 塊也沒關係，我可以調整。
+
+---
+
+## 已完成（不用再做）
+
+6 面骰、12 面骰、溜冰鞋、能量星星、寶箱格、機會格、小遊戲格、起點旗、終點旗、五島入口插圖。
 
 ---
 

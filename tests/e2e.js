@@ -412,7 +412,7 @@ async function main() {
     await q.click('[data-action=enter-adventure]');
     await q.click('#confirm [data-yes]');
     await q.waitForSelector('[data-testid=stars]');
-    assert.equal(await q.locator('[data-testid=stars]').innerText(), '⭐ 4');
+    assert.equal((await q.locator('[data-testid=stars]').innerText()).trim(), '4');
     await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, '15-lobby.png') : path.join(require('os').tmpdir(), 'lobby.png'), fullPage: true });
     console.log('✔ Phase 2 案例 A：+20 解鎖並取得 4 星');
 
@@ -443,7 +443,7 @@ async function main() {
     assert.equal(await q.locator('[data-action=enter-adventure]').count(), 0);
     const q2 = await c2.newPage();
     await q2.goto(url + '#adventure-' + ids.C);
-    assert.equal(await q2.locator('[data-testid=stars]').innerText(), '⭐ 7');
+    assert.equal((await q2.locator('[data-testid=stars]').innerText()).trim(), '7');
     await tap(ids.C, '加五十'); // 結算後再加分
     assert.equal(await stars(ids.C), 7);
     console.log('✔ Phase 2 案例 D：重新整理、重新開啟後不重複發星');
@@ -477,17 +477,17 @@ async function main() {
     await q.waitForSelector('.map-cta[href]');
     await q.click('.map-cta[href]');
     await q.waitForSelector('#pawn');
-    assert.equal(await q.locator('[data-testid=stars]').innerText(), '⭐ 20');
+    assert.equal((await q.locator('[data-testid=stars]').innerText()).trim(), '20');
 
     // 案例 A：購買 6 面骰扣 5 星、進背包
     await q.click('[data-action=open-shop]');
     await q.click('#confirm [data-buy=d6]');
-    assert.match(await q.locator('.shop-bal').innerText(), /⭐ 15/);
+    assert.match(await q.locator('.shop-bal').innerText(), /目前有\s*15\b/);
     await q.click('#confirm [data-buy=d6]');
     await q.click('#confirm [data-buy=d6]');
     await q.click('#confirm [data-buy=d6]');
     await q.click('#confirm [data-no]');
-    assert.equal(await q.locator('[data-testid=stars]').innerText(), '⭐ 0');
+    assert.equal((await q.locator('[data-testid=stars]').innerText()).trim(), '0');
     assert.match(await q.locator('.dice-btn.d6').innerText(), /×4/);
     console.log('✔ Phase 3 案例 A：購買 6 面骰扣 5 星、進背包');
 
@@ -605,7 +605,7 @@ async function main() {
     await q.waitForSelector('.map-cta[href]');
     await q.click('.map-cta[href]');
     await q.waitForSelector('#pawn');
-    assert.equal(await q.locator('[data-testid=stars]').innerText(), '⭐ 40');
+    assert.equal((await q.locator('[data-testid=stars]').innerText()).trim(), '40');
 
     // 圖片載入、正方形、object-fit: contain、白色圖示框、手機上至少 48px
     const checkArt = async (sel, label) => {
@@ -636,12 +636,12 @@ async function main() {
     assert.match(await q.locator('#confirm [data-item=d12]').innerText(), /12 面骰/);
     if (SHOT_DIR) await q.locator('#confirm .shop-box').screenshot({ path: path.join(SHOT_DIR, '17-shop-items-' + width + '.png') });
     await q.click('#confirm [data-buy=d12]');
-    assert.match(await q.locator('.shop-bal').innerText(), /⭐ 30/);
+    assert.match(await q.locator('.shop-bal').innerText(), /目前有\s*30\b/);
     await q.click('#confirm [data-buy=skates]');
-    assert.match(await q.locator('.shop-bal').innerText(), /⭐ 26/);
+    assert.match(await q.locator('.shop-bal').innerText(), /目前有\s*26\b/);
     assert.match(await q.locator('#confirm [data-item=skates]').innerText(), /背包 ×1/);
     await q.click('#confirm [data-no]');
-    assert.equal(await q.locator('[data-testid=stars]').innerText(), '⭐ 26');
+    assert.equal((await q.locator('[data-testid=stars]').innerText()).trim(), '26');
     assert.match(await q.locator('.dice-btn.d12').innerText(), /×1/);
     assert.match(await q.locator('.dice-btn.skates').innerText(), /×1/);
     assert.ok(await q.locator('.dice-btn.d6').isDisabled(), '沒有 6 面骰時不可按');
@@ -654,7 +654,7 @@ async function main() {
     await q.waitForSelector('.dice-btn.skates[disabled]');
     assert.equal(await q.locator('[data-testid=rolls]').innerText(), '0 / 3');
     assert.match(await q.locator('.dice-btn.skates').innerText(), /×0/);
-    assert.equal(await q.locator('[data-testid=stars]').innerText(), '⭐ 28');
+    assert.equal((await q.locator('[data-testid=stars]').innerText()).trim(), '28');
     await checkArt('.dice-bar .item-art img', '使用後道具列');
     console.log('✔ 道具圖示 ' + width + 'px：商店與道具列圖片載入、contain、白框、價格 5／10／4、溜冰鞋前進 3 格不算擲骰');
     await c4.close();
@@ -686,6 +686,26 @@ async function main() {
       // 背景保持 4:5、不裁切
       const bgRatio = await q.evaluate(() => { const r = document.querySelector('.map-bg').getBoundingClientRect(); return r.width / r.height; });
       assert.ok(Math.abs(bgRatio - 0.8) < 0.002, '背景維持 4:5');
+      // 格子事件圖示：圖片載入、contain、白框；角色在起點時起點旗讓位
+      await q.waitForFunction(() => [...document.querySelectorAll('.map-world .tile-art img, .legend img')].every((i) => i.complete && i.naturalWidth === 192));
+      const arts = await q.evaluate(() => {
+        const z = (el) => el.getBoundingClientRect().width;
+        const icons = [...document.querySelectorAll('.map-world .tile-art')];
+        return {
+          types: icons.map((el) => (el.closest('.mtile') ? el.closest('.mtile').className.match(/mt-(\w+)/)[1] : 'start')),
+          fit: [...new Set(icons.map((el) => getComputedStyle(el.querySelector('img')).objectFit))],
+          bg: [...new Set(icons.map((el) => getComputedStyle(el).backgroundColor))],
+          px: Math.round(z(document.querySelector('.mt-chest .tile-art')) * 10) / 10,
+          legend: [...document.querySelectorAll('.legend img')].map((i) => i.getAttribute('src').split('/').pop()),
+          startHere: document.querySelector('.mstart').classList.contains('here')
+        };
+      });
+      const count = (t) => arts.types.filter((x) => x === t).length;
+      assert.deepEqual([count('start'), count('chest'), count('chance'), count('minigame'), count('boundary')], [1, 4, 5, 3, 1], '格子圖示數量');
+      assert.deepEqual(arts.fit, ['contain']); assert.deepEqual(arts.bg, ['rgb(255, 255, 255)']);
+      assert.deepEqual(arts.legend, ['chest.webp', 'chance.webp', 'minigame.webp', 'finish.webp']);
+      assert.ok(arts.startHere, '角色在起點：起點旗讓位');
+      console.log('  ・' + width + 'px 預設縮放：格子圖示約 ' + arts.px + 'px');
       // 30 格依 JSON 座標、與背景同一縮放：比對畫面位置
       async function checkAlign(label) {
         const m = await q.evaluate(() => {
@@ -744,6 +764,7 @@ async function main() {
         assert.equal(saved, 'gold-01-004');
         await q.reload(); await q.waitForSelector('#pawn');
         assert.equal(await q.locator('#pawn').getAttribute('data-tile'), 'gold-01-004', '重新整理後恢復位置');
+        assert.deepEqual(await q.$$eval('.map-world .here', (els) => els.map((e) => e.dataset.tile)), ['gold-01-004'], '只有角色所在格標記 here');
         await checkAlign('重新整理後');
         // 舊存檔只有整數格號 → 遷移成穩定 ID
         await q.evaluate((cid) => {
