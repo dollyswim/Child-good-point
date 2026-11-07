@@ -1537,7 +1537,12 @@ test('飛行翼：前進 20 格、到第 30 格就停、落點觸發事件、不
   bag.wings = 3; store.useWings(a.id); store.useWings(a.id); store.useWings(a.id);
   assert.equal(store.getPlayer(a.id).pos, END, '42 → 62 → 82 → 100：最後一格就停');
   assert.equal(store.getRollsToday(a.id), 0);
-  bag.wings = 1;
+  bag.wings = 1; bag.skates = 1;
+  assert.deepEqual(store.getItemLimitsToday(a.id), { move: 0, door: 1 }, '今天已用 5 次前進道具');
+  assert.throws(() => store.useWings(a.id), /已經用了 5 次/, '前進類每天最多 5 次');
+  assert.throws(() => store.useSkates(a.id), /已經用了 5 次/, '溜冰鞋和飛行翼合計');
+  assert.deepEqual([bag.wings, bag.skates], [1, 1], '超過上限不消耗');
+  store.data.adventure.itemLog.forEach(x => { x.date = '2026-11-05'; });   // 模擬隔天：重新計算
   store.random = () => 0.5;
   const w = store.useWings(a.id);
   assert.ok(w.lap, '在全島終點用飛行翼：從起點開始新的一輪');
@@ -1556,6 +1561,9 @@ test('任意門：傳送到本島指定格子（可跨第一、二區）、落�
   store.random = () => 0.1;
   const r = store.useDoor(a.id, 12);
   assert.deepEqual([store.getPlayer(a.id).pos, store.getPlayer(a.id).tileId, r.event.type], [12, 'gold-01-012', 'chest']);
+  assert.throws(() => store.useDoor(a.id, 40), /每天只能用 1 次/, '任意門每天最多 1 次');
+  assert.equal(bag.door, 1, '超過上限不消耗');
+  store.data.adventure.itemLog.forEach(x => { x.date = '2026-11-05'; });   // 模擬隔天：重新計算
   store.useDoor(a.id, 40);
   assert.deepEqual([store.getPlayer(a.id).pos, store.getPlayer(a.id).tileId], [40, 'gold-02-040'], '可以傳送到第二區');
   assert.equal(bag.door, 0);
@@ -1994,4 +2002,20 @@ test('重新結算今天：只補發差額（含新的加碼星星）、不重�
   store.recordItem(a.id, pen.id);
   assert.equal(store.resettleToday(a.id).added, 0, '分數變少不扣回');
   assert.equal(store.getStarBalance(a.id), bal + pv.added);
+});
+
+test('前進道具每日上限：溜冰鞋＋飛行翼合計 5 次（不占擲骰），隔天重新計算；任意門每天 1 次', () => {
+  const { store, a } = p3Store();
+  const bag = store.getPlayer(a.id).bag;
+  assert.deepEqual([G.MOVE_DAILY_LIMIT, G.DOOR_DAILY_LIMIT], [5, 1]);
+  bag.skates = 6; bag.wings = 1;
+  store.random = () => 0.5;
+  for (let i = 0; i < 4; i++) store.useSkates(a.id);
+  assert.equal(store.getItemLimitsToday(a.id).move, 1);
+  store.useWings(a.id);
+  assert.equal(store.getItemLimitsToday(a.id).move, 0);
+  assert.throws(() => store.useSkates(a.id), /明天再用/);
+  assert.equal(bag.skates, 2);
+  assert.equal(store.getRollsToday(a.id), 0, '不占每日 3 次擲骰');
+  assert.equal(store.getDaySummary(a.id).itemsUsed.skates, 4, '今日小結列出溜冰鞋使用次數');
 });

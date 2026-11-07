@@ -32,18 +32,18 @@
    */
   var TREASURE_WEEKLY_LIMIT = 3, TREASURE_HOLD_LIMIT = 2;
   var TREASURES = [
-    { id: 'skates', name: '溜冰鞋', icon: '🛼', img: 'images/items/roller_skate.webp', price: 10, desc: '向前移動 3 格' },
+    { id: 'skates', name: '溜冰鞋', icon: '🛼', img: 'images/items/roller_skate.webp', price: 10, desc: '向前移動 3 格（和飛行翼合計每天最多 5 次）' },
     { id: 'shield', name: '防護罩', icon: '🛡️', img: 'images/items/shield.webp', price: 20, desc: '抵擋一次冒險中的負面效果' },
     { id: 'magicDice', name: '神奇骰子', icon: '🎲', img: 'images/items/magic_dice.webp', price: 10, desc: '額外擲一次 12 面骰（不占每日 3 次，每天最多用 1 顆）' },
     { id: 'luckyMedal', name: '好運金牌', icon: '🥇', img: 'images/items/lucky_medal.webp', price: 100, desc: '下一次停在寶箱或機會格，效果發生 2 次' },
-    { id: 'wings', name: '飛行翼', icon: '🪽', img: 'images/items/flying_wings.webp', price: 100, desc: '向前飛行 20 格' },
-    { id: 'door', name: '任意門', icon: '🚪', img: 'images/items/magic_door.webp', price: 100, desc: '傳送到本島指定的格子' }
+    { id: 'wings', name: '飛行翼', icon: '🪽', img: 'images/items/flying_wings.webp', price: 100, desc: '向前飛行 20 格（和溜冰鞋合計每天最多 5 次）' },
+    { id: 'door', name: '任意門', icon: '🚪', img: 'images/items/magic_door.webp', price: 100, desc: '傳送到本島指定的格子（每天最多 1 次）' }
   ];
 
   var SHOP = [
     { id: 'd6', name: '6 面骰', icon: '🎲', img: 'images/items/dice_6.webp', price: 5, desc: '擲出 1～6 步' },
     { id: 'd12', name: '12 面骰', icon: '🎲', img: 'images/items/dice_12.webp', price: 10, desc: '擲出 1～12 步' },
-    { id: 'skates', name: '溜冰鞋', icon: '🛼', img: 'images/items/roller_skate.webp', price: 4, desc: '直接前進 3 格（不算擲骰次數）' },
+    { id: 'skates', name: '溜冰鞋', icon: '🛼', img: 'images/items/roller_skate.webp', price: 4, desc: '直接前進 3 格（不算擲骰次數；和飛行翼合計每天最多 5 次）' },
     { id: 'goldenKey', name: '黃金鑰匙', icon: '🔑', img: 'images/items/golden_key.webp', price: 10, desc: '打開地圖上撿到的神秘寶箱' },
     { id: 'magnet', name: '寶物磁鐵', icon: '🧲', img: 'images/items/treasure_magnet.webp', price: 10, desc: '吸取前後 5 格內的寶箱' }
   ];
@@ -873,8 +873,22 @@
     p.pos = 0; p.tileId = tiles[0].id; p.looted = [];
     p.laps = (p.laps || 0) + 1;
   };
-  /** 移動類道具：溜冰鞋 3 格、飛行翼 20 格（不算擲骰次數；到第 30 格就停） */
+  /** 移動類道具：溜冰鞋 3 格、飛行翼 20 格（不算擲骰次數；到目前開放的最後一格就停） */
   var MOVE_ITEMS = { skates: { steps: 3, name: '溜冰鞋' }, wings: { steps: 20, name: '飛行翼' } };
+  /** 每日使用上限（2026-11-07 家長決定）：前進類（溜冰鞋＋飛行翼）合計 5 次、任意門 1 次 */
+  var MOVE_DAILY_LIMIT = 5, DOOR_DAILY_LIMIT = 1;
+  /** 今天用了幾次指定道具（依道具紀錄計算） */
+  Store.prototype._usesToday = function (childId, items) {
+    var today = this.today();
+    return this.data.adventure.itemLog.filter(function (x) {
+      return x.childId === childId && x.action === 'use' && x.date === today && items.indexOf(x.item) >= 0;
+    }).length;
+  };
+  /** 今天前進類道具與任意門還能用幾次 */
+  Store.prototype.getItemLimitsToday = function (childId) {
+    return { move: Math.max(0, MOVE_DAILY_LIMIT - this._usesToday(childId, ['skates', 'wings'])),
+      door: Math.max(0, DOOR_DAILY_LIMIT - this._usesToday(childId, ['door'])) };
+  };
   Store.prototype._useMoveItem = function (childId, item) {
     this._requirePlay(childId);
     var p = this.getPlayer(childId);
@@ -882,13 +896,14 @@
     var end = this.getBoard(childId).tiles.length - 1;
     var needLap = p.pos >= end;
     if (!(p.bag[item] > 0)) throw new Error('背包裡沒有' + MOVE_ITEMS[item].name);
+    if (!this.getItemLimitsToday(childId).move) throw new Error('今天的前進道具（溜冰鞋、飛行翼）已經用了 ' + MOVE_DAILY_LIMIT + ' 次，明天再用！');
     this._markDayStart(childId);
     if (needLap) this._newLap(childId);
     var from = p.pos;
     p.bag[item]--;
     this._found = 0;
     var path = this._advance(childId, MOVE_ITEMS[item].steps);
-    if (item !== 'skates') this._logItem(childId, 'use', item, 1, '背包', '第 ' + from + ' → ' + p.pos + ' 格');
+    this._logItem(childId, 'use', item, 1, '背包', '第 ' + from + ' → ' + p.pos + ' 格');   // 溜冰鞋也記錄，用來計算每日上限
     var event = this._resolveTile(childId, 0);
     this.save();
     return { die: item, value: MOVE_ITEMS[item].steps, from: from, path: path, event: event, found: this._found, lap: needLap };
@@ -907,6 +922,7 @@
     if (!(n >= 1 && n < end)) throw new Error('任意門不能傳送到這一格');
     if (n === p.pos) throw new Error('你已經在這一格了');
     if (!(p.bag.door > 0)) throw new Error('背包裡沒有任意門');
+    if (!this.getItemLimitsToday(childId).door) throw new Error('任意門每天只能用 ' + DOOR_DAILY_LIMIT + ' 次，明天再用！');
     this._markDayStart(childId);
     var from = p.pos;
     p.bag.door--;
@@ -941,7 +957,7 @@
     return this.getBonusQuota(childId);
   };
 
-  var api = { ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

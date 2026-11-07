@@ -986,9 +986,20 @@ async function main() {
     await q.evaluate(() => { window.__cgpStore.random = () => 0.5; });
     await q.click('.item-btn[data-kind=wings]');
     await q.waitForFunction((b) => +document.querySelector('[data-testid=pos]').textContent.split(' ')[0] === Math.min(100, b + 20), before, { timeout: 15000 });
+    // 每日上限：任意門今天已用 1 次 → 變灰；飛行翼顯示前進類剩餘次數（合計 5 次）
+    await q.evaluate((cid) => { const s = window.__cgpStore; Object.assign(s.getPlayer(cid).bag, { door: 1, wings: 1, skates: 1 }); s.save(); }, id);
+    await q.reload(); await q.waitForSelector('[data-testid=item-bar]');
+    assert.ok(await q.locator('.item-btn[data-kind=door]').isDisabled(), '任意門每天 1 次，用過就變灰');
+    assert.match(await q.locator('.item-btn[data-kind=door]').innerText(), /今天已用/);
+    assert.match(await q.locator('.item-btn[data-kind=wings]').innerText(), /今天剩 4 次/);
+    await q.evaluate((cid) => { const s = window.__cgpStore; for (let i = 0; i < 4; i++) s._logItem(cid, 'use', 'skates', 1, '測試', ''); s.save(); }, id);
+    await q.reload(); await q.waitForSelector('[data-testid=item-bar]');
+    assert.ok(await q.locator('.item-btn[data-kind=wings]').isDisabled(), '前進類用滿 5 次：飛行翼變灰');
+    assert.ok(await q.locator('.dice-btn.skates').isDisabled(), '溜冰鞋也變灰');
+    assert.match(await q.locator('.dice-btn.skates').innerText(), /今天已用完/);
     const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(over <= 0);
-    console.log('✔ 寶物商店 Phase 4A：道具列、神奇骰子＋命運重骰券、好運金牌、再來 3 次、任意門點選格子、飛行翼');
+    console.log('✔ 寶物商店 Phase 4A：前進道具每日 5 次、任意門每日 1 次；道具列、神奇骰子＋命運重骰券、好運金牌、再來 3 次、任意門點選格子、飛行翼');
     await c12.close();
   }
 

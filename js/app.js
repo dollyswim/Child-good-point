@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-49';
+  var APP_VERSION = '2026.11.07-50';
   var store;
   try {
     store = new CGP.Store();
@@ -680,15 +680,16 @@
     var noRolls = store.getRollsLeft(child.id) <= 0;
     var pending = player.pendingRoll;
     var picking = ui.doorPick === child.id;
-    function act(kind, label, count, disabled) {
+    function act(kind, label, count, disabled, note) {
       return '<button class="dice-btn ' + kind + '" data-action="' + (kind === 'skates' ? 'use-skates' : 'roll') + '" data-kind="' + kind + '"' +
-        (disabled ? ' disabled' : '') + '>' + itemArt(kind, 'dice-icon') + '<b>' + label + '</b><small>背包 ×' + count + '</small></button>';
+        (disabled ? ' disabled' : '') + '>' + itemArt(kind, 'dice-icon') + '<b>' + label + '</b><small>背包 ×' + count + (note || '') + '</small></button>';
     }
+    var lim = store.getItemLimitsToday(child.id);
     var ended = store.isAdventureEnded(child.id);
     var reason = ended ? '🏁 今天的冒險已經結束了，明天見！' : !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
       : picking ? '🚪 任意門：點地圖上的格子選擇要去的地方'
       : atEnd ? (board.tiles[player.pos].type === 'end' ? '🏁 已抵達金冠城堡、通關金島！下次出發從起點開始新的一輪' : '🚪 已抵達目前開放區域的終點！下次出發從起點開始新的一輪')
-        : noRolls ? '今天的 3 次骰子用完了，明天再來！（溜冰鞋還可以用）'
+        : noRolls ? '今天的 3 次骰子用完了，明天再來！' + (lim.move && (bag.skates || bag.wings) ? '（前進道具今天還可以用 ' + lim.move + ' 次）' : '')
           : (!bag.d6 && !bag.d12 && !bag.skates ? '背包是空的，點左下角的商店用能量星星購買骰子' : '選一個道具出發吧！');
     var tiles = board.tiles.map(function (t) {   // 長地圖：所有已開放區域的格子都顯示
       var p = worldXY(region, t);
@@ -733,7 +734,7 @@
       '<section class="dice-bar">' +
       act('d6', '6 面骰', bag.d6, !canPlay || noRolls || !bag.d6 || !!pending || picking) +
       act('d12', '12 面骰', bag.d12, !canPlay || noRolls || !bag.d12 || !!pending || picking) +
-      act('skates', '溜冰鞋 +3', bag.skates, !canPlay || !bag.skates || !!pending || picking) +
+      act('skates', '溜冰鞋 +3', bag.skates, !canPlay || !bag.skates || !lim.move || !!pending || picking, lim.move ? '' : '・今天已用完') +
       '</section>' +
       itemBar(child, player, { canPlay: canPlay, atEnd: atEnd, pending: !!pending, picking: picking, quota: quota }) +
       (canPlay ? '<button type="button" class="btn block end-day" data-action="end-day"' + (pending || picking ? ' disabled' : '') + '>🏁 結束今日冒險</button>' : '') +
@@ -1497,8 +1498,9 @@
         '<span class="item-art item-btn-art">' + art + '</span><b>' + label + '</b><small>' + note + '</small></button>');
     }
     if (bag.magicDice) btn('magicDice', 'roll', '神奇骰子', magicUsed ? '今天已用・×' + bag.magicDice : '×' + bag.magicDice + '・不占次數', busy || magicUsed);
-    if (bag.wings) btn('wings', 'use-item', '飛行翼 +20', '×' + bag.wings, busy);
-    if (bag.door) btn('door', 'pick-door', '任意門', '×' + bag.door, busy);
+    var lim = store.getItemLimitsToday(child.id);   // 前進類合計每天 5 次、任意門每天 1 次
+    if (bag.wings) btn('wings', 'use-item', '飛行翼 +20', '×' + bag.wings + (lim.move ? '・今天剩 ' + lim.move + ' 次' : '・今天已用完'), busy || !lim.move);
+    if (bag.door) btn('door', 'pick-door', '任意門', '×' + bag.door + (lim.door ? '・每天 1 次' : '・今天已用'), busy || !lim.door);
     if (bag.luckyMedal) btn('luckyMedal', 'activate-medal', '好運金牌', player.medalArmed ? '已啟用・×' + bag.luckyMedal : '×' + bag.luckyMedal + '・點我啟用', !!player.medalArmed);
     if (bag.bonusPlay) btn('bonusPlay', 'activate-bonus', '再來 3 次', '×' + bag.bonusPlay + '・點我啟用', busy);
     if (bag.magnet) btn('magnet', 'use-magnet', '寶物磁鐵', '×' + bag.magnet + '・前後 ' + GAME.MAGNET_RANGE + ' 格', busy);
