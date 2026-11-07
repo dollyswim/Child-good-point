@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-53';
+  var APP_VERSION = '2026.11.07-54';
   var store;
   try {
     store = new CGP.Store();
@@ -218,7 +218,7 @@
   // ---------- 畫面 ----------
   function render() {
     var r = route();
-    var html;
+    var html, homeFresh = null;
     if (r.name === 'child' || r.name === 'challenge' || r.name === 'shop' || r.name === 'adventure' || r.name === 'map') {
       var child = store.getChild(r.arg);
       if (!child) { location.replace('#home'); return; }
@@ -232,7 +232,7 @@
     } else if (r.name === 'report') {
       html = renderReport();
     } else {
-      store.getChildren().forEach(function (c) { store.checkAchievements(c.id); });   // 首頁成就欄顯示最新狀態
+      var homeFresh = store.getChildren().map(function (c) { return { child: c, list: store.checkAchievements(c.id) }; });   // 首頁成就欄顯示最新狀態
       html = renderHome();
     }
     if (r.name !== 'map') ui.doorPick = null;
@@ -251,8 +251,10 @@
     }
     if (r.name === 'minigame-test') openMinigame(null, null, { practice: true });
     if (r.name === 'adventure') showBlessings(r.arg);
-    if (freshAch && freshAch.length) notes.push('🏆 解鎖成就：' + freshAch.map(function (a) { return a.icon + ' ' + a.name; }).join('、'));
     if (notes.length) toast(notes.join('\n'), 'pos');
+    // 新解鎖的成就：星光成就劇場（已先寫入存檔，動畫中斷不影響）
+    if (freshAch && freshAch.length) showAchTheater(child, freshAch);
+    if (homeFresh) homeFresh.forEach(function (x) { if (x.list.length) showAchTheater(x.child, x.list); });
     if (r.name === 'settings') {
       var pi = app.querySelector('#pin-1'); if (pi) pi.focus();
       var at = app.querySelector('.tabs .tab.active'); if (at && at.parentNode.scrollTo) at.parentNode.scrollTo({ left: at.offsetLeft - 40 });   // 分頁多：目前分頁捲進畫面
@@ -997,8 +999,8 @@
         var mine = list.filter(function (a) { return a.cat === c[0] && a.done; });   // 只列已得到的成就
         if (!mine.length) return '';
         return '<div class="ach-cat"><h3>' + c[1] + '</h3><div class="ach-grid">' + mine.map(function (a) {
-          return '<button type="button" class="ach ach-' + a.cat + (a.done ? ' done' : '') + '" data-action="ach-info" data-id="' + a.id + '" aria-label="' + h(a.name) + (a.done ? '（已解鎖）' : '（未解鎖）') + '">' +
-            '<span class="ach-badge">' + (a.done ? a.icon : '🔒') + '</span><small>' + h(a.name) + '</small></button>';
+          return '<button type="button" class="ach ach-' + a.cat + (a.done ? ' done' : '') + (ui.achNew && ui.achNew.indexOf(a.id) >= 0 ? ' is-new' : '') + '" data-action="ach-info" data-id="' + a.id + '" aria-label="' + h(a.name) + (a.done ? '（已解鎖）' : '（未解鎖）') + '">' +
+            (a.done ? badgeHtml(a, 'xs') : '<span class="ach-badge">🔒</span>') + '<small>' + h(a.name) + '</small></button>';   // 已解鎖：完整彩色徽章
         }).join('') + '</div></div>';
       }).join('') + '</div>';
   }
@@ -1011,7 +1013,7 @@
       return '<button type="button" class="ach-home-row" data-action="open-achievements" data-id="' + h(c.id) + '" aria-label="' + h(c.name) + '的全部成就">' +
         avatar(c, 'sm') + '<span class="ach-home-name"><b>' + h(c.name) + '</b><small>' + done.length + ' / ' + list.length + '</small></span>' +
         '<span class="ach-home-badges">' + recent.map(function (a) {
-          return '<span class="ach-mini ach-' + a.cat + '" title="' + h(a.name) + '"><i aria-hidden="true">' + a.icon + '</i><small>' + h(a.name) + '</small></span>';
+          return '<span class="ach-mini ach-' + a.cat + '" title="' + h(a.name) + '">' + badgeHtml(a, 'xs') + '<small>' + h(a.name) + '</small></span>';
         }).join('') + '</span><span class="ach-home-go" aria-hidden="true">›</span></button>';
     }).join('');
     return rows ? '<section class="ach-home" data-testid="home-achievements"><h2>🏆 最近得到的成就</h2>' + rows + '</section>' : '';
@@ -1022,7 +1024,7 @@
     var open = ui.achOpen === child.id;
     var latest = done.slice().sort(function (x, y) { return y.ts - x.ts; })[0];
     var peek = latest
-      ? '<span class="ach-latest">最近：<span class="ach-mini ach-' + latest.cat + '"><i aria-hidden="true">' + latest.icon + '</i><small>' + h(latest.name) + '</small></span></span>'
+      ? '<span class="ach-latest">最近：<span class="ach-mini ach-' + latest.cat + '">' + badgeHtml(latest, 'xs') + '<small>' + h(latest.name) + '</small></span></span>'
       : '<span class="ach-latest muted">還沒有成就，繼續加油！</span>';
     return '<details class="panel ach-details" id="ach-details" data-testid="achievements"' + (open ? ' open' : '') + '>' +
       '<summary><span class="ach-sum"><h2>🏆 全部成就 <small>已解鎖 ' + done.length + ' / ' + list.length + '</small></h2>' + peek + '</span></summary>' +
@@ -1041,9 +1043,143 @@
     return lost.length ? '\n🏆 收回成就：' + achNames(lost) : '';
   }
   /** 新解鎖的成就：提示一次 */
-  function announceAchievements(childId) {
-    var fresh = store.checkAchievements(childId);
-    if (fresh.length) toast('🏆 解鎖成就：' + fresh.map(function (a) { return a.icon + ' ' + a.name; }).join('、'), 'pos');
+  function announceAchievements(childId, skipIds) {
+    var fresh = store.checkAchievements(childId).filter(function (a) { return !skipIds || skipIds.indexOf(a.id) < 0; });
+    if (fresh.length) showAchTheater(store.getChild(childId), fresh);
+  }
+
+  // ---------- 星光成就劇場：成就解鎖演出 ----------
+  /**
+   * 正式徽章圖（Codex 交件後放 images/badges/badge_<代號>.webp，並把代號加進這裡）；
+   * 沒有圖的成就用程式畫的徽章：類別色外框＋成就圖示（分數金牌另標數字）
+   */
+  var BADGE_IMG = {};
+  /** 主徽章挑選：越高階／越稀有分數越高（只影響演出，不影響成就條件） */
+  var ACH_RANK = { goldClear1: 300, streak7: 120, reachR4: 110, catch10: 100, special5: 95, reachR3: 80, chests10: 75, mystery1: 70,
+    reachR2: 60, catch5: 45, special1: 40, chest1: 30, advStart: 20 };
+  function achRank(a) { var m = /^earn(\d+)$/.exec(a.id); return m ? 50 + Number(m[1]) / 100 : (ACH_RANK[a.id] || 10); }
+  /** 徽章 HTML（size：lg 主徽章、sm 小徽章、xs 收藏格） */
+  function badgeHtml(a, size) {
+    var m = /^earn(\d+)$/.exec(a.id);
+    if (BADGE_IMG[a.id]) return '<span class="badge badge-' + size + ' badge-img"><img src="' + BADGE_IMG[a.id] + '" alt="" width="256" height="256" decoding="async" draggable="false"></span>';
+    return '<span class="badge badge-' + size + ' badge-' + a.cat + '" aria-hidden="true"><span class="badge-face">' + (m ? '🏅' : a.icon) + '</span>' +   // 分數金牌用不帶數字的獎牌，數字另標
+      (m ? '<span class="badge-n">' + Number(m[1]).toLocaleString('en-US') + '</span>' : '') + '</span>';
+  }
+  /** 音效開關（存在這台裝置的瀏覽器，只影響成就音效） */
+  var SOUND_KEY = 'cgp-ach-sound';
+  function soundOn() { try { return localStorage.getItem(SOUND_KEY) !== 'off'; } catch (e) { return true; } }
+  function setSound(on) { try { localStorage.setItem(SOUND_KEY, on ? 'on' : 'off'); } catch (e) { /* 無法儲存時本次有效 */ } }
+  /** 短促、悅耳的獲獎音效（Web Audio 合成，不需音檔；失敗就安靜略過） */
+  var audioCtx = null;
+  function playFanfare() {
+    if (!soundOn()) return;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      audioCtx = audioCtx || new AC();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      var t0 = audioCtx.currentTime + 0.02;
+      [[523.25, 0], [659.25, 0.09], [783.99, 0.18], [1046.5, 0.3], [1318.5, 0.42]].forEach(function (n, i) {
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = i < 3 ? 'triangle' : 'sine';
+        o.frequency.value = n[0];
+        g.gain.setValueAtTime(0.0001, t0 + n[1]);
+        g.gain.exponentialRampToValueAtTime(i < 3 ? 0.16 : 0.12, t0 + n[1] + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + n[1] + (i < 3 ? 0.35 : 0.7));
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t0 + n[1]); o.stop(t0 + n[1] + 0.8);
+      });
+    } catch (e) { /* 音效失敗不影響畫面 */ }
+  }
+  var theaterQueue = [], theaterBusy = false;
+  function thStill() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  /** 排隊顯示（同一事件一次演出；其他視窗開著時等它關掉再演，避免互相蓋住） */
+  function showAchTheater(child, list) {
+    if (!child || !list || !list.length) return;
+    if (window.__cgpNoTheater) {   // 自動測試用：改成文字提示，和畫面上既有的提示合併
+      var t = '🏆 解鎖成就：' + list.map(function (a) { return a.icon + ' ' + a.name; }).join('、');
+      toast(toastEl.hidden ? t : toastEl.textContent + '\n' + t, 'pos');
+      return;
+    }
+    theaterQueue.push({ child: child, list: list.slice() });
+    pumpTheater();
+  }
+  function pumpTheater() {
+    if (theaterBusy || !theaterQueue.length) return;
+    var blocked = (confirmEl && confirmEl.open) || (modal && modal.open) || document.getElementById('clear-screen') || document.getElementById('mg');
+    if (blocked) { setTimeout(pumpTheater, 350); return; }
+    theaterBusy = true;
+    openTheater(theaterQueue.shift());
+  }
+  function openTheater(job) {
+    var child = job.child, list = job.list.slice().sort(function (x, y) { return achRank(y) - achRank(x); });
+    var main = list[0], others = list.slice(1), many = list.length > 1;
+    var dlg = document.createElement('dialog');
+    dlg.className = 'ach-theater' + (thStill() ? ' still' : '');
+    dlg.id = 'ach-theater';
+    dlg.setAttribute('aria-labelledby', 'ach-theater-title');
+    var sparks = new Array(19).join('<i></i>'), hearts = '<b>♥</b><b>♥</b><b>♥</b>';
+    dlg.innerHTML = '<div class="th-stage">' +
+      '<div class="th-beam" aria-hidden="true"></div>' +
+      '<div class="th-burst" aria-hidden="true">' + sparks + hearts + '</div>' +
+      '<div class="th-card" tabindex="-1" autofocus>' +
+        '<button type="button" class="th-sound" data-th="sound" aria-pressed="' + soundOn() + '" aria-label="成就音效">' + (soundOn() ? '🔊' : '🔇') + '</button>' +
+        '<p class="th-kicker" aria-hidden="true">✦ ✧ ✦</p>' +
+        '<h2 id="ach-theater-title">' + (many ? '🎉 哇！一次解鎖 ' + list.length + ' 個成就！' : '🎉 成就解鎖！') + '</h2>' +
+        '<p class="th-who">' + h(child.name) + '</p>' +
+        '<div class="th-left"><div class="th-main">' + badgeHtml(main, 'lg') + '</div>' +
+        '<div class="th-actions"><button type="button" class="btn primary block" data-th="collection">🏆 查看我的成就收藏</button>' +
+        '<button type="button" class="btn block th-go" data-th="close">繼續冒險</button></div></div>' +
+        '<h3 class="th-name" data-th-name>' + h(main.name) + '</h3>' +
+        '<p class="th-desc" data-th-desc>' + h(main.desc) + '</p>' +
+        (others.length ? '<div class="th-more"><p class="th-more-title">同時解鎖另外 ' + others.length + ' 個成就（點一下看看）</p>' +
+          '<div class="th-strip" role="list">' + list.map(function (a, i) {
+            return '<button type="button" class="th-mini' + (i === 0 ? ' on' : '') + '" role="listitem" data-th-pick="' + i + '" aria-label="' + h(a.name) + '">' + badgeHtml(a, 'sm') + '<small>' + h(a.name) + '</small></button>';
+          }).join('') + '</div></div>' : '') +
+      '</div></div>';
+    document.body.appendChild(dlg);
+    var pushed = false, closed = false;
+    function close(viaBack) {
+      if (closed) return;
+      closed = true;
+      dlg.classList.add('leaving');
+      setTimeout(function () { try { dlg.close(); } catch (e) { /* 已關閉 */ } dlg.remove(); theaterBusy = false; pumpTheater(); }, thStill() ? 0 : 160);
+      window.removeEventListener('popstate', onPop);
+      if (pushed && !viaBack) { pushed = false; history.back(); }
+    }
+    function onPop() { pushed = false; close(true); }   // 手機返回鍵：只關閉劇場，不離開頁面
+    try { history.pushState({ achTheater: 1 }, ''); pushed = true; window.addEventListener('popstate', onPop); } catch (e) { /* 不支援時用按鈕關閉 */ }
+    dlg.addEventListener('cancel', function (e) { e.preventDefault(); close(false); });   // Esc
+    dlg.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-th], [data-th-pick]');
+      if (!t) return;
+      if (t.dataset.thPick != null) {
+        var a = list[Number(t.dataset.thPick)];
+        dlg.querySelectorAll('.th-mini').forEach(function (b) { b.classList.toggle('on', b === t); });
+        dlg.querySelector('.th-main').innerHTML = badgeHtml(a, 'lg');
+        dlg.querySelector('[data-th-name]').textContent = a.name;
+        dlg.querySelector('[data-th-desc]').textContent = a.desc;
+        return;
+      }
+      if (t.dataset.th === 'sound') {
+        var on = !soundOn(); setSound(on);
+        t.textContent = on ? '🔊' : '🔇'; t.setAttribute('aria-pressed', String(on));
+        if (on) playFanfare();
+        return;
+      }
+      if (t.dataset.th === 'collection') {
+        ui.achOpen = child.id; ui.achScroll = true; ui.achNew = list.map(function (a) { return a.id; });
+        close(false);
+        setTimeout(function () {
+          if (location.hash === '#child-' + child.id) { render(); var ad = document.getElementById('ach-details'); if (ad) ad.scrollIntoView({ block: 'start' }); ui.achScroll = false; }
+          else go('#child-' + child.id);
+        }, 60);
+        return;
+      }
+      close(false);
+    });
+    if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+    playFanfare();
   }
   /** 金島通關：城堡門前慶祝空地（第四區 x 390～690、y 450～650）放煙火與彩帶約 2 秒，再顯示全螢幕慶祝 */
   function mapFireworks() {
@@ -1075,7 +1211,7 @@
       '<button type="button" class="btn primary block" data-clear-ok>太棒了！</button></div>';
     document.body.appendChild(el);
     toastEl.hidden = true;   // 通關畫面已列出成就，不另外跳提示
-    el.querySelector('[data-clear-ok]').onclick = function () { el.remove(); announceAchievements(child.id); render(); };
+    el.querySelector('[data-clear-ok]').onclick = function () { el.remove(); render(); announceAchievements(child.id, ['goldClear1']); };   // 通關畫面已列出「金島通關」，劇場不重複演出
   }
 
   /** 今日小結（結束今日冒險時、或之後在冒險大廳查看） */

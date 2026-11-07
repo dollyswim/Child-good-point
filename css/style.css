@@ -1559,3 +1559,116 @@ body.mg-open { overflow: hidden; }
 .kid-switch.many .kid { gap: 4px; padding: 3px 8px 3px 3px; font-size: .88rem; }
 .kid-switch.many .kid .avatar { flex: none; }
 .kid-switch.many .kid-name { white-space: normal; word-break: break-all; line-height: 1.15; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+/* ================= 星光成就劇場：成就解鎖演出 ================= */
+/* 徽章（正式圖到貨前：類別色外框＋成就圖示；分數金牌另標數字） */
+.badge { position: relative; display: inline-grid; place-items: center; flex: none; border-radius: 50%; }
+.badge-face { display: grid; place-items: center; width: 74%; height: 74%; border-radius: 50%; line-height: 1;
+  background: radial-gradient(circle at 35% 30%, #fffef6 0, #fff4cf 55%, #ffe39a 100%); box-shadow: inset 0 -3px 0 rgba(160, 110, 20, .18); }
+.badge-adventure { background: conic-gradient(from 200deg, #3f9a35, #8be07a, #4fb342, #a4ec8f, #3f9a35); box-shadow: 0 3px 0 #2f7a22, 0 6px 14px rgba(60, 140, 50, .3); }
+.badge-collect { background: conic-gradient(from 200deg, #7a45c8, #c9a2ff, #8d58db, #dcc2ff, #7a45c8); box-shadow: 0 3px 0 #5b2fa0, 0 6px 14px rgba(110, 60, 180, .3); }
+.badge-life { background: conic-gradient(from 200deg, #d99a12, #ffe58a, #e8ae22, #fff0b0, #d99a12); box-shadow: 0 3px 0 #a87000, 0 6px 14px rgba(200, 140, 20, .35); }
+.badge-n { position: absolute; left: 50%; bottom: -4%; transform: translateX(-50%); padding: 0 .45em; border-radius: 99px;
+  background: linear-gradient(#e2473f, #b8261f); color: #fff; font-weight: 900; line-height: 1.45; white-space: nowrap; box-shadow: 0 2px 0 rgba(0, 0, 0, .2); }
+.badge-img img { width: 100%; height: 100%; object-fit: contain; }
+.badge-lg { width: 136px; height: 136px; } .badge-lg .badge-face { font-size: 3.6rem; } .badge-lg .badge-n { font-size: .95rem; }
+.badge-sm { width: 52px; height: 52px; } .badge-sm .badge-face { font-size: 1.4rem; } .badge-sm .badge-n { font-size: .55rem; }
+.badge-xs { width: 40px; height: 40px; } .badge-xs .badge-face { font-size: 1.1rem; } .badge-xs .badge-n { font-size: .5rem; }
+.ach-mini .badge-xs { width: 30px; height: 30px; } .ach-mini .badge-xs .badge-face { font-size: .85rem; } .ach-mini .badge-xs .badge-n { font-size: .42rem; }
+.ach.is-new { animation: ach-new 1.2s ease-in-out 3; }
+@keyframes ach-new { 50% { transform: scale(1.06); box-shadow: 0 0 0 4px rgba(255, 210, 63, .7); } }
+
+/* 劇場本體：全螢幕（在底部導覽列之上），手機直式／橫式都不超出畫面 */
+.ach-theater { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: none; background: transparent; overflow: hidden; }
+.ach-theater::backdrop { background: rgba(40, 26, 10, .62); animation: th-fade .35s ease-out both; }
+.th-stage { position: relative; width: 100%; height: 100%; display: grid; place-items: center; padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 12px); }
+.th-beam { position: absolute; left: 50%; top: -10%; width: 260px; height: 75%; transform: translateX(-50%); pointer-events: none;
+  background: linear-gradient(rgba(255, 236, 160, 0), rgba(255, 226, 120, .55) 55%, rgba(255, 244, 200, 0)); filter: blur(8px);
+  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%); animation: th-beam 2.4s ease-out both; }
+.th-card { position: relative; z-index: 2; width: min(420px, 100%); max-height: 100%; overflow-y: auto; overscroll-behavior: contain;
+  padding: 18px 18px 16px; border-radius: 28px; text-align: center;
+  background: linear-gradient(#fffdf6, #fff6e2); border: 3px solid #f1d58f; box-shadow: 0 0 0 6px rgba(255, 246, 220, .55), 0 18px 40px rgba(60, 30, 0, .35);
+  animation: th-card .45s cubic-bezier(.2, 1.3, .4, 1) both; }
+.th-kicker { margin: 0; color: #e8b84a; letter-spacing: .4em; font-size: 1.1rem; }
+.th-card h2 { margin: 2px 0 0; font-size: 1.35rem; font-weight: 900; color: #a8681a; }
+.th-who { margin: 2px 0 6px; color: var(--muted); font-weight: 800; font-size: .85rem; }
+.th-main { display: grid; place-items: center; height: 168px; margin: 0 auto; width: 190px; border-radius: 24px;
+  background: radial-gradient(circle, rgba(255, 238, 170, .9) 0, rgba(255, 238, 170, 0) 70%); }
+.th-main .badge { animation: th-badge 1.1s cubic-bezier(.2, 1.4, .4, 1) .25s both; }
+.th-name { margin: 6px 0 2px; font-size: 1.45rem; font-weight: 900; color: #8a4f12; }
+.th-desc { margin: 0 0 8px; color: #6b4a2b; font-weight: 700; }
+.th-more { border-top: 2px solid #f1e0bd; padding-top: 8px; }
+.th-more-title { margin: 0 0 6px; font-weight: 800; color: #8a6a3a; font-size: .85rem; }
+.th-strip { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 8px; scroll-snap-type: x proximity; justify-content: safe center; }
+.th-mini { flex: none; display: grid; justify-items: center; gap: 4px; width: 72px; padding: 6px 2px; border-radius: 16px; border: 2px solid transparent;
+  background: #fff3d2; font: inherit; color: #6b4a2b; cursor: pointer; scroll-snap-align: center; }
+.th-mini.on { border-color: #e8b84a; background: #fff8e4; }
+.th-mini small { font-size: .62rem; font-weight: 800; line-height: 1.2; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.th-actions { display: grid; gap: 8px; margin-top: 8px; }
+.th-actions .btn.primary { background: linear-gradient(#ffd96a, #f2b632); color: #5a3400; border: none; box-shadow: 0 4px 0 #c98a14; font-weight: 900; }
+.th-go { background: transparent; border: none; box-shadow: none; color: #8a6a3a; font-weight: 800; }
+.th-sound { position: absolute; top: 10px; right: 10px; width: 38px; height: 38px; border-radius: 50%; border: 2px solid #f1e0bd; background: #fff; font-size: 1.1rem; cursor: pointer; }
+/* 星星、彩帶、愛心爆開 */
+.th-burst { position: absolute; left: 50%; top: 38%; width: 0; height: 0; z-index: 3; pointer-events: none; }
+.th-burst i, .th-burst b { position: absolute; left: 0; top: 0; opacity: 0; animation: th-fly 1.6s cubic-bezier(.15, .7, .3, 1) .35s both; }
+.th-burst i { width: 10px; height: 18px; border-radius: 3px; }
+.th-burst i:nth-child(3n+1) { background: #ffd23f; } .th-burst i:nth-child(3n+2) { background: #f2b632; width: 14px; height: 14px; clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.th-burst i:nth-child(3n) { background: #fff3b0; }
+.th-burst b { color: #ff7aa2; font-size: 18px; }
+@keyframes th-fade { from { opacity: 0; } }
+@keyframes th-beam { 0% { opacity: 0; transform: translateX(-50%) scaleY(.2); } 30% { opacity: 1; } 100% { opacity: .55; transform: translateX(-50%) scaleY(1); } }
+@keyframes th-card { from { opacity: 0; transform: translateY(24px) scale(.92); } }
+@keyframes th-badge { 0% { opacity: 0; transform: scale(.2) rotate(-30deg); } 60% { opacity: 1; transform: scale(1.15) rotate(8deg); } 80% { transform: scale(.96) rotate(-3deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes th-fly { 0% { opacity: 1; transform: translate(0, 0) rotate(0) scale(.6); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(1); } }
+.ach-theater.leaving .th-card { transition: opacity .16s, transform .16s; opacity: 0; transform: scale(.96); }
+/* 減少動態效果：直接顯示最後畫面，不放光柱、粒子與彈跳 */
+.ach-theater.still .th-beam, .ach-theater.still .th-burst { display: none; }
+.ach-theater.still .th-card, .ach-theater.still .th-main .badge, .ach-theater.still::backdrop { animation: none; }
+@media (prefers-reduced-motion: reduce) { .ach.is-new { animation: none; box-shadow: 0 0 0 3px rgba(255, 210, 63, .8); } }
+.th-burst i:nth-child(1) { --dx: 130px; --dy: 0px; --r: 0deg; animation-delay: 0.35s; }
+.th-burst i:nth-child(2) { --dx: 160px; --dy: 52px; --r: 67deg; animation-delay: 0.39s; }
+.th-burst i:nth-child(3) { --dx: 161px; --dy: 121px; --r: 134deg; animation-delay: 0.43s; }
+.th-burst i:nth-child(4) { --dx: 65px; --dy: 101px; --r: 201deg; animation-delay: 0.47s; }
+.th-burst i:nth-child(5) { --dx: 30px; --dy: 151px; --r: 268deg; animation-delay: 0.35s; }
+.th-burst i:nth-child(6) { --dx: -36px; --dy: 186px; --r: 335deg; animation-delay: 0.39s; }
+.th-burst i:nth-child(7) { --dx: -65px; --dy: 101px; --r: 42deg; animation-delay: 0.43s; }
+.th-burst i:nth-child(8) { --dx: -130px; --dy: 98px; --r: 109deg; animation-delay: 0.47s; }
+.th-burst i:nth-child(9) { --dx: -197px; --dy: 65px; --r: 176deg; animation-delay: 0.35s; }
+.th-burst i:nth-child(10) { --dx: -130px; --dy: 0px; --r: 243deg; animation-delay: 0.39s; }
+.th-burst i:nth-child(11) { --dx: -160px; --dy: -52px; --r: 310deg; animation-delay: 0.43s; }
+.th-burst i:nth-child(12) { --dx: -161px; --dy: -121px; --r: 17deg; animation-delay: 0.47s; }
+.th-burst i:nth-child(13) { --dx: -65px; --dy: -101px; --r: 84deg; animation-delay: 0.35s; }
+.th-burst i:nth-child(14) { --dx: -30px; --dy: -151px; --r: 151deg; animation-delay: 0.39s; }
+.th-burst i:nth-child(15) { --dx: 36px; --dy: -186px; --r: 218deg; animation-delay: 0.43s; }
+.th-burst i:nth-child(16) { --dx: 65px; --dy: -101px; --r: 285deg; animation-delay: 0.47s; }
+.th-burst i:nth-child(17) { --dx: 130px; --dy: -98px; --r: 352deg; animation-delay: 0.35s; }
+.th-burst i:nth-child(18) { --dx: 197px; --dy: -65px; --r: 59deg; animation-delay: 0.39s; }
+.th-burst b:nth-of-type(1) { --dx: -90px; --dy: -120px; --r: -20deg; animation-delay: 0.50s; }
+.th-burst b:nth-of-type(2) { --dx: 100px; --dy: -100px; --r: 0deg; animation-delay: 0.60s; }
+.th-burst b:nth-of-type(3) { --dx: 10px; --dy: -160px; --r: 20deg; animation-delay: 0.70s; }
+.th-card:focus { outline: none; }
+.th-card button:focus:not(:focus-visible) { outline: none; }
+
+/* 直式：由上而下（標題 → 主徽章 → 名稱說明 → 其他徽章 → 按鈕） */
+.th-card { display: flex; flex-direction: column; }
+.th-left { display: contents; }
+.th-kicker, .th-card h2, .th-who, .th-sound { order: 1; }
+.th-main { order: 2; } .th-name { order: 3; } .th-desc { order: 4; } .th-more { order: 5; } .th-actions { order: 6; }
+/* 橫式（手機轉橫）：左欄主徽章＋按鈕，右欄文字與其他徽章，不用捲動就看得到按鈕 */
+@media (orientation: landscape) and (max-height: 520px) {
+  .th-card { width: min(680px, 100%); display: grid; grid-template-columns: 190px minmax(0, 1fr); grid-auto-rows: min-content; align-content: start;
+    column-gap: 16px; text-align: left; padding: 12px 14px; }
+  .th-left { display: flex; flex-direction: column; grid-column: 1; grid-row: 1 / span 8; align-self: stretch; justify-content: space-between; gap: 6px; }
+  .th-card > :not(.th-left) { grid-column: 2; }
+  .th-kicker { display: none; }
+  .th-main { width: 190px; height: 128px; }
+  .badge-lg { width: 108px; height: 108px; } .badge-lg .badge-face { font-size: 2.9rem; }
+  .th-card h2 { font-size: 1.15rem; padding-right: 44px; }
+  .th-who { margin-bottom: 2px; } .th-name { font-size: 1.2rem; margin: 2px 0 0; } .th-desc { margin-bottom: 4px; font-size: .9rem; }
+  .th-more { padding-top: 4px; } .th-more-title { font-size: .78rem; margin-bottom: 2px; }
+  .th-strip { justify-content: flex-start; padding-bottom: 2px; }
+  .th-mini { width: 62px; } .th-mini .badge-sm { width: 42px; height: 42px; }
+  .th-actions { margin-top: 0; gap: 0; }
+  .th-actions .btn { min-height: 40px; padding: 6px 8px; font-size: .88rem; }
+  .th-beam { height: 100%; }
+}

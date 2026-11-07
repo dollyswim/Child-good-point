@@ -28,6 +28,14 @@ async function main() {
   const server = await serve();
   const url = `http://localhost:${server.address().port}/`;
   const browser = await chromium.launch();
+  // 其他流程測試：成就改用文字提示（不跳星光成就劇場，避免擋住後續點擊）；劇場另有專門測試（theater: true）
+  const _newContext = browser.newContext.bind(browser);
+  browser.newContext = async (opts = {}) => {
+    const { theater, ...rest } = opts;
+    const c = await _newContext(rest);
+    if (!theater) await c.addInitScript(() => { window.__cgpNoTheater = true; });
+    return c;
+  };
   const ctx = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block' });
   const page = await ctx.newPage();
   const errors = [];
@@ -1558,6 +1566,92 @@ async function main() {
       await cx.close();
       console.log('✔ 金島第一～四區地圖 ' + width + 'px：100 格對齊、縮放拖曳、不橫向溢出' + (width === 390 ? '、逐格移動、重新整理恢復、舊存檔遷移、第 100 格通關停止' : ''));
     }
+  }
+
+  // ---------- 星光成就劇場：成就解鎖演出 ----------
+  {
+    async function unlockOn(opts, startPoints) {
+      const c = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', theater: true, ...opts });
+      const q = await c.newPage();
+      q.on('pageerror', (e) => errors.push(e.message));
+      q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
+      await q.goto(url);
+      const id = await q.evaluate((p) => window.__cgpStore.addChild({ name: '波妞', startPoints: p }).id, startPoints);
+      await q.goto(url + '#report'); await q.goto(url + '#home');
+      await q.waitForSelector('#ach-theater[open]');
+      return { c, q, id };
+    }
+    const fitsScreen = (q) => q.evaluate(() => { const r = document.querySelector('.th-card').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight + 1 && r.left >= 0 && r.right <= innerWidth + 1; });
+    // 單一成就：成就解鎖！主徽章、名稱、兩個按鈕；音效開關；按「繼續冒險」關閉
+    {
+      const { c, q, id } = await unlockOn({}, 1000);
+      assert.match(await q.locator('#ach-theater h2').innerText(), /^🎉 成就解鎖！$/);
+      assert.match(await q.locator('#ach-theater .th-name').innerText(), /獲得 1000 分/);
+      assert.equal(await q.locator('#ach-theater .th-main .badge-life').count(), 1, '主徽章依成就類別上色');
+      assert.equal(await q.locator('#ach-theater .th-mini').count(), 0, '單一成就沒有小徽章列');
+      assert.equal(await q.locator('#toast:not([hidden])').filter({ hasText: '解鎖成就' }).count(), 0, '不再用綠色提示');
+      assert.ok(await fitsScreen(q), '直式不超出畫面');
+      assert.ok(await q.evaluate(() => { const r = document.querySelector('.th-actions').getBoundingClientRect(); const n = document.querySelector('.bottom-nav').getBoundingClientRect(); return document.querySelector('#ach-theater').matches(':modal') && r.bottom <= innerHeight; }), '在底部導覽列之上');
+      await q.click('[data-th=sound]');
+      assert.equal(await q.locator('[data-th=sound]').getAttribute('aria-pressed'), 'false');
+      assert.equal(await q.evaluate(() => localStorage.getItem('cgp-ach-sound')), 'off', '音效關閉會記住');
+      await q.click('[data-th=close]');
+      await q.waitForFunction(() => !document.getElementById('ach-theater'));
+      assert.ok(await q.evaluate((cid) => window.__cgpStore.getAchievements(cid).find((a) => a.id === 'earn1000').done, id), '成就已記錄');
+      // 重新整理：不再演出、不重複發放
+      await q.reload(); await q.waitForTimeout(500);
+      assert.equal(await q.locator('#ach-theater').count(), 0, '重新整理後不再演出');
+      assert.equal(await q.evaluate(() => JSON.parse(localStorage.getItem('cgp-data')).achievements[Object.keys(JSON.parse(localStorage.getItem('cgp-data')).achievements)[0]].earn1000 ? 1 : 0), 1);
+      await c.close();
+    }
+    // 同時 2 個：哇！一次解鎖 2 個成就！主徽章是最高階（2000），小徽章可點選切換
+    {
+      const { c, q } = await unlockOn({}, 2000);
+      assert.match(await q.locator('#ach-theater h2').innerText(), /一次解鎖 2 個成就/);
+      assert.match(await q.locator('#ach-theater .th-name').innerText(), /獲得 2000 分/, '主徽章是最高階');
+      assert.equal(await q.locator('#ach-theater .th-mini').count(), 2);
+      await q.click('.th-mini >> nth=1');
+      assert.match(await q.locator('#ach-theater .th-name').innerText(), /獲得 1000 分/, '點小徽章查看');
+      // 手機返回鍵：安全關閉，留在原頁
+      await q.goBack();
+      await q.waitForFunction(() => !document.getElementById('ach-theater'));
+      assert.equal(new URL(q.url()).hash, '#home', '返回鍵只關閉劇場');
+      await c.close();
+    }
+    // 同時 5 個、10 個：主徽章 5000／10000，其他橫向排列；直式與橫式都不超出畫面；查看收藏導向小孩頁面並展開
+    {
+      const { c, q, id } = await unlockOn({}, 5000);
+      assert.match(await q.locator('#ach-theater h2').innerText(), /一次解鎖 5 個成就/);
+      assert.match(await q.locator('#ach-theater .th-more-title').innerText(), /另外 4 個成就/);
+      assert.ok(await fitsScreen(q));
+      await q.click('[data-th=collection]');
+      await q.waitForFunction((cid) => location.hash === '#child-' + cid, id);
+      await q.waitForSelector('[data-testid=achievements][open]');
+      assert.equal(await q.locator('[data-testid=achievements] .ach.is-new').count(), 5, '收藏頁標出這次的新成就');
+      await c.close();
+    }
+    for (const dev of ['Pixel 5', 'Pixel 5 landscape']) {
+      const { c, q } = await unlockOn({ ...devices[dev] }, 10000);
+      assert.match(await q.locator('#ach-theater h2').innerText(), /一次解鎖 10 個成就/);
+      assert.match(await q.locator('#ach-theater .th-name').innerText(), /獲得 10000 分/);
+      assert.equal(await q.locator('#ach-theater .th-mini').count(), 10);
+      assert.equal(await q.locator('#ach-theater .badge-n').first().innerText(), '10,000', '分數金牌標出數字，不是全部同一個圖');
+      assert.ok(await q.evaluate(() => { const s = document.querySelector('.th-strip'); return s.scrollWidth > s.clientWidth; }), '數量多：橫向捲動');
+      assert.ok(await fitsScreen(q), dev + '：不超出畫面');
+      assert.ok(await q.evaluate(() => { const b = document.querySelector('[data-th=close]').getBoundingClientRect(); return b.bottom <= innerHeight && b.top >= 0; }), dev + '：按鈕不用捲動就看得到');
+      await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'theater-' + (dev.includes('landscape') ? 'landscape' : 'portrait') + '.png') : path.join(require('os').tmpdir(), 'th.png') });
+      await q.click('[data-th=close]');
+      await q.waitForFunction(() => !document.getElementById('ach-theater'));
+      await c.close();
+    }
+    // 減少動態效果：直接顯示最後畫面（沒有光柱與粒子）
+    {
+      const { c, q } = await unlockOn({ reducedMotion: 'reduce' }, 1000);
+      assert.equal(await q.locator('#ach-theater.still').count(), 1);
+      assert.equal(await q.locator('.th-burst').isVisible(), false);
+      await c.close();
+    }
+    console.log('✔ 星光成就劇場：單一／2／5／10 個成就、主徽章最高階、小徽章點選、橫向捲動、直式橫式、音效開關、返回鍵、查看收藏、減少動態、重新整理不重複');
   }
 
   assert.deepEqual(errors, [], '頁面不得出現 JS 錯誤或原生對話框');
