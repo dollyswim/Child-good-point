@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-41';
+  var APP_VERSION = '2026.11.07-42';
   var store;
   try {
     store = new CGP.Store();
@@ -956,7 +956,7 @@
     return '<section class="panel ach-panel" data-testid="achievements"><h2>🏆 成就 <small>已解鎖 ' + done + ' / ' + list.length + '</small></h2>' +
       ACH_CATS.map(function (c) {
         return '<div class="ach-cat"><h3>' + c[1] + '</h3><div class="ach-grid">' + list.filter(function (a) { return a.cat === c[0]; }).map(function (a) {
-          return '<button type="button" class="ach' + (a.done ? ' done' : '') + '" data-action="ach-info" data-id="' + a.id + '" aria-label="' + h(a.name) + (a.done ? '（已解鎖）' : '（未解鎖）') + '">' +
+          return '<button type="button" class="ach ach-' + a.cat + (a.done ? ' done' : '') + '" data-action="ach-info" data-id="' + a.id + '" aria-label="' + h(a.name) + (a.done ? '（已解鎖）' : '（未解鎖）') + '">' +
             '<span class="ach-badge">' + (a.done ? a.icon : '🔒') + '</span><small>' + h(a.name) + '</small></button>';
         }).join('') + '</div></div>';
       }).join('') + '</section>';

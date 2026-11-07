@@ -690,25 +690,33 @@
     return best;
   }
   /** 成就清單：cat＝adventure（冒險）／collect（收集）／life（生活）；check 回傳是否達成 */
+  // 成就清單（2026-11-07 家長定稿：docs/art/achievement_badges.csv）；冒險＝綠框、收集＝紫框、生活＝金框
   var ACHIEVEMENTS = [
     { id: 'goldClear1', cat: 'adventure', icon: '🏅', name: '金島通關', desc: '走完金島 100 格，抵達金冠城堡', check: function (s, c) { return s.getPlayer(c).goldClears >= 1; } },
-    { id: 'goldClear3', cat: 'adventure', icon: '🥈', name: '金島通關 3 次', desc: '通關金島 3 次', check: function (s, c) { return s.getPlayer(c).goldClears >= 3; } },
-    { id: 'goldClear5', cat: 'adventure', icon: '🥇', name: '金島通關 5 次', desc: '通關金島 5 次', check: function (s, c) { return s.getPlayer(c).goldClears >= 5; } },
     { id: 'reachR2', cat: 'adventure', icon: '💎', name: '抵達水晶礦谷', desc: '走到第 31 格以後', check: function (s, c) { return s.getPlayer(c).maxReached >= 31; } },
     { id: 'reachR3', cat: 'adventure', icon: '⚙️', name: '抵達齒輪工坊', desc: '走到第 56 格以後', check: function (s, c) { return s.getPlayer(c).maxReached >= 56; } },
     { id: 'reachR4', cat: 'adventure', icon: '👑', name: '抵達金冠城堡', desc: '走到第 81 格以後', check: function (s, c) { return s.getPlayer(c).maxReached >= 81; } },
+    { id: 'chest1', cat: 'collect', icon: '🧰', name: '第一個寶箱', desc: '開過第一個一般寶箱', check: function (s, c) { return s.getPlayer(c).stats.chests >= 1; } },
     { id: 'chests10', cat: 'collect', icon: '📦', name: '寶箱獵人', desc: '開過 10 個一般寶箱', check: function (s, c) { return s.getPlayer(c).stats.chests >= 10; } },
-    { id: 'mystery1', cat: 'collect', icon: '🎁', name: '神秘寶箱初體驗', desc: '打開第一個神秘寶箱', check: function (s, c) { return s.getPlayer(c).stats.mystery >= 1; } },
-    { id: 'catch10', cat: 'collect', icon: '🌟', name: '星星捕手', desc: '「抓住星星」單局抓到 10 顆以上', check: function (s, c) {
-      return s.data.adventure.minigames.some(function (m) { return m.childId === c && m.status === 'done' && m.caught >= 10; }); } },
-    { id: 'earn1000', cat: 'life', icon: '🌱', name: '累計 1000 分', desc: '起始點數＋累計得分達到 1000', check: function (s, c) { return s.getEarned(c) >= 1000; } },
-    { id: 'earn5000', cat: 'life', icon: '🌳', name: '累計 5000 分', desc: '起始點數＋累計得分達到 5000', check: function (s, c) { return s.getEarned(c) >= 5000; } },
-    { id: 'earn10000', cat: 'life', icon: '🏔️', name: '累計 10000 分', desc: '起始點數＋累計得分達到 10000', check: function (s, c) { return s.getEarned(c) >= 10000; } },
-    { id: 'special5', cat: 'life', icon: '🔮', name: '特殊任務達人', desc: '完成 5 個特殊任務', check: function (s, c) {
-      return s.data.records.filter(function (r) { return r.childId === c && /^special:/.test(r.refId || ''); }).length >= 5; } },
+    { id: 'mystery1', cat: 'collect', icon: '🎁', name: '一個大秘寶', desc: '打開第一個神秘寶箱', check: function (s, c) { return s.getPlayer(c).stats.mystery >= 1; } },
+    { id: 'catch5', cat: 'collect', icon: '⭐', name: '星星捕手', desc: '「抓住星星」單局抓到 5 顆以上', check: function (s, c) { return bestCatch(s, c) >= 5; } },
+    { id: 'catch10', cat: 'collect', icon: '🌟', name: '星海傳說', desc: '「抓住星星」單局抓到 10 顆以上', check: function (s, c) { return bestCatch(s, c) >= 10; } }
+  ].concat([1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000].map(function (n) {
+    return { id: 'earn' + n, cat: 'life', icon: '🥇', name: '獲得 ' + n + ' 分', desc: '起始點數＋累計得分達到 ' + n, check: function (s, c) { return s.getEarned(c) >= n; } };
+  })).concat([
+    { id: 'special1', cat: 'life', icon: '🔮', name: '第一個特殊任務', desc: '完成 1 個特殊任務', check: function (s, c) { return specialDone(s, c) >= 1; } },
+    { id: 'special5', cat: 'life', icon: '💠', name: '特殊任務達人', desc: '完成 5 個特殊任務', check: function (s, c) { return specialDone(s, c) >= 5; } },
     { id: 'streak7', cat: 'life', icon: '📅', name: '連續 7 天冒險', desc: '連續 7 天出發冒險', check: function (s, c) {
       return longestStreak(s.data.adventure.settlements.filter(function (x) { return x.childId === c; }).map(function (x) { return x.date; })) >= 7; } }
-  ];
+  ]);
+  /** 「抓住星星」單局最多抓到幾顆 */
+  function bestCatch(s, c) {
+    return s.data.adventure.minigames.reduce(function (m, g) { return g.childId === c && g.status === 'done' && g.caught > m ? g.caught : m; }, 0);
+  }
+  /** 完成的特殊任務數 */
+  function specialDone(s, c) {
+    return s.data.records.filter(function (r) { return r.childId === c && /^special:/.test(r.refId || ''); }).length;
+  }
   /** 檢查並記錄新達成的成就（已達成的不會消失）@returns 這次新達成的成就 */
   Store.prototype.checkAchievements = function (childId) {
     if (!this.getChild(childId)) return [];

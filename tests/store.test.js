@@ -1906,18 +1906,21 @@ test('金島通關：第一次＝神秘寶箱 ×1（免鑰匙）＋成就；之�
   });
 });
 
-test('成就：14 項三類；達成後記錄日期、不重複、不會消失；兩位孩子各自計算', () => {
+test('成就：22 項三類（冒險 4、收集 5、生活 13）；達成後記錄日期、不重複、不會消失；兩位孩子各自計算', () => {
   const { store, a } = p3Store();
   const b2 = store.addChild({ name: 'B', startPoints: 6000 });
-  assert.equal(G.ACHIEVEMENTS.length, 14);
+  assert.equal(G.ACHIEVEMENTS.length, 22);
+  assert.deepEqual(['adventure', 'collect', 'life'].map(c => G.ACHIEVEMENTS.filter(x => x.cat === c).length), [4, 5, 13]);
+  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.id)).size, 22, '代號不重複');
+  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.name)).size, 22, '名稱不重複');
   assert.deepEqual([...new Set(G.ACHIEVEMENTS.map(x => x.cat))], ['adventure', 'collect', 'life']);
-  assert.deepEqual(store.checkAchievements(b2.id).map(x => x.id), ['earn1000', 'earn5000'], '起始點數也算累計得分');
+  assert.deepEqual(store.checkAchievements(b2.id).map(x => x.id), ['earn1000', 'earn2000', 'earn3000', 'earn4000', 'earn5000', 'earn6000'], '起始點數也算累計得分；每 1000 分一個');
   assert.deepEqual(store.checkAchievements(b2.id), [], '不重複');
   assert.equal(store.getAchievements(a.id).filter(x => x.done).length, 0, '另一位孩子不受影響');
   const p = store.getPlayer(a.id);
   p.maxReached = 40; p.stats.chests = 10; p.stats.mystery = 1;
   store.data.adventure.minigames.push({ id: 'm', childId: a.id, date: store.today(), status: 'done', caught: 12, stars: 12, ts: 1 });
-  assert.deepEqual(store.checkAchievements(a.id).map(x => x.id), ['reachR2', 'chests10', 'mystery1', 'catch10']);
+  assert.deepEqual(store.checkAchievements(a.id).map(x => x.id), ['reachR2', 'chest1', 'chests10', 'mystery1', 'catch5', 'catch10']);
   p.maxReached = 0;
   assert.equal(store.getAchievements(a.id).find(x => x.id === 'reachR2').done, true, '達成後不會消失');
   assert.equal(store.getAchievements(a.id).find(x => x.id === 'reachR2').date, '2026-11-06');
@@ -1937,7 +1940,10 @@ test('成就：寶箱與神秘寶箱計數、最遠格子、連續 7 天冒險�
   const it = store.addItem({ kind: 'bonus', name: 'x', points: 5 });
   for (let d = 7; d <= 12; d++) { setDate('2026-11-' + String(d).padStart(2, '0') + 'T10:00:00'); store.recordItem(a.id, it.id); store.settleToday(a.id); }
   assert.ok(store.checkAchievements(a.id).some(x => x.id === 'streak7'), '11/6～11/12 連續 7 天');
-  for (const k of ['chore', 'praise', 'helper']) store.completeSpecialTask(store.addSpecialTask(a.id, k).task.id);
+  assert.ok(!store.getAchievements(a.id).find(x => x.id === 'special1').done);
+  store.completeSpecialTask(store.addSpecialTask(a.id, 'chore').task.id);
+  assert.deepEqual(store.checkAchievements(a.id).map(x => x.id), ['special1'], '完成第 1 個特殊任務');
+  for (const k of ['praise', 'helper']) store.completeSpecialTask(store.addSpecialTask(a.id, k).task.id);
   setDate('2026-11-20T10:00:00');
   store.completeSpecialTask(store.addSpecialTask(a.id, 'chore').task.id);
   assert.ok(!store.checkAchievements(a.id).some(x => x.id === 'special5'));

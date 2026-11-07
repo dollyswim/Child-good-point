@@ -1123,8 +1123,9 @@ async function main() {
     });
     await q.goto(url + '#adventure-' + id);
     await q.waitForSelector('[data-testid=achievements]');
-    assert.match(await q.locator('#toast').innerText(), /解鎖成就[\s\S]*累計 1000 分/);
-    assert.match(await q.locator('[data-testid=achievements] h2').innerText(), /已解鎖 4 \/ 14/);   // 累計 1000、抵達水晶礦谷、抵達齒輪工坊、抵達金冠城堡
+    assert.match(await q.locator('#toast').innerText(), /解鎖成就[\s\S]*獲得 1000 分/);
+    assert.match(await q.locator('[data-testid=achievements] h2').innerText(), /已解鎖 4 \/ 22/);   // 獲得 1000 分、抵達水晶礦谷、抵達齒輪工坊、抵達金冠城堡
+    await q.locator('[data-testid=achievements]').screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'achievements.png') : path.join(require('os').tmpdir(), 'ach.png') });
     await q.click('[data-action=ach-info][data-id=goldClear1]');
     assert.match(await q.locator('#confirm').innerText(), /金島通關[\s\S]*還沒達成/);
     await q.click('#confirm [data-yes]');

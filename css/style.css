@@ -1416,6 +1416,11 @@ body.mg-open { overflow: hidden; }
 .ach.done { background: linear-gradient(#fffbe9, #ffefc2); border-color: #ffd23f; box-shadow: 0 2px 0 rgba(200, 150, 40, .3); }
 .ach.done .ach-badge { filter: none; opacity: 1; }
 .ach.done small { color: #8a5a00; }
+/* 外框顏色依類別：冒險＝綠、收集＝紫、生活＝金（未解鎖一律灰） */
+.ach.done.ach-adventure { background: linear-gradient(#f3fff0, #d6f5c9); border-color: #5cbf4a; box-shadow: 0 2px 0 rgba(60, 140, 50, .3); }
+.ach.done.ach-adventure small { color: #2f7a22; }
+.ach.done.ach-collect { background: linear-gradient(#faf4ff, #e9d8ff); border-color: #a070e0; box-shadow: 0 2px 0 rgba(110, 60, 180, .3); }
+.ach.done.ach-collect small { color: #6a3aaa; }
 
 /* 金島通關：全螢幕慶祝 */
 .clear-screen { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px;
