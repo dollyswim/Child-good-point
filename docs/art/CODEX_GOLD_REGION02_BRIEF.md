@@ -65,3 +65,14 @@ pulley ropes with ore buckets, warm mine lanterns, a small waterfall and some gr
 bright daylight, the path clearly visible and unobstructed, an empty flat clearing near the
 upper left for a future building, no tiles, no characters, no text, no UI
 ```
+
+## 中文版提示詞（與上方英文版內容相同）
+```
+直式 1080×1350 遊戲地圖背景，接續可愛 3D 風格的金色礦島。
+一條蜿蜒的沙石小路從畫面下方中央進入，一路往上穿過水晶礦谷：
+發光的藍紫色與金色水晶簇、岩石峭壁、沿著小路延伸的礦車軌道與小礦車、
+木頭棧橋、掛著礦石吊籃的滑輪繩索、溫暖的礦燈、一座小瀑布和少量綠意，
+明亮的白天光線，小路清楚可見、不被遮擋，左上方附近留一塊平坦空地給之後的建築，
+不要格子、不要角色、不要文字、不要介面
+```
+
