@@ -1144,7 +1144,11 @@ async function main() {
     await q.goto(url + '#map-' + id);
     await q.evaluate(() => { window.__cgpStore.random = () => 0.99; });
     await q.click('.dice-btn.d6');
+    await q.waitForSelector('.map-fireworks', { state: 'attached', timeout: 10000 });   // 先在城堡門前放煙火彩帶，再顯示全螢幕慶祝
+    await q.waitForTimeout(700);
+    await q.locator('#map-view').screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'gold-fireworks.png') : path.join(require('os').tmpdir(), 'fw.png') });
     await q.waitForSelector('#clear-screen', { timeout: 10000 });
+    assert.equal(await q.locator('.map-fireworks').count(), 0, '煙火結束後移除');
     assert.match(await q.locator('#clear-screen').innerText(), /恭喜通關金島[\s\S]*神秘寶箱 ×1[\s\S]*金島通關/);
     await q.click('#clear-screen [data-clear-ok]');
     await q.waitForFunction(() => !document.getElementById('clear-screen'));

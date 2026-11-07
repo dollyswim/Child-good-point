@@ -1472,3 +1472,39 @@ body.mg-open { overflow: hidden; }
 .storage-warn b { color: #9a3b00; }
 .storage-warn small { color: var(--muted); font-weight: 700; }
 .storage-warn .btn { justify-self: end; flex: none; width: auto; white-space: nowrap; }
+
+/* 金島通關：城堡門前煙火與彩帶（地圖座標，慶祝空地 300×200 置中於 540,550） */
+.map-fireworks { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 900; pointer-events: none; }
+.fw-burst { position: absolute; width: 0; height: 0; opacity: 0; animation: fw-pop 1s ease-out forwards; }
+.fw-burst i { position: absolute; left: -3px; top: -3px; width: 6px; height: 26px; border-radius: 3px; transform-origin: 3px 3px; background: linear-gradient(transparent, currentColor 70%, #fff); filter: drop-shadow(0 0 4px currentColor); }
+.fw-burst i:nth-child(1) { transform: rotate(0deg) translateY(10px); } .fw-burst i:nth-child(2) { transform: rotate(30deg) translateY(10px); }
+.fw-burst i:nth-child(3) { transform: rotate(60deg) translateY(10px); } .fw-burst i:nth-child(4) { transform: rotate(90deg) translateY(10px); }
+.fw-burst i:nth-child(5) { transform: rotate(120deg) translateY(10px); } .fw-burst i:nth-child(6) { transform: rotate(150deg) translateY(10px); }
+.fw-burst i:nth-child(7) { transform: rotate(180deg) translateY(10px); } .fw-burst i:nth-child(8) { transform: rotate(210deg) translateY(10px); }
+.fw-burst i:nth-child(9) { transform: rotate(240deg) translateY(10px); } .fw-burst i:nth-child(10) { transform: rotate(270deg) translateY(10px); }
+.fw-burst i:nth-child(11) { transform: rotate(300deg) translateY(10px); } .fw-burst i:nth-child(12) { transform: rotate(330deg) translateY(10px); }
+.fw-c0 { color: #ffd23f; } .fw-c1 { color: #ff5d8f; } .fw-c2 { color: #3fb6e8; } .fw-c3 { color: #5cbf4a; }
+@keyframes fw-pop { 0% { opacity: 1; transform: scale(.1); } 60% { opacity: 1; transform: scale(2.2); } 100% { opacity: 0; transform: scale(2.8); } }
+.fw-ribbons { position: absolute; left: 390px; top: 400px; width: 300px; height: 260px; overflow: hidden; }
+.fw-ribbons i { position: absolute; top: -30px; width: 9px; height: 22px; border-radius: 3px; animation: fw-fall 1.8s ease-in forwards; }
+.fw-ribbons i:nth-child(4n+1) { background: #ff5d8f; } .fw-ribbons i:nth-child(4n+2) { background: #ffd23f; } .fw-ribbons i:nth-child(4n+3) { background: #3fb6e8; } .fw-ribbons i:nth-child(4n) { background: #5cbf4a; }
+.fw-ribbons i:nth-child(1) { left: 53px; animation-delay: 0.07s; }
+.fw-ribbons i:nth-child(2) { left: 106px; animation-delay: 0.14s; }
+.fw-ribbons i:nth-child(3) { left: 159px; animation-delay: 0.21s; }
+.fw-ribbons i:nth-child(4) { left: 212px; animation-delay: 0.28s; }
+.fw-ribbons i:nth-child(5) { left: 265px; animation-delay: 0.35s; }
+.fw-ribbons i:nth-child(6) { left: 28px; animation-delay: 0.42s; }
+.fw-ribbons i:nth-child(7) { left: 81px; animation-delay: 0.49s; }
+.fw-ribbons i:nth-child(8) { left: 134px; animation-delay: 0.56s; }
+.fw-ribbons i:nth-child(9) { left: 187px; animation-delay: 0.63s; }
+.fw-ribbons i:nth-child(10) { left: 240px; animation-delay: 0.70s; }
+.fw-ribbons i:nth-child(11) { left: 3px; animation-delay: 0.77s; }
+.fw-ribbons i:nth-child(12) { left: 56px; animation-delay: 0.84s; }
+.fw-ribbons i:nth-child(13) { left: 109px; animation-delay: 0.01s; }
+.fw-ribbons i:nth-child(14) { left: 162px; animation-delay: 0.08s; }
+.fw-ribbons i:nth-child(15) { left: 215px; animation-delay: 0.15s; }
+.fw-ribbons i:nth-child(16) { left: 268px; animation-delay: 0.22s; }
+.fw-ribbons i:nth-child(17) { left: 31px; animation-delay: 0.29s; }
+.fw-ribbons i:nth-child(18) { left: 84px; animation-delay: 0.36s; }
+@keyframes fw-fall { 0% { transform: translateY(0) rotate(0); opacity: 1; } 100% { transform: translateY(290px) rotate(540deg); opacity: .2; } }
+@media (prefers-reduced-motion: reduce) { .fw-burst, .fw-ribbons i { animation: none; opacity: 0; } }

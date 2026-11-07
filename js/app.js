@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-44';
+  var APP_VERSION = '2026.11.07-45';
   var store;
   try {
     store = new CGP.Store();
@@ -940,7 +940,7 @@
       : (kind === 'magic' || (pr && pr.die === 'magic') ? '✨ 神奇骰子擲出 ' : '🎲 擲出 ') + res.value;
     // 停在小遊戲格（或礦車載到小遊戲格）：直接開始「抓住星星」
     var clearEv = ev && ev.clear ? ev : (ev && ev.then && ev.then.clear ? ev.then : null);
-    if (clearEv) { showClear(child, clearEv); return; }
+    if (clearEv) { await mapFireworks(); showClear(child, clearEv); return; }
     var mgEv = ev && ev.minigame ? ev : (ev && ev.then && ev.then.minigame ? ev.then : null);
     if (mgEv) { openMinigame(childId, head + '・停在第 ' + store.getPlayer(childId).pos + ' 格'); return; }
     var msg = eventText(res.event);
@@ -965,6 +965,21 @@
   function announceAchievements(childId) {
     var fresh = store.checkAchievements(childId);
     if (fresh.length) toast('🏆 解鎖成就：' + fresh.map(function (a) { return a.icon + ' ' + a.name; }).join('、'), 'pos');
+  }
+  /** 金島通關：城堡門前慶祝空地（第四區 x 390～690、y 450～650）放煙火與彩帶約 2 秒，再顯示全螢幕慶祝 */
+  function mapFireworks() {
+    var world = document.getElementById('map-world');
+    if (!world) return Promise.resolve();
+    var el = document.createElement('div');
+    el.className = 'map-fireworks'; el.setAttribute('aria-hidden', 'true');
+    var bursts = [[440, 470, 0], [640, 480, 0.35], [540, 430, 0.7], [470, 560, 1.05], [610, 580, 1.25]];
+    el.innerHTML = bursts.map(function (b, k) {
+      return '<span class="fw-burst fw-c' + (k % 4) + '" style="left:' + b[0] + 'px;top:' + b[1] + 'px;animation-delay:' + b[2] + 's">' +
+        new Array(13).join('<i></i>') + '</span>';
+    }).join('') + '<span class="fw-ribbons">' + new Array(19).join('<i></i>') + '</span>';
+    world.appendChild(el);
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return sleep(reduce ? 300 : 2200).then(function () { el.remove(); });
   }
   /** 金島通關：全螢幕慶祝畫面（動畫失敗不影響已存檔的獎勵） */
   function showClear(child, ev) {
