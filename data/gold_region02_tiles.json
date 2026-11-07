@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "status": "draft",
+  "note": "第 31～55 格：座標暫用 Codex 草圖 v2（金島長地圖總覽座標 1080×5400，左上為原點）；水晶礦谷背景到貨後換成最終座標。第 31～34 格畫在第一區原圖上方道路。",
+  "world": {
+    "width": 1080,
+    "height": 5400
+  },
+  "regionId": "gold-02",
+  "name": "水晶礦谷",
+  "backgroundStrip": {
+    "y": 2700,
+    "height": 1350
+  },
+  "tiles": [
+    {
+      "id": "gold-02-031",
+      "order": 31,
+      "gx": 550,
+      "gy": 4290,
+      "type": "normal"
+    },
+    {
+      "id": "gold-02-032",
+      "order": 32,
+      "gx": 540,
+      "gy": 4220,
+      "type": "normal"
+    },
+    {
+      "id": "gold-02-033",
+      "order": 33,
+      "gx": 540,
+      "gy": 4150,
+      "type": "chance"
+    },
+    {
+      "id": "gold-02-034",
+      "order": 34,
+      "gx": 540,
+      "gy": 4080,
+      "type": "normal"
+    },
+    {
+      "id": "gold-02-035",
+      "order": 35,
+      "gx": 540.0,
+      "gy": 4010.0,
+      "type": "chest"
+    },
+    {
+      "id": "gold-02-036",
+      "order": 36,
+      "gx": 591.5,
+      "gy": 3961.1,
+      "type": "normal"
+    },
+    {
+      "id": "gold-02-037",
+      "order": 37,
+      "gx": 641.4,
+      "gy": 3910.6,
+      "type": "minigame"
+    },
+    {
+      "id": "gold-02-038",
+      "order": 38,
+      "gx": 687.4,
+      "gy": 3856.5,
+      "type": "normal"
+    },
+    {
+      "id": "gold-02-039",
+      "order": 39,
+      "gx": 725.3,
+      "gy": 3796.6,
+      "type": "chance"
+    },
+    {
+      "id": "gold-02-040",
+      "order": 40,
+      "gx": 747.7,
+      "gy": 3729.5,
+      "type": "normal"
+    },
+    {
+      "id": "gold-02-041",
+      "order": 41,
+      "gx": 745.5,
+      "gy": 3658.9,
+      "type": "fate"
+    },
+    {
+      "id": "gold-02-042",
+      "order": 42,
+      "gx": 719.8,
+      "gy": 3592.9,
+      "type": "chest"
+    },
+    {
+      "id": "gold-02-043",
+      "order": 43,
+      "gx": 680.1,
+      "gy": 3534.2,
+      "type": "normal"
+    },
+    {
+      "id": "gold-02-044",
+      "order": 44,
+      "gx": 633.3,
+      "gy": 3480.8,
+      "type": "fate"
+    },
+    {
+      "id": "gold-02-045",
+      "order": 45,
+      "gx": 583.0,
+      "gy": 3430.7,
+      "type": "chance"
+    },
+    {
+      "id": "gold-02-046",
+      "order": 46,
+      "gx": 531.4,
+      "gy": 3381.9,
+      "type": "normal"
+    },
+    {
+      "id": "gold-02-047",
+      "order": 47,
+      "gx": 480.0,
+      "gy": 3332.8,
+      "type": "minigame"
+    },
+    {
+      "id": "gold-02-048",
+      "order": 48,
+      "gx": 430.6,
+      "gy": 3281.9,
+      "type": "normal"
+    },
+    {
+      "id": "gold-02-049",
+      "order": 49,
+      "gx": 385.6,
+      "gy": 3227.0,
+      "type": "chest"
+    },
+    {
+      "id": "gold-02-050",
+      "order": 50,
+      "gx": 349.6,
+      "gy": 3165.9,
+      "type": "normal"
+    },
+    {
+      "id": "gold-02-051",
+      "order": 51,
+      "gx": 330.8,
+      "gy": 3097.7,
+      "type": "fate"
+    },
+    {
+      "id": "gold-02-052",
+      "order": 52,
+      "gx": 337.4,
+      "gy": 3027.4,
+      "type": "chance"
+    },
+    {
+      "id": "gold-02-053",
+      "order": 53,
+      "gx": 366.0,
+      "gy": 2962.7,
+      "type": "chest"
+    },
+    {
+      "id": "gold-02-054",
+      "order": 54,
+      "gx": 407.3,
+      "gy": 2905.0,
+      "type": "minigame"
+    },
+    {
+      "id": "gold-02-055",
+      "order": 55,
+      "gx": 454.9,
+      "gy": 2852.3,
+      "type": "boundary"
+    }
+  ]
+}

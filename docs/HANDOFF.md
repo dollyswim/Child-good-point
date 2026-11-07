@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.07-33`｜Service Worker 快取 `cgp-shell-v43`
+> 最後更新：2026-11-07｜App 版本 `2026.11.07-34`｜Service Worker 快取 `cgp-shell-v44`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---
@@ -109,6 +109,12 @@
 | `sw.js` | 離線快取（網路優先＋`cache: 'no-cache'` 驗證）；**新增圖片或 JS 時要加入 `SHELL` 並升 `CACHE` 版本** |
 | `tests/store.test.js` | 單元測試（`npm test`） |
 | `tests/e2e.js` | Playwright 手機尺寸 E2E（`npm run test:e2e`），含 360／390／430px 地圖檢查 |
+
+### 金島長地圖（準備開放第二區）
+- 地圖改為一條長地圖：總覽座標 1080×5400（左上原點），四張 1080×1350 背景由上到下為第四、三、二、一區（`REGIONS[].stripY` = 0、1350、2700、4050）。格子帶 `gx、gy`（總覽座標）與 `x、y`（所在背景圖內 0～1）；第一區換算 `gy = 4050 + y × 1350`，格子 ID 與存檔不變。
+- 未開放區域以雲霧＋「即將開放」遮住；最小縮放＝寬度填滿畫面。
+- 第二區資料 `data/gold_region02_tiles.json` → `tools/gen_board02.py` → `js/board-gold-02.js`（座標暫用 Codex 草圖 v2；類型已排好，見 `docs/art/gold_region02_layout_preview.png`）。
+- **開放第二區**：放入 `images/gold/region02.webp／.jpg`、依最終座標更新 JSON 並重新產生、把 `js/game.js` 的 `REGION02_OPEN` 改為 true、`sw.js` 加入圖片。開放後第 30 格變一般格、第 55 格為邊界，「回起點下一輪」改在第 55 格發生。
 
 ### 近期介面調整
 - 冒險大廳簡化：移除背包區與四個快速入口（與底部導覽重複）；結算紀錄放進綠底「今日已結算」卡內，點了才展開。背包道具（含寶箱開箱、黃金鑰匙）統一在地圖下方的「🎒 背包道具」列。

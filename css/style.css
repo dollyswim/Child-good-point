@@ -1378,3 +1378,18 @@ body.mg-open { overflow: hidden; }
 .map-world .mstart { z-index: 1001; }
 .map-world .map-chest { z-index: 1500; }
 .map-world .pawn { z-index: 2000; }
+
+/* 金島長地圖（1080×5400）：背景分四段，未開放區域用雲霧遮住 */
+.map-world .map-strip { position: absolute; left: 0; width: 1080px; height: 1350px; }
+.map-world .map-strip img { display: block; width: 100%; height: 100%; }
+.map-fog {
+  position: absolute; left: 0; width: 1080px; height: 1350px; display: grid; place-items: center; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 18% at 30% 20%, rgba(255,255,255,.95), transparent 70%),
+    radial-gradient(ellipse 55% 20% at 75% 55%, rgba(255,255,255,.9), transparent 70%),
+    radial-gradient(ellipse 70% 22% at 40% 85%, rgba(255,255,255,.95), transparent 70%),
+    linear-gradient(#cfeaff, #eef8ff);
+}
+.map-fog span { display: grid; gap: 10px; justify-items: center; padding: 28px 40px; border-radius: 40px; background: rgba(255,255,255,.85);
+  color: #4a7aa8; font-size: 40px; font-weight: 800; box-shadow: 0 6px 20px rgba(60,120,180,.2); }
+.map-fog span b { font-size: 56px; color: #2f6db0; }

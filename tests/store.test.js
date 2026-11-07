@@ -1756,3 +1756,34 @@ test('Phase 5 存檔遷移：結束紀錄、今日起點', () => {
   assert.equal(d.adventure.dayEnds.length, 1);
   assert.deepEqual(d.adventure.players.c.dayStart, { date: '2026-11-06', pos: 4 });
 });
+
+// ---------- 金島長地圖：總覽座標、第二區資料（未開放） ----------
+test('金島長地圖：1080×5400，第一區在最下方（總覽 y＝4050＋y×1350），第二區目前未開放', () => {
+  const b = G.BOARDS.gold;
+  assert.deepEqual(b.world, { width: 1080, height: 5400 });
+  assert.deepEqual(G.REGIONS.map(r => [r.id, r.stripY]), [['gold-01', 4050], ['gold-02', 2700], ['gold-03', 1350], ['gold-04', 0]]);
+  assert.equal(b.tiles.length, 31, '目前只開放到第 30 格');
+  for (const t of b.tiles) { assert.ok(Math.abs(t.gx - t.x * 1080) < 1e-6); assert.ok(Math.abs(t.gy - (4050 + t.y * 1350)) < 1e-6); }
+  assert.equal(b.tiles[30].type, 'boundary');
+});
+
+test('金島第二區資料：25 格（31～55）、穩定 ID、格距 64～76、格子類型', () => {
+  const t = G.REGION02_TILES;
+  assert.equal(t.length, 25);
+  assert.deepEqual([t[0].id, t[24].id], ['gold-02-031', 'gold-02-055']);
+  const all = [{ gx: 0.535 * 1080, gy: 4050 + 0.225 * 1350 }].concat(t);   // 從第 30 格開始
+  for (let i = 1; i < all.length; i++) {
+    const d = Math.hypot(all[i].gx - all[i - 1].gx, all[i].gy - all[i - 1].gy);
+    assert.ok(d >= 60 && d <= 76, '第 ' + (29 + i) + '→' + (30 + i) + ' 格距 ' + d.toFixed(1));
+  }
+  const count = t.reduce((o, x) => (o[x.type] = (o[x.type] || 0) + 1, o), {});
+  assert.deepEqual(count, { normal: 10, chance: 4, chest: 4, minigame: 3, fate: 3, boundary: 1 });
+  assert.equal(t[24].type, 'boundary', '第 55 格為第二區邊界');
+  // 模擬開放後：56 個位置（起點＋55 格），第 30 格可通過，第 31 格換算回第二區背景座標
+  const open = G.buildGold(true);
+  assert.equal(open.tiles.length, 56);
+  assert.equal(open.tiles[30].type, 'normal');
+  assert.equal(open.tiles[31].regionId, 'gold-02');
+  assert.ok(open.tiles[31].y > 1, '第 31～34 格在第一區原圖上（第二區背景下方之外）');
+  assert.equal(open.tiles[55].type, 'boundary');
+});

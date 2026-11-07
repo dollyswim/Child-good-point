@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-33';
+  var APP_VERSION = '2026.11.07-34';
   var store;
   try {
     store = new CGP.Store();
@@ -595,14 +595,26 @@
   function regionOf(board, tile) {
     return board.regions.find(function (r) { return r.id === tile.regionId; }) || board.regions[0];
   }
-  /** 標準化座標 → 地圖參考像素（原點：背景左上角） */
-  function worldXY(region, tile) { return { x: tile.x * region.size.width, y: tile.y * region.size.height }; }
+  /** 格子 → 長地圖總覽像素（1080×5400，原點左上） */
+  function worldXY(region, tile) { return { x: tile.gx, y: tile.gy }; }
+  var REGION_NO = ['第一區', '第二區', '第三區', '第四區'];
+  /** 長地圖背景：已開放的區域放背景圖，其餘用雲霧遮住、顯示「即將開放」 */
+  function mapStrips(board) {
+    return board.regions.map(function (r, i) {
+      var top = 'top:' + r.stripY + 'px';
+      if (r.available && r.background) {
+        return '<picture class="map-strip" style="' + top + '"><source srcset="' + r.background.webp + '" type="image/webp">' +
+          '<img class="map-bg" data-region="' + r.id + '" src="' + r.background.jpg + '" width="1080" height="1350" alt="" draggable="false"' + (i ? ' loading="lazy"' : '') + '></picture>';
+      }
+      return '<div class="map-fog" data-region="' + r.id + '" style="' + top + '"><span><b>☁️ ' + REGION_NO[i] + '・' + h(r.name) + '</b>第 ' + r.from + '～' + r.to + ' 格・即將開放</span></div>';
+    }).join('');
+  }
 
   function renderMap(child) {
     var player = store.getPlayer(child.id);
     var board = store.getBoard(child.id);
     var region = regionOf(board, board.tiles[player.pos]);
-    var W = region.size.width, H = region.size.height;
+    var W = board.world.width, H = board.world.height;   // 長地圖總覽尺寸
     var bag = player.bag;
     var canPlay = store.canPlayToday(child.id);
     var used = store.getRollsToday(child.id);
@@ -630,7 +642,7 @@
           tileArt('start', 'start-art') + '<span>起點</span></div>';
       }
       // 疊放順序：越靠畫面下方（越近）的格子在越上層，避免後方石板蓋住前方格子的事件圖示
-      return '<div class="mtile mt-' + t.type + (t.id === player.tileId ? ' here' : '') + '" data-n="' + t.n + '" data-tile="' + t.id + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px;z-index:' + Math.round(t.y * 1000) + '"' +
+      return '<div class="mtile mt-' + t.type + (t.id === player.tileId ? ' here' : '') + '" data-n="' + t.n + '" data-tile="' + t.id + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px;z-index:' + Math.round(t.gy / 6) + '"' +
         (TILE_LABEL[t.type] ? ' title="' + TILE_LABEL[t.type] + '"' : '') + '>' + tileArt(t.type, 'mtile-icon') + '</div>';
     }).join('');
     var pp = worldXY(region, board.tiles[player.pos]);
@@ -641,11 +653,10 @@
       '<span class="hud-cell"><small>今日骰子</small><b data-testid="rolls">' + used + ' / ' + limit + '</b>' + (quota.rolls ? '<small class="hud-bonus">再來 +' + quota.rolls + '</small>' : '') + '</span>' +
       '<span class="hud-cell"><small>位置</small><b data-testid="pos">' + player.pos + ' / ' + end + '</b></span>' +
       '</section>' +
-      '<p class="region-name">🏝️ 第一區・' + h(region.name) + '</p>' +
+      '<p class="region-name">🏝️ ' + REGION_NO[board.regions.indexOf(region)] + '・' + h(region.name) + '</p>' +
       '<section class="map-view' + (picking ? ' picking' : '') + '" id="map-view" aria-label="金島第一區地圖，可拖曳與縮放">' +
       '<div class="map-world" id="map-world" style="width:' + W + 'px;height:' + H + 'px" data-w="' + W + '" data-h="' + H + '">' +
-      '<picture><source srcset="' + region.background.webp + '" type="image/webp">' +
-      '<img class="map-bg" src="' + region.background.jpg + '" width="' + W + '" height="' + H + '" alt="" draggable="false"></picture>' +
+      mapStrips(board) +
       tiles +
       store.getMapChests(child.id).map(function (c) {
         var cp = worldXY(region, board.tiles[c.n]);
@@ -684,7 +695,7 @@
   ui.cam = null;
   function camBounds(view, W, H) {
     var vw = view.clientWidth, vh = view.clientHeight;
-    var fit = Math.min(vw / W, vh / H);               // 整張地圖完整入鏡
+    var fit = Math.max(Math.min(vw / W, vh / H), vw / W);   // 長地圖：最小縮放＝寬度剛好填滿畫面
     var def = Math.max(fit, Math.min(0.9, vw / W * 1.9)); // 預設：格子約 40px 寬
     return { vw: vw, vh: vh, min: fit, max: 1.6, def: def };
   }
