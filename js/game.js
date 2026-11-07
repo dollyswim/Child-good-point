@@ -610,6 +610,15 @@
     return this.getDaySummary(childId);
   };
 
+  /** 家長解除今天的結束（需家長密碼解鎖） */
+  Store.prototype.reopenAdventure = function (childId) {
+    this._requireParent();
+    var today = this.today(), before = this.data.adventure.dayEnds.length;
+    this.data.adventure.dayEnds = this.data.adventure.dayEnds.filter(function (x) { return !(x.childId === childId && x.date === today); });
+    if (this.data.adventure.dayEnds.length === before) throw new Error('今天的冒險沒有結束');
+    this.save();
+  };
+
   // ---------- 小遊戲「抓住星星」 ----------
   /** 今天的小遊戲紀錄（pending＝已停在小遊戲格但還沒玩完；done＝已領取） */
   Store.prototype.getMinigameToday = function (childId) {

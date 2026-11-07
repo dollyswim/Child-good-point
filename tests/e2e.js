@@ -826,9 +826,11 @@ async function main() {
     await q.reload(); await q.waitForSelector('[data-testid=treasure]');
     assert.equal(await q.locator('[data-treasure=wings] .treasure-buy').innerText(), '還差 50 點');
     // 冒險大廳的背包
-    await q.goto(url + '#adventure-' + id);
-    await q.waitForSelector('[data-testid=bag]');
-    assert.deepEqual(await q.$$eval('.bag-item', (els) => els.map((e) => e.dataset.bag)), ['skates', 'shield', 'magicDice']);
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.settlements.push({ id: 'st', childId: cid, date: s.today(), net: 1, baseStars: 0, bonusStars: 0, stars: 0, paidRecordIds: [], ts: 1 }); s.save(); }, id);   // 直接標記已出發（不新增紀錄）
+    await q.goto(url + '#map-' + id);
+    await q.waitForSelector('[data-testid=item-bar]');
+    assert.match(await q.locator('.dice-btn.skates').innerText(), /×1/);
+    assert.deepEqual(await q.$$eval('.item-btn', (els) => els.map((e) => e.dataset.kind)), ['magicDice', 'shield'], '背包道具在地圖道具列');
     // 撤銷最後一筆兌換 → 收回神奇骰子、退點
     await q.goto(url + '#child-' + id);
     await q.click('[data-action=undo]');
@@ -902,15 +904,16 @@ async function main() {
     assert.equal(await q.locator('#confirm .star-rain i').count(), 10, '幸運星：10 顆星星動畫');
     await q.click('#confirm [data-yes]');
     await q.waitForFunction(() => !document.querySelector('#confirm[open]'));
-    await q.reload(); await q.waitForSelector('[data-testid=bag]');
+    await q.reload(); await q.waitForSelector('.map-card');
     assert.equal(await q.locator('#confirm[open]').count(), 0, '收下後不再跳出');
-    assert.match(await q.locator('[data-bag=giftMysteryChest]').innerText(), /神秘寶箱[\s\S]*×2/);
+    await q.goto(url + '#map-' + k2); await q.waitForSelector('[data-testid=item-bar]');
+    assert.match(await q.locator('.chest-btn[data-kind=giftMysteryChest]').innerText(), /神秘寶箱[\s\S]*×2/);
     await q.evaluate(() => { window.__cgpStore.random = () => 0.5; });
-    await q.click('[data-bag=giftMysteryChest] [data-action=open-chest]');
+    await q.click('.chest-btn[data-kind=giftMysteryChest]');
     await q.waitForSelector('#confirm .reward-box');
     assert.match(await q.locator('#confirm .reward-box').innerText(), /神秘寶箱[\s\S]*得到/);
     await q.click('#confirm [data-yes]');
-    assert.match(await q.locator('[data-bag=giftMysteryChest]').innerText(), /×1/);
+    assert.match(await q.locator('.chest-btn[data-kind=giftMysteryChest]').innerText(), /×1/);
     const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(over <= 0);
     console.log('✔ 寶物商店 Phase 3：家長密碼（設定、上鎖、錯誤、忘記重設）、神諭祝福發送與紀錄、孩子領取、神秘寶箱開箱');
@@ -1023,13 +1026,13 @@ async function main() {
     await q.click('#confirm [data-yes]');
     assert.equal(await q.locator('.map-chest').count(), 0);
     // 背包：沒有鑰匙打不開；有鑰匙就能開
-    await q.goto(url + '#adventure-' + id);
-    await q.waitForSelector('[data-bag=mysteryChest]');
-    await q.click('[data-bag=mysteryChest] [data-action=open-chest]');
+    await q.waitForSelector('.chest-btn[data-kind=mysteryChest]');
+    assert.match(await q.locator('.chest-btn[data-kind=mysteryChest]').innerText(), /要黃金鑰匙/);
+    await q.click('.chest-btn[data-kind=mysteryChest]');
     assert.match(await q.locator('#toast').innerText(), /黃金鑰匙/);
     await q.evaluate((cid) => { window.__cgpStore.getPlayer(cid).bag.goldenKey = 1; window.__cgpStore.save(); }, id);
-    await q.reload(); await q.waitForSelector('[data-bag=mysteryChest]');
-    await q.click('[data-bag=mysteryChest] [data-action=open-chest]');
+    await q.reload(); await q.waitForSelector('.chest-btn[data-kind=mysteryChest]');
+    await q.click('.chest-btn[data-kind=mysteryChest]');
     await q.waitForSelector('#confirm .reward-box');
     assert.match(await q.locator('#confirm .reward-box').innerText(), /用掉 1 把黃金鑰匙[\s\S]*得到/);
     await q.click('#confirm [data-yes]');
@@ -1081,6 +1084,17 @@ async function main() {
     await q.waitForSelector('#confirm .summary-box');
     assert.match(await q.locator('#confirm .summary-box h2').innerText(), /今日小結/);
     await q.click('#confirm [data-yes]');
+    assert.equal(await q.locator('.quick-row').count(), 0, '快速入口已移除');
+    assert.equal(await q.locator('[data-testid=bag]').count(), 0, '背包移到地圖');
+    assert.equal(await q.locator('.adv-status.ok .settle-log').count(), 1, '結算紀錄在綠底卡內');
+    // 設定 → 孩子：解除今天的結束（家長密碼）
+    await q.goto(url + '#rules-children');
+    await passPin(q);
+    await q.click('[data-action=reopen-day]');
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction((cid) => !window.__cgpStore.isAdventureEnded(cid), id);
+    assert.equal(await q.evaluate(() => { try { window.__cgpStore.lockParent(); window.__cgpStore.reopenAdventure('x'); return 'ok'; } catch (e) { return e.message; } }), '需要家長密碼才能執行');
+    await q.evaluate((cid) => { window.__cgpStore.endAdventure(cid); }, id);
     // 重新整理仍然鎖住；任務頁顯示已結束
     await q.goto(url + '#child-' + id); await q.reload();
     assert.match(await q.locator('[data-testid=adventure]').innerText(), /今日冒險已結束/);

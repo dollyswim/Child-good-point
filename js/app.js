@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-30';
+  var APP_VERSION = '2026.11.07-31';
   var store;
   try {
     store = new CGP.Store();
@@ -526,6 +526,7 @@
     }
     var history = store.data.adventure.settlements.filter(function (s) { return s.childId === child.id; })
       .slice().sort(function (a, b) { return b.date < a.date ? -1 : 1; }).slice(0, 14);
+    // 結算紀錄放在摘要卡裡，點了才展開
     var log = '<details class="settle-log" id="settle-log"' + (ui.logOpen ? ' open' : '') + '><summary>📜 查看結算紀錄 <span>' + history.length + ' 筆</span></summary>' +
       (history.length ? '<ul class="records">' + history.map(function (s) {
         return '<li class="rec"><span class="rec-time">' + h(dateLabel(s.date)) + '</span>' +
@@ -551,14 +552,8 @@
         return '<span class="dot ' + (is.id === isl.id ? 'active' : '') + '" data-island="' + is.id + '" style="--d:' + is.color + '" title="' + is.name + '"></span>';
       }).join('') + '</div>';
 
-    // 6. 快速入口
-    var quick = '<nav class="quick-row" aria-label="快速入口">' +
-      '<a class="tile t-task" href="#child-' + h(child.id) + '"><span class="tile-icon">📋</span>今日任務</a>' +
-      '<a class="tile t-challenge" href="#challenge-' + h(child.id) + '"><span class="tile-icon">🏆</span>挑戰</a>' +
-      '<a class="tile t-shop" href="#shop-' + h(child.id) + '"><span class="tile-icon">🎁</span>兌換</a>' +
-      '<button class="tile t-report" data-action="open-log"><span class="tile-icon">📜</span>結算紀錄</button></nav>';
-
-    return hero + '<main class="page adventure">' + tabs + starCard + summary + log + map + bagPanel(child) + quick + '</main>';
+    summary = summary.replace(/<\/div>$/, log + '</div>');
+    return hero + '<main class="page adventure">' + tabs + starCard + summary + map + '</main>';
   }
 
   // ---------- 金島棋盤（Phase 3） ----------
@@ -1329,9 +1324,18 @@
 
   /** 地圖上的特殊道具列（只顯示持有的道具） */
   function itemBar(child, player, st) {
-    var bag = player.bag, busy = !st.canPlay || st.pending || st.picking;
-    var magicUsed = store.magicUsedToday(child.id);
     var list = [];
+    var bag = player.bag, busy = !st.canPlay || st.pending || st.picking;
+    // 寶箱：隨時可以開（不用出發）；地圖撿到的神秘寶箱要黃金鑰匙
+    [['chest', '一般寶箱'], ['giftMysteryChest', '神秘寶箱'], ['mysteryChest', '神秘寶箱']].forEach(function (c) {
+      if (!bag[c[0]]) return;
+      var b = BAG_INFO[c[0]];
+      var needKey = c[0] === 'mysteryChest';
+      list.push('<button type="button" class="item-btn chest-btn" data-action="open-chest" data-id="' + c[0] + '" data-kind="' + c[0] + '"' + (st.pending || st.picking ? ' disabled' : '') + '>' +
+        '<span class="item-art item-btn-art"><img src="' + b.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></span>' +
+        '<b>' + c[1] + '</b><small>×' + bag[c[0]] + '・' + (needKey ? (bag.goldenKey ? '用鑰匙開' : '要黃金鑰匙') : '點我開箱') + '</small></button>');
+    });
+    var magicUsed = store.magicUsedToday(child.id);
     function btn(id, action, label, note, disabled) {
       var b = BAG_INFO[id];
       var art = b.img ? '<img src="' + b.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async">' : '<span class="bag-emoji">' + b.icon + '</span>';
@@ -1347,8 +1351,9 @@
     if (bag.shield) btn('shield', 'item-info', '防護罩', '×' + bag.shield + '・自動抵擋', false);
     if (bag.rerollTicket) btn('rerollTicket', 'item-info', '命運重骰券', '×' + bag.rerollTicket + '・擲骰後可用', false);
     if (bag.airplane) btn('airplane', 'item-info', '呼叫專機', '×' + bag.airplane + '・其他島嶼開放後', false);
+    if (bag.goldenKey) btn('goldenKey', 'item-info', '黃金鑰匙', '×' + bag.goldenKey + '・開神秘寶箱', false);
     var games = st.quota.games ? '<p class="medal-on">🎮 再來 3 次：今天還有 ' + st.quota.rolls + ' 次擲骰、' + st.quota.games + ' 次小遊戲</p>' : '';
-    return games + (list.length ? '<section class="item-bar" data-testid="item-bar">' + list.join('') + '</section>' : '');
+    return games + (list.length ? '<section class="item-bar" data-testid="item-bar"><h3 class="item-bar-title">🎒 背包道具</h3>' + list.join('') + '</section>' : '');
   }
   var ITEM_INFO = {
     shield: '🛡️ 防護罩：停在命運格抽到「後退」時，會自動擋住，不用手動使用。',
@@ -1393,21 +1398,7 @@
     giftMysteryChest: { name: '神秘寶箱', img: 'images/items/mystery_chest.webp', open: true },
     mysteryChest: { name: '神秘寶箱（要鑰匙）', img: 'images/items/mystery_chest.webp', open: true }
   };
-  function bagPanel(child) {
-    var bag = store.getPlayer(child.id).bag;
-    var keys = Object.keys(BAG_INFO).filter(function (k) { return bag[k] > 0; });
-    return '<section class="panel bag-panel" data-testid="bag"><h2>🎒 冒險背包</h2>' +
-      (keys.length ? '<div class="bag-grid">' + keys.map(function (k) {
-        var b = BAG_INFO[k];
-        var art = b.img ? '<img src="' + b.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async">' : '<span class="bag-emoji">' + b.icon + '</span>';
-        return '<div class="bag-item" data-bag="' + k + '"><span class="item-art bag-art">' + art + '</span>' +
-          '<b>' + b.name + '</b>' + (b.open
-            ? '<small>×' + bag[k] + '</small><button class="btn primary small bag-open" data-action="open-chest" data-id="' + k + '">開箱</button>'
-            : '<small>×' + bag[k] + '・' + b.note + '</small>') + '</div>';
-      }).join('') + '</div>'
-        : '<p class="muted small">背包是空的。可以用能量星星在地圖的商店買骰子，或用生活點數在「兌換」頁的冒險寶物商店換寶物。</p>') +
-      '</section>';
-  }
+
 
   /** 每日任務按鈕（一天一次打勾，再點一次取消） */
   function taskButton(t) {
@@ -1615,6 +1606,7 @@
       return '<li class="row">' + avatar(c, 'sm') +
         '<span class="row-main"><b>' + h(c.name) + ' ' + (c.badge ? h(c.badge) : '') + '</b><small>' + h((c.title ? c.title + ' ' : '') + 'Lv.' + store.getLevel(c.id).level) +
         '・目前 ' + num(store.getTotal(c.id)) + ' 點' + (c.weeklyGoal ? '・每週目標 ' + num(c.weeklyGoal) : '') + '・起始 ' + c.startPoints + '</small></span>' +
+        (store.isAdventureEnded(c.id) ? '<button class="btn small" data-action="reopen-day" data-id="' + h(c.id) + '">解除今天的結束</button>' : '') +
         '<button class="btn small" data-action="edit-child" data-id="' + h(c.id) + '">編輯</button>' +
         '<button class="btn small danger" data-action="delete-child" data-id="' + h(c.id) + '">刪除</button></li>';
     }).join('');
@@ -2158,7 +2150,7 @@
           break;
         }
         case 'open-chest': {
-          var cres = store.openChest(childId, id);
+          var cres = store.openChest(childId, id);   // 在地圖道具列開箱
           showReward(id === 'chest' ? '📦 一般寶箱' : '🎁 神秘寶箱', (id === 'mysteryChest' ? '🔑 用掉 1 把黃金鑰匙・' : '') + cres.text, id === 'chest' ? 'images/tiles/chest.webp' : 'images/items/mystery_chest.webp', id === 'chest' ? 'chest' : 'mystery');
           render();
           break;
@@ -2246,6 +2238,13 @@
           break;
         }
         case 'show-summary': showSummary(childId, false); break;
+        case 'reopen-day': {
+          var rk = store.getChild(id);
+          confirmThen('解除 ' + rk.name + ' 今天的「結束今日冒險」？\n解除後今天可以繼續擲骰、玩小遊戲（已作廢的「再來 3 次」次數不會恢復）。', '解除', false, function () {
+            store.reopenAdventure(id); toast('已解除，' + rk.name + ' 今天可以繼續冒險', 'pos');
+          });
+          break;
+        }
         case 'pick-door': ui.doorPick = childId; render(); break;
         case 'cancel-door': ui.doorPick = null; render(); break;
         case 'activate-medal':
@@ -2262,12 +2261,6 @@
         case 'open-shop': openShop(childId); break;
         case 'play-minigame': openMinigame(childId); break;
         case 'pick-character': openCharacterPicker(childId); break;
-        case 'open-log': {
-          ui.logOpen = true;
-          var lg = document.getElementById('settle-log');
-          if (lg) { lg.open = true; lg.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-          break;
-        }
         case 'claim': {
           var cr = store.claimChallenge(childId, id);
           toast('🎉 挑戰達成！' + recText(cr), 'pos');

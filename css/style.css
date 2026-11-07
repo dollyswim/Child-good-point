@@ -1368,3 +1368,9 @@ body.mg-open { overflow: hidden; }
 .sky-sm .mascot-link img.mascot, .sky-sm .mascot-link .mascot { width: 46px; height: auto; animation: none; }
 .sky-sm .mascot-link .hero-label { margin-top: -4px; font-size: .62rem; }
 .sky-sm .plaque { margin-right: 54px; }
+/* 冒險大廳簡化：結算紀錄放進摘要卡、背包移到地圖 */
+.adv-status .settle-log { flex-basis: 100%; margin: 6px 0 0; border-top: 2px dashed rgba(0, 0, 0, .08); padding-top: 4px; }
+.adv-status .settle-log summary { padding: 4px; font-size: .88rem; }
+.adv-status .settle-log .records { margin: 0; }
+.item-bar-title { grid-column: 1 / -1; margin: 2px 0 0; font-size: .9rem; color: var(--wood-2); }
+.chest-btn { background: linear-gradient(#fffaf0, #ffeac2); }
