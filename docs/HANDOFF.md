@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.07-48`｜Service Worker 快取 `cgp-shell-v58`
+> 最後更新：2026-11-07｜App 版本 `2026.11.07-49`｜Service Worker 快取 `cgp-shell-v59`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---

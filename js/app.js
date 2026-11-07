@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-48';
+  var APP_VERSION = '2026.11.07-49';
   var store;
   try {
     store = new CGP.Store();
@@ -243,6 +243,7 @@
     }
     app.innerHTML = html;
     app.dataset.view = r.name;
+    alignHeroLinks();
     var notes = [];   // 同時有多則提示時合併顯示，避免互相蓋掉
     if (r.name === 'map') {
       setupMap(store.getChild(r.arg));
@@ -280,6 +281,27 @@
     var href = onHome ? (c ? '#adventure-' + c.id : '#home') : '#home';
     var label = onHome ? (c ? '冒險大廳' : '首頁') : '首頁';
     return '<a class="hero-link mascot-link" href="' + href + '" aria-label="' + (onHome ? label : '回首頁') + '">' + MASCOT + '<span class="hero-label">' + label + '</span></a>';
+  }
+  /** 右上角城堡（設定）和左上角機器貓對稱：同樣高度、同樣上緣、離右邊的距離＝機器貓離左邊的距離 */
+  function alignHeroLinks() {
+    var m = app.querySelector('.mascot-link img'), c = app.querySelector('.sky .castle-link');
+    if (!m || !c) return;
+    var sky = c.offsetParent || c.parentNode, sr = sky.getBoundingClientRect(), mr = m.getBoundingClientRect();
+    if (!mr.height) return;
+    var ci = c.querySelector('img, svg'), ratio = ci && ci.getAttribute('width') ? ci.getAttribute('width') / ci.getAttribute('height') : 242 / 256;
+    var w = mr.height * ratio;
+    c.style.width = w.toFixed(2) + 'px';
+    c.style.top = (mr.top - sr.top).toFixed(2) + 'px';
+    c.style.right = (mr.left - sr.left).toFixed(2) + 'px';
+    var ml = app.querySelector('.mascot-link .hero-label'), cl = c.querySelector('.hero-label');
+    if (ml && cl) { var cs = getComputedStyle(ml); cl.style.marginTop = cs.marginTop; cl.style.fontSize = cs.fontSize; }
+    // 標題牌不可蓋到城堡：不夠寬時加大右側留白
+    var hero = app.querySelector('.hero'), pl = hero && hero.querySelector('.plaque');
+    if (hero && pl) {
+      hero.style.paddingRight = '';
+      var over = pl.getBoundingClientRect().right - (sr.right - (mr.left - sr.left) - w) + 4;
+      if (over > 0) hero.style.paddingRight = (parseFloat(getComputedStyle(hero).paddingRight) + over) + 'px';
+    }
   }
   function plaque(title, sub) {
     return '<div class="plaque"><h1>' + h(title) + '</h1>' + (sub ? '<div class="ribbon">' + sub.split('・').map(function (t, i, arr) {
@@ -2475,6 +2497,7 @@
     }
   });
 
+  window.addEventListener('resize', alignHeroLinks);
   window.addEventListener('hashchange', function () {
     if (modal.open) modal.close();
     ui.settingsQuery = '';
