@@ -42,8 +42,8 @@
 | `airplane` | ✈️ 呼叫專機 | **只在神秘寶箱**（不放商店） | `images/items/airplane.webp` |
 | `goldenKey` | 🔑 黃金鑰匙 | 星星商店（10 星）、點數里程碑 | `images/items/golden_key.webp` |
 | `magnet` | 🧲 寶物磁鐵 | 星星商店（10 星） | `images/items/treasure_magnet.webp` |
-| `rerollTicket` | 🎲 命運重骰券 | 神諭祝福 | 待補圖示 |
-| `bonusPlay` | 🎮 再來 3 次 | 神諭祝福 | 待補圖示 |
+| `rerollTicket` | 🎲 命運重骰券 | 神諭祝福 | `images/items/reroll_ticket.webp` |
+| `bonusPlay` | 🎮 再來 3 次 | 神諭祝福 | `images/items/bonus_play.webp` |
 | 寶箱 `chest` | 📦 一般寶箱 | 神諭祝福 | 現有 `images/tiles/chest.webp` |
 | 寶箱 `mysteryChest` | 🎁 神秘寶箱 | 神諭祝福、地圖神秘寶箱 | `images/items/mystery_chest.webp` |
 
@@ -157,7 +157,7 @@
 
 | 素材 | 用途 |
 |---|---|
-| 命運重骰券 | 神諭祝福獎勵卡、背包、地圖道具列（提示詞見 `docs/art-prompts.md`「神諭祝福道具」G-1） |
-| 再來 3 次 | 同上（G-2） |
+| ✅ 命運重骰券 | 已接入 `images/items/reroll_ticket.webp` |
+| ✅ 再來 3 次 | 已接入 `images/items/bonus_play.webp` |
 | 幸運星（可沿用能量星星） | 神諭祝福獎勵卡 |
 | 神諭祝福（標題圖，選做） | 領取畫面 |

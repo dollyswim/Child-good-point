@@ -364,8 +364,8 @@
   var BLESSINGS = [
     { id: 'chest', name: '一般寶箱', icon: '📦', img: 'images/tiles/chest.webp', desc: '加入寶箱庫存，打開可得星星或道具' },
     { id: 'mysteryChest', name: '神秘寶箱', icon: '🎁', img: 'images/items/mystery_chest.webp', desc: '加入寶箱庫存，不用鑰匙，打開可得特殊道具' },
-    { id: 'rerollTicket', name: '命運重骰券', icon: '🎲', img: '', desc: '對剛擲出的結果重新擲一次（不占每日次數）' },
-    { id: 'bonusPlay', name: '再來 3 次', icon: '🎮', img: '', desc: '啟用當天額外 +3 次擲骰、+3 次小遊戲' },
+    { id: 'rerollTicket', name: '命運重骰券', icon: '🎲', img: 'images/items/reroll_ticket.webp', desc: '對剛擲出的結果重新擲一次（不占每日次數）' },
+    { id: 'bonusPlay', name: '再來 3 次', icon: '🎮', img: 'images/items/bonus_play.webp', desc: '啟用當天額外 +3 次擲骰、+3 次小遊戲' },
     { id: 'luckyStar', name: '幸運星', icon: '🌟', img: 'images/minigame/star.webp', desc: '立即獲得 10 顆能量星星' }
   ];
   var BLESSING_MAX_QTY = 5, LUCKY_STAR = 10;

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-27';
+  var APP_VERSION = '2026.11.07-28';
   var store;
   try {
     store = new CGP.Store();
@@ -1327,8 +1327,8 @@
     airplane: { name: '呼叫專機', img: 'images/items/airplane.webp', note: '其他島嶼開放後可用' },
     goldenKey: { name: '黃金鑰匙', img: 'images/items/golden_key.webp', note: '開神秘寶箱' },
     magnet: { name: '寶物磁鐵', img: 'images/items/treasure_magnet.webp', note: '地圖上使用' },
-    rerollTicket: { name: '命運重骰券', icon: '🎲', note: '擲骰後可用' },
-    bonusPlay: { name: '再來 3 次', icon: '🎮', note: '地圖上啟用' },
+    rerollTicket: { name: '命運重骰券', img: 'images/items/reroll_ticket.webp', note: '擲骰後可用' },
+    bonusPlay: { name: '再來 3 次', img: 'images/items/bonus_play.webp', note: '地圖上啟用' },
     chest: { name: '一般寶箱', img: 'images/tiles/chest.webp', open: true },
     giftMysteryChest: { name: '神秘寶箱', img: 'images/items/mystery_chest.webp', open: true },
     mysteryChest: { name: '神秘寶箱（要鑰匙）', img: 'images/items/mystery_chest.webp', open: true }

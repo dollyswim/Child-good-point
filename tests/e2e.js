@@ -845,6 +845,7 @@ async function main() {
     await q.click('[data-action=pin-submit]');
     await q.waitForSelector('[data-testid=blessing]');
     assert.equal(await q.locator('.bless-kind').count(), 5);
+    await q.waitForFunction(() => [...document.querySelectorAll('.bless-art img')].length === 5 && [...document.querySelectorAll('.bless-art img')].every((i) => i.complete && i.naturalWidth > 0), null, { timeout: 8000 });   // 5 張獎勵圖都載入
     // 送波妞 神秘寶箱 ×2＋鼓勵的話；再送幸運星
     await q.click('.bless-kid:has(input[value="' + k2 + '"])');
     await q.click('.bless-kind:has(input[value=mysteryChest])');
