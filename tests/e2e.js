@@ -531,6 +531,65 @@ async function main() {
     await c3.close();
   }
 
+  // ---------- 今日冒險出發：一個視窗勾選多位孩子一起結算；商店在地圖左下角 ----------
+  {
+    const c6 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 800 }, serviceWorkers: 'block' });
+    const q = await c6.newPage();
+    await q.clock.setFixedTime(new Date('2026-11-06T10:00:00'));
+    q.on('pageerror', (e) => errors.push(e.message));
+    q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
+    await q.goto(url);
+    const ids = await q.evaluate(() => {
+      const s = window.__cgpStore;
+      const a = s.addChild({ name: '甲' }), b = s.addChild({ name: '乙' }), c = s.addChild({ name: '丙' });
+      const it = s.addItem({ kind: 'bonus', name: '加分', points: 20 });
+      s.recordItem(a.id, it.id); s.recordItem(b.id, it.id); s.recordItem(b.id, it.id); // 丙 0 分：未解鎖
+      return [a.id, b.id, c.id];
+    });
+    await q.goto(url + '#child-' + ids[0]);
+    await q.click('[data-action=enter-adventure]');
+    await q.waitForSelector('#confirm .go-box');
+    const rows = await q.$$eval('#confirm .go-row', (rs) => rs.map((r) => [r.className.replace('go-row ', ''), r.querySelector('input').checked, r.querySelector('input').disabled]));
+    assert.deepEqual(rows, [['ready', true, false], ['ready', true, false], ['locked', false, true]], '可出發預設勾選、未解鎖不可勾');
+    assert.match(await q.locator('#confirm [data-yes]').innerText(), /2 位一起出發/);
+    assert.match(await q.locator('#confirm .go-row.locked').innerText(), /大於 0 才能出發/);
+    // 取消勾選乙 → 只剩 1 位；再勾回來
+    await q.click('#confirm .go-row:nth-child(2) input');
+    assert.equal(await q.locator('#confirm [data-yes]').innerText(), '出發！');
+    await q.click('#confirm .go-row:nth-child(2) input');
+    await q.click('#confirm [data-yes]');
+    await q.waitForSelector('.map-cta[href]');
+    assert.ok(q.url().endsWith('#adventure-' + ids[0]), '回到按下按鈕的孩子');
+    const st = await q.evaluate((ids) => ids.map((id) => !!window.__cgpStore.getSettlement(id)), ids);
+    assert.deepEqual(st, [true, true, false], '甲乙一起結算、丙未結算');
+    assert.deepEqual(await q.evaluate((ids) => ids.slice(0, 2).map((id) => window.__cgpStore.getStarBalance(id)), ids), [4, 8]);
+    // 已出發的孩子再按：直接進大廳，不再跳視窗
+    await q.goto(url + '#child-' + ids[1]);
+    const btn = q.locator('[data-action=enter-adventure]');
+    if (await btn.count()) { await btn.first().click(); await q.waitForSelector('.map-cta[href]'); assert.equal(await q.locator('#confirm[open]').count(), 0); }
+    // 第二次開視窗：已出發顯示 ✅
+    await q.evaluate((cid) => { const s = window.__cgpStore; const it = s.addItem({ kind: 'bonus', name: '再加', points: 5 }); s.recordItem(cid, it.id); }, ids[2]);
+    await q.goto(url + '#child-' + ids[2]);
+    await q.click('[data-action=enter-adventure]');
+    await q.waitForSelector('#confirm .go-box');
+    assert.deepEqual(await q.$$eval('#confirm .go-row', (rs) => rs.map((r) => r.className.replace('go-row ', ''))), ['done', 'done', 'ready']);
+    await q.click('#confirm [data-yes]');
+    await q.waitForSelector('.map-cta[href]');
+    // 商店：地圖左下角大按鈕，不和右下角縮放鈕重疊、可開啟
+    await q.click('.map-cta[href]');
+    await q.waitForSelector('#pawn');
+    assert.equal(await q.locator('.hud [data-action=open-shop]').count(), 0, '上方不再有商店小按鈕');
+    const box = await q.evaluate(() => {
+      const v = document.querySelector('.map-view').getBoundingClientRect(), s = document.querySelector('.map-shop').getBoundingClientRect(), c = document.querySelector('.map-ctrl').getBoundingClientRect();
+      return { left: s.left - v.left, bottom: v.bottom - s.bottom, w: s.width, overlap: s.right > c.left };
+    });
+    assert.ok(box.left < 20 && box.bottom < 20 && box.w >= 64 && !box.overlap, '商店在左下角：' + JSON.stringify(box));
+    await q.click('.map-shop');
+    await q.waitForSelector('#confirm .shop-box');
+    console.log('✔ 今日冒險出發：勾選多位孩子一起結算、未解鎖不可選、已出發打勾；商店在地圖左下角');
+    await c6.close();
+  }
+
   // ---------- 冒險大廳：依孩子所在島嶼輪換地圖關卡卡插圖 ----------
   {
     const c5 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 800 }, serviceWorkers: 'block' });

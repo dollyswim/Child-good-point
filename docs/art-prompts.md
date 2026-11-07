@@ -147,6 +147,21 @@ door slightly closed (not open), front 3/4 view
 
 ---
 
+## 第五優先：星星商店（地圖左下角按鈕）
+
+尺寸：正方形 1024×1024，白底即可。會以約 52px 顯示在地圖左下角，**輪廓簡單、星星醒目**。圖未到前暫用 🛒。
+
+```
+A cute little shop stall for a children's adventure game: a small wooden market booth
+with a red-and-cream striped awning, a round golden sign with a big glowing star on top,
+shelves showing a cream six-sided dice, a blue star dice and a mint roller skate,
+a small pile of golden stars on the counter, warm and inviting, front 3/4 view
+```
+
+中文：兒童冒險遊戲裡的可愛小商店攤位，木頭小攤、紅色和奶油色條紋遮雨棚，頂上一塊圓形金色招牌，招牌上有一顆發光的大星星；架上擺著奶油色六面骰、藍色星星骰、薄荷綠溜冰鞋，櫃台上有一小堆金色星星；溫暖親切，正面略側 3/4 視角。
+
+---
+
 ## 選做：金島俯瞰棋盤底圖（1 張）
 
 尺寸：**直式 1080 × 1350**。這張**不要用白色背景**，背景就是海。

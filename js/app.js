@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-12';
+  var APP_VERSION = '2026.11.07-13';
   var store;
   try {
     store = new CGP.Store();
@@ -499,6 +499,8 @@
     return '<img class="' + (cls || 'char-img') + '" src="images/characters/' + id + '.webp" alt="' + h(c.name) + '" width="300" height="310" decoding="async">';
   }
   function characterArt(child) { return charImg(characterId(child)); }
+  /** 地圖左下角商店按鈕圖（商店插圖到之前先用 🛒；到貨後改成 <img src="images/tiles/shop.webp"…>） */
+  var SHOP_ART = '<span class="map-shop-art" aria-hidden="true">🛒</span>';
   /** 能量星星圖示（白底圖，以 mix-blend-mode: multiply 疊在淺色底上；alt 保留 ⭐ 供讀屏） */
   var STAR_IMG = '<img class="star-ico" src="images/items/star.webp" alt="⭐" width="256" height="256" decoding="async" draggable="false">';
   /** 地圖格子事件圖示（白底圖放在白色圓角圖示框，contain 不裁切） */
@@ -547,7 +549,7 @@
     var reason = !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
       : atEnd ? '🚪 已抵達第一區的礦場木門！第二區即將開放'
         : noRolls ? '今天的 3 次骰子用完了，明天再來！（溜冰鞋還可以用）'
-          : (!bag.d6 && !bag.d12 && !bag.skates ? '背包是空的，到 🛒 商店用能量星星購買骰子' : '選一個道具出發吧！');
+          : (!bag.d6 && !bag.d12 && !bag.skates ? '背包是空的，點左下角 🛒 商店用能量星星購買骰子' : '選一個道具出發吧！');
     var tiles = board.tiles.filter(function (t) { return t.regionId === region.id; }).map(function (t) {
       var p = worldXY(region, t);
       if (t.type === 'start') {
@@ -564,7 +566,7 @@
       '<span class="hud-cell"><small>能量星星</small><b class="gold" data-testid="stars">' + STAR_IMG + ' ' + num(store.getStarBalance(child.id)) + '</b></span>' +
       '<span class="hud-cell"><small>今日骰子</small><b data-testid="rolls">' + used + ' / ' + limit + '</b></span>' +
       '<span class="hud-cell"><small>位置</small><b data-testid="pos">' + player.pos + ' / ' + end + '</b></span>' +
-      '<button class="btn small hud-shop" data-action="open-shop"' + (canPlay ? '' : ' disabled') + '>🛒 商店</button></section>' +
+      '</section>' +
       '<p class="region-name">🏝️ 第一區・' + h(region.name) + '</p>' +
       '<section class="map-view" id="map-view" aria-label="金島第一區地圖，可拖曳與縮放">' +
       '<div class="map-world" id="map-world" style="width:' + W + 'px;height:' + H + 'px" data-w="' + W + '" data-h="' + H + '">' +
@@ -576,6 +578,7 @@
       '</div>' +
       '<div class="map-ctrl"><button type="button" data-map="in" aria-label="放大">＋</button><button type="button" data-map="out" aria-label="縮小">－</button>' +
       '<button type="button" data-map="follow" aria-label="回到角色位置">🎯</button></div>' +
+      '<button type="button" class="map-shop" data-action="open-shop"' + (canPlay ? '' : ' disabled') + ' aria-label="星星商店">' + SHOP_ART + '<b>商店</b></button>' +
       '<div class="dice-overlay" id="dice-overlay" hidden><div class="die-face" id="die-face">?</div></div>' +
       '</section>' +
       '<p class="map-hint">' + reason + '</p>' +
@@ -636,7 +639,7 @@
       c.manual = true; applyCam(false);
     }
     view.addEventListener('pointerdown', function (e) {
-      if (e.target.closest('.map-ctrl')) return;
+      if (e.target.closest('.map-ctrl, .map-shop')) return;
       view.setPointerCapture(e.pointerId);
       pts[e.pointerId] = { x: e.clientX, y: e.clientY };
       last = null;
@@ -723,7 +726,7 @@
     try { res = kind === 'skates' ? store.useSkates(childId) : store.rollDice(childId, kind); }
     catch (err) { toast(err.message, 'neg'); render(); return; }
     ui.busy = true;
-    app.querySelectorAll('.dice-btn, .hud-shop').forEach(function (b) { b.disabled = true; });
+    app.querySelectorAll('.dice-btn, .map-shop').forEach(function (b) { b.disabled = true; });
     try {
       if (kind !== 'skates') await showDie(res.value, kind === 'd6' ? 6 : 12);
       else toast('🛼 溜冰鞋前進 3 格！', 'pos');
@@ -790,18 +793,47 @@
     else confirmEl.setAttribute('open', '');
   }
 
+  /** 進入今日冒險：一個視窗列出所有孩子，勾選後一起結算出發（已出發打 ✅、未解鎖顯示原因） */
   function enterAdventure(childId) {
     var st = store.getAdventureStatus(childId);
     if (st.settled) { go('#adventure-' + childId); return; }
-    askConfirm('現在出發會用今日淨得分 ' + signed(st.net) + ' 結算，得到 ⭐' + st.previewStars + ' 能量星星。\n' +
-      '結算後，今天再加的分不會再增加星星（一天只結算一次）。\n確定要出發嗎？', '出發！', false).then(function (ok) {
-      if (!ok) return;
-      try {
-        var x = store.settleToday(childId);
-        toast('🎉 得到 ⭐' + x.stars + ' 能量星星！', 'pos');
-        go('#adventure-' + childId);
-      } catch (err) { toast(err.message, 'neg'); render(); }
-    });
+    var kids = store.getChildren();
+    var rows = kids.map(function (c) {
+      var s = c.id === childId ? st : store.getAdventureStatus(c.id);
+      var state = s.settled ? 'done' : (s.unlocked ? 'ready' : 'locked');
+      var note = state === 'done' ? '✅ 今天已出發'
+        : state === 'locked' ? '🔒 今日淨得分 ' + signed(s.net) + '，大於 0 才能出發'
+          : '今日淨得分 ' + signed(s.net) + ' → 得到 ⭐' + s.previewStars;
+      return '<label class="go-row ' + state + '">' +
+        '<input type="checkbox" value="' + h(c.id) + '"' + (state === 'ready' ? ' checked' : ' disabled') + (state === 'done' ? ' checked' : '') + '>' +
+        avatar(c, 'sm') + '<span class="go-main"><b>' + h(c.name) + '</b><small>' + note + '</small></span></label>';
+    }).join('');
+    confirmEl.innerHTML = '<div class="confirm-box go-box"><h2>🚀 今日冒險出發</h2>' +
+      '<p class="muted small">勾選要一起出發的孩子。出發時用今日淨得分結算能量星星，之後再加的分不會再增加星星（一天只結算一次）。</p>' +
+      '<div class="go-list">' + rows + '</div>' +
+      '<div class="modal-actions"><button type="button" class="btn" data-no>取消</button>' +
+      '<button type="button" class="btn primary" data-yes>一起出發！</button></div></div>';
+    var yes = confirmEl.querySelector('[data-yes]');
+    function picked() { return [].slice.call(confirmEl.querySelectorAll('.go-row.ready input:checked')).map(function (i) { return i.value; }); }
+    function refresh() { var n = picked().length; yes.disabled = !n; yes.textContent = n > 1 ? n + ' 位一起出發！' : '出發！'; }
+    confirmEl.querySelectorAll('.go-row.ready input').forEach(function (i) { i.onchange = refresh; });
+    refresh();
+    confirmEl.querySelector('[data-no]').onclick = function () { confirmEl.close(); };
+    confirmEl.oncancel = null;
+    yes.onclick = function () {
+      var ids = picked(), got = [];
+      ids.forEach(function (id) {
+        try { var x = store.settleToday(id); got.push(store.getChild(id).name + ' ⭐' + x.stars); }
+        catch (err) { toast(err.message, 'neg'); }
+      });
+      confirmEl.close();
+      if (got.length) toast('🎉 出發！' + got.join('、'), 'pos');
+      // 回到按下按鈕的孩子；若沒勾他，改到第一個出發的孩子
+      var target = store.getAdventureStatus(childId).settled ? childId : ids[0];
+      if (target) go('#adventure-' + target); else render();
+    };
+    if (typeof confirmEl.showModal === 'function') confirmEl.showModal();
+    else confirmEl.setAttribute('open', '');
   }
 
   function renderChallenge(child) {

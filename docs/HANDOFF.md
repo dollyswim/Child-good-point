@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.07-12`｜Service Worker 快取 `cgp-shell-v22`
+> 最後更新：2026-11-07｜App 版本 `2026.11.07-13`｜Service Worker 快取 `cgp-shell-v23`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---
@@ -109,6 +109,10 @@
 | `sw.js` | 離線快取（網路優先＋`cache: 'no-cache'` 驗證）；**新增圖片或 JS 時要加入 `SHELL` 並升 `CACHE` 版本** |
 | `tests/store.test.js` | 單元測試（`npm test`） |
 | `tests/e2e.js` | Playwright 手機尺寸 E2E（`npm run test:e2e`），含 360／390／430px 地圖檢查 |
+
+### 近期介面調整
+- 「進入今日冒險」改為一個視窗列出所有孩子：可出發的預設勾選、未解鎖灰色顯示原因、已出發打 ✅，一次結算多位（`enterAdventure()`）。
+- 星星商店移到地圖左下角大按鈕（`.map-shop`），上方 HUD 只剩星星、骰子、位置；商店插圖到貨前用 🛒（`SHOP_ART`，提示詞見 `docs/art-prompts.md` 第五優先）。
 
 ### 路由（hash，只用英數與連字號）
 `#home`、`#child-<id>`（任務）、`#challenge-<id>`、`#shop-<id>`（兌換）、`#adventure-<id>`（冒險大廳）、`#map-<id>`（金島地圖）、`#report`、`#rules`、`#rules-<分頁>`。舊格式 `#/child/<id>` 仍相容。
