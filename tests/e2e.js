@@ -697,6 +697,9 @@ async function main() {
       await st.click({ force: true });
     }
     assert.equal(await q.locator('#mg-count').innerText(), '3');
+    // 後 5 秒：一次出現 2 顆、縮小為 0.5 倍（約 39px）
+    await q.waitForFunction(() => document.querySelectorAll('.mg-star.small:not(.got):not(.miss)').length >= 2, null, { timeout: 9000 });
+    assert.equal(await q.evaluate(() => document.querySelector('.mg-star.small').offsetWidth), 39);
     await q.waitForSelector('.mg-result', { timeout: 15000 });
     assert.match(await q.locator('.mg-result').innerText(), /抓到 3 顆星星[\s\S]*\+3/);
     await q.click('.mg-result [data-mg=claim]');

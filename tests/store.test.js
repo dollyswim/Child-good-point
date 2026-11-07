@@ -1082,7 +1082,7 @@ test('Phase 4：特殊任務存檔遷移、刪除孩子一併刪除', () => {
 });
 
 // ---------- Phase 4 第 2 步：小遊戲「抓住星星」 ----------
-test('Phase 4：停在小遊戲格 → 產生今天的小遊戲；完成後每抓 1 顆得 1 星、最多 8 星、只能領一次', () => {
+test('Phase 4：停在小遊戲格 → 產生今天的小遊戲；完成後每抓 1 顆得 1 星、只能領一次', () => {
   const { store, a, push } = p3Store();
   store.buyItem(a.id, 'd6'); store.buyItem(a.id, 'd6');
   store.setPlayerTile(a.id, 4);
@@ -1099,7 +1099,7 @@ test('Phase 4：停在小遊戲格 → 產生今天的小遊戲；完成後每�
   assert.equal(store.getTotal(a.id), 100, '不影響生活點數');
 });
 
-test('Phase 4：小遊戲每天 1 次、星星上限 8、隔天可再玩、重新整理後可繼續', () => {
+test('Phase 4：小遊戲每天 1 次、獎勵上限 15、隔天可再玩、重新整理後可繼續', () => {
   const { store, a, push, setDate, storage } = p3Store();
   store.buyItem(a.id, 'd6'); store.buyItem(a.id, 'd12');
   store.setPlayerTile(a.id, 4);
@@ -1109,8 +1109,9 @@ test('Phase 4：小遊戲每天 1 次、星星上限 8、隔天可再玩、重�
   const s2 = new Store({ storage, seed: false, now: () => store.now() });
   assert.ok(s2.getPendingMinigame(a.id), '重新整理後可繼續');
   const bal = store.getStarBalance(a.id);
-  assert.equal(store.finishMinigame(a.id, 99).stars, 8, '最多 8 星');
-  assert.equal(store.getStarBalance(a.id), bal + 8);
+  const done = store.finishMinigame(a.id, 22);
+  assert.deepEqual([done.caught, done.stars], [22, 15], '抓到 22 顆、獎勵最多 15 星');
+  assert.equal(store.getStarBalance(a.id), bal + 15);
   // 同一天再停到小遊戲格：不能再玩
   store.setPlayerTile(a.id, 7);
   push(face(10, 12));                          // 擲 10 → 第 17 格小遊戲

@@ -1197,3 +1197,5 @@ body.mg-open { overflow: hidden; }
 .mg-practice-note { color: #8a6bd1; font-size: .9rem; }
 .mg-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; margin-top: 6px; }
 .mg-acts .btn { min-width: 0; margin: 0; }
+.mg-star.small { width: 39px; height: 39px; margin: -19.5px 0 0 -19.5px; filter: drop-shadow(0 0 6px rgba(255, 220, 90, .9)); } /* 後 5 秒：縮小 0.5 倍 */
+.mg-cap { color: var(--muted); font-size: .8rem; font-weight: 700; }

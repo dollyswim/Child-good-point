@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-21';
+  var APP_VERSION = '2026.11.07-22';
   var store;
   try {
     store = new CGP.Store();
@@ -783,17 +783,20 @@
 
   // ---------- 小遊戲「抓住星星」 ----------
   /**
-   * 全螢幕小遊戲：第 1 顆星在正中央，點到才開始計時；之後依序在隨機位置出現，每顆停留約 1.2 秒。
-   * 一局最多 GAME.MINIGAME_MAX_STARS 顆，每抓 1 顆得 1 顆能量星星；按「收下」才寫入（重新整理前沒領取可再玩）。
+   * 全螢幕小遊戲：第 1 顆星在正中央，點到才開始 10 秒計時。
+   * 前 5 秒：每 1 秒出現 1 顆、停留 1.2 秒；後 5 秒加快：每 0.7 秒出現 2 顆、停留 0.8 秒、大小 0.5 倍。
+   * 星星出現數不限；每抓 1 顆得 1 顆能量星星，最多 GAME.MINIGAME_MAX_STARS 顆；按「收下」才寫入。
    */
   function openMinigame(childId, subtitle, opts) {
     var practice = !!(opts && opts.practice);   // 試玩模式：不寫入存檔、不給星星、不算每日次數
     if (document.getElementById('mg')) return;
     if (!practice && !store.getPendingMinigame(childId)) return;
-    var MAX = GAME.MINIGAME_MAX_STARS, SEC = GAME.MINIGAME_SECONDS, LIFE = 1200, GAP = 1250;
+    var MAX = GAME.MINIGAME_MAX_STARS, SEC = GAME.MINIGAME_SECONDS;
+    var PHASES = [{ until: 5000, gap: 1000, life: 1200, count: 1, small: false },   // 前 5 秒
+      { until: SEC * 1000, gap: 700, life: 800, count: 2, small: true }];            // 後 5 秒：加快、一次 2 顆、縮小
     var el = document.createElement('div');
     el.className = 'mg' + (practice ? ' practice' : ''); el.id = 'mg';
-    el.innerHTML = '<div class="mg-top"><span class="mg-count"><img class="mg-ico" src="images/minigame/star.webp" alt="⭐" width="256" height="256"> <b id="mg-count">0</b> / ' + MAX + '</span>' +
+    el.innerHTML = '<div class="mg-top"><span class="mg-count"><img class="mg-ico" src="images/minigame/star.webp" alt="⭐" width="256" height="256"> <b id="mg-count">0</b></span>' +
       '<span class="mg-time"><i id="mg-bar"></i></span><b class="mg-sec" id="mg-sec">' + SEC + '</b></div>' +
       '<div class="mg-field" id="mg-field"></div>' +
       '<div class="mg-tip" id="mg-tip"><b>⭐ 抓住星星！</b>' + (subtitle ? '<small>' + h(subtitle) + '</small>' : '') +
@@ -803,10 +806,10 @@
     document.body.appendChild(el);
     document.body.classList.add('mg-open');
     var field = el.querySelector('#mg-field'), countEl = el.querySelector('#mg-count');
-    var caught = 0, spawned = 0, timers = [], started = false, ended = false, last = null;
-    function addStar(x, y, first) {
+    var caught = 0, timers = [], started = false, ended = false, last = null;
+    function addStar(x, y, first, life, small) {
       var b = document.createElement('button');
-      b.type = 'button'; b.className = 'mg-star' + (first ? ' first' : ''); b.setAttribute('aria-label', '星星');
+      b.type = 'button'; b.className = 'mg-star' + (first ? ' first' : '') + (small ? ' small' : ''); b.setAttribute('aria-label', '星星');
       b.style.left = x + '%'; b.style.top = y + '%';
       b.addEventListener('pointerdown', function (e) {
         e.preventDefault();
@@ -816,8 +819,7 @@
         if (first) start();
       });
       field.appendChild(b);
-      if (!first) timers.push(setTimeout(function () { if (!b.classList.contains('got')) { b.classList.add('miss'); setTimeout(function () { b.remove(); }, 250); } }, LIFE));
-      spawned++;
+      if (!first) timers.push(setTimeout(function () { if (!b.classList.contains('got')) { b.classList.add('miss'); setTimeout(function () { b.remove(); }, 250); } }, life));
     }
     function randomSpot() {
       var x, y, tries = 0;
@@ -836,9 +838,15 @@
         if (left <= 0) { clearInterval(tick); finish(); }
       }, 100);
       timers.push(tick);
-      for (var i = 0; i < MAX - 1; i++) {
-        timers.push(setTimeout(function () { if (!ended) { var p = randomSpot(); addStar(p[0], p[1], false); } }, 300 + i * GAP));
-      }
+      // 依階段持續出現星星，直到時間結束（數量不限）
+      (function spawn() {
+        if (ended) return;
+        var t = performance.now() - t0;
+        var ph = PHASES[0].until > t ? PHASES[0] : PHASES[1];
+        if (t >= SEC * 1000 - 300) return;
+        for (var k = 0; k < ph.count; k++) { var p = randomSpot(); addStar(p[0], p[1], false, ph.life, ph.small); }
+        timers.push(setTimeout(spawn, ph.gap));
+      })();
     }
     function finish() {
       ended = true;
@@ -846,11 +854,13 @@
       field.innerHTML = '';
       var res = document.createElement('div');
       res.className = 'mg-result';
-      res.innerHTML = '<b>' + (caught >= MAX ? '🎉 全部抓到了！' : caught >= 5 ? '👏 好厲害！' : '✨ 完成！') + '</b>' +
+      var gain = Math.min(MAX, caught);
+      res.innerHTML = '<b>' + (caught >= MAX ? '🎉 太厲害了！' : caught >= 6 ? '👏 好厲害！' : '✨ 完成！') + '</b>' +
         '<p>抓到 <strong>' + caught + '</strong> 顆星星</p>' +
         (practice ? '<p class="mg-practice-note">🧪 試玩模式，不會得到星星</p>' +
           '<div class="mg-acts"><button type="button" class="btn" data-mg="exit">離開</button><button type="button" class="btn primary" data-mg="again">再玩一次</button></div>'
-          : '<p class="mg-gain">' + STAR_IMG + ' +' + caught + ' 能量星星</p><button type="button" class="btn primary" data-mg="claim">收下</button>');
+          : '<p class="mg-gain">' + STAR_IMG + ' +' + gain + ' 能量星星</p>' + (caught > MAX ? '<p class="mg-cap">（每局最多 ' + MAX + ' 顆能量星星）</p>' : '') +
+            '<button type="button" class="btn primary" data-mg="claim">收下</button>');
       el.appendChild(res);
       if (practice) {
         res.querySelector('[data-mg=again]').onclick = function () { cleanup(); openMinigame(null, null, opts); };
@@ -878,7 +888,7 @@
       if (!practice) toast('小遊戲留著，等一下再玩');
       close();
     };
-    addStar(50, 44, true);
+    addStar(50, 44, true, 0, false);
   }
 
   /** 星星商店（對話框） */

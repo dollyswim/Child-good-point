@@ -20,9 +20,9 @@
   var dateKey = CGP.dateKey;
 
   var DAILY_DICE_LIMIT = 3;
-  /** Phase 4「抓住星星」：每天 1 次、約 10 秒、一局最多 8 顆星（每抓 1 顆得 1 顆能量星星） */
+  /** Phase 4「抓住星星」：每天 1 次、約 10 秒；星星出現數不限，每抓 1 顆得 1 顆能量星星，獎勵最多 15 顆 */
   var DAILY_MINIGAME_LIMIT = 1;
-  var MINIGAME_MAX_STARS = 8;
+  var MINIGAME_MAX_STARS = 15;
   var MINIGAME_SECONDS = 10;
 
   /** 道具圖示：家長提供的白底插圖（images/items/，256×256 WebP，原圖 1024×1024 PNG），介面以白色圖示框＋contain 顯示 */
@@ -269,15 +269,16 @@
     return m && m.status === 'pending' ? m : null;
   };
   /**
-   * 小遊戲結束：每抓 1 顆得 1 顆能量星星（最多 8 顆），只能領取一次
+   * 小遊戲結束：每抓 1 顆得 1 顆能量星星（最多 15 顆），只能領取一次；caught 記實際抓到數
    * @returns 更新後的紀錄 { caught, stars }
    */
   Store.prototype.finishMinigame = function (childId, caught) {
     this._requirePlay(childId);
     var m = this.getPendingMinigame(childId);
     if (!m) throw new Error('今天沒有可以玩的小遊戲');
-    var n = Math.max(0, Math.min(MINIGAME_MAX_STARS, Math.floor(Number(caught) || 0)));
-    m.status = 'done'; m.caught = n; m.stars = n; m.doneTs = this.now().getTime();
+    var got = Math.max(0, Math.floor(Number(caught) || 0));
+    var n = Math.min(MINIGAME_MAX_STARS, got);
+    m.status = 'done'; m.caught = got; m.stars = n; m.doneTs = this.now().getTime();
     if (n > 0) this._ledger(childId, n, '小遊戲：抓住星星');
     this.save();
     return m;
