@@ -89,7 +89,7 @@
 
   // ---------- 預設資料 ----------
   function emptyData() {
-    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null, backup: { lastExportAt: 0, since: 0, snoozeUntil: '' },
+    return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null, achievements: {}, backup: { lastExportAt: 0, since: 0, snoozeUntil: '' },
       milestones: {}, adventure: { settlements: [], ledger: [], rolls: [], minigames: [], bonusQuota: [], mapChests: [], dayEnds: [], blessings: [], itemLog: [], players: {} } };
   }
 
@@ -240,6 +240,16 @@
       });
       return out;
     })();
+    // 成就：{ childId: { 成就代號: { date, ts } } }
+    d.achievements = (function () {
+      var src = d.achievements && typeof d.achievements === 'object' ? d.achievements : {}, out = {};
+      Object.keys(src).forEach(function (cid) {
+        if (!childIdSet.has(cid) || !src[cid] || typeof src[cid] !== 'object') return;
+        out[cid] = {};
+        Object.keys(src[cid]).forEach(function (k) { var a = src[cid][k] || {}; out[cid][k] = { date: String(a.date || ''), ts: toInt(a.ts, 0) }; });
+      });
+      return out;
+    })();
     // 備份提醒：lastExportAt＝最後一次匯出 JSON 的時間；since＝開始計算的時間（舊存檔＝載入當下）；snoozeUntil＝「明天再提醒」到期日
     var bk = d.backup && typeof d.backup === 'object' ? d.backup : {};
     d.backup = { lastExportAt: bk.lastExportAt ? toInt(bk.lastExportAt, 0) : 0, since: toInt(bk.since, 0), snoozeUntil: /^\d{4}-\d{2}-\d{2}$/.test(bk.snoozeUntil) ? bk.snoozeUntil : '' };
@@ -350,7 +360,10 @@
               rollId: String(p.pendingRoll.rollId), die: ['d6', 'd12', 'magic'].indexOf(p.pendingRoll.die) >= 0 ? p.pendingRoll.die : 'd6',
               kind: String(p.pendingRoll.kind || 'base'), sides: toInt(p.pendingRoll.sides, 6) === 12 ? 12 : 6,
               value: Math.max(1, toInt(p.pendingRoll.value, 1)), from: Math.max(0, toInt(p.pendingRoll.from, 0)), rerolled: !!p.pendingRoll.rerolled, lap: !!p.pendingRoll.lap } : null,
-            laps: Math.max(0, toInt(p.laps, 0)),   // 第一區走完幾輪（第二區開放前的暫時規則）
+            laps: Math.max(0, toInt(p.laps, 0)),   // 走完目前開放區域幾輪
+            goldClears: Math.max(0, toInt(p.goldClears, 0)),   // 金島通關次數（走到第 100 格）
+            maxReached: Math.max(toInt(p.maxReached, 0), toInt(p.pos, 0)),   // 曾經到過最遠的格子（成就用）
+            stats: { chests: Math.max(0, toInt(p.stats && p.stats.chests, 0)), mystery: Math.max(0, toInt(p.stats && p.stats.mystery, 0)) },   // 開過的一般寶箱／神秘寶箱數
             bag: BAG_KEYS.reduce(function (o, k) { o[k] = Math.max(0, toInt(bag[k], 0)); return o; }, {})
           };
         });
@@ -571,6 +584,7 @@
     adv.mapChests = adv.mapChests.filter(function (x) { return x.childId !== id; });
     adv.dayEnds = adv.dayEnds.filter(function (x) { return x.childId !== id; });
     delete this.data.milestones[id];
+    delete this.data.achievements[id];
     adv.blessings = adv.blessings.filter(function (x) { return x.childId !== id; });
     adv.itemLog = adv.itemLog.filter(function (x) { return x.childId !== id; });
     delete adv.players[id];

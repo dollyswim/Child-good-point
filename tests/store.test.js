@@ -1816,3 +1816,84 @@ test('備份提醒：滿 7 天沒匯出才提醒；匯出後重新計算；明�
   const d = migrate({ children: [{ id: 'c', name: 'B' }] });
   assert.deepEqual([d.backup.lastExportAt, d.backup.since], [0, 0], '舊存檔：載入時才從當下開始算');
 });
+
+// ---------- 金島通關與成就 ----------
+/** 暫時把第 n 格當成全島終點（第 81～100 格背景尚未開放，用目前地圖模擬） */
+function withEndTile(store, a, n, fn) {
+  const tiles = store.getBoard(a.id).tiles, orig = tiles[n].type;
+  tiles[n].type = 'end';
+  try { return fn(); } finally { tiles[n].type = orig; }
+}
+
+test('金島通關：第一次＝神秘寶箱 ×1（免鑰匙）＋成就；之後＝ +10 星；下一次移動從起點開始', () => {
+  const { store, a } = p3Store();
+  const p = store.getPlayer(a.id);
+  p.bag.d6 = 3;
+  withEndTile(store, a, 55, () => {
+    store.setPlayerTile(a.id, 52);
+    store.random = () => 0.99;                               // 擲 6 → 停在第 55 格（終點）
+    const r = store.rollDice(a.id, 'd6');
+    assert.deepEqual(r.event.clear, { count: 1, first: true });
+    assert.equal(p.bag.giftMysteryChest, 1);
+    assert.equal(p.goldClears, 1);
+    assert.deepEqual(store.checkAchievements(a.id).map(x => x.id).filter(x => x.startsWith('goldClear')), ['goldClear1']);
+    const bal = store.getStarBalance(a.id);
+    store.random = () => 0.4;                                // 下一次：從起點開始
+    const r2 = store.rollDice(a.id, 'd6');
+    assert.ok(r2.lap);
+    store.setPlayerTile(a.id, 52);
+    store.random = () => 0.99;
+    const r3 = store.rollDice(a.id, 'd6');
+    assert.deepEqual(r3.event.clear, { count: 2, first: false });
+    assert.equal(r3.event.stars, 10);
+    assert.equal(p.bag.giftMysteryChest, 1, '第二次不再給寶箱');
+    assert.ok(store.getStarBalance(a.id) >= bal + 10);
+  });
+});
+
+test('成就：14 項三類；達成後記錄日期、不重複、不會消失；兩位孩子各自計算', () => {
+  const { store, a } = p3Store();
+  const b2 = store.addChild({ name: 'B', startPoints: 6000 });
+  assert.equal(G.ACHIEVEMENTS.length, 14);
+  assert.deepEqual([...new Set(G.ACHIEVEMENTS.map(x => x.cat))], ['adventure', 'collect', 'life']);
+  assert.deepEqual(store.checkAchievements(b2.id).map(x => x.id), ['earn1000', 'earn5000'], '起始點數也算累計得分');
+  assert.deepEqual(store.checkAchievements(b2.id), [], '不重複');
+  assert.equal(store.getAchievements(a.id).filter(x => x.done).length, 0, '另一位孩子不受影響');
+  const p = store.getPlayer(a.id);
+  p.maxReached = 40; p.stats.chests = 10; p.stats.mystery = 1;
+  store.data.adventure.minigames.push({ id: 'm', childId: a.id, date: store.today(), status: 'done', caught: 12, stars: 12, ts: 1 });
+  assert.deepEqual(store.checkAchievements(a.id).map(x => x.id), ['reachR2', 'chests10', 'mystery1', 'catch10']);
+  p.maxReached = 0;
+  assert.equal(store.getAchievements(a.id).find(x => x.id === 'reachR2').done, true, '達成後不會消失');
+  assert.equal(store.getAchievements(a.id).find(x => x.id === 'reachR2').date, '2026-11-06');
+});
+
+test('成就：寶箱與神秘寶箱計數、最遠格子、連續 7 天冒險、5 個特殊任務', () => {
+  const { store, a, setDate } = p3Store();
+  const p = store.getPlayer(a.id);
+  p.bag.d6 = 1;
+  store.setPlayerTile(a.id, 4);
+  store.random = () => 0.1;                                  // 擲 1 → 第 5 格寶箱
+  store.rollDice(a.id, 'd6');
+  assert.equal(p.stats.chests, 1);
+  assert.equal(p.maxReached, 5);
+  p.bag.giftMysteryChest = 1; store.openChest(a.id, 'giftMysteryChest');
+  assert.equal(p.stats.mystery, 1);
+  const it = store.addItem({ kind: 'bonus', name: 'x', points: 5 });
+  for (let d = 7; d <= 12; d++) { setDate('2026-11-' + String(d).padStart(2, '0') + 'T10:00:00'); store.recordItem(a.id, it.id); store.settleToday(a.id); }
+  assert.ok(store.checkAchievements(a.id).some(x => x.id === 'streak7'), '11/6～11/12 連續 7 天');
+  for (const k of ['chore', 'praise', 'helper']) store.completeSpecialTask(store.addSpecialTask(a.id, k).task.id);
+  setDate('2026-11-20T10:00:00');
+  store.completeSpecialTask(store.addSpecialTask(a.id, 'chore').task.id);
+  assert.ok(!store.checkAchievements(a.id).some(x => x.id === 'special5'));
+  store.completeSpecialTask(store.addSpecialTask(a.id, 'praise').task.id);
+  assert.ok(store.checkAchievements(a.id).some(x => x.id === 'special5'));
+});
+
+test('成就與通關存檔遷移', () => {
+  const d = migrate({ children: [{ id: 'c', name: 'B' }], achievements: { c: { goldClear1: { date: '2026-11-06', ts: 1 } }, x: { a: {} } },
+    adventure: { players: { c: { pos: 12, goldClears: 2, stats: { chests: 3 }, bag: {} } } } });
+  assert.deepEqual(d.achievements, { c: { goldClear1: { date: '2026-11-06', ts: 1 } } });
+  const p = d.adventure.players.c;
+  assert.deepEqual([p.goldClears, p.maxReached, p.stats.chests, p.stats.mystery], [2, 12, 3, 0], '最遠格子至少是目前位置');
+});

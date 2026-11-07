@@ -1403,3 +1403,58 @@ body.mg-open { overflow: hidden; }
 .br-main small { color: var(--muted); font-weight: 700; font-size: .78rem; line-height: 1.4; }
 .br-acts { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
 .br-acts .btn { flex: none; width: auto; white-space: nowrap; min-width: 0; padding-inline: 14px; }
+
+/* 冒險大廳：成就 */
+.ach-panel h2 small { font-size: .75rem; color: var(--muted); font-weight: 800; }
+.ach-cat h3 { margin: 8px 0 6px; font-size: .88rem; color: var(--wood-2); }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
+.ach { display: grid; justify-items: center; gap: 2px; padding: 8px 2px 6px; border-radius: 16px; border: 2px solid #eee3d2; background: #f6f1ea; font: inherit; cursor: pointer; }
+.ach .ach-badge { font-size: 1.8rem; line-height: 1.1; filter: grayscale(1); opacity: .55; }
+.ach small { font-size: .66rem; font-weight: 800; color: var(--muted); text-align: center; line-height: 1.25; }
+.ach.done { background: linear-gradient(#fffbe9, #ffefc2); border-color: #ffd23f; box-shadow: 0 2px 0 rgba(200, 150, 40, .3); }
+.ach.done .ach-badge { filter: none; opacity: 1; }
+.ach.done small { color: #8a5a00; }
+
+/* 金島通關：全螢幕慶祝 */
+.clear-screen { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px;
+  background: radial-gradient(circle at 50% 30%, #fff6c9, #ffcf5a 45%, #f39a2a 100%); overflow: hidden; }
+.clear-card { position: relative; z-index: 1; width: min(92vw, 360px); display: grid; justify-items: center; gap: 8px; padding: 22px 18px;
+  border-radius: 28px; background: #fff; box-shadow: 0 14px 40px rgba(120, 60, 0, .35); text-align: center; animation: bless-in .5s cubic-bezier(.2, 1.4, .4, 1) both; }
+.clear-crown { font-size: 3rem; line-height: 1; animation: bob 2s ease-in-out infinite; }
+.clear-card h2 { margin: 0; font-size: 1.6rem; background: linear-gradient(90deg, #e08a00, #c2410c); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.clear-sub { margin: 0; font-weight: 800; color: var(--text); }
+.clear-pawn { width: 96px; }
+.clear-pawn img { width: 100%; height: auto; display: block; }
+.clear-rewards { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; width: 100%; }
+.clear-rewards li { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px; border-radius: 14px; background: #fff6dc; font-weight: 900; color: #8a5a00; }
+.clear-rewards img { width: 36px; height: 36px; object-fit: contain; border-radius: 8px; background: #fff; }
+.clear-rewards span { font-size: 1.5rem; }
+.confetti { position: absolute; inset: 0; pointer-events: none; }
+.confetti i { position: absolute; top: -20px; width: 10px; height: 16px; border-radius: 3px; animation: confetti-fall 2.6s linear infinite; }
+.confetti i:nth-child(4n+1) { background: #ff5d8f; } .confetti i:nth-child(4n+2) { background: #ffd23f; } .confetti i:nth-child(4n+3) { background: #3fb6e8; } .confetti i:nth-child(4n) { background: #5cbf4a; }
+.confetti i:nth-child(1) { left: 37%; animation-delay: 0.11s; }
+.confetti i:nth-child(2) { left: 74%; animation-delay: 0.22s; }
+.confetti i:nth-child(3) { left: 11%; animation-delay: 0.33s; }
+.confetti i:nth-child(4) { left: 48%; animation-delay: 0.44s; }
+.confetti i:nth-child(5) { left: 85%; animation-delay: 0.55s; }
+.confetti i:nth-child(6) { left: 22%; animation-delay: 0.66s; }
+.confetti i:nth-child(7) { left: 59%; animation-delay: 0.77s; }
+.confetti i:nth-child(8) { left: 96%; animation-delay: 0.88s; }
+.confetti i:nth-child(9) { left: 33%; animation-delay: 0.99s; }
+.confetti i:nth-child(10) { left: 70%; animation-delay: 1.10s; }
+.confetti i:nth-child(11) { left: 7%; animation-delay: 1.21s; }
+.confetti i:nth-child(12) { left: 44%; animation-delay: 1.32s; }
+.confetti i:nth-child(13) { left: 81%; animation-delay: 1.43s; }
+.confetti i:nth-child(14) { left: 18%; animation-delay: 1.54s; }
+.confetti i:nth-child(15) { left: 55%; animation-delay: 1.65s; }
+.confetti i:nth-child(16) { left: 92%; animation-delay: 1.76s; }
+.confetti i:nth-child(17) { left: 29%; animation-delay: 1.87s; }
+.confetti i:nth-child(18) { left: 66%; animation-delay: 1.98s; }
+.confetti i:nth-child(19) { left: 3%; animation-delay: 2.09s; }
+.confetti i:nth-child(20) { left: 40%; animation-delay: 2.20s; }
+.confetti i:nth-child(21) { left: 77%; animation-delay: 2.31s; }
+.confetti i:nth-child(22) { left: 14%; animation-delay: 2.42s; }
+.confetti i:nth-child(23) { left: 51%; animation-delay: 2.53s; }
+.confetti i:nth-child(24) { left: 88%; animation-delay: 0.04s; }
+@keyframes confetti-fall { to { transform: translateY(110vh) rotate(540deg); } }
+@media (prefers-reduced-motion: reduce) { .confetti i, .clear-crown, .clear-card { animation: none; } }

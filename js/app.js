@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-36';
+  var APP_VERSION = '2026.11.07-38';
   var store;
   try {
     store = new CGP.Store();
@@ -223,6 +223,7 @@
       if (!child) { location.replace('#home'); return; }
       setCurrent(child.id);
       if (r.name === 'map' && store.canPlayToday(child.id)) store.placeMapChests(child.id);   // 下次冒險時神秘寶箱出現在前方
+      var freshAch = document.getElementById('clear-screen') ? [] : store.checkAchievements(child.id);   // 先檢查成就，畫面才會顯示最新狀態
       html = r.name === 'child' ? renderChild(child) : r.name === 'challenge' ? renderChallenge(child)
         : r.name === 'shop' ? renderShop(child) : r.name === 'map' ? renderMap(child) : renderAdventure(child);
     } else if (r.name === 'settings') {
@@ -246,6 +247,7 @@
     }
     if (r.name === 'minigame-test') openMinigame(null, null, { practice: true });
     if (r.name === 'adventure') showBlessings(r.arg);
+    if (freshAch && freshAch.length) toast('🏆 解鎖成就：' + freshAch.map(function (a) { return a.icon + ' ' + a.name; }).join('、'), 'pos');
     if (r.name === 'settings') {
       var pi = app.querySelector('#pin-1'); if (pi) pi.focus();
       var at = app.querySelector('.tabs .tab.active'); if (at && at.parentNode.scrollTo) at.parentNode.scrollTo({ left: at.offsetLeft - 40 });   // 分頁多：目前分頁捲進畫面
@@ -551,7 +553,7 @@
       '<div class="map-art"><picture><source srcset="' + isl.webp + '" type="image/webp">' +
       '<img src="' + isl.jpg + '" alt="' + h(isl.alt) + '" width="1200" height="675" loading="lazy" decoding="async"></picture></div>' +
       '<div class="map-info">' +
-      '<p>擲骰子、走格子、開寶箱！目前在第 ' + store.getPlayer(child.id).pos + ' / 30 格</p>' +
+      '<p>擲骰子、走格子、開寶箱！目前在第 ' + store.getPlayer(child.id).pos + ' / ' + (store.getBoard(child.id).tiles.length - 1) + ' 格</p>' +
       (store.isAdventureEnded(child.id)
         ? '<span class="lock-pill">🏁 今天的冒險已結束</span><button class="btn primary map-cta" data-action="show-summary">📋 查看今日小結</button>' +
           '<a class="btn small map-view-link" href="#map-' + h(child.id) + '">看地圖</a>'
@@ -564,7 +566,7 @@
       }).join('') + '</div>';
 
     summary = summary.replace(/<\/div>$/, log + '</div>');
-    return hero + '<main class="page adventure">' + tabs + starCard + summary + map + '</main>';
+    return hero + '<main class="page adventure">' + tabs + starCard + summary + map + achievementPanel(child) + '</main>';
   }
 
   // ---------- 金島棋盤（Phase 3） ----------
@@ -919,12 +921,49 @@
     var head = kind === 'skates' ? '🛼 前進 3 格' : kind === 'wings' ? '🪽 飛行翼' : kind === 'door' ? '🚪 任意門'
       : (kind === 'magic' || (pr && pr.die === 'magic') ? '✨ 神奇骰子擲出 ' : '🎲 擲出 ') + res.value;
     // 停在小遊戲格（或礦車載到小遊戲格）：直接開始「抓住星星」
+    var clearEv = ev && ev.clear ? ev : (ev && ev.then && ev.then.clear ? ev.then : null);
+    if (clearEv) { showClear(child, clearEv); return; }
     var mgEv = ev && ev.minigame ? ev : (ev && ev.then && ev.then.minigame ? ev.then : null);
     if (mgEv) { openMinigame(childId, head + '・停在第 ' + store.getPlayer(childId).pos + ' 格'); return; }
     var msg = eventText(res.event);
     if (res.found) msg = '🎁 撿到 ' + res.found + ' 個神秘寶箱！放進冒險背包了，用 🔑 黃金鑰匙打開。' + (msg ? '\n\n' + msg : '');
     if (msg) showInfo(head + '・停在第 ' + store.getPlayer(childId).pos + ' 格', msg);
     else toast(head + '，停在第 ' + store.getPlayer(childId).pos + ' 格');
+  }
+
+  /** 冒險大廳：成就（徽章先用表情符號；點一下看說明與達成日期） */
+  var ACH_CATS = [['adventure', '🗺️ 冒險'], ['collect', '🎒 收集'], ['life', '🌱 生活']];
+  function achievementPanel(child) {
+    var list = store.getAchievements(child.id), done = list.filter(function (a) { return a.done; }).length;
+    return '<section class="panel ach-panel" data-testid="achievements"><h2>🏆 成就 <small>已解鎖 ' + done + ' / ' + list.length + '</small></h2>' +
+      ACH_CATS.map(function (c) {
+        return '<div class="ach-cat"><h3>' + c[1] + '</h3><div class="ach-grid">' + list.filter(function (a) { return a.cat === c[0]; }).map(function (a) {
+          return '<button type="button" class="ach' + (a.done ? ' done' : '') + '" data-action="ach-info" data-id="' + a.id + '" aria-label="' + h(a.name) + (a.done ? '（已解鎖）' : '（未解鎖）') + '">' +
+            '<span class="ach-badge">' + (a.done ? a.icon : '🔒') + '</span><small>' + h(a.name) + '</small></button>';
+        }).join('') + '</div></div>';
+      }).join('') + '</section>';
+  }
+  /** 新解鎖的成就：提示一次 */
+  function announceAchievements(childId) {
+    var fresh = store.checkAchievements(childId);
+    if (fresh.length) toast('🏆 解鎖成就：' + fresh.map(function (a) { return a.icon + ' ' + a.name; }).join('、'), 'pos');
+  }
+  /** 金島通關：全螢幕慶祝畫面（動畫失敗不影響已存檔的獎勵） */
+  function showClear(child, ev) {
+    var el = document.createElement('div');
+    el.className = 'clear-screen'; el.id = 'clear-screen';
+    el.innerHTML = '<div class="confetti" aria-hidden="true">' + new Array(25).join('<i></i>') + '</div>' +
+      '<div class="clear-card"><div class="clear-crown">👑</div><h2>恭喜通關金島！</h2>' +
+      '<p class="clear-sub">' + h(child.name) + '和' + h(characterName(child)) + '抵達了金冠城堡' + (ev.clear.count > 1 ? '（第 ' + ev.clear.count + ' 次）' : '') + '</p>' +
+      '<span class="clear-pawn">' + characterArt(child) + '</span>' +
+      '<ul class="clear-rewards">' + (ev.clear.first
+        ? '<li><img src="images/items/mystery_chest.webp" alt="" width="48" height="48"> 神秘寶箱 ×1（不用鑰匙）</li><li><span>🏅</span> 成就「金島通關」</li>'
+        : '<li>' + STAR_IMG + ' 能量星星 +' + GAME.GOLD_CLEAR_STARS + '</li>') + '</ul>' +
+      '<p class="muted small">下次出發會從起點開始新的一輪</p>' +
+      '<button type="button" class="btn primary block" data-clear-ok>太棒了！</button></div>';
+    document.body.appendChild(el);
+    toastEl.hidden = true;   // 通關畫面已列出成就，不另外跳提示
+    el.querySelector('[data-clear-ok]').onclick = function () { el.remove(); announceAchievements(child.id); render(); };
   }
 
   /** 今日小結（結束今日冒險時、或之後在冒險大廳查看） */
@@ -2269,6 +2308,11 @@
           break;
         }
         case 'show-summary': showSummary(childId, false); break;
+        case 'ach-info': {
+          var ach = store.getAchievements(childId).find(function (a) { return a.id === id; });
+          showInfo((ach.done ? ach.icon : '🔒') + ' ' + ach.name, ach.desc + '\n' + (ach.done ? '✅ ' + shortDate(ach.date) + ' 達成' : '還沒達成，繼續加油！'));
+          break;
+        }
         case 'reopen-day': {
           var rk = store.getChild(id);
           confirmThen('解除 ' + rk.name + ' 今天的「結束今日冒險」？\n解除後今天可以繼續擲骰、玩小遊戲（已作廢的「再來 3 次」次數不會恢復）。', '解除', false, function () {

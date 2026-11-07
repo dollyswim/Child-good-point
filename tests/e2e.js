@@ -1105,6 +1105,43 @@ async function main() {
     await c14.close();
   }
 
+  // ---------- 成就與金島通關畫面 ----------
+  {
+    const c16 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 800 }, serviceWorkers: 'block' });
+    const q = await c16.newPage();
+    await q.clock.setFixedTime(new Date('2026-11-06T10:00:00'));
+    q.on('pageerror', (e) => errors.push(e.message));
+    q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
+    await q.goto(url);
+    const id = await q.evaluate(() => {
+      const s = window.__cgpStore;
+      const a = s.addChild({ name: '端端', startPoints: 1200 });
+      const it = s.addItem({ kind: 'bonus', name: '大加分', points: 100 });
+      s.recordItem(a.id, it.id); s.settleToday(a.id);
+      s.getPlayer(a.id).bag.d6 = 1; s.setPlayerTile(a.id, 52); s.save();
+      return a.id;
+    });
+    await q.goto(url + '#adventure-' + id);
+    await q.waitForSelector('[data-testid=achievements]');
+    assert.match(await q.locator('#toast').innerText(), /解鎖成就[\s\S]*累計 1000 分/);
+    assert.match(await q.locator('[data-testid=achievements] h2').innerText(), /已解鎖 2 \/ 14/);   // 累計 1000、抵達水晶礦谷
+    await q.click('[data-action=ach-info][data-id=goldClear1]');
+    assert.match(await q.locator('#confirm').innerText(), /金島通關[\s\S]*還沒達成/);
+    await q.click('#confirm [data-yes]');
+    // 模擬全島終點（第 81～100 格背景尚未開放）：第 55 格當終點
+    await q.goto(url + '#map-' + id);
+    await q.evaluate(() => { const s = window.__cgpStore; s.getBoard(s.getChildren()[0].id).tiles[55].type = 'end'; s.random = () => 0.99; });
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#clear-screen', { timeout: 10000 });
+    assert.match(await q.locator('#clear-screen').innerText(), /恭喜通關金島[\s\S]*神秘寶箱 ×1[\s\S]*金島通關/);
+    await q.click('#clear-screen [data-clear-ok]');
+    await q.waitForFunction(() => !document.getElementById('clear-screen'));
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.giftMysteryChest, id), 1);
+    assert.ok(await q.evaluate((cid) => window.__cgpStore.getAchievements(cid).find((a) => a.id === 'goldClear1').done, id));
+    console.log('✔ 成就：冒險大廳成就區、解鎖提示、說明；金島通關全螢幕慶祝、第一次通關獎勵與成就');
+    await c16.close();
+  }
+
   // ---------- 首頁備份提醒 ----------
   {
     const c15 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 800 }, serviceWorkers: 'block', acceptDownloads: true });

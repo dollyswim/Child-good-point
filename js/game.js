@@ -145,6 +145,9 @@
     var p = adv.players[childId];
     CGP.BAG_KEYS.forEach(function (k) { if (!(p.bag[k] >= 0)) p.bag[k] = 0; });   // 新道具代號補 0
     if (!Array.isArray(p.looted)) p.looted = [];
+    if (!p.stats) p.stats = { chests: 0, mystery: 0 };
+    if (!(p.goldClears >= 0)) p.goldClears = 0;
+    if (!(p.maxReached >= p.pos)) p.maxReached = p.pos || 0;
     // 位置以穩定格子 ID 為準；舊存檔只有整數格號時對應到同號的格子（第 n 格 → gold-01-00n）
     var board = BOARDS[p.island] || GOLD;
     var idx = p.tileId ? board.tiles.findIndex(function (t) { return t.id === p.tileId; }) : -1;
@@ -213,6 +216,7 @@
   /** 一般寶箱：55% 得 1～3 星、25% 溜冰鞋、20% 6 面骰 */
   Store.prototype._rollRegularChest = function (childId, reason) {
     var rand = this.random, p = this.getPlayer(childId), out = { stars: 0, items: {}, text: '' };
+    p.stats.chests++;
     var roll = rand();
     if (roll < 0.55) {
       out.stars = rint(rand, 1, 3);
@@ -234,6 +238,7 @@
     { id: 'airplane', name: '呼叫專機', icon: '✈️', weight: 4 }
   ];
   Store.prototype._rollMysteryChest = function (childId) {
+    this.getPlayer(childId).stats.mystery++;
     var item = pickWeighted(this.random, MYSTERY_POOL);
     this.getPlayer(childId).bag[item.id]++;
     var items = {}; items[item.id] = 1;
@@ -468,6 +473,7 @@
     // 抵達目前開放區域的最後一格（第 30 格木門）即停止，多餘步數捨棄
     for (var i = 0; i < steps && p.pos < end; i++) { p.pos++; path.push(p.pos); }
     p.tileId = this.getBoard(childId).tiles[p.pos].id;
+    if (p.pos > p.maxReached) p.maxReached = p.pos;
     this._found = (this._found || 0) + this._collectAt(childId, path);   // 經過或停在神秘寶箱的格子就撿起來
     return path;
   };
@@ -578,7 +584,20 @@
       ev.title = '🚪 抵達' + lastR.name + '的終點！';
       ev.text = '你走完金島第 1～' + lastR.to + ' 格了！' + (nextR ? '前方的「' + nextR.name + '」即將開放。' : '') + '\n下次出發會從起點開始新的一輪，寶箱也會重新放滿！';
     } else if (tile.type === 'end') {
-      ev.title = '🏁 抵達金島終點！'; ev.text = '你走完金島測試版 30 格了！下一座島即將開放。';
+      // 金島通關：第一次＝神秘寶箱 ×1（免鑰匙）＋「金島通關」成就；之後＝ +10 能量星星；下一次移動從起點開始新的一輪
+      p.goldClears++;
+      var first = p.goldClears === 1;
+      ev.title = '🏁 恭喜通關金島！';
+      ev.clear = { count: p.goldClears, first: first };
+      if (first) {
+        p.bag.giftMysteryChest++; ev.items.giftMysteryChest = 1;
+        this._logItem(childId, 'grant', 'giftMysteryChest', 1, '金島通關', '第一次通關');
+        ev.text = '你走完金島 100 格，抵達金冠城堡了！\n通關獎勵：🎁 神秘寶箱 ×1（不用鑰匙）＋ 🏅 成就「金島通關」';
+      } else {
+        ev.stars = GOLD_CLEAR_STARS; this._ledger(childId, GOLD_CLEAR_STARS, '金島通關（第 ' + p.goldClears + ' 次）');
+        ev.text = '第 ' + p.goldClears + ' 次通關金島！通關獎勵：⭐' + GOLD_CLEAR_STARS + ' 能量星星';
+      }
+      ev.text += '\n下次出發會從起點開始新的一輪。';
     }
     return ev;
   };
@@ -640,6 +659,53 @@
     this.data.adventure.dayEnds = this.data.adventure.dayEnds.filter(function (x) { return !(x.childId === childId && x.date === today); });
     if (this.data.adventure.dayEnds.length === before) throw new Error('今天的冒險沒有結束');
     this.save();
+  };
+
+  // ---------- 成就 ----------
+  var GOLD_CLEAR_STARS = 10;
+  /** 連續出發冒險的最長天數 */
+  function longestStreak(dates) {
+    var ds = dates.slice().sort(), best = 0, run = 0, prev = null;
+    ds.forEach(function (k) {
+      var d = CGP.parseDateKey(k);
+      if (prev && Math.round((d - prev) / 86400000) === 1) run++; else if (!prev || +d !== +prev) run = 1;
+      prev = d; if (run > best) best = run;
+    });
+    return best;
+  }
+  /** 成就清單：cat＝adventure（冒險）／collect（收集）／life（生活）；check 回傳是否達成 */
+  var ACHIEVEMENTS = [
+    { id: 'goldClear1', cat: 'adventure', icon: '🏅', name: '金島通關', desc: '走完金島 100 格，抵達金冠城堡', check: function (s, c) { return s.getPlayer(c).goldClears >= 1; } },
+    { id: 'goldClear3', cat: 'adventure', icon: '🥈', name: '金島通關 3 次', desc: '通關金島 3 次', check: function (s, c) { return s.getPlayer(c).goldClears >= 3; } },
+    { id: 'goldClear5', cat: 'adventure', icon: '🥇', name: '金島通關 5 次', desc: '通關金島 5 次', check: function (s, c) { return s.getPlayer(c).goldClears >= 5; } },
+    { id: 'reachR2', cat: 'adventure', icon: '💎', name: '抵達水晶礦谷', desc: '走到第 31 格以後', check: function (s, c) { return s.getPlayer(c).maxReached >= 31; } },
+    { id: 'reachR3', cat: 'adventure', icon: '⚙️', name: '抵達齒輪工坊', desc: '走到第 56 格以後', check: function (s, c) { return s.getPlayer(c).maxReached >= 56; } },
+    { id: 'reachR4', cat: 'adventure', icon: '👑', name: '抵達金冠城堡', desc: '走到第 81 格以後', check: function (s, c) { return s.getPlayer(c).maxReached >= 81; } },
+    { id: 'chests10', cat: 'collect', icon: '📦', name: '寶箱獵人', desc: '開過 10 個一般寶箱', check: function (s, c) { return s.getPlayer(c).stats.chests >= 10; } },
+    { id: 'mystery1', cat: 'collect', icon: '🎁', name: '神秘寶箱初體驗', desc: '打開第一個神秘寶箱', check: function (s, c) { return s.getPlayer(c).stats.mystery >= 1; } },
+    { id: 'catch10', cat: 'collect', icon: '🌟', name: '星星捕手', desc: '「抓住星星」單局抓到 10 顆以上', check: function (s, c) {
+      return s.data.adventure.minigames.some(function (m) { return m.childId === c && m.status === 'done' && m.caught >= 10; }); } },
+    { id: 'earn1000', cat: 'life', icon: '🌱', name: '累計 1000 分', desc: '起始點數＋累計得分達到 1000', check: function (s, c) { return s.getEarned(c) >= 1000; } },
+    { id: 'earn5000', cat: 'life', icon: '🌳', name: '累計 5000 分', desc: '起始點數＋累計得分達到 5000', check: function (s, c) { return s.getEarned(c) >= 5000; } },
+    { id: 'earn10000', cat: 'life', icon: '🏔️', name: '累計 10000 分', desc: '起始點數＋累計得分達到 10000', check: function (s, c) { return s.getEarned(c) >= 10000; } },
+    { id: 'special5', cat: 'life', icon: '🔮', name: '特殊任務達人', desc: '完成 5 個特殊任務', check: function (s, c) {
+      return s.data.records.filter(function (r) { return r.childId === c && /^special:/.test(r.refId || ''); }).length >= 5; } },
+    { id: 'streak7', cat: 'life', icon: '📅', name: '連續 7 天冒險', desc: '連續 7 天出發冒險', check: function (s, c) {
+      return longestStreak(s.data.adventure.settlements.filter(function (x) { return x.childId === c; }).map(function (x) { return x.date; })) >= 7; } }
+  ];
+  /** 檢查並記錄新達成的成就（已達成的不會消失）@returns 這次新達成的成就 */
+  Store.prototype.checkAchievements = function (childId) {
+    if (!this.getChild(childId)) return [];
+    var self = this, mine = this.data.achievements[childId] || (this.data.achievements[childId] = {});
+    var fresh = ACHIEVEMENTS.filter(function (a) { return !mine[a.id] && a.check(self, childId); });
+    fresh.forEach(function (a) { mine[a.id] = { date: self.today(), ts: self.now().getTime() }; });
+    if (fresh.length) this.save();
+    return fresh;
+  };
+  /** 成就列表（含是否達成、達成日期） */
+  Store.prototype.getAchievements = function (childId) {
+    var mine = this.data.achievements[childId] || {};
+    return ACHIEVEMENTS.map(function (a) { return { id: a.id, cat: a.cat, icon: a.icon, name: a.name, desc: a.desc, done: !!mine[a.id], date: mine[a.id] ? mine[a.id].date : '' }; });
   };
 
   // ---------- 小遊戲「抓住星星」 ----------
@@ -819,6 +885,7 @@
     var from = p.pos;
     p.bag.door--;
     p.pos = n; p.tileId = tiles[n].id;
+    if (n > p.maxReached) p.maxReached = n;
     this._logItem(childId, 'use', 'door', 1, '背包', '第 ' + from + ' → ' + n + ' 格');
     this._found = this._collectAt(childId, [n]);
     var event = this._resolveTile(childId, 0);
@@ -848,7 +915,7 @@
     return this.getBonusQuota(childId);
   };
 
-  var api = { buildGold: buildGold, WORLD: WORLD, REGION02_TILES: REGION02.tiles, MAGNET_RANGE: MAGNET_RANGE, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, REGION02_TILES: REGION02.tiles, MAGNET_RANGE: MAGNET_RANGE, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

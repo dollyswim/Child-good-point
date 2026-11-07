@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.07-36`｜Service Worker 快取 `cgp-shell-v46`
+> 最後更新：2026-11-07｜App 版本 `2026.11.07-38`｜Service Worker 快取 `cgp-shell-v48`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---
@@ -134,6 +134,11 @@
 - 設定 → 備份 →「♻️ 還原資料」：選一天整個 App 回到那天開始時（`store.restoreSnapshot()`，需家長解鎖）。
 - 還原或「載入備份檔（覆蓋全部資料）」前，先存一份「還原前的狀態」（只保留最新一份），按錯可以還原回來。
 - 空間不足時先刪最舊的每日備份；主資料 `cgp-data` 不受影響。注意：自動備份和主資料在同一支手機，**換手機或清除瀏覽器資料仍需要匯出 JSON**。
+
+### 成就與金島通關
+- 成就 14 項（冒險 6、收集 3、生活 5），定義在 `js/game.js` 的 `ACHIEVEMENTS`；紀錄 `data.achievements[childId][成就代號] = { date, ts }`，達成後不會消失。每次畫孩子相關頁面前 `store.checkAchievements()`，新達成的顯示提示。徽章先用表情符號。
+- 角色統計：`players[id].goldClears`（通關次數）、`maxReached`（最遠格子）、`stats.chests／mystery`（開過的寶箱數）。
+- 金島通關（第 100 格 `type: 'end'`）：第一次＝神秘寶箱 ×1（免鑰匙，`giftMysteryChest`）＋成就「金島通關」；之後每次 ＋10 能量星星；全螢幕慶祝畫面；下一次移動從起點開始新的一輪。第 81～100 格開放前無法實際走到（測試以暫改終點模擬）。
 
 ### 備份提醒
 - `data.backup`：`lastExportAt`（最後匯出）、`since`（開始計算）、`snoozeUntil`（明天再提醒）。滿 7 天沒匯出 JSON 時首頁顯示提醒，「立即匯出」不需家長密碼（匯出不改資料）。
