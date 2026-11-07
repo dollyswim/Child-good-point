@@ -1271,3 +1271,6 @@ body.mg-open { overflow: hidden; }
 .bag-open { margin-top: 2px; padding: 2px 10px; min-height: 0; font-size: .75rem; }
 @media (prefers-reduced-motion: reduce) { .bless-get, .rb-chest .reward-art, .rb-mystery .reward-art, .star-rain i { animation: none; } }
 .pin-card .pin-input { width: 100%; min-width: 0; box-sizing: border-box; letter-spacing: .4em; }
+/* 還原資料 */
+.restore-card h3 { margin: 14px 0 4px; font-size: 1rem; }
+.snap-row .row-main b { font-size: .92rem; }

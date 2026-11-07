@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.07-24`｜Service Worker 快取 `cgp-shell-v34`
+> 最後更新：2026-11-07｜App 版本 `2026.11.07-25`｜Service Worker 快取 `cgp-shell-v35`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---
@@ -117,6 +117,12 @@
 ### Phase 4 美術素材
 - 命運格水晶球 `images/tiles/fate.webp` 已上線（第 11、14、21、27 格）。
 - 第 3 步用的 9 張道具圖已放在 `images/items/`（mystery_chest、golden_key、treasure_magnet、lucky_medal、magic_dice、flying_wings、shield、magic_door、airplane，256px 白底），**尚未接入、也未加入 `sw.js` 快取**；第 3 步接入時再加入 `SHELL`。
+
+### 自動備份與還原
+- 每天第一次開啟 App 時自動備份完整資料到 `localStorage['cgp-data-snapshots']`，保留最近 7 天（`store.dailySnapshot()`）。
+- 設定 → 備份 →「♻️ 還原資料」：選一天整個 App 回到那天開始時（`store.restoreSnapshot()`，需家長解鎖）。
+- 還原或「載入備份檔（覆蓋全部資料）」前，先存一份「還原前的狀態」（只保留最新一份），按錯可以還原回來。
+- 空間不足時先刪最舊的每日備份；主資料 `cgp-data` 不受影響。注意：自動備份和主資料在同一支手機，**換手機或清除瀏覽器資料仍需要匯出 JSON**。
 
 ### 家長密碼
 - 整個 ⚙️ 設定需要 4 位數家長密碼（第一次進入時設定）；離開設定自動上鎖。E2E 測試用 `passPin()` 輔助函式（密碼 1234）。

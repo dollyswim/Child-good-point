@@ -1319,3 +1319,78 @@ test('神諭祝福／寶箱紀錄：存檔遷移、刪除孩子一併刪除', ()
   store.deleteChild(a.id);
   assert.deepEqual([store.data.adventure.blessings.length, store.data.adventure.itemLog.length], [0, 0]);
 });
+
+// ---------- 設定：自動備份與還原 ----------
+test('自動備份：每天第一次開啟存一份、同一天不重複、保留最近 7 天', () => {
+  const storage = memoryStorage();
+  const clock = { t: new Date('2026-11-01T09:00:00').getTime() };
+  const open = () => new Store({ storage, seed: false, now: () => new Date(clock.t) });
+  let s = open();
+  s.addChild({ name: '端端' });
+  assert.equal(s.getSnapshots().length, 1, '第一次開啟有 1 份');
+  open(); open();
+  assert.equal(open().getSnapshots().length, 1, '同一天不重複');
+  for (let d = 2; d <= 10; d++) { clock.t = new Date('2026-11-' + String(d).padStart(2, '0') + 'T09:00:00').getTime(); s = open(); }
+  const snaps = s.getSnapshots();
+  assert.equal(snaps.length, 7, '只保留 7 天');
+  assert.deepEqual(snaps.map(x => x.date), ['2026-11-10', '2026-11-09', '2026-11-08', '2026-11-07', '2026-11-06', '2026-11-05', '2026-11-04']);
+  assert.ok(!('data' in snaps[0]), '清單不含資料本體');
+  assert.equal(snaps[0].summary.children, 1);
+});
+
+test('還原到前一天：整個 App 回到那天開始時；需家長密碼；還原前自動備份，可再還原回來', () => {
+  const storage = memoryStorage();
+  const clock = { t: new Date('2026-11-06T09:00:00').getTime() };
+  const open = () => new Store({ storage, seed: false, now: () => new Date(clock.t) });
+  let s = open();
+  const c = s.addChild({ name: '端端', startPoints: 100 });
+  const it = s.addItem({ kind: 'bonus', name: '加', points: 20 });
+  s.recordItem(c.id, it.id);                                  // 11/6：120 點
+  clock.t = new Date('2026-11-07T09:00:00').getTime();
+  s = open();                                                 // 11/7 開始時備份（120 點）
+  s.recordItem(c.id, it.id); s.recordItem(c.id, it.id);      // 11/7：160 點
+  s.getPlayer(c.id).bag.shield = 2; s.save();
+  const snap7 = s.getSnapshots().find(x => x.date === '2026-11-07');
+  assert.throws(() => s.restoreSnapshot(snap7.id), /需要家長密碼/);
+  s.setParentPin('1234');
+  s.restoreSnapshot(snap7.id);
+  assert.equal(s.getTotal(c.id), 120, '回到 11/7 開始時');
+  assert.equal(s.getPlayer(c.id).bag.shield, 0, '背包也回去');
+  const before = s.getSnapshots().find(x => x.kind === 'before');
+  assert.ok(before, '還原前自動備份');
+  s.restoreSnapshot(before.id);
+  assert.equal(s.getTotal(c.id), 160, '可以再還原回來');
+  assert.equal(s.getSnapshots().filter(x => x.kind === 'before').length, 1, '還原前只保留最新一份');
+  // 重新開啟後仍是還原後的資料
+  assert.equal(open().getTotal(c.id), 160);
+});
+
+test('載入備份檔覆蓋前，自動備份目前狀態', () => {
+  const { store } = makeStore();
+  const c = store.addChild({ name: '端端', startPoints: 77 });
+  const json = JSON.stringify({ children: [{ id: 'z', name: '新的' }] });
+  store.importJSON(json);
+  assert.equal(store.getChildren()[0].name, '新的');
+  const before = store.getSnapshots().find(x => x.kind === 'before');
+  assert.ok(before);
+  store.setParentPin('1234');
+  store.restoreSnapshot(before.id);
+  assert.equal(store.getTotal(c.id), 77, '覆蓋前的資料可以找回');
+});
+
+test('自動備份：空間不足時先刪最舊的每日備份，主資料不受影響', () => {
+  const inner = memoryStorage();
+  let limit = Infinity;
+  const storage = { getItem: (k) => inner.getItem(k), setItem: (k, v) => { if (k.endsWith('-snapshots') && v.length > limit) throw new Error('QuotaExceeded'); inner.setItem(k, v); }, removeItem: (k) => inner.removeItem && inner.removeItem(k) };
+  const clock = { t: new Date('2026-11-01T09:00:00').getTime() };
+  const open = () => new Store({ storage, seed: false, now: () => new Date(clock.t) });
+  let s = open(); s.addChild({ name: '端端' });
+  for (let d = 2; d <= 4; d++) { clock.t = new Date('2026-11-0' + d + 'T09:00:00').getTime(); s = open(); }
+  assert.equal(s.getSnapshots().length, 4);
+  limit = JSON.stringify(s._readSnaps()).length;              // 剛好放得下 4 份
+  clock.t = new Date('2026-11-05T09:00:00').getTime(); s = open();
+  const dates = s.getSnapshots().map(x => x.date);
+  assert.equal(dates[0], '2026-11-05', '最新的有存進去');
+  assert.ok(!dates.includes('2026-11-01'), '最舊的被刪掉');
+  assert.equal(s.getChildren().length, 1, '主資料不受影響');
+});

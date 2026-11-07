@@ -371,7 +371,61 @@
     this.seed = opts.seed !== false;
     this.listeners = [];
     this.load();
+    this.dailySnapshot();
   }
+
+  // ----- 自動備份（每天第一次開啟時存一份完整資料，保留最近 7 天；還原或載入備份檔前另存「還原前」） -----
+  var SNAP_KEY = STORAGE_KEY + '-snapshots', SNAP_DAYS = 7;
+  Store.prototype._readSnaps = function () {
+    try { var a = JSON.parse(this.storage.getItem(SNAP_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+  };
+  Store.prototype._writeSnaps = function (list) {
+    // 空間不足時，從最舊的每日備份開始刪，直到存得進去
+    for (;;) {
+      try { this.storage.setItem(SNAP_KEY, JSON.stringify(list)); return true; } catch (e) {
+        var i = list.findIndex(function (x) { return x.kind === 'daily'; });
+        if (i < 0 || list.filter(function (x) { return x.kind === 'daily'; }).length <= 1) return false;
+        list.splice(i, 1);
+      }
+    }
+  };
+  Store.prototype._snap = function (kind) {
+    var d = this.data, now = this.now();
+    return { id: uid(), kind: kind, date: dateKey(now), ts: now.getTime(),
+      summary: { children: d.children.length, records: d.records.length }, data: JSON.stringify(d) };
+  };
+  /** 今天還沒有自動備份就存一份（＝今天開始時的狀態） */
+  Store.prototype.dailySnapshot = function () {
+    var today = this.today(), list = this._readSnaps();
+    if (list.some(function (x) { return x.kind === 'daily' && x.date === today; })) return false;
+    list.push(this._snap('daily'));
+    var daily = list.filter(function (x) { return x.kind === 'daily'; }).sort(function (a, b) { return a.ts - b.ts; });
+    var drop = daily.slice(0, Math.max(0, daily.length - SNAP_DAYS)).map(function (x) { return x.id; });
+    return this._writeSnaps(list.filter(function (x) { return drop.indexOf(x.id) < 0; }));
+  };
+  /** 備份清單（新的在前，不含資料本體） */
+  Store.prototype.getSnapshots = function () {
+    return this._readSnaps().map(function (x) { return { id: x.id, kind: x.kind, date: x.date, ts: x.ts, summary: x.summary }; })
+      .sort(function (a, b) { return b.ts - a.ts; });
+  };
+  /** 覆蓋資料前先存「還原前」的狀態（只保留最新一份），按錯可以還原回來 */
+  Store.prototype._snapBefore = function () {
+    var list = this._readSnaps().filter(function (x) { return x.kind !== 'before'; });
+    list.push(this._snap('before'));
+    this._writeSnaps(list);
+  };
+  /** 還原到某一份自動備份（需家長解鎖）；整個 App 回到那時的狀態 */
+  Store.prototype.restoreSnapshot = function (id) {
+    this._requireParent();
+    var snap = this._readSnaps().find(function (x) { return x.id === id; });
+    if (!snap) throw new Error('找不到這份備份');
+    var data;
+    try { data = migrate(JSON.parse(snap.data)); } catch (e) { throw new Error('這份備份已損毀，無法還原'); }
+    this._snapBefore();
+    this.data = data;
+    this.save();
+    return snap;
+  };
 
   Store.prototype.load = function () {
     var text = null;
@@ -975,6 +1029,7 @@
     var data = migrate(parsed);
     delete data.exportedAt;
     delete data.app;
+    this._snapBefore();   // 覆蓋前先自動備份目前狀態
     this.data = data;
     this.save();
     return data;

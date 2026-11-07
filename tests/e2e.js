@@ -902,6 +902,44 @@ async function main() {
     await c10.close();
   }
 
+  // ---------- 設定：還原資料（每日自動備份、載入備份檔覆蓋） ----------
+  {
+    const c11 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 780 }, serviceWorkers: 'block' });
+    const q = await c11.newPage();
+    await q.clock.setFixedTime(new Date('2026-11-06T10:00:00'));
+    q.on('pageerror', (e) => errors.push(e.message));
+    q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
+    await q.goto(url);
+    const cid = await q.evaluate(() => { const s = window.__cgpStore; const c = s.addChild({ name: '端端', startPoints: 100 }); return c.id; });
+    await q.evaluate(() => localStorage.removeItem('cgp-data-snapshots'));
+    await q.reload();                                            // 重新開啟：建立今天的自動備份（含端端 100 點）
+    await q.evaluate((id) => { const s = window.__cgpStore; const it = s.addItem({ kind: 'bonus', name: '加', points: 50 }); s.recordItem(id, it.id); }, cid);
+    await q.goto(url + '#rules-backup');
+    await passPin(q);
+    const first = await q.$$eval('main .card', (cs) => cs[0].dataset.testid);
+    assert.equal(first, 'restore', '還原資料在備份頁最上方');
+    assert.match(await q.locator('[data-testid=restore]').innerText(), /今天開始時[\s\S]*載入備份檔（覆蓋全部資料）/);
+    // 還原到今天開始時（加分前）
+    await q.click('[data-testid=restore] .snap-row [data-action=restore-snap]');
+    assert.match(await q.locator('#confirm').innerText(), /整個 App 還原[\s\S]*先自動備份/);
+    await q.click('#confirm [data-yes]');
+    await q.waitForSelector('.snap-row:has-text("還原前的狀態")');
+    assert.equal(await q.evaluate((id) => window.__cgpStore.getTotal(id), cid), 100);
+    // 再還原回來
+    await q.click('.snap-row:has-text("還原前的狀態") [data-action=restore-snap]');
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction((id) => window.__cgpStore.getTotal(id) === 150, cid);
+    // 載入備份檔覆蓋全部資料
+    const f = path.join(require('os').tmpdir(), 'cgp-restore-' + Date.now() + '.json');
+    fs.writeFileSync(f, JSON.stringify({ children: [{ id: 'x1', name: '波妞', startPoints: 9 }] }));
+    await q.setInputFiles('input[data-action=import]', f);
+    assert.match(await q.locator('#confirm').innerText(), /取代目前所有資料[\s\S]*先自動備份/);
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction(() => window.__cgpStore.getChildren().map((c) => c.name).join() === '波妞');
+    console.log('✔ 還原資料：備份頁最上方、還原到今天開始時、可再還原回來、載入備份檔覆蓋前自動備份');
+    await c11.close();
+  }
+
   // ---------- 冒險大廳：依孩子所在島嶼輪換地圖關卡卡插圖 ----------
   {
     const c5 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 800 }, serviceWorkers: 'block' });

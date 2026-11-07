@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-24';
+  var APP_VERSION = '2026.11.07-25';
   var store;
   try {
     store = new CGP.Store();
@@ -1543,7 +1543,22 @@
 
   function settingsBackup() {
     var d = store.data;
-    return '<div class="card">' +
+    var snaps = store.getSnapshots();
+    var today = store.today();
+    var snapRows = snaps.map(function (x) {
+      var t = new Date(x.ts), hm = String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+      var label = x.kind === 'before' ? '↩️ 還原前的狀態（' + shortDate(x.date) + ' ' + hm + '）'
+        : '📅 ' + shortDate(x.date) + '（' + '日一二三四五六'.charAt(CGP.parseDateKey(x.date).getDay()) + '）' + (x.date === today ? '今天開始時' : '開始時');
+      return '<li class="row snap-row" data-snap="' + h(x.id) + '"><span class="row-main"><b>' + label + '</b>' +
+        '<small>' + (x.summary ? x.summary.children + ' 位孩子・' + x.summary.records + ' 筆紀錄' : '') + '</small></span>' +
+        '<button class="btn small" data-action="restore-snap" data-id="' + h(x.id) + '">還原</button></li>';
+    }).join('');
+    return '<div class="card restore-card" data-testid="restore"><h2>♻️ 還原資料</h2>' +
+      '<p class="muted small">App 每天第一次打開時會自動備份，保留最近 7 天。還原會讓<b>整個 App 回到那時的狀態</b>（點數紀錄、星星、冒險進度、背包都會回去）；還原前會先自動備份目前狀態，按錯可以再還原回來。</p>' +
+      '<ul class="rows">' + (snapRows || '<li class="muted">還沒有自動備份</li>') + '</ul>' +
+      '<h3>📥 載入備份檔（覆蓋全部資料）</h3><p class="muted small">選擇先前匯出的 JSON 備份檔，<b>取代</b>目前所有資料。覆蓋前會先自動備份目前狀態。</p>' +
+      '<label class="btn block file-btn">選擇備份 JSON 檔<input type="file" accept="application/json,.json" data-action="import" hidden></label></div>' +
+      '<div class="card">' +
       '<h2>📤 匯出備份</h2><p class="muted small">下載包含所有孩子、規則、獎勵與紀錄的 JSON 檔。</p>' +
       '<button class="btn primary block" data-action="export">匯出 JSON</button></div>' +
       '<div class="card"><h2>📋 匯入規則表（CSV／JSON）</h2>' +
@@ -1551,9 +1566,6 @@
       '<b>點數紀錄全部保留</b>；已有的規則會依「規則ID」更新分數、頻率、適用孩子，新的規則會新增。' +
       '孩子依名稱對應。檔案裡沒有的規則不會被刪除。</p>' +
       '<label class="btn primary block file-btn">選擇 CSV 或 JSON 檔<input type="file" accept=".csv,text/csv,application/json,.json,text/plain" data-action="import-rules" hidden></label></div>' +
-      '<div class="card"><h2>📥 完整還原</h2>' +
-      '<p class="muted small">用備份檔<b>取代</b>目前所有資料（含紀錄），建議先匯出備份。</p>' +
-      '<label class="btn block file-btn">選擇備份 JSON 檔<input type="file" accept="application/json,.json" data-action="import" hidden></label></div>' +
       '<p class="muted small center">App 版本：' + APP_VERSION + '</p>' +
       '<p class="muted small center">目前資料：' + d.children.length + ' 位孩子・' + d.items.length + ' 個規則・' +
       d.rewards.length + ' 個獎勵・' + d.records.length + ' 筆紀錄</p>';
@@ -1854,7 +1866,7 @@
   function importData(file) {
     var reader = new FileReader();
     reader.onload = function () {
-      askConfirm('確定要用「' + file.name + '」取代目前所有資料嗎？', '匯入並取代', true).then(function (ok) {
+      askConfirm('確定要用「' + file.name + '」取代目前所有資料嗎？\n目前的狀態會先自動備份，可以在「還原資料」還原回來。', '載入並覆蓋', true).then(function (ok) {
         if (!ok) return;
         try {
           store.importJSON(String(reader.result));
@@ -1956,6 +1968,15 @@
         case 'pin-cancel': ui.pinMode = null; render(); break;
         case 'pin-change': ui.pinMode = 'reset'; render(); break;
         case 'blessing-send': sendBlessingFromForm(); break;
+        case 'restore-snap': {
+          var sn = store.getSnapshots().find(function (x) { return x.id === id; });
+          var what = sn.kind === 'before' ? '還原前的狀態' : shortDate(sn.date) + ' 開始時的狀態';
+          confirmThen('要把整個 App 還原到「' + what + '」嗎？\n之後的點數紀錄、星星、冒險進度、背包都會回到那時。\n目前狀態會先自動備份，可以再還原回來。', '還原', true, function () {
+            store.restoreSnapshot(id);
+            toast('♻️ 已還原到' + what, 'pos');
+          });
+          break;
+        }
         case 'buy-treasure': {
           var tr0 = GAME.TREASURES.find(function (t) { return t.id === id; });
           var kid = store.getChild(childId);
