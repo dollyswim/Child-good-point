@@ -987,7 +987,7 @@ test('Phase 4：命運格在第 11、14、21、27 格', () => {
   assert.equal(b.tiles[30].type, 'boundary');
 });
 
-test('Phase 4：命運卡抽到特殊任務 → 明天起 3 天內有效，完成 +20 點，撤銷恢復未完成', () => {
+test('Phase 4：命運卡抽到特殊任務 → 當天就可完成、含當天 3 天內有效，完成 +20 點，取消勾選或撤銷恢復未完成', () => {
   const { store, a, push, setDate } = p3Store();
   store.buyItem(a.id, 'd6');
   store.setPlayerTile(a.id, 8);
@@ -995,25 +995,33 @@ test('Phase 4：命運卡抽到特殊任務 → 明天起 3 天內有效，完�
   const r = store.rollDice(a.id, 'd6');
   assert.equal(r.event.type, 'fate');
   assert.equal(r.event.special.kind, 'chore');
+  assert.match(r.event.text, /已加到任務頁/);
   let t = store.getSpecialTasks(a.id)[0];
-  assert.deepEqual([t.status, t.startDate, t.endDate, t.points], ['upcoming', '2026-11-07', '2026-11-09', 20]);
-  assert.throws(() => store.completeSpecialTask(t.id), /明天才開始/);
-  setDate('2026-11-07T09:00:00');
-  assert.equal(store.getSpecialTasks(a.id)[0].status, 'active');
-  const total = store.getTotal(a.id);
+  assert.deepEqual([t.status, t.startDate, t.endDate, t.points], ['active', '2026-11-06', '2026-11-08', 20], '抽到當天就可以完成');
+  const total = store.getTotal(a.id), net = store.getTodayNet(a.id);
   const rec = store.completeSpecialTask(t.id);
   assert.deepEqual([rec.type, rec.points, rec.name], ['bonus', 20, '特殊任務：完成指定家務']);
   assert.equal(store.getTotal(a.id), total + 20, '生活點數 +20');
-  assert.equal(store.getTodayNet(a.id), 20, '計入今日淨得分');
+  assert.equal(store.getTodayNet(a.id), net + 20, '計入今日淨得分');
   assert.equal(store.getStarBalance(a.id), 15, '不影響能量星星');
   assert.equal(store.getSpecialTasks(a.id)[0].status, 'done');
   assert.throws(() => store.completeSpecialTask(t.id), /已經完成/);
+  store.uncompleteSpecialTask(t.id);
+  assert.deepEqual([store.getSpecialTasks(a.id)[0].status, store.getTotal(a.id)], ['active', total], '取消勾選 → 退回點數');
+  assert.throws(() => store.uncompleteSpecialTask(t.id), /還沒完成/);
+  store.completeSpecialTask(t.id);
   store.undoLast(a.id);
   assert.equal(store.getSpecialTasks(a.id)[0].status, 'active', '撤銷紀錄 → 恢復未完成');
-  setDate('2026-11-10T09:00:00');
+  setDate('2026-11-08T09:00:00');
+  assert.equal(store.getSpecialTasks(a.id)[0].status, 'active', '第 3 天仍可完成');
+  setDate('2026-11-09T09:00:00');
   assert.equal(store.getSpecialTasks(a.id)[0].status, 'expired', '第 4 天過期');
   assert.throws(() => store.completeSpecialTask(t.id), /過期/);
   assert.equal(store.getTotal(a.id), total, '過期不扣分');
+  // 舊資料：開始日是隔天的，也從抽到當天起可以完成
+  const d = migrate({ children: [{ id: 'c', name: 'B' }], specialTasks: [{ id: 's', childId: 'c', kind: 'praise', createdDate: '2026-11-09', startDate: '2026-11-10', endDate: '2026-11-12' }] });
+  store.data.specialTasks.push(d.specialTasks[0]); d.specialTasks[0].childId = a.id;
+  assert.equal(store.getSpecialTasks(a.id).find(x => x.id === 's').status, 'active');
 });
 
 test('Phase 4：三種特殊任務、同一種進行中不重複新增、可取消', () => {

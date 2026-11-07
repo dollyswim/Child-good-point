@@ -649,32 +649,46 @@ async function main() {
     await q.evaluate(() => { const seq = [1.5 / 6, 0.3]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0); });
     await q.click('.dice-btn.d6');
     await q.waitForSelector('#confirm[open]', { timeout: 10000 });
-    assert.match(await q.locator('#confirm').innerText(), /特殊任務[\s\S]*讚美[\s\S]*明天起出現在任務頁/);
+    assert.match(await q.locator('#confirm').innerText(), /特殊任務[\s\S]*讚美[\s\S]*已加到任務頁/);
     await q.click('#confirm [data-yes]');
-    // 今天任務頁：顯示「明天開始」，不能完成
-    await q.goto(url + '#child-' + id);
+    // 抽到當天就能勾選完成；首頁本週進度有提醒
+    await q.goto(url + '#home');
+    await q.waitForSelector('[data-testid=special-remind]');
+    assert.match(await q.locator('[data-testid=special-remind]').innerText(), /甲：🔮 特殊任務 1 項[\s\S]*讚美/);
+    await q.click('[data-testid=special-remind] .special-remind');
     await q.waitForSelector('[data-testid=special]');
-    assert.match(await q.locator('[data-testid=special]').innerText(), /11\/7 開始/);
-    assert.equal(await q.locator('[data-action=special-done]').count(), 0);
-    // 隔天：可以完成，+20 點；撤銷恢復；取消後消失
-    await q.clock.setFixedTime(new Date('2026-11-07T09:00:00'));
-    await q.reload();
-    await q.waitForSelector('[data-action=special-done]');
+    assert.match(await q.locator('[data-testid=special]').innerText(), /到 11\/8 前完成/);
     const before = await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id);
-    assert.match(await q.locator('[data-action=special-done]').innerText(), /完成 \+20/);
-    await q.click('[data-action=special-done]');
-    await q.waitForFunction(() => !document.querySelector('[data-testid=special]'));
+    await q.click('[data-action=special-toggle]');
+    await q.waitForSelector('.special-check.on');
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), before + 20);
     assert.match(await q.locator('.records').innerText(), /特殊任務：和所有家人說一句讚美的話和感謝的話/);
-    await q.click('[data-action=undo]');
-    await q.waitForSelector('[data-action=special-done]');
+    await q.click('[data-action=special-toggle]');                 // 再點一次：取消勾選
+    await q.waitForSelector('.special-check:not(.on)');
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), before);
+    await q.click('[data-action=special-toggle]');
+    await q.waitForSelector('.special-check.on');
+    await q.click('[data-action=undo]');                           // 撤銷上一筆 → 恢復未完成
+    await q.waitForSelector('.special-check:not(.on)');
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), before);
     await q.click('[data-action=special-cancel]');
     await q.click('#confirm [data-yes]');
     await q.waitForFunction(() => !document.querySelector('[data-testid=special]'));
     const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(over <= 0, '任務頁不可橫向溢出');
-    console.log('✔ Phase 4：命運格 4 格、命運卡後退動畫、特殊任務隔天出現、完成 +20、撤銷恢復、取消');
+    // 頁首按鈕：首頁機器貓 → 冒險大廳；冒險大廳機器貓 → 首頁；漂浮城堡 → 設定（360px 也顯示，沒有齒輪）
+    await q.goto(url + '#home');
+    assert.equal(await q.locator('.sky .castle-link').isVisible(), true, '360px 也看得到城堡');
+    assert.equal(await q.locator('a.gear:not(.castle-link)').count(), 0, '齒輪已移除');
+    assert.match(await q.locator('.mascot-link').innerText(), /冒險大廳/);
+    await q.click('.mascot-link');
+    await q.waitForSelector('.adv-hero .mascot-link');
+    assert.match(await q.locator('.mascot-link').innerText(), /首頁/);
+    await q.click('.mascot-link');
+    await q.waitForSelector('.hero .mascot-link');
+    await q.click('.sky .castle-link');
+    await q.waitForSelector('[data-testid=pin]');
+    console.log('✔ Phase 4：命運格 4 格、命運卡後退動畫、特殊任務當天可勾選 +20、再點取消、撤銷恢復、首頁提醒、取消任務');
     await c7.close();
   }
 

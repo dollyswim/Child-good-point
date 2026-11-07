@@ -45,7 +45,7 @@
   var FREQUENCY_TYPES = ['daily', 'weekdays', 'weekends', 'days', 'weeklyN', 'once'];
   var ITEM_KINDS = ['bonus', 'penalty', 'task'];
   var SCORE_TYPES = ['bonus', 'penalty', 'task']; // 計入今日淨得分的紀錄類型
-  /** Phase 4 命運卡特殊任務：明天起出現在任務頁、3 天內有效、完成 +20 點（生活點數） */
+  /** Phase 4 命運卡特殊任務：抽到當天就出現在任務頁、含當天 3 天內有效、完成 +20 點（生活點數） */
   var SPECIAL_TASKS = {
     chore: { name: '完成指定家務', icon: '🧹' },
     praise: { name: '和所有家人說一句讚美的話和感謝的話', icon: '💬' },
@@ -711,12 +711,12 @@
 
   // ----- 特殊任務（Phase 4 命運卡） -----
   function addDaysKey(key, n) { var d = parseDateKey(key); d.setDate(d.getDate() + n); return dateKey(d); }
-  /** 狀態：upcoming（明天才開始）、active、done、expired、cancelled */
+  /** 狀態：active（可完成）、done、expired、cancelled；抽到當天就可以完成（舊資料的開始日若是隔天，也從抽到當天起可完成） */
   Store.prototype._specialStatus = function (t, today) {
     var done = this.data.records.some(function (r) { return r.refId === 'special:' + t.id; });
     if (done) return 'done';
     if (t.cancelled) return 'cancelled';
-    if (today < t.startDate) return 'upcoming';
+    if (today < (t.createdDate || t.startDate)) return 'upcoming';
     if (today > t.endDate) return 'expired';
     return 'active';
   };
@@ -741,9 +741,8 @@
       return s === 'upcoming' || s === 'active';
     });
     if (open) return { task: open, duplicate: true };
-    var start = addDaysKey(today, 1);
     var task = { id: uid(), childId: childId, kind: kind, name: SPECIAL_TASKS[kind].name, points: SPECIAL_TASK_POINTS,
-      createdDate: today, startDate: start, endDate: addDaysKey(start, SPECIAL_TASK_DAYS - 1), cancelled: false, ts: this.now().getTime() };
+      createdDate: today, startDate: today, endDate: addDaysKey(today, SPECIAL_TASK_DAYS - 1), cancelled: false, ts: this.now().getTime() };
     this.data.specialTasks.push(task);
     this.save();
     return { task: task, duplicate: false };
@@ -757,6 +756,17 @@
     if (s === 'upcoming') throw new Error('這個特殊任務明天才開始');
     if (s !== 'active') throw new Error('這個特殊任務已經' + (s === 'cancelled' ? '取消' : '過期'));
     return this._addRecord(t.childId, 'bonus', 'special:' + t.id, '特殊任務：' + t.name, t.points, 0);
+  };
+  /** 取消勾選：刪掉完成時記的加分紀錄（恢復為未完成） */
+  Store.prototype.uncompleteSpecialTask = function (id) {
+    var rec = this.data.records.find(function (r) { return r.refId === 'special:' + id; });
+    if (!rec) throw new Error('這個特殊任務還沒完成');
+    this.deleteRecord(rec.id);
+    return rec;
+  };
+  /** 完成時間（紀錄日期） */
+  Store.prototype.getSpecialDoneRecord = function (id) {
+    return this.data.records.find(function (r) { return r.refId === 'special:' + id; }) || null;
   };
   Store.prototype.cancelSpecialTask = function (id) {
     var t = this.data.specialTasks.find(function (x) { return x.id === id; });

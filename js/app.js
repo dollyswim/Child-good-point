@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-28';
+  var APP_VERSION = '2026.11.07-29';
   var store;
   try {
     store = new CGP.Store();
@@ -264,7 +264,17 @@
   function sky(inner, small) {
     return '<header class="sky ' + (small ? 'sky-sm' : '') + '"><span class="cloud c1"></span><span class="cloud c2"></span>' + inner + '</header>';
   }
-  function gear() { return '<a class="gear" href="#rules" aria-label="設定">⚙️</a>'; }
+  /** 漂浮城堡＝設定按鈕（取代齒輪） */
+  function gear(cls) {
+    return '<a class="hero-link castle-link ' + (cls || 'gear') + '" href="#rules" aria-label="設定">' + ART.FLOAT_CASTLE + '<span class="hero-label">設定</span></a>';
+  }
+  /** 機器貓按鈕：在首頁時到冒險大廳，其他頁回首頁 */
+  function mascotLink(onHome) {
+    var c = currentChild() || store.getChildren()[0];
+    var href = onHome ? (c ? '#adventure-' + c.id : '#home') : '#home';
+    var label = onHome ? (c ? '冒險大廳' : '首頁') : '首頁';
+    return '<a class="hero-link mascot-link" href="' + href + '" aria-label="' + label + '">' + MASCOT + '<span class="hero-label">' + label + '</span></a>';
+  }
   function plaque(title, sub) {
     return '<div class="plaque"><h1>' + h(title) + '</h1>' + (sub ? '<div class="ribbon">' + sub.split('・').map(function (t, i, arr) {
       // 只在「・」後面換行，避免把詞拆開
@@ -328,11 +338,11 @@
         return '<div class="goal-row">' + avatar(c, 'sm') + '<b class="goal-name">' + h(c.name) + '</b>' +
           '<span class="goal-bar">' + progressBar(wn, c.weeklyGoal) + '<span class="goal-text">' + num(Math.max(0, wn)) + ' / ' + num(c.weeklyGoal) + ' 點</span></span>' +
           '<span class="goal-left">' + (leftPts ? '還差 ' + num(leftPts) : '🎉 達成') + '</span></div>';
-      }).join('') : '<p class="muted small">到 ⚙️ 設定 → 孩子，設定「每週目標點數」就會在這裡顯示進度。</p>') +
+      }).join('') : '<p class="muted small">到設定 → 孩子，設定「每週目標點數」就會在這裡顯示進度。</p>') +
+      specialReminder(children) +
       '</section>' : '';
 
-    return sky('<div class="hero">' + MASCOT + plaque('親子集點冒險', '完成任務・累積點數・解鎖獎勵') +
-        '<span class="island" aria-hidden="true">' + ART.FLOAT_CASTLE + '</span></div>' + gear()) +
+    return sky('<div class="hero">' + mascotLink(true) + plaque('親子集點冒險', '完成任務・累積點數・解鎖獎勵') + '</div>' + gear('island')) +
       '<main class="page home">' +
       (children.length
         ? '<div class="child-list">' + cards + '</div>'
@@ -340,6 +350,19 @@
       tiles + week +
       '<button class="btn add-child" data-action="add-child">＋ 新增孩子</button>' +
       '</main>';
+  }
+
+  /** 首頁：還沒完成的特殊任務提醒（點一下到該孩子的任務頁） */
+  function specialReminder(children) {
+    var rows = children.map(function (c) {
+      var list = store.getSpecialTasks(c.id).filter(function (t) { return t.status === 'active'; });
+      if (!list.length) return '';
+      var last = list.map(function (t) { return t.endDate; }).sort()[0];
+      return '<button class="special-remind" data-action="open-child" data-id="' + h(c.id) + '">' + avatar(c, 'sm') +
+        '<span><b>' + h(c.name) + '：🔮 特殊任務 ' + list.length + ' 項</b><small>' + list.map(function (t) { return t.icon + ' ' + h(t.name); }).join('、') +
+        '<br>最早 ' + shortDate(last) + ' 到期，完成各 +' + list[0].points + ' 點</small></span><i>›</i></button>';
+    }).join('');
+    return rows ? '<div class="special-reminders" data-testid="special-remind">' + rows + '</div>' : '';
   }
 
   /** 孩子頁上方的點數與等級卡 */
@@ -389,20 +412,25 @@
       '</button></div>';
   }
 
-  /** Phase 4 命運卡得到的特殊任務：進行中（今天可完成）與明天開始的 */
+  /** Phase 4 命運卡得到的特殊任務：可勾選完成（+20 點），再點一次取消勾選；今天完成的仍顯示打勾 */
   function specialPanel(child) {
-    var list = store.getSpecialTasks(child.id).filter(function (t) { return t.status === 'active' || t.status === 'upcoming'; });
+    var today = store.today();
+    var list = store.getSpecialTasks(child.id).filter(function (t) {
+      if (t.status === 'active') return true;
+      if (t.status !== 'done') return false;
+      var r = store.getSpecialDoneRecord(t.id);
+      return r && r.date === today;
+    });
     if (!list.length) return '';
-    return '<section class="panel special-panel" data-testid="special"><h2>🔮 特殊任務 <small>命運卡</small></h2><div class="special-list">' +
+    return '<section class="panel special-panel" data-testid="special"><h2>🔮 特殊任務 <small>命運卡・完成 +20 點</small></h2><div class="special-list">' +
       list.map(function (t) {
-        var active = t.status === 'active';
-        var when = active ? '到 ' + shortDate(t.endDate) + ' 前完成' : shortDate(t.startDate) + ' 開始・到 ' + shortDate(t.endDate);
-        return '<div class="special-row ' + t.status + '" data-special="' + h(t.id) + '"><span class="special-icon">' + t.icon + '</span>' +
-          '<span class="special-main"><b>' + h(t.name) + '</b><small>' + (active ? '' : '⏳ ') + when + '</small></span>' +
-          '<span class="special-acts">' +
-          (active ? '<button class="btn primary small" data-action="special-done" data-id="' + h(t.id) + '">完成 +' + t.points + '</button>'
-            : '<span class="special-pts">+' + t.points + ' 點</span>') +
-          '<button class="btn link small" data-action="special-cancel" data-id="' + h(t.id) + '" aria-label="取消這個特殊任務">取消</button></span></div>';
+        var done = t.status === 'done';
+        return '<div class="special-row ' + t.status + '" data-special="' + h(t.id) + '">' +
+          '<button class="special-check' + (done ? ' on' : '') + '" data-action="special-toggle" data-id="' + h(t.id) + '" aria-pressed="' + done + '" aria-label="' + (done ? '取消完成' : '完成') + '：' + h(t.name) + '">' +
+          '<span class="check-box">' + (done ? '✓' : '') + '</span><span class="special-icon">' + t.icon + '</span>' +
+          '<span class="special-main"><b>' + h(t.name) + '</b><small>' + (done ? '✅ 今天完成了' : '⏳ 到 ' + shortDate(t.endDate) + ' 前完成') + '</small></span>' +
+          '<span class="special-pts">+' + t.points + '</span></button>' +
+          (done ? '' : '<button class="special-cancel" data-action="special-cancel" data-id="' + h(t.id) + '" aria-label="取消這個特殊任務" title="取消這個特殊任務">✕</button>') + '</div>';
       }).join('') + '</div></section>';
   }
   /** 2026-11-08 → 11/8 */
@@ -455,8 +483,8 @@
     // 1. Hero header
     var hero = '<header class="sky adv-hero"><span class="cloud c1"></span><span class="cloud c2"></span>' +
       '<a class="round-btn back" href="#child-' + h(child.id) + '" aria-label="回到今日任務">‹</a>' +
-      '<div class="adv-hero-main">' + MASCOT + plaque('冒險大廳', '完成任務・累積星星・解鎖新冒險') + '</div>' +
-      '<span class="float-island" aria-hidden="true">' + ART.FLOAT_CASTLE + '</span>' + gear() + '</header>';
+      '<div class="adv-hero-main">' + mascotLink(false) + plaque('冒險大廳', '完成任務・累積星星・解鎖新冒險') + '</div>' +
+      gear('float-island') + '</header>';
 
     // 2. 角色切換 tab
     var tabs = '<nav class="hero-tabs" aria-label="切換孩子">' + kids.map(function (c) {
@@ -2068,9 +2096,15 @@
           render();
           break;
         }
-        case 'special-done': {
-          var sr = store.completeSpecialTask(id);
-          toast('完成 ' + recText(sr), 'pos');
+        case 'special-toggle': {
+          var stt = store.getSpecialTasks(childId).find(function (t) { return t.id === id; });
+          if (stt && stt.status === 'done') {
+            store.uncompleteSpecialTask(id);
+            toast('已取消「' + stt.name + '」');
+          } else {
+            var sr = store.completeSpecialTask(id);
+            toast('完成 ' + recText(sr), 'pos');
+          }
           ui.pulse = true;
           render();
           break;

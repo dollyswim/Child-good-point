@@ -516,7 +516,7 @@
         ev.special = { id: sp.task.id, kind: card.id, name: sp.task.name, duplicate: sp.duplicate };
         ev.text = sp.duplicate
           ? '特殊任務「' + sp.task.name + '」還在進行中喔！先把它完成吧。'
-          : '得到特殊任務：「' + sp.task.name + '」\n明天起出現在任務頁，3 天內完成可得 +' + sp.task.points + ' 點！';
+          : '得到特殊任務：「' + sp.task.name + '」\n已加到任務頁，3 天內完成可得 +' + sp.task.points + ' 點！';
       }
     } else if (tile.type === 'minigame') {
       ev.title = '🎮 小遊戲：抓住星星';
