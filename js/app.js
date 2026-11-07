@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-58';
+  var APP_VERSION = '2026.11.07-59';
   var store;
   try {
     store = new CGP.Store();
@@ -247,6 +247,7 @@
     var notes = [];   // 同時有多則提示時合併顯示，避免互相蓋掉
     if (r.name === 'map') {
       setupMap(store.getChild(r.arg));
+      pawnIdle();
       if (store.takeChestHint(r.arg)) notes.push('✨ 附近似乎藏著神秘寶物……');
     }
     if (r.name === 'minigame-test') openMinigame(null, null, { practice: true });
@@ -732,7 +733,7 @@
         var cp = worldXY(region, board.tiles[c.n]);
         return '<div class="map-chest" data-chest="' + c.n + '" style="left:' + cp.x.toFixed(1) + 'px;top:' + cp.y.toFixed(1) + 'px" title="神秘寶箱"><img src="images/items/mystery_chest.webp" alt="神秘寶箱" width="256" height="256" draggable="false"></div>';
       }).join('') +
-      '<div class="pawn" id="pawn" data-pos="' + player.pos + '" data-tile="' + h(player.tileId) + '" style="left:' + pp.x.toFixed(1) + 'px;top:' + pp.y.toFixed(1) + 'px">' +
+      '<div class="pawn" id="pawn" data-char="' + h(characterId(child)) + '" data-pos="' + player.pos + '" data-tile="' + h(player.tileId) + '" style="left:' + pp.x.toFixed(1) + 'px;top:' + pp.y.toFixed(1) + 'px">' +
       '<div class="pawn-inner">' + characterArt(child) + '</div></div>' +
       '</div>' +
       '<div class="map-ctrl"><button type="button" data-map="in" aria-label="放大">＋</button><button type="button" data-map="out" aria-label="縮小">－</button>' +
@@ -855,6 +856,92 @@
     var el = app.querySelector('.map-world [data-tile="' + tileId + '"]:not(.pawn)');
     if (el) el.classList.add('here');
   }
+  // ---------- 角色動畫：待機、跳格、開心、驚訝、開寶箱 ----------
+  /**
+   * 動作設計移植自 Codex「character-animation-pack-1」（Web Animations API、原圖不重繪）。
+   * 依體型調整節奏：tempo＝速度倍率（越大越慢）、lift＝跳高倍率（長耳、小翼輕盈，石球沉穩）。
+   * 只負責畫面；計分、道具、獎勵都在資料層先完成，動畫中斷不影響。
+   */
+  var PAWN_PROFILE = { roundear: [1, 1], longear: [.85, 1.3], horn: [1.08, .9], wing: [1.1, 1.4], drop: [1.2, 1.05], sprout: [1.15, .9], flame: [.85, 1.2], stone: [1.3, .65] };
+  function pawnEls() {
+    var pawn = document.getElementById('pawn');
+    if (!pawn) return null;
+    var body = pawn.querySelector('.pawn-inner'), fx = pawn.querySelector('.pawn-fx');
+    if (!fx) { fx = document.createElement('div'); fx.className = 'pawn-fx'; fx.setAttribute('aria-hidden', 'true'); pawn.appendChild(fx); }
+    var prof = PAWN_PROFILE[pawn.dataset.char] || [1, 1];
+    return { pawn: pawn, body: body, fx: fx, tempo: prof[0], lift: prof[1], k: (pawn.offsetWidth || 60) / 120 };   // k：原設計 120px 角色的位移換算
+  }
+  function pawnClear(e) {
+    (e.body.getAnimations ? e.body.getAnimations() : []).forEach(function (a) { a.cancel(); });
+    e.fx.textContent = '';
+  }
+  /** 待機：循環呼吸、輕微擺動 */
+  function pawnIdle() {
+    var e = pawnEls();
+    if (!e || !e.body.animate || reduceMotion) return;
+    pawnClear(e);
+    e.body.animate([{ transform: 'translateY(0) rotate(-1deg) scale(1)' }, { transform: 'translateY(' + (-3 * e.lift * e.k).toFixed(1) + 'px) rotate(1deg) scale(.985, 1.025)' }, { transform: 'translateY(0) rotate(-1deg) scale(1)' }],
+      { duration: 2400 * e.tempo, iterations: Infinity, easing: 'ease-in-out' });
+  }
+  function pawnBits(e, sym, cls, list, dur) {
+    list.forEach(function (o, i) {
+      var b = document.createElement('span');
+      b.className = 'pawn-bit ' + cls; b.textContent = sym; e.fx.appendChild(b);
+      b.animate(o, { duration: dur, delay: i * dur * .08, fill: 'both', easing: 'ease-out' });
+    });
+  }
+  /**
+   * 播放動作，回傳 Promise（結束後自動回到待機）。action：jump、happy、surprised、openChest
+   * @param {number} [speed] 跳格時的時間倍率（連續移動用較短）
+   */
+  function pawnPlay(action, speed) {
+    var e = pawnEls();
+    if (!e || !e.body.animate || reduceMotion) return Promise.resolve();
+    pawnClear(e);
+    var k = e.k, L = e.lift, frames, dur;
+    var px = function (v) { return (v * k).toFixed(1) + 'px'; };
+    if (action === 'jump') {
+      dur = 560 * e.tempo * (speed || 1);
+      frames = [{ transform: 'scale(1)' }, { transform: 'scale(1.13, .86)', offset: .15 }, { transform: 'translateY(' + px(-42 * L) + ') scale(.94, 1.06)', offset: .5 }, { transform: 'scale(1.12, .88)', offset: .86 }, { transform: 'scale(1)' }];
+    } else if (action === 'happy') {
+      dur = 1000 * e.tempo;
+      frames = [{ transform: 'scale(1)' }, { transform: 'translateY(' + px(-17) + ') rotate(-9deg)', offset: .25 }, { transform: 'scale(1.08, .92)', offset: .45 }, { transform: 'translateY(' + px(-22) + ') rotate(9deg)', offset: .7 }, { transform: 'scale(1)' }];
+      pawnBits(e, '♥', 'heart', [-33, 25, -10, 39, 8].map(function (x) {
+        return [{ transform: 'translate(' + px(x) + ', ' + px(10) + ') scale(.2)', opacity: 0 }, { transform: 'translate(' + px(x - 4) + ', ' + px(-5) + ') scale(.9)', opacity: 1, offset: .25 }, { transform: 'translate(' + px(x + 6) + ', ' + px(-50) + ') scale(1.1)', opacity: 0 }];
+      }), dur * .7);
+    } else if (action === 'surprised') {
+      dur = 850 * e.tempo;
+      frames = [{ transform: 'scale(1)' }, { transform: 'translateY(' + px(-15) + ') rotate(-9deg) scale(.91, 1.13)', offset: .22 }, { transform: 'translateY(' + px(-7) + ') rotate(5deg)', offset: .5 }, { transform: 'scale(1)' }];
+      pawnBits(e, '!', 'bang', [[{ transform: 'translate(-50%, 0) scale(.2)', opacity: 0 }, { transform: 'translate(-50%, ' + px(-30) + ') scale(1.2)', opacity: 1, offset: .3 }, { transform: 'translate(-50%, ' + px(-38) + ') scale(1)', opacity: 0 }]], dur);
+    } else if (action === 'openChest') {
+      dur = 1500 * e.tempo;
+      frames = [{ transform: 'scale(1)' }, { transform: 'translate(' + px(10) + ', ' + px(5) + ') rotate(13deg) scale(1.02, .94)', offset: .3 }, { transform: 'translate(' + px(10) + ', ' + px(5) + ') rotate(13deg)', offset: .48 }, { transform: 'translateY(' + px(-18) + ') rotate(-5deg)', offset: .72 }, { transform: 'scale(1)' }];
+      var c = document.createElement('span');
+      c.className = 'pawn-chest'; c.innerHTML = '<img src="images/chest.webp" alt="" draggable="false"><i></i>';   // 金邊紅寶石寶箱（原圖本身是打開的：俯身 → 寶箱彈出 → 金光 → 開心）
+      e.fx.appendChild(c);
+      c.animate([{ transform: 'translateY(10%) scale(.8)', opacity: 0 }, { transform: 'translateY(5%) scale(.9) rotate(-4deg)', opacity: 0, offset: .32 }, { transform: 'translateY(-7%) scale(1.1) rotate(3deg)', opacity: 1, offset: .57 },
+        { transform: 'scale(1)', opacity: 1, offset: .72 }, { transform: 'scale(1)', opacity: 1, offset: .9 }, { transform: 'scale(1)', opacity: 0 }], { duration: dur, fill: 'both', easing: 'ease-out' });
+      c.querySelector('i').animate([{ opacity: 0 }, { opacity: 1, offset: .35 }, { opacity: 0 }], { duration: dur * .5, delay: dur * .43, fill: 'both' });
+      pawnBits(e, '✦', 'spark', [0, 1, 2, 3, 4, 5].map(function (i) {
+        var a = i / 6 * Math.PI * 2;
+        return [{ transform: 'translate(-50%, -50%) scale(.1)', opacity: 0 }, { opacity: 1, offset: .2 }, { transform: 'translate(' + px(Math.cos(a) * 55) + ', ' + px(Math.sin(a) * 38 - 30) + ') scale(.8)', opacity: 0 }];
+      }), dur * .5);
+    } else return Promise.resolve();
+    var anim = e.body.animate(frames, { duration: dur, fill: 'forwards', easing: 'ease-in-out' });
+    return anim.finished.then(function () { if (action !== 'jump') pawnIdle(); }, function () { /* 被新的動作取消 */ });
+  }
+  /** 停下來之後依事件反應：寶箱 → 開寶箱；命運、往回退、撿到神秘寶箱 → 驚訝；機會、終點 → 開心 */
+  function pawnReaction(res) {
+    var ev = res && res.event, last = ev && ev.then ? ev.then : ev;
+    if (!ev) return null;
+    if (ev.clear || (last && last.clear)) return 'happy';
+    if (ev.type === 'chest' || (last && last.type === 'chest')) return 'openChest';
+    if (ev.type === 'fate' || ev.backPath || (last && last.backPath)) return 'surprised';
+    if (res.found) return 'surprised';
+    if (ev.type === 'chance') return 'happy';
+    return null;
+  }
+
   async function hopAlong(child, path) {
     var pawn = document.getElementById('pawn');
     if (!pawn) return;
@@ -865,11 +952,13 @@
       pawn.style.left = p.x.toFixed(1) + 'px'; pawn.style.top = p.y.toFixed(1) + 'px';
       pawn.dataset.pos = path[i]; pawn.dataset.tile = t.id;
       markHere(t.id);
-      pawn.classList.remove('hop'); void pawn.offsetWidth; pawn.classList.add('hop');
+      if (pawn.animate && !reduceMotion) pawnPlay('jump', .62);   // 跳格：蹲下蓄力、騰空、落地回彈
+      else { pawn.classList.remove('hop'); void pawn.offsetWidth; pawn.classList.add('hop'); }
       followPawn(true);
-      await sleep(reduceMotion ? 60 : 340);
+      await sleep(reduceMotion ? 60 : 360);
     }
     pawn.classList.remove('hop');
+    pawnIdle();
   }
 
   async function showDie(value, sides) {
@@ -981,6 +1070,8 @@
       }
     } finally { ui.busy = false; }
     render();
+    var react = pawnReaction(res);
+    if (react) { ui.busy = true; try { await pawnPlay(react); } finally { ui.busy = false; } }   // 角色先反應，再顯示事件說明
     var head = kind === 'skates' ? '🛼 前進 3 格' : kind === 'wings' ? '🪽 飛行翼' : kind === 'door' ? '🚪 任意門'
       : (kind === 'magic' || (pr && pr.die === 'magic') ? '✨ 神奇骰子擲出 ' : '🎲 擲出 ') + res.value;
     // 停在小遊戲格（或礦車載到小遊戲格）：直接開始「抓住星星」
@@ -2526,7 +2617,8 @@
           break;
         }
         case 'open-chest': {
-          var cres = store.openChest(childId, id);   // 在地圖道具列開箱
+          var cres = store.openChest(childId, id);   // 在地圖道具列開箱（先記錄獎勵，再播動畫）
+          if (document.getElementById('pawn')) { pawnPlay('openChest').then(function () { showReward(id === 'chest' ? '📦 一般寶箱' : '🎁 神秘寶箱', (id === 'mysteryChest' ? '🔑 用掉 1 把黃金鑰匙・' : '') + cres.text, id === 'chest' ? 'images/tiles/chest.webp' : 'images/items/mystery_chest.webp', id === 'chest' ? 'chest' : 'mystery'); render(); }); break; }
           showReward(id === 'chest' ? '📦 一般寶箱' : '🎁 神秘寶箱', (id === 'mysteryChest' ? '🔑 用掉 1 把黃金鑰匙・' : '') + cres.text, id === 'chest' ? 'images/tiles/chest.webp' : 'images/items/mystery_chest.webp', id === 'chest' ? 'chest' : 'mystery');
           render();
           break;
