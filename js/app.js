@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-84';
+  var APP_VERSION = '2026.11.08-85';
   var store;
   try {
     store = new CGP.Store();
@@ -874,18 +874,19 @@
   }
   /** 互動 collect：地圖上出現幾個發光的東西，點一下撿起來 */
   function storyCollect(board, id, sp, world) {
+    var els = [];
     sp.items.forEach(function (o) {
       var q = storyXY(board, id, o), b = document.createElement('div');
       b.className = sp.itemCls; b.setAttribute('data-tap', 'pick'); b.setAttribute('role', 'button'); b.setAttribute('aria-label', sp.itemLabel);
       if (sp.itemIcon) b.textContent = sp.itemIcon;
       b.style.left = q.x + 'px'; b.style.top = q.y + 'px'; b.style.zIndex = 1500;
-      world.appendChild(b);
+      world.appendChild(b); els.push(b);
     });
     var panel = document.createElement('div');
     panel.className = 'charge-panel story-panel' + (sp.top ? ' top' : ''); panel.id = 'story-panel';   // 面板放上方，不擋住地圖上的東西
     panel.innerHTML = '<b>' + h(sp.title) + '</b><small>' + h(sp.sub) + '</small><span class="charge-bar"><i id="pick-fill"></i></span><span class="story-count" id="pick-count">0 / ' + sp.items.length + '</span>';
     document.body.appendChild(panel);
-    return new Promise(function (resolve) { pickJob = { n: 0, need: sp.items.length, done: resolve }; });
+    return new Promise(function (resolve) { pickJob = { n: 0, need: sp.items.length, done: resolve, els: els }; });
   }
   /** 互動 press：按一個按鈕，地圖上出現變化（礦車開走、吊橋拉緊） */
   async function storyPress(board, id, sp, world) {
@@ -937,7 +938,7 @@
     var board = store.getBoard(child.id), cfg = ISLAND_STORY[board.id], sp = cfg && cfg.spots[id], world = document.getElementById('map-world');
     var guide = document.querySelector('.story-guide[data-story="' + id + '"]');
     if (!sp || !world || !guide) return;
-    ui.busy = true; document.body.classList.add('pawn-acting');
+    ui.busy = true; document.body.classList.add('pawn-acting', 'story-on');
     try {
       var cam = storyXY(board, id, sp.cam);
       if (ui.cam) { ui.cam.cx = cam.x; ui.cam.cy = cam.y; applyCam(true); await sleep(reduceMotion ? 50 : 800); }
@@ -957,7 +958,7 @@
       guide.classList.add('bye');
       followPawn(true);
       await sleep(reduceMotion ? 50 : 500);
-    } finally { ui.busy = false; document.body.classList.remove('pawn-acting'); pickJob = null; }
+    } finally { ui.busy = false; document.body.classList.remove('pawn-acting', 'story-on'); pickJob = null; }
   }
 
   /** 第一次通電：亮起動畫（資料已寫入，只是演出） */
@@ -1093,6 +1094,8 @@
     var b = camBounds(view, +world.dataset.w, +world.dataset.h);
     if (!ui.cam || ui.cam.childId !== child.id) ui.cam = { childId: child.id, z: b.def, cx: 0, cy: 0, manual: false };
     if (ui.cam.manual) applyCam(false); else followPawn(false);
+    // 撿東西任務進行中地圖被重畫（例如切到別頁再回來）：把還沒撿的東西放回地圖，任務可以接著完成
+    if (pickJob) pickJob.els.forEach(function (b) { if (!b.classList.contains('got') && !world.contains(b)) world.appendChild(b); });
     var pts = {}, last = null;
     function zoomAt(f, px, py) {
       var c = ui.cam, rect = view.getBoundingClientRect();
@@ -3112,6 +3115,8 @@
     var el = e.target.closest('[data-action]');
     if (!el || el.disabled) return;
     var action = el.getAttribute('data-action');
+    // 地圖演出或劇情任務進行中（角色動作、撿礦石…）：地圖上的商店、骰子、道具先不能點，避免中途重畫畫面卡住任務
+    if (document.body.classList.contains('pawn-acting') && el.closest('.map-page')) return;
     var id = el.getAttribute('data-id');
     var childId = route().arg;
     try {

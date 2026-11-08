@@ -338,6 +338,24 @@ No characters, no text, no UI. Bright sunny, cute children's game map.
 
 ---
 
+## 金島劇情：發光金礦石（1 張，2026-11-08 新增，請 Gemini 製作）
+
+第 5 格「幫技師撿回金礦石」用的礦石，目前是程式畫的金色圓球（家長說不像礦石）。交件後放 `images/gold/ore.webp`，換掉 `css/style.css` 的 `.story-ore`。
+地圖上顯示約 44～56px，**輪廓要簡單、一眼看得出是礦石**；因為要放在地圖上，交件後 Claude 會只去除與外框相連的白底（會先回報）。
+
+```
+A single chunky gold ore nugget for a cute children's mobile game, bright cute 2.5D clay style,
+an irregular faceted rock lump with a few big shiny gold crystal facets sticking out of a small grey-brown stone base,
+warm golden glow and two tiny white sparkles, soft lighting, rounded friendly edges, clear simple silhouette,
+slightly top-down three-quarter view, plain white background, centered with generous margin, no text, no watermark, square 1024 x 1024
+```
+
+中文：兒童手機遊戲用的一顆金礦石，明亮可愛的 2.5D 黏土風格；**不規則、有切面的石塊**，灰褐色小石頭底座上冒出幾塊大大的、閃亮的金色結晶，周圍淡淡金色光暈與兩個小白色閃光；柔和光影、邊角圓潤、輪廓簡單清楚；略俯視的斜角視角；純白背景、置中、四周多留白，不要文字與浮水印；正方形 1024×1024。
+
+> 小提醒：如果 Gemini 畫成圓球或金幣，可以補一句「not a ball, not a coin, it must look like a rock with gold crystals」。
+
+---
+
 ## 木島小遊戲「落葉找松果」（4 張必做＋1 張選做，2026-11-08 新增）
 
 目前畫面用表情符號佔位：松果 🌰（其實是栗子）、落葉堆 🍂、松鼠 🐿️。交件後 Claude 放進 `images/wood/`，換掉 `js/app.js` 的 `leafGame` 與 `css/style.css` 的 `.leaf-*` 樣式。

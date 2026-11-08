@@ -1699,7 +1699,16 @@ async function main() {
     await q.waitForSelector('.story-ore', { timeout: 15000 });
     assert.equal(await q.locator('.story-ore').count(), 5);
     assert.match(await q.locator('#story-panel').innerText(), /撿回金礦石[\s\S]*0 \/ 5/);
-    for (const o of await q.$$('.story-ore')) await o.click({ force: true });
+    // 回歸：撿到一半點商店 → 任務中商店不能開；切到別頁再回來，沒撿的礦石還在、可以接著撿完
+    await q.locator('.story-ore').first().click({ force: true });
+    await q.click('.map-shop', { force: true });
+    await q.waitForTimeout(300);
+    assert.equal(await q.locator('#confirm[open]').count(), 0, '任務進行中商店不會打開');
+    assert.equal(await q.locator('body.story-on').count(), 1);
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    await q.waitForFunction(() => document.querySelectorAll('#map-world .story-ore:not(.got)').length === 4, null, { timeout: 5000 });
+    assert.match(await q.locator('#story-panel').innerText(), /1 \/ 5/);
+    for (const o of await q.$$('.story-ore:not(.got)')) await o.click({ force: true });
     await q.waitForFunction(() => /礦石都找回來了[\s\S]*⭐3/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
     await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 15000 });
     if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');

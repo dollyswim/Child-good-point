@@ -1916,3 +1916,5 @@ body.mg-open { overflow: hidden; }
   box-shadow: 0 5px 0 var(--rw-btn-edge); cursor: pointer; touch-action: manipulation; }
 .rw-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--rw-btn-edge); }
 .rw-foot { margin: 0; color: var(--rw-foot); font-size: .85rem; font-weight: 700; }
+/* 劇情任務進行中：地圖上的按鈕暫停（商店、骰子、道具），看起來也變淡 */
+body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story-on .map-page .item-bar { opacity: .55; }
