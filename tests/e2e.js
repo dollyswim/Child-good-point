@@ -1672,13 +1672,28 @@ async function main() {
       s.getPlayer(a.id).bag.d6 = 1; s.setPlayerTile(a.id, 76); s.getPlayer(a.id).maxReached = 76; s.save(); return a.id; });
     await q.goto(url + '#map-' + id); await q.waitForSelector('#gold-tower');
     assert.equal(await q.locator('#gold-tower.lit').count(), 0, '還沒走到第 80 格：未通電');
+    // 已在齒輪工坊、塔還沒通電：技師主動求助（只一次）
+    await q.waitForSelector('#tech-bubble', { timeout: 5000 });
+    assert.match(await q.locator('#tech-bubble').innerText(), /能源塔沒電了[\s\S]*第 80 格/);
+    assert.equal(await q.locator('.mtile[data-n="80"].mt-switch .switch-ico').count(), 1, '第 80 格標示能源開關');
+    await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 10000 });
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).towerIntro, id), true);
+    await q.reload(); await q.waitForSelector('#gold-tower'); await q.waitForTimeout(1200);
+    assert.equal(await q.locator('#tech-bubble').count(), 0, '技師求助只出現一次');
     await q.click('.gold-tech');
     await q.waitForSelector('#tech-bubble');
-    assert.match(await q.locator('#tech-bubble').innerText(), /還沒通電[\s\S]*第 80 格/);
-    // 擲 5：76 → 81，經過第 80 格 → 通電動畫
+    assert.match(await q.locator('#tech-bubble').innerText(), /沒電[\s\S]*第 80 格/);
+    // 擲 5：76 → 81，經過第 80 格 → 鏡頭移到主塔 → 孩子連點充電 → 通電
     await q.evaluate(() => { window.__cgpStore.random = () => 4.5 / 6; });
     await q.click('.dice-btn.d6');
+    await q.waitForSelector('#charge-panel', { timeout: 10000 });
+    assert.match(await q.locator('#charge-panel').innerText(), /快幫能源塔充電/);
+    for (let k = 0; k < 9; k++) await q.click('#charge-btn');
+    assert.equal(await q.locator('#gold-tower.just-lit').count(), 0, '還沒充滿不會通電');
+    assert.match(await q.locator('#charge-count').innerText(), /9 \/ 10/);
+    await q.click('#charge-btn');
     await q.waitForSelector('#gold-tower.just-lit', { timeout: 10000 });
+    assert.equal(await q.locator('#charge-panel').count(), 0, '充滿後面板關閉');
     await q.waitForFunction(() => /通電了/.test(document.getElementById('toast').textContent), null, { timeout: 5000 });
     await q.waitForSelector('#tech-bubble', { timeout: 5000 });   // 通電時技師自動說台詞
     assert.match(await q.locator('#tech-bubble').innerText(), /謝謝你[\s\S]*能源塔亮起來了/);
@@ -1692,7 +1707,7 @@ async function main() {
     await q.click('.gold-tech', { force: true });
     await q.waitForSelector('#tech-bubble');
     assert.match(await q.locator('#tech-bubble').innerText(), /謝謝你[\s\S]*金冠城堡/);
-    console.log('✔ 能源主塔：第 80 格前未通電、經過第 80 格播通電動畫、重新整理保持通電；點技師說話');
+    console.log('✔ 能源主塔：技師主動求助一次、第 80 格開關標示、連點充電後通電、技師台詞、重新整理保持通電');
     await ct.close();
   }
 

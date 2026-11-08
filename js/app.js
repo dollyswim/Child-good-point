@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-74';
+  var APP_VERSION = '2026.11.08-75';
   var store;
   try {
     store = new CGP.Store();
@@ -248,6 +248,7 @@
     if (r.name === 'map') {
       setupMap(store.getChild(r.arg));
       pawnIdle();
+      if (!ui.busy) { var mc = store.getChild(r.arg); setTimeout(function () { if (!ui.busy && route().name === 'map') towerIntro(mc); }, 600); }
       if (store.takeChestHint(r.arg)) notes.push('✨ 附近似乎藏著神秘寶物……');
     }
     if (r.name === 'minigame-test') openMinigame(null, null, { practice: true });
@@ -692,7 +693,7 @@
       '<img src="images/gold/technician.webp" alt="" width="150" height="231" draggable="false"></button>';
   }
   /** 技師說一句話（地圖上的對話泡泡，約 3 秒消失） */
-  function techTalk(child, ms) {
+  function techTalk(child, ms, text) {
     var view = document.getElementById('map-view'), tech = document.querySelector('.gold-tech');
     if (!view || !tech) return;
     var lit = goldMaxOf(store.getPlayer(child.id)) >= TOWER_LIT_AT;
@@ -702,7 +703,7 @@
     // 泡泡放在地圖視窗上（不跟著地圖縮放，字才看得清楚），位置在技師頭上
     var vr = view.getBoundingClientRect(), tr = tech.getBoundingClientRect();
     b.style.left = Math.max(8, Math.min(vr.width - 196, tr.left - vr.left + tr.width / 2 - 40)) + 'px';
-    b.textContent = lit ? '謝謝你！能源塔亮起來了，金冠城堡就在前面！' : '能源塔還沒通電！走到第 80 格就能點亮它！';
+    b.textContent = text || (lit ? '謝謝你！能源塔亮起來了，金冠城堡就在前面！' : '能源塔沒電了！幫我走到第 80 格的 ⚡ 開關，把它充飽電！');
     view.appendChild(b);
     // 放在技師腳下（不蓋住技師，也不擋到主塔）；下方放不下才放到頭上
     var below = tr.bottom - vr.top + 12;
@@ -710,6 +711,69 @@
     else b.style.top = Math.max(8, tr.top - vr.top - b.offsetHeight - 10) + 'px';
     setTimeout(function () { b.classList.add('bye'); setTimeout(function () { b.remove(); }, 300); }, ms || 3200);
   }
+  var TOWER_SWITCH_ID = 'gold-03-080';   // 第 80 格：能源開關
+  var TOWER_INTRO_AT = 56;               // 第一次走進齒輪工坊：技師主動求助
+  /** 鏡頭移到主塔（演出用） */
+  async function lookAtTower() {
+    if (!ui.cam) return;
+    ui.cam.cx = TOWER.gx - 40; ui.cam.cy = TOWER.gy - 120; applyCam(true);
+    await sleep(reduceMotion ? 50 : 800);
+  }
+  /**
+   * 連點充電：畫面下方電量條＋大按鈕，點滿 10 下就完成（不限時間、不會失敗）
+   * @returns Promise（充滿時完成）
+   */
+  function chargeTower() {
+    return new Promise(function (resolve) {
+      var NEED = 10, n = 0;
+      var el = document.createElement('div');
+      el.className = 'charge-panel'; el.id = 'charge-panel';
+      el.innerHTML = '<b>⚡ 快幫能源塔充電！</b><small>連續點下面的按鈕，把電量充滿</small>' +
+        '<span class="charge-bar"><i id="charge-fill"></i></span>' +
+        '<button type="button" class="btn primary charge-btn" id="charge-btn">⚡ 充電！<span id="charge-count">0 / ' + NEED + '</span></button>';
+      document.body.appendChild(el);
+      var fill = el.querySelector('#charge-fill'), cnt = el.querySelector('#charge-count'), btn = el.querySelector('#charge-btn');
+      var tower = document.getElementById('gold-tower');
+      btn.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        if (n >= NEED) return;
+        n++;
+        fill.style.width = (n / NEED * 100) + '%'; cnt.textContent = n + ' / ' + NEED;
+        btn.classList.remove('zap'); void btn.offsetWidth; btn.classList.add('zap');
+        if (tower) { tower.style.setProperty('--charge', (n / NEED).toFixed(2)); tower.classList.add('charging'); }
+        if (n >= NEED) {
+          btn.disabled = true; btn.textContent = '⚡ 充飽了！';
+          setTimeout(function () { el.remove(); if (tower) tower.classList.remove('charging'); resolve(); }, reduceMotion ? 100 : 450);
+        }
+      });
+    });
+  }
+  /** 技師主動求助（第一次走進齒輪工坊、塔還沒通電時，只出現一次） */
+  async function towerIntro(child) {
+    var p = store.getPlayer(child.id);
+    if (ui.towerIntroRunning || p.towerIntro || goldMaxOf(p) < TOWER_INTRO_AT || goldMaxOf(p) >= TOWER_LIT_AT || !document.getElementById('gold-tower')) return;
+    ui.towerIntroRunning = true; ui.busy = true; document.body.classList.add('pawn-acting');
+    try {
+      store.markTowerIntro(child.id);
+      await lookAtTower();
+      techTalk(child, 4200, '糟糕！能源塔沒電了…幫我走到第 80 格的 ⚡ 開關，把它充飽電！');
+      await sleep(reduceMotion ? 1500 : 4200);
+      followPawn(true);
+      await sleep(reduceMotion ? 50 : 500);
+    } finally { ui.towerIntroRunning = false; ui.busy = false; document.body.classList.remove('pawn-acting'); }
+  }
+  /** 礦車來了：按「上車！」才出發（資料已經前進，這裡是演出與互動） */
+  function cartBoard(text) {
+    return new Promise(function (resolve) {
+      var el = document.createElement('div');
+      el.className = 'charge-panel cart-panel'; el.id = 'cart-panel';
+      el.innerHTML = '<b>🚃 礦車來了！</b><small>' + h(text || '礦車可以載你往前 2 格') + '</small>' +
+        '<button type="button" class="btn primary charge-btn" id="cart-btn">🚃 上車！</button>';
+      document.body.appendChild(el);
+      el.querySelector('#cart-btn').addEventListener('click', function () { el.remove(); resolve(); });
+    });
+  }
+
   /** 第一次通電：亮起動畫（資料已寫入，只是演出） */
   function towerPowerOn() {
     var t = document.getElementById('gold-tower');
@@ -754,8 +818,10 @@
       // 疊放順序：越靠畫面下方（越近）的格子在越上層，避免後方石板蓋住前方格子的事件圖示
       // 寶物磁鐵吸走的寶箱：這一輪顯示成普通石板（新的一輪或換島回來會重新放滿）
       var shown = t.type === 'chest' && player.looted.indexOf(t.id) >= 0 ? 'normal' : t.type;
-      return '<div class="mtile mt-' + shown + (shown !== t.type ? ' looted' : '') + (t.id === player.tileId ? ' here' : '') + '" data-n="' + t.n + '" data-tile="' + t.id + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px;z-index:' + Math.round(t.gy / 6) + '"' +
-        (TILE_LABEL[shown] ? ' title="' + TILE_LABEL[shown] + '"' : '') + '>' + tileArt(shown, 'mtile-icon') + '</div>';
+      var sw = t.id === TOWER_SWITCH_ID && board.id === 'gold' && goldMaxOf(player) < TOWER_LIT_AT;   // 能源開關（通電前）
+      return '<div class="mtile mt-' + shown + (shown !== t.type ? ' looted' : '') + (sw ? ' mt-switch' : '') + (t.id === player.tileId ? ' here' : '') + '" data-n="' + t.n + '" data-tile="' + t.id + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px;z-index:' + Math.round(t.gy / 6) + '"' +
+        (sw ? ' title="能源開關：走到這裡幫能源塔充電"' : TILE_LABEL[shown] ? ' title="' + TILE_LABEL[shown] + '"' : '') + '>' + tileArt(shown, 'mtile-icon') +
+        (sw ? '<span class="switch-ico" aria-hidden="true">⚡</span>' : '') + '</div>';
     }).join('');
     var pp = worldXY(region, board.tiles[player.pos]);
     return pageHeader(board.name, child, 'map') +
@@ -1103,6 +1169,7 @@
       }
       await hopAlong(child, res.path);
       if (ev && ev.extraPath && ev.extraPath.length) {
+        if (ev.cart) await cartBoard('礦車可以載你額外前進 ' + ev.extraPath.length + ' 格！');   // 機會卡礦車：按「上車！」才出發
         toast((ev.shielded ? '' : '🚃 ') + ev.text.split('\n')[0], 'pos');   // 礦車或防護罩推開路障
         await sleep(400);
         await hopAlong(child, ev.extraPath);
@@ -1120,7 +1187,8 @@
       ui.busy = true; document.body.classList.add('pawn-acting');   // 演出期間暫停骰子
       document.getElementById('gold-tower').classList.remove('lit');   // 先顯示未通電，再播亮起動畫
       // 地圖上的變化要讓孩子看到：鏡頭移到主塔 → 閃光亮起 → 技師自動說台詞 → 台詞說完才回到角色
-      if (ui.cam) { ui.cam.cx = TOWER.gx - 40; ui.cam.cy = TOWER.gy - 120; applyCam(true); await sleep(reduceMotion ? 50 : 800); }
+      await lookAtTower();
+      await chargeTower();   // 孩子連點充電，充滿才通電
       towerPowerOn();
       await sleep(reduceMotion ? 50 : 700);
       techTalk(child, 3600);
@@ -1129,6 +1197,7 @@
       await sleep(reduceMotion ? 50 : 500);
       ui.busy = false; document.body.classList.remove('pawn-acting');
     }
+    await towerIntro(child);
     var react = pawnReaction(res);
     if (react) { ui.busy = true; document.body.classList.add('pawn-acting'); try { await pawnPlay(react); } finally { ui.busy = false; document.body.classList.remove('pawn-acting'); } }   // 角色先反應，再顯示事件說明（pawn-acting：動作中，骰子暫停）
     var head = kind === 'skates' ? '🛼 前進 3 格' : kind === 'wings' ? '🪽 飛行翼' : kind === 'door' ? '🚪 任意門'

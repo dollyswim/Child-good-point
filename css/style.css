@@ -1788,3 +1788,23 @@ body.mg-open { overflow: hidden; }
 .tech-bubble.bye { opacity: 0; transition: opacity .3s; }
 @media (prefers-reduced-motion: reduce) { .tower-sparks i, .gold-tower.lit .tower-on, .gold-tech img { animation: none; } .gold-tower.just-lit::after { display: none; } }
 .tech-bubble.below::after { bottom: auto; top: -8px; border: 8px solid transparent; border-bottom-color: #fff; border-top: 0; }   /* 泡泡在技師下方：尾巴朝上 */
+
+/* 第 80 格：能源開關（通電前一閃一閃） */
+.mtile.mt-switch::before { filter: hue-rotate(10deg) saturate(2.4) brightness(1.08) drop-shadow(0 0 8px rgba(255, 210, 63, 1)) drop-shadow(0 4px 3px rgba(80, 50, 20, .35)); }
+.switch-ico { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -62%); font-size: 26px; line-height: 1; filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 6px #ffd23f); animation: switch-blink 1s ease-in-out infinite; pointer-events: none; }
+@keyframes switch-blink { 50% { opacity: .35; transform: translate(-50%, -62%) scale(.85); } }
+/* 充電、礦車：畫面下方的互動面板（在底部導覽列之上） */
+.charge-panel { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 96px); transform: translateX(-50%); z-index: 1200; width: min(92vw, 360px);
+  display: grid; justify-items: center; gap: 6px; padding: 14px 16px; border-radius: 22px; background: #fffdf6; border: 3px solid #f1d58f;
+  box-shadow: 0 10px 30px rgba(60, 30, 0, .35); text-align: center; animation: bubble-in .25s ease-out both; }
+.charge-panel b { font-size: 1.15rem; color: #8a4f12; }
+.charge-panel small { color: #8a6a3a; font-weight: 700; }
+.charge-bar { width: 100%; height: 16px; border-radius: 99px; background: #f1e6d4; overflow: hidden; }
+.charge-bar i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, #ffe27a, #ffb21f); transition: width .15s ease-out; }
+.charge-btn { width: 100%; min-height: 60px; font-size: 1.25rem; font-weight: 900; touch-action: manipulation; }
+.charge-btn span { margin-left: 8px; font-size: .9rem; opacity: .85; }
+.charge-btn.zap { animation: charge-zap .18s ease-out; }
+@keyframes charge-zap { 50% { transform: scale(.95); } }
+/* 充電中：主塔核心依電量漸漸變亮 */
+.gold-tower.charging .tower-on { transition: opacity .15s; opacity: calc(var(--charge, 0) * .85); }
+@media (prefers-reduced-motion: reduce) { .switch-ico { animation: none; } }

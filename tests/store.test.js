@@ -2106,6 +2106,10 @@ test('換島：木島未開放時通關金島後繼續在金島繞圈；開放�
     store.save();
     const s2 = new Store({ storage, seed: false, now: () => store.now() });
     assert.deepEqual([s2.getPlayer(a.id).island, s2.getPlayer(a.id).tileId], ['gold', 'gold-01-001']);
+    // 在木島時存檔重開：金島進度與通關次數都要保留
+    s2.getPlayer(a.id).islands.gold = { laps: 1, maxReached: 100 }; s2.getPlayer(a.id).islandClears.wood = 1; s2.save();
+    const s3 = new Store({ storage, seed: false, now: () => store.now() });
+    assert.deepEqual([s3.getPlayer(a.id).islands.gold, s3.getPlayer(a.id).islandClears], [{ laps: 1, maxReached: 100 }, { wood: 1 }], '各島進度存檔重開保留');
   } finally { delete G.BOARDS.wood; }
 });
 

@@ -375,9 +375,22 @@
             pendingRoll: p.pendingRoll && p.pendingRoll.rollId ? {   // 已擲出還沒前進（命運重骰券可用）
               rollId: String(p.pendingRoll.rollId), die: ['d6', 'd12', 'magic'].indexOf(p.pendingRoll.die) >= 0 ? p.pendingRoll.die : 'd6',
               kind: String(p.pendingRoll.kind || 'base'), sides: toInt(p.pendingRoll.sides, 6) === 12 ? 12 : 6,
-              value: Math.max(1, toInt(p.pendingRoll.value, 1)), from: Math.max(0, toInt(p.pendingRoll.from, 0)), rerolled: !!p.pendingRoll.rerolled, lap: !!p.pendingRoll.lap } : null,
+              value: Math.max(1, toInt(p.pendingRoll.value, 1)), from: Math.max(0, toInt(p.pendingRoll.from, 0)), rerolled: !!p.pendingRoll.rerolled, lap: !!p.pendingRoll.lap,
+              travel: p.pendingRoll.travel && p.pendingRoll.travel.island ? { island: String(p.pendingRoll.travel.island), name: String(p.pendingRoll.travel.name || '') } : null } : null,
             laps: Math.max(0, toInt(p.laps, 0)),   // 走完目前開放區域幾輪
             goldClears: Math.max(0, toInt(p.goldClears, 0)),   // 金島通關次數（走到第 100 格）
+            towerIntro: !!p.towerIntro,   // 能源主塔：技師已主動求助過
+            // 換島：其他島的保存進度 { 島: { laps, maxReached } }、金島以外的通關次數 { 島: 次數 }
+            islands: (function () {
+              var o = {}, src2 = p.islands && typeof p.islands === 'object' ? p.islands : {};
+              Object.keys(src2).forEach(function (k) { var v = src2[k] || {}; o[k] = { laps: Math.max(0, toInt(v.laps, 0)), maxReached: Math.max(0, toInt(v.maxReached, 0)) }; });
+              return o;
+            })(),
+            islandClears: (function () {
+              var o = {}, src2 = p.islandClears && typeof p.islandClears === 'object' ? p.islandClears : {};
+              Object.keys(src2).forEach(function (k) { o[k] = Math.max(0, toInt(src2[k], 0)); });
+              return o;
+            })(),
             maxReached: Math.max(toInt(p.maxReached, 0), toInt(p.pos, 0)),   // 曾經到過最遠的格子（成就用）
             stats: { chests: Math.max(0, toInt(p.stats && p.stats.chests, 0)), mystery: Math.max(0, toInt(p.stats && p.stats.mystery, 0)) },   // 開過的一般寶箱／神秘寶箱數
             bag: BAG_KEYS.reduce(function (o, k) { o[k] = Math.max(0, toInt(bag[k], 0)); return o; }, {})

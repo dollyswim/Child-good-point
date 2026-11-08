@@ -563,6 +563,7 @@
       }
       ev.text = lines.join('\n');
       if (cart && ev.extraPath.length) {
+        ev.cart = true;   // 介面：先問「上車！」再前進
         var next = this._resolveTile(childId, depth + 1);
         if (next.type !== 'normal' && next.type !== 'start') ev.then = next;
       }
@@ -1044,6 +1045,13 @@
     this._logItem(childId, 'use', 'starCall', 1, '背包', '額外一局抓住星星');
     this.save();
     return mg;
+  };
+  /** 能源主塔：技師已經主動求助過（只出現一次） */
+  Store.prototype.markTowerIntro = function (childId) {
+    var p = this.getPlayer(childId);
+    if (p.towerIntro) return;
+    p.towerIntro = true;
+    this.save();
   };
   /** 好運金牌：啟用後，下一次停在寶箱格或機會格時效果發生 2 次 */
   Store.prototype.activateMedal = function (childId) {
