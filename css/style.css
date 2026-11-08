@@ -2008,3 +2008,11 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 /* 2026-11-08 家長定案：松果、松鼠不加淡色卡，只用去背圖（先看、翻到、沒找到亮出來都一樣） */
 .leaf-grid.peek .leaf-pile.pine, .leaf-grid.peek .leaf-pile.squirrel, .leaf-pile.open.pine:not(.missed), .leaf-pile.missed, .leaf-pile.caught { background: transparent; box-shadow: none; }
 .leaf-pile.pine .leaf-under img, .leaf-pile.squirrel .leaf-under img { width: 90%; height: 90%; }
+/* 落葉找松果結算（比照抓住星星的兩個視窗）：松果一顆顆排出來，再每 2 顆聚在一起換成 1 顆能量星星 */
+.leaf-pine { width: 30px; height: 30px; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(80, 50, 20, .35)); }
+.leaf-pine-grid .leaf-pine { animation: mg-pop .3s ease-out both; }
+.leaf-group .mg-fly.leaf-pine { width: 26px; height: 26px; }
+.leaf-group .mg-fly:nth-child(1) { left: 0; top: 10px; --tx: 13px; --ty: 3px; }
+.leaf-group .mg-fly:nth-child(2) { right: 0; top: 10px; --tx: -13px; --ty: 3px; }
+@media (prefers-reduced-motion: reduce) { .leaf-pine-grid .leaf-pine { animation: none; } }
+.leaf-step1 p strong { color: #8a4f12; }   /* 找到的松果數用松果棕色（抓住星星是銀色） */

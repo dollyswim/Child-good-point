@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-103';
+  var APP_VERSION = '2026.11.08-104';
   var store;
   try {
     store = new CGP.Store();
@@ -2003,12 +2003,31 @@
     }
     var el = res.el, found = res.found, gain = GAME.leafStars(found);
     function close() { el.remove(); document.body.classList.remove('mg-open'); if (practice) location.replace('#home'); render(); }
-    var m = document.createElement('div');
-    m.className = 'mg-result leaf-result';
-    m.innerHTML = '<b>' + (found >= GAME.LEAF_MAX_FOUND ? '🎉 全部找到了！' : found >= 10 ? '👏 記憶力好棒！' : '✨ 完成！') + '</b>' +
+    // 2026-11-08 家長調整：結算比照「抓住星星」分兩個視窗——先排出找到的松果，再每 2 顆松果合成 1 顆能量星星
+    var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches, rate = LG.rate;
+    var PINE = '<img class="leaf-pine" src="images/wood/leaf_pinecone.webp" alt="" aria-hidden="true" width="256" height="256" draggable="false">';
+    // 第 1 個視窗：找到幾顆松果（一顆顆排出來）
+    var s1 = document.createElement('div');
+    s1.className = 'mg-result leaf-result leaf-step1';
+    s1.innerHTML = '<b>' + (found >= GAME.LEAF_MAX_FOUND ? '🎉 全部找到了！' : found >= 10 ? '👏 記憶力好棒！' : '✨ 完成！') + '</b>' +
       '<p>找到 <strong>' + found + '</strong> / ' + GAME.LEAF_MAX_FOUND + ' 顆松果</p>' +
-      '<div class="leaf-pines" aria-hidden="true">' + new Array(found + 1).join('<i><img class="leaf-ico" src="images/wood/leaf_pinecone.webp" alt="" width="256" height="256"></i>') + '</div>' +
-      '<p class="mg-rate">' + (LG.rate === 1 ? '每顆松果換 1 顆能量星星' : '每 ' + LG.rate + ' 顆松果換 1 顆能量星星（不滿 ' + LG.rate + ' 顆也算 1 顆）') + '</p>' +
+      '<div class="mg-silver-grid leaf-pine-grid" aria-hidden="true">' + new Array(found + 1).join(PINE) + '</div>' +
+      '<button type="button" class="btn primary" data-mg="merge">' + (found ? '✨ 換成能量星星' : '知道了') + '</button>';
+    el.appendChild(s1);
+    s1.querySelectorAll('.leaf-pine').forEach(function (img, k) { img.style.animationDelay = (still ? 0 : Math.min(k * 0.06, 1.6)) + 's'; });
+    await new Promise(function (resolve) { s1.querySelector('[data-mg=merge]').onclick = resolve; });
+    s1.remove();
+    // 第 2 個視窗：每 2 顆松果聚在一起，換成 1 顆能量星星（實際得到的數量）
+    var groups = [];
+    for (var g = 0; g < gain; g++) groups.push(Math.min(rate, Math.max(1, found - g * rate)));   // 最後一組不滿 2 顆也算 1 顆
+    var m = document.createElement('div');
+    m.className = 'mg-result leaf-result mg-step2';
+    m.innerHTML = '<b>⭐ 換成能量星星</b>' +
+      '<p class="mg-rate">' + (rate === 1 ? '每顆松果換 1 顆能量星星' : '每 ' + rate + ' 顆松果換 1 顆能量星星（不滿 ' + rate + ' 顆也算 1 顆）') + '</p>' +
+      '<div class="mg-merge" aria-hidden="true">' + groups.map(function (n, k) {
+        return '<span class="mg-group leaf-group" style="--d:' + (still ? 0 : k * 0.35) + 's">' + new Array(n + 1).join(PINE.replace('leaf-pine', 'leaf-pine mg-fly')) +
+          '<span class="mg-energy">' + STAR_IMG + '</span></span>';
+      }).join('') + '</div>' +
       (practice ? '<p class="mg-gain">' + STAR_IMG + ' ' + gain + ' 能量星星</p><p class="mg-practice-note">🧪 試玩模式，不會真的得到星星</p>' +
         '<div class="mg-acts"><button type="button" class="btn" data-mg="exit">離開</button><button type="button" class="btn primary" data-mg="again">再玩一次</button></div>'
         : '<p class="mg-gain">' + STAR_IMG + ' +' + gain + ' 能量星星</p><button type="button" class="btn primary" data-mg="claim">收下</button>');
