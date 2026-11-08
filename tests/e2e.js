@@ -800,10 +800,10 @@ async function main() {
     await q.waitForFunction(() => document.querySelectorAll('.mg-star.small:not(.got):not(.miss)').length >= 2, null, { timeout: 9000 });
     assert.equal(await q.evaluate(() => document.querySelector('.mg-star.small').offsetWidth), 39);
     await q.waitForSelector('.mg-result', { timeout: 15000 });
-    assert.match(await q.locator('.mg-result').innerText(), /抓到 3 顆星星[\s\S]*\+3/);
+    assert.match(await q.locator('.mg-result').innerText(), /抓到 3 顆星星[\s\S]*每 3 顆換 1 顆能量星星[\s\S]*\+1 能量星星/);
     await q.click('.mg-result [data-mg=claim]');
     await q.waitForFunction(() => !document.getElementById('mg'));
-    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), before + 3, '得到 3 顆能量星星');
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), before + 1, '抓到 3 顆 → 1 顆能量星星');
     assert.equal(await q.locator('.mg-resume').count(), 0);
     // 稍後再玩 → 地圖出現「還沒玩完」按鈕，重新整理後仍可繼續
     await q.clock.setFixedTime(new Date('2026-11-07T10:00:00'));

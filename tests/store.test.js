@@ -1115,7 +1115,7 @@ test('Phase 4：特殊任務存檔遷移、刪除孩子一併刪除', () => {
 });
 
 // ---------- Phase 4 第 2 步：小遊戲「抓住星星」 ----------
-test('Phase 4：停在小遊戲格 → 產生今天的小遊戲；完成後每抓 1 顆得 1 星、只能領一次', () => {
+test('Phase 4：停在小遊戲格 → 產生今天的小遊戲；完成後每抓 3 顆得 1 星（無條件進位）、只能領一次', () => {
   const { store, a, push } = p3Store();
   store.buyItem(a.id, 'd6'); store.buyItem(a.id, 'd6');
   store.setPlayerTile(a.id, 4);
@@ -1126,8 +1126,8 @@ test('Phase 4：停在小遊戲格 → 產生今天的小遊戲；完成後每�
   assert.equal(store.getPendingMinigame(a.id).tile, 7);
   const bal = store.getStarBalance(a.id);
   const m = store.finishMinigame(a.id, 5);
-  assert.deepEqual([m.status, m.caught, m.stars], ['done', 5, 5]);
-  assert.equal(store.getStarBalance(a.id), bal + 5);
+  assert.deepEqual([m.status, m.caught, m.stars], ['done', 5, 2], '抓到 5 顆 ÷ 3 無條件進位 = 2 星');
+  assert.equal(store.getStarBalance(a.id), bal + 2);
   assert.throws(() => store.finishMinigame(a.id, 5), /沒有可以玩/, '只能領一次');
   assert.equal(store.getTotal(a.id), 100, '不影響生活點數');
 });
@@ -1143,8 +1143,8 @@ test('Phase 4：小遊戲每天 1 次、獎勵上限 15、隔天可再玩、重�
   assert.ok(s2.getPendingMinigame(a.id), '重新整理後可繼續');
   const bal = store.getStarBalance(a.id);
   const done = store.finishMinigame(a.id, 22);
-  assert.deepEqual([done.caught, done.stars], [22, 15], '抓到 22 顆、獎勵最多 15 星');
-  assert.equal(store.getStarBalance(a.id), bal + 15);
+  assert.deepEqual([done.caught, done.stars], [22, 8], '抓到 22 顆 → 8 星');
+  assert.equal(store.getStarBalance(a.id), bal + 8);
   // 同一天再停到小遊戲格：不能再玩
   store.setPlayerTile(a.id, 7);
   push(face(10, 12));                          // 擲 10 → 第 17 格小遊戲
@@ -1518,7 +1518,7 @@ test('再來 3 次：今天額外 +3 擲骰、+3 小遊戲；不跨日', () => {
   const r2 = store.rollDice(a.id, 'd6');                       // 第 7 格小遊戲
   assert.ok(r2.event.minigame && r2.event.minigame.bonus, '額外場次');
   assert.equal(store.getBonusQuota(a.id).games, 2);
-  assert.equal(store.finishMinigame(a.id, 4).stars, 4);
+  assert.equal(store.finishMinigame(a.id, 4).stars, 2);
   setDate('2026-11-07T10:00:00');
   assert.deepEqual(store.getBonusQuota(a.id), { rolls: 0, games: 0 }, '隔天失效');
 });
@@ -2166,4 +2166,9 @@ test('封存舊紀錄：封存選定日期以前的生活與冒險紀錄；點�
   const s2 = new Store({ storage, seed: false, now: () => store.now() });
   assert.equal(s2.getTotal(a.id), before.total);
   assert.equal(s2.data.carry[a.id].until, '2026-05-01');
+});
+
+test('小遊戲獎勵：每 3 顆換 1 顆能量星星、無條件進位、最多 15 星', () => {
+  assert.equal(G.MINIGAME_RATE, 3);
+  assert.deepEqual([0, 1, 2, 3, 4, 18, 27, 44, 45, 60].map(G.minigameStars), [0, 1, 1, 1, 2, 6, 9, 15, 15, 15]);
 });

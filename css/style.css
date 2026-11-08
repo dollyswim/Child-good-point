@@ -1730,3 +1730,4 @@ body.mg-open { overflow: hidden; }
 .pawn-chest img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .pawn-chest i { position: absolute; left: -15%; right: -15%; bottom: 0; height: 130%; opacity: 0; mix-blend-mode: screen;
   background: radial-gradient(ellipse at 50% 65%, rgba(255, 242, 166, .9), rgba(255, 213, 65, .45) 30%, transparent 65%); }
+.mg-rate { margin: 0; font-size: .82rem; opacity: .85; }

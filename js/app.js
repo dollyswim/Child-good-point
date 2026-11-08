@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-62';
+  var APP_VERSION = '2026.11.08-63';
   var store;
   try {
     store = new CGP.Store();
@@ -1363,8 +1363,8 @@
   // ---------- 小遊戲「抓住星星」 ----------
   /**
    * 全螢幕小遊戲：第 1 顆星在正中央，點到才開始 10 秒計時。
-   * 前 5 秒：每 1 秒出現 1 顆、停留 1.2 秒；後 5 秒加快：每 0.7 秒出現 2 顆、停留 0.8 秒、大小 0.5 倍。
-   * 星星出現數不限；每抓 1 顆得 1 顆能量星星，最多 GAME.MINIGAME_MAX_STARS 顆；按「收下」才寫入。
+   * 前 5 秒：每 0.67 秒出現 1 顆、停留 1.7 秒；後 5 秒加快：每 0.47 秒出現 2 顆、停留 1.3 秒、大小 0.5 倍。
+   * 星星出現數不限；每抓 3 顆換 1 顆能量星星（無條件進位），最多 GAME.MINIGAME_MAX_STARS 顆；按「收下」才寫入。
    */
   function openMinigame(childId, subtitle, opts) {
     var practice = !!(opts && opts.practice);   // 試玩模式：不寫入存檔、不給星星、不算每日次數
@@ -1434,12 +1434,13 @@
       field.innerHTML = '';
       var res = document.createElement('div');
       res.className = 'mg-result';
-      var gain = Math.min(MAX, caught);
-      res.innerHTML = '<b>' + (caught >= MAX ? '🎉 太厲害了！' : caught >= 6 ? '👏 好厲害！' : '✨ 完成！') + '</b>' +
+      var gain = GAME.minigameStars(caught), rate = GAME.MINIGAME_RATE;
+      res.innerHTML = '<b>' + (caught >= 20 ? '🎉 太厲害了！' : caught >= 10 ? '👏 好厲害！' : '✨ 完成！') + '</b>' +
         '<p>抓到 <strong>' + caught + '</strong> 顆星星</p>' +
-        (practice ? '<p class="mg-practice-note">🧪 試玩模式，不會得到星星</p>' +
+        '<p class="mg-rate">每 ' + rate + ' 顆換 1 顆能量星星（不滿 ' + rate + ' 顆也算 1 顆）</p>' +
+        (practice ? '<p class="mg-practice-note">🧪 試玩模式，不會得到星星（正式玩可以得到 ' + STAR_IMG + ' ' + gain + '）</p>' +
           '<div class="mg-acts"><button type="button" class="btn" data-mg="exit">離開</button><button type="button" class="btn primary" data-mg="again">再玩一次</button></div>'
-          : '<p class="mg-gain">' + STAR_IMG + ' +' + gain + ' 能量星星</p>' + (caught > MAX ? '<p class="mg-cap">（每局最多 ' + MAX + ' 顆能量星星）</p>' : '') +
+          : '<p class="mg-gain">' + STAR_IMG + ' +' + gain + ' 能量星星</p>' + (Math.ceil(caught / rate) > MAX ? '<p class="mg-cap">（每局最多 ' + MAX + ' 顆能量星星）</p>' : '') +
             '<button type="button" class="btn primary" data-mg="claim">收下</button>');
       el.appendChild(res);
       if (practice) {
