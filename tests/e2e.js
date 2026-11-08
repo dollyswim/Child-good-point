@@ -1754,14 +1754,22 @@ async function main() {
     await q.waitForSelector('#tech-bubble');
     assert.match(await q.locator('#tech-bubble').innerText(), /第 8 格/);
     const stars0 = await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id);
-    // 擲 2 → 第 8 格：撿回 5 顆松果
+    // 擲 2 → 第 8 格：落葉找松果（劇情版：25 堆、看 3 秒、找齊 5 顆，翻錯不會失敗）
     await q.evaluate(() => { window.__cgpStore.random = () => 1.5 / 6; });
     await q.click('.dice-btn.d6');
-    await q.waitForSelector('.story-pick', { timeout: 15000 });
-    assert.equal(await q.locator('.story-pick').count(), 5);
-    assert.match(await q.locator('#story-panel').innerText(), /撿回松果[\s\S]*0 \/ 5/);
-    for (const o of await q.$$('.story-pick')) await o.click({ force: true });
-    await q.waitForFunction(() => /松果都回來了[\s\S]*⭐3/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
+    await q.waitForSelector('#mg.leaf-mg [data-leaf=start]', { timeout: 15000 });
+    assert.match(await q.locator('#mg-tip').innerText(), /找回松果/);
+    assert.equal(await q.locator('#mg-tip [data-mg=later]').count(), 0, '劇情版不能稍後再玩');
+    await q.click('[data-leaf=start]');
+    assert.equal(await q.locator('.leaf-pile').count(), 25);
+    assert.equal(await q.locator('.leaf-pile[data-pine]').count(), 5);
+    assert.equal(await q.locator('.leaf-grid.peek').count(), 1, '先亮出松果位置');
+    assert.match(await q.locator('#leaf-msg').innerText(), /記住松果的位置/);
+    await q.waitForSelector('.leaf-grid:not(.peek)', { timeout: 6000 });
+    for (let k = 0; k < 4; k++) await q.locator('.leaf-pile:not([data-pine])').nth(k).click();   // 翻錯 4 次也不會失敗
+    assert.equal(await q.locator('.leaf-pile.empty').count(), 4);
+    for (const o of await q.$$('.leaf-pile[data-pine]')) await o.click();
+    await q.waitForFunction(() => /松果都找回來了[\s\S]*⭐3/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
     await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 15000 });
     if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
     assert.ok(await q.evaluate(([cid, s0]) => window.__cgpStore.getStarBalance(cid) >= s0 + 3 && !!window.__cgpStore.getPlayer(cid).story.pinecone, [id, stars0]), '完成松果任務 ⭐3');
@@ -1795,7 +1803,40 @@ async function main() {
     if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
     assert.equal(await q.locator('.story-guide').count(), 0, '全部完成後沒有導遊');
-    console.log('✔ 木島劇情（假地圖）：小精靈導遊提示、第 8 格撿松果、第 40 格拉吊橋、第 92 格連點喚醒巨樹、各 ⭐3、木島小英雄');
+    // 木島小遊戲格：落葉找松果計分版（3 回合 4／5／6 顆；每回合翻錯 3 次進下一回合；每 2 顆換 1 星）
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 4); s.random = () => 2.5 / 6; s.save(); }, id);
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    await q.click('.dice-btn.d6');                     // 擲 3 → 第 7 格小遊戲
+    await q.waitForSelector('#mg.leaf-mg [data-leaf=start]', { timeout: 15000 });
+    assert.match(await q.locator('#mg-tip').innerText(), /落葉找松果[\s\S]*3 回合/);
+    const starsMg = await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id);
+    await q.click('[data-leaf=start]');
+    const roundPlay = async (no, pine, wrongOnly) => {
+      await q.waitForFunction((n) => (document.getElementById('leaf-round') || {}).textContent === '第 ' + n + ' / 3 回合' && !!document.querySelector('.leaf-grid:not(.peek)'), no, { timeout: 8000 });
+      assert.equal(await q.locator('.leaf-pile[data-pine]').count(), pine);
+      if (wrongOnly) { for (let k = 0; k < 3; k++) await q.locator('.leaf-pile:not([data-pine]):not(.open)').first().click(); }
+      else for (const o of await q.$$('.leaf-pile[data-pine]')) await o.click();
+    };
+    await roundPlay(1, 4, true);                      // 第 1 回合翻錯 3 次：0 顆，沒找到的松果亮出來
+    assert.equal(await q.locator('.leaf-pile.missed').count(), 4);
+    assert.match(await q.locator('#leaf-msg').innerText(), /翻錯 3 次/);
+    await roundPlay(2, 5, false);
+    await roundPlay(3, 6, false);
+    await q.waitForSelector('.leaf-result [data-mg=claim]', { timeout: 8000 });
+    assert.match(await q.locator('.leaf-result').innerText(), /找到 11 \/ 15 顆松果[\s\S]*每 2 顆松果換 1 顆[\s\S]*\+6 能量星星/);
+    await q.click('[data-mg=claim]');
+    await q.waitForFunction(() => !document.getElementById('mg'));
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), starsMg + 6, '11 顆松果 → 6 星');
+    // 家長試玩 #leaf-test：不給星星、不算次數
+    const snapLeaf = await q.evaluate(() => localStorage.getItem('cgp-data'));
+    await q.goto(url + '#leaf-test'); await q.reload();
+    await q.waitForSelector('#mg.leaf-mg [data-leaf=start]');
+    assert.match(await q.locator('#mg-tip').innerText(), /試玩模式/);
+    await q.click('[data-mg=later]');
+    await q.waitForFunction(() => !document.getElementById('mg') && location.hash === '#home');
+    assert.equal(await q.evaluate(() => localStorage.getItem('cgp-data')), snapLeaf, '試玩不動存檔');
+    console.log('✔ 木島小遊戲：落葉找松果 3 回合、翻錯 3 次進下一回合、11 顆換 6 星、家長試玩 #leaf-test');
+    console.log('✔ 木島劇情（假地圖）：小精靈導遊提示、第 8 格落葉找松果、第 40 格拉吊橋、第 92 格連點喚醒巨樹、各 ⭐3、木島小英雄');
     await cw.close();
   }
 

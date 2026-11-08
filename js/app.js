@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-78';
+  var APP_VERSION = '2026.11.08-79';
   var store;
   try {
     store = new CGP.Store();
@@ -88,6 +88,7 @@
     }
     if (hs === 'report') return { name: 'report', arg: null };
     if (hs === 'minigame-test') return { name: 'minigame-test', arg: null }; // 家長試玩小遊戲（不給星星、不算次數）
+    if (hs === 'leaf-test') return { name: 'leaf-test', arg: null };         // 家長試玩木島「落葉找松果」
     var m = hs.match(/^(child|rules|challenge|shop|adventure|map)(?:-(.+))?$/);
     if (!m) return { name: 'home', arg: null };
     return { name: m[1] === 'rules' ? 'settings' : m[1], arg: m[2] || null };
@@ -252,6 +253,7 @@
       if (store.takeChestHint(r.arg)) notes.push('✨ 附近似乎藏著神秘寶物……');
     }
     if (r.name === 'minigame-test') openMinigame(null, null, { practice: true });
+    if (r.name === 'leaf-test') openMinigame(null, null, { practice: true, leaf: true });
     if (r.name === 'adventure') showBlessings(r.arg);
     if (notes.length) toast(notes.join('\n'), 'pos');
     // 新解鎖的成就：星光成就劇場（已先寫入存檔，動畫中斷不影響）
@@ -781,7 +783,7 @@
   // 金島：技師當導遊，第 5 格撿礦石、第 30 格拉轉轍器（第 80 格能源塔另有演出，見上方）
   // 木島：森林小精靈當導遊，每區 1 個任務（2026-11-08 家長決定）；木島地圖還沒到貨，座標寫成「相對任務格子」的位移，
   //       草圖到貨後會自動跟著格子走，必要時再微調 guide／cam／items 的位移即可
-  // 互動類型 type：collect＝點地圖上的東西撿起來、press＝按一個按鈕觸發地圖變化、charge＝連點充能
+  // 互動類型 type：collect＝點地圖上的東西撿起來、press＝按一個按鈕觸發地圖變化、charge＝連點充能、leaf＝全螢幕落葉找松果（記憶遊戲）
   // 座標：rel 為 false 時是長地圖總覽座標 [x, y]；rel 為 true 時是相對任務格子中心的位移 [dx, dy]
   var ISLAND_STORY = {
     gold: {
@@ -801,10 +803,9 @@
       rel: true,
       guide: { cls: 'wood-elf', label: '森林小精靈', emoji: '🧚', w: 54 },   // 正式圖到貨前先用 🧚 佔位（提示詞見 docs/art-prompts.md）；道具位置避開左下角商店按鈕
       spots: {
-        pinecone: { type: 'collect', guide: [90, -20], cam: [40, -60], top: true,
-          items: [[-120, -70], [-60, -130], [70, -110], [130, 40], [160, -40]], itemCls: 'story-pick', itemIcon: '🌰', itemLabel: '松果',
-          title: '🌰 幫小精靈撿回松果！', sub: '點地圖上發光的松果',
-          hint: '我的松果掉了一地…走到第 8 格幫我撿回來！', intro: '一陣風把我的松果吹得到處都是！幫我撿回 5 顆發光的松果！', done: '松果都回來了！森林的小動物冬天有糧食了，謝謝你！' },
+        pinecone: { type: 'leaf', guide: [90, -20], cam: [40, -60],   // 2026-11-08 家長決定：改成「落葉找松果」記憶遊戲（劇情版：看 3 秒、找齊 5 顆、不會失敗）
+          title: '🌰 幫小精靈找回松果！', sub: '松果被吹進 25 堆落葉裡了',
+          hint: '我的松果被風吹進落葉堆裡了…走到第 8 格幫我找回來！', intro: '一陣風把我的松果吹進落葉堆裡了！看清楚它們藏在哪裡，再幫我翻出來！', done: '松果都找回來了！森林的小動物冬天有糧食了，謝謝你！' },
         bridge: { type: 'press', effect: 'bridge', guide: [-90, -10], cam: [0, -80], path: [[-150, -150], [150, -150]],
           title: '🌿 拉緊藤蔓吊橋！', sub: '吊橋鬆掉了，拉緊藤蔓才能走過去', btn: '💪 用力拉！',
           hint: '吊橋的藤蔓鬆掉了…走到第 40 格幫我拉緊！', intro: '藤蔓吊橋鬆垮垮的，好危險！幫我把藤蔓拉緊！', done: '吊橋變得又穩又牢！可以安心走過去了！' },
@@ -935,7 +936,11 @@
       if (ui.cam) { ui.cam.cx = cam.x; ui.cam.cy = cam.y; applyCam(true); await sleep(reduceMotion ? 50 : 800); }
       techTalk(child, 3000, sp.intro, guide);
       await sleep(reduceMotion ? 800 : 2600);
-      if (sp.type === 'collect') await storyCollect(board, id, sp, world);
+      if (sp.type === 'leaf') {   // 全螢幕記憶遊戲（劇情版不限翻錯次數）
+        var lr = await leafGame({ rounds: [GAME.LEAF_GAME.story], misses: 0, title: sp.title, subtitle: sp.sub, desc: '先記住松果藏在哪幾堆落葉下，落葉蓋回去後把它們翻出來！' });
+        await sleep(reduceMotion ? 100 : 600);
+        lr.el.remove(); document.body.classList.remove('mg-open');
+      } else if (sp.type === 'collect') await storyCollect(board, id, sp, world);
       else if (sp.type === 'press') await storyPress(board, id, sp, world);
       else await storyCharge(board, id, sp, world);
       var first = store.completeStory(child.id, id);
@@ -1684,6 +1689,7 @@
     var practice = !!(opts && opts.practice);   // 試玩模式：不寫入存檔、不給星星、不算每日次數
     if (document.getElementById('mg')) return;
     if (!practice && !store.getPendingMinigame(childId)) return;
+    if (practice ? opts.leaf : store.getPendingMinigame(childId).game === 'leaf') { openLeafMinigame(childId, subtitle, opts); return; }   // 木島：落葉找松果
     var MAX = GAME.MINIGAME_MAX_STARS, SEC = GAME.MINIGAME_SECONDS;
     // 2026-11-08 家長調整（孩子反映星星消失太快）：每顆多停留 0.5 秒、出現數量 1.5 倍（間隔縮為 2/3）
     var PHASES = [{ until: 5000, gap: 667, life: 1700, count: 1, small: false },   // 前 5 秒
@@ -1805,6 +1811,126 @@
       close();
     };
     addStar(50, 44, true, 0, false);
+  }
+
+  // ---------- 木島小遊戲「落葉找松果」（記憶遊戲，2026-11-08 家長決定） ----------
+  /**
+   * 全螢幕：25 堆落葉（5×5）。每回合先亮出松果幾秒讓孩子記住位置，落葉蓋回去後翻找。
+   * o.rounds：[{ pine, show }]；o.misses：每回合可翻錯幾次（0＝不限，劇情版不會失敗）
+   * @returns Promise：{ found, el }（找到的松果總數、遊戲畫面，呼叫端負責結果視窗與關閉）；按「稍後再玩」回傳 null
+   */
+  function leafGame(o) {
+    return new Promise(function (resolve) {
+      var N = GAME.LEAF_GAME.piles, rounds = o.rounds, multi = rounds.length > 1;
+      var el = document.createElement('div');
+      el.className = 'mg leaf-mg'; el.id = 'mg';
+      el.innerHTML = '<div class="mg-top"><span class="mg-count">🌰 <b id="leaf-found">0</b></span>' +
+        '<b class="leaf-round" id="leaf-round"></b><span class="leaf-miss" id="leaf-miss" aria-label="還可以翻錯的次數"></span></div>' +
+        '<div class="leaf-field"><p class="leaf-msg" id="leaf-msg" role="status"></p><div class="leaf-grid" id="leaf-grid"></div></div>' +
+        '<div class="mg-tip leaf-tip" id="mg-tip"><b>' + h(o.title) + '</b>' + (o.subtitle ? '<small>' + h(o.subtitle) + '</small>' : '') +
+        '<span>' + h(o.desc) + '</span>' +
+        (o.practice ? '<small class="mg-practice">🧪 試玩模式：不會得到星星，也不算今天的次數</small>' : '') +
+        '<button type="button" class="btn primary leaf-start" data-leaf="start">🍂 開始！</button>' +
+        (o.later ? '<button type="button" class="btn link mg-later" data-mg="later">' + (o.practice ? '離開試玩' : '稍後再玩') + '</button>' : '') + '</div>';
+      document.body.appendChild(el);
+      document.body.classList.add('mg-open');
+      var grid = el.querySelector('#leaf-grid'), msg = el.querySelector('#leaf-msg'), foundEl = el.querySelector('#leaf-found');
+      var total = 0, r = 0, timers = [];
+      function later(fn, ms) { timers.push(setTimeout(fn, reduceMotion ? Math.min(ms, 300) : ms)); }
+      el._stop = function () { timers.forEach(clearTimeout); timers.forEach(clearInterval); };
+      function showMiss(left) {
+        el.querySelector('#leaf-miss').innerHTML = o.misses ? new Array(left + 1).join('<i class="leaf-heart">🍃</i>') + new Array(o.misses - left + 1).join('<i class="leaf-heart off">🍃</i>') : '';
+      }
+      function round() {
+        var R = rounds[r], found = 0, miss = 0, locked = true, pines = {};
+        var idx = []; for (var i = 0; i < N; i++) idx.push(i);
+        for (var k = 0; k < R.pine; k++) { var j = k + Math.floor(Math.random() * (N - k)); var t = idx[k]; idx[k] = idx[j]; idx[j] = t; pines[idx[k]] = true; }
+        el.querySelector('#leaf-round').textContent = multi ? '第 ' + (r + 1) + ' / ' + rounds.length + ' 回合' : '找出 ' + R.pine + ' 顆松果';
+        showMiss(o.misses);
+        grid.className = 'leaf-grid peek';
+        grid.innerHTML = '';
+        for (var n = 0; n < N; n++) {
+          var b = document.createElement('button');
+          b.type = 'button'; b.className = 'leaf-pile' + (pines[n] ? ' pine' : ''); b.setAttribute('aria-label', '落葉堆');
+          if (pines[n]) b.setAttribute('data-pine', '1');
+          b.innerHTML = '<span class="leaf-under" aria-hidden="true">' + (pines[n] ? '🌰' : '') + '</span><span class="leaf-cover" aria-hidden="true">🍂</span>';
+          b.addEventListener('pointerdown', tap);
+          grid.appendChild(b);
+        }
+        // 先亮出松果，倒數結束後落葉蓋回去
+        var left = Math.ceil(R.show / 1000);
+        msg.textContent = '👀 記住松果的位置！' + left;
+        var cd = setInterval(function () { left--; if (left > 0) msg.textContent = '👀 記住松果的位置！' + left; }, 1000);
+        timers.push(cd);
+        later(function () {
+          clearInterval(cd);
+          grid.className = 'leaf-grid';
+          msg.textContent = '🍂 翻開落葉，找出 ' + R.pine + ' 顆松果！';
+          locked = false;
+        }, R.show);
+        function tap(e) {
+          e.preventDefault();
+          var b = e.currentTarget;
+          if (locked || b.classList.contains('open')) return;
+          b.classList.add('open');
+          if (b.hasAttribute('data-pine')) {
+            found++; total++; foundEl.textContent = total;
+            if (found >= R.pine) end(true);
+          } else {
+            b.classList.add('empty');
+            if (o.misses) { miss++; showMiss(o.misses - miss); if (miss >= o.misses) end(false); }
+          }
+        }
+        function end(all) {
+          locked = true;
+          grid.querySelectorAll('.leaf-pile.pine:not(.open)').forEach(function (b) { b.classList.add('open', 'missed'); });   // 沒找到的松果亮出來
+          msg.textContent = all ? '🎉 全部找到了！' : '🍃 翻錯 ' + o.misses + ' 次了，找到 ' + found + ' 顆';
+          later(function () {
+            r++;
+            if (r < rounds.length) round();
+            else { el._stop(); resolve({ found: total, el: el }); }
+          }, 1300);
+        }
+      }
+      el.querySelector('[data-leaf=start]').onclick = function () { el.querySelector('#mg-tip').hidden = true; round(); };
+      var lt = el.querySelector('[data-mg=later]');
+      if (lt) lt.onclick = function () { el._stop(); el.remove(); document.body.classList.remove('mg-open'); resolve(null); };
+    });
+  }
+  /** 木島小遊戲格：落葉找松果（計分版 3 回合；每 2 顆松果換 1 顆能量星星，按「收下」才寫入） */
+  async function openLeafMinigame(childId, subtitle, opts) {
+    var practice = !!(opts && opts.practice), LG = GAME.LEAF_GAME;
+    var res = await leafGame({ rounds: LG.rounds, misses: LG.misses, title: '🌰 落葉找松果', subtitle: subtitle, practice: practice, later: true,
+      desc: '先記住松果藏在哪幾堆落葉下，落葉蓋回去後把它們翻出來！共 ' + LG.rounds.length + ' 回合，每回合翻錯 ' + LG.misses + ' 次就進下一回合。' });
+    if (!res) {
+      if (!practice) toast('小遊戲留著，等一下再玩');
+      if (practice) location.replace('#home');
+      render(); return;
+    }
+    var el = res.el, found = res.found, gain = GAME.leafStars(found);
+    function close() { el.remove(); document.body.classList.remove('mg-open'); if (practice) location.replace('#home'); render(); }
+    var m = document.createElement('div');
+    m.className = 'mg-result leaf-result';
+    m.innerHTML = '<b>' + (found >= GAME.LEAF_MAX_FOUND ? '🎉 全部找到了！' : found >= 10 ? '👏 記憶力好棒！' : '✨ 完成！') + '</b>' +
+      '<p>找到 <strong>' + found + '</strong> / ' + GAME.LEAF_MAX_FOUND + ' 顆松果</p>' +
+      '<div class="leaf-pines" aria-hidden="true">' + new Array(found + 1).join('<i>🌰</i>') + '</div>' +
+      '<p class="mg-rate">每 ' + LG.rate + ' 顆松果換 1 顆能量星星（不滿 ' + LG.rate + ' 顆也算 1 顆）</p>' +
+      (practice ? '<p class="mg-gain">' + STAR_IMG + ' ' + gain + ' 能量星星</p><p class="mg-practice-note">🧪 試玩模式，不會真的得到星星</p>' +
+        '<div class="mg-acts"><button type="button" class="btn" data-mg="exit">離開</button><button type="button" class="btn primary" data-mg="again">再玩一次</button></div>'
+        : '<p class="mg-gain">' + STAR_IMG + ' +' + gain + ' 能量星星</p><button type="button" class="btn primary" data-mg="claim">收下</button>');
+    el.appendChild(m);
+    if (practice) {
+      m.querySelector('[data-mg=exit]').onclick = close;
+      m.querySelector('[data-mg=again]').onclick = function () { el.remove(); document.body.classList.remove('mg-open'); openLeafMinigame(null, null, opts); };
+      return;
+    }
+    m.querySelector('[data-mg=claim]').onclick = function () {
+      try {
+        var r = store.finishMinigame(childId, found);
+        toast('⭐ 小遊戲得到 ' + r.stars + ' 顆能量星星！', 'pos');
+      } catch (err) { toast(err.message, 'neg'); }
+      close();
+    };
   }
 
   /** 星星商店（對話框） */

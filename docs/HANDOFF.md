@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-08｜App 版本 `2026.11.08-78`｜Service Worker 快取 `cgp-shell-v88`｜`main` 最新：島嶼劇情通用架構＋木島劇情（假地圖驗證）
+> 最後更新：2026-11-08｜App 版本 `2026.11.08-79`｜Service Worker 快取 `cgp-shell-v89`｜`main` 最新：木島小遊戲「落葉找松果」（記憶遊戲）
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -11,11 +11,11 @@
 - Repo：**`dollyswim/Child-good-point`**，直接在 `main` 開發與推送（家長同意，不開 PR）；GitHub Pages：https://dollyswim.github.io/Child-good-point/
 - 純 HTML／CSS／JS 的 PWA，不需建置；資料存在手機瀏覽器 localStorage（自動備份存在 IndexedDB）。
 - 舊 repo 搬家、手機資料搬家都已完成（舊的交接步驟已移除）。
-- 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test
+- 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v88`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.08-78`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
-2. 測試：`npm test`（單元，約 1 秒，目前 128 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v89`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.08-79`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+2. 測試：`npm test`（單元，約 1 秒，目前 129 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
 
@@ -66,6 +66,8 @@
 - 神諭祝福可在當天收回（只收回還沒用掉的，孩子那邊默默收回）。
 - 修正：換島資料 `islands`／`islandClears` 重新載入後消失的問題（migrate 補上）。
 - 島嶼劇情改成通用架構（`ISLAND_STORY`：collect／press／charge 三種互動），木島劇情 4 個任務＋成就「木島小英雄」（共 25 項），用測試假地圖驗證；正式木島地圖到貨才會在 App 出現。
+- 木島小遊戲「落葉找松果」（記憶遊戲，25 堆落葉 5×5，先亮出松果位置再蓋回去翻找）：木島小遊戲格用計分版（3 回合 4／5／6 顆、看 3／2.5／2 秒、每回合翻錯 3 次進下一回合；每 2 顆松果換 1 星，最多 15 顆 → 8 星）；第 8 格劇情改用劇情版（看 3 秒、找齊 5 顆、翻錯不會失敗）。星星呼喚仍是抓住星星；「星星捕手」「星海傳說」只算抓住星星。
+- 家長構想：「配對翻牌」記憶玩法之後可當其他島的小遊戲。
 
 ## 2. 目前完成的功能
 
@@ -131,7 +133,8 @@
 - 重置今天的次數上限（2026-11-08，設定 → 孩子 →「重置今天上限」，需家長密碼）：`store.resetDailyLimits(id)` 把今天已計入上限的擲骰、道具使用、每日小遊戲紀錄標 `limitReset: true`（計算次數時跳過，紀錄保留），並在 `adventure.limitResets` 留紀錄。一次重置全部：骰子 3 次、小遊戲 1 次、前進道具 5 次、任意門 1 次、神奇骰子 1 顆、星星呼喚 1 個；已用掉的道具不退回；明天照常。
 - 能源主塔互動（2026-11-08 家長決定）：①第一次走進齒輪工坊（金島最遠 ≥ 56、還沒通電）時鏡頭移到主塔，技師主動求助一次（`towerIntro`，存 `players[id].towerIntro`）；②通電前第 80 格顯示閃爍 ⚡ 開關（`.mt-switch`）；③經過第 80 格時跳出充電面板，孩子連點 10 下充滿才通電（`chargeTower`），不限時間、不會失敗。機會卡「礦車」改為先跳出「🚃 礦車來了！」按「上車！」才前進（`ev.cart`、`cartBoard`）；資料在擲骰時已寫入，互動只是演出。
 - 金島劇情（2026-11-08 家長決定）：技師當導遊，劇情未完成時在格子旁站著、頭上閃「！」，點他會說要去哪一格。①第 5 格「礦工求助」：鏡頭移過去 → 技師說明 → 孩子點地圖上 5 顆發光礦石；②第 30 格「礦車轉轍」：按「拉下轉轍器」→ 礦車開往水晶礦谷；③能源主塔充電也算一個劇情。每個第一次完成給 ⭐3（`store.completeStory`，記在 `players[id].story = {ore, rail, tower: 日期}`，帳本「劇情：…」），三個都完成解鎖成就「金島小英雄」（`goldHero`，舊存檔金島最遠 ≥ 80 視同主塔已完成）。第 55 格「工廠起動」家長說和能源塔重複，不做。位置與台詞在 `js/app.js` 的 `ISLAND_STORY.gold`，流程 `runStory`；經過（不只停在）該格就觸發，換島移動不觸發。
-- 島嶼劇情通用架構（2026-11-08）：`ISLAND_STORY[島] = { rel, guide, spots }`，互動 `type` 有 collect（撿東西）、press（按按鈕＋effect cart／bridge）、charge（連點 10 下，共用 `chargeTower(opts)`）；`rel: true` 時座標是相對任務格子的位移。完成紀錄都在 `players[id].story`（代號各島不重複），清單與格號在 `js/game.js` 的 `STORIES`（含 `island`），`storiesOf(島)` 取某島劇情。木島 4 個任務見 `docs/art/WOOD_ISLAND_PLAN.md` 第 6 節；四個都完成解鎖「木島小英雄」（`woodHero`）。成就共 25 個（徽章要 26 張，已更新 CSV 與 brief）。
+- 島嶼劇情通用架構（2026-11-08）：`ISLAND_STORY[島] = { rel, guide, spots }`，互動 `type` 有 collect（撿東西）、press（按按鈕＋effect cart／bridge）、charge（連點 10 下，共用 `chargeTower(opts)`）；`rel: true` 時座標是相對任務格子的位移。完成紀錄都在 `players[id].story`（代號各島不重複），清單與格號在 `js/game.js` 的 `STORIES`（含 `island`），`storiesOf(島)` 取某島劇情。木島 4 個任務見 `docs/art/WOOD_ISLAND_PLAN.md` 第 6 節（`pinecone` 是 `type: 'leaf'`：全螢幕落葉找松果）。
+- 小遊戲依島嶼切換（`GAME.minigameOf(島)`：wood＝leaf，其他＝stars）：停在小遊戲格時小遊戲紀錄記 `game: 'leaf'`（migrate 保留），`finishMinigame` 依 game 換算星星（`GAME.leafStars`、帳本「小遊戲：落葉找松果」）；`openMinigame` 遇到 leaf 轉給 `openLeafMinigame`，遊戲本體 `leafGame(o)`（劇情與計分共用）。規則數值在 `js/game.js` 的 `LEAF_GAME`。四個都完成解鎖「木島小英雄」（`woodHero`）。成就共 25 個（徽章要 26 張，已更新 CSV 與 brief）。
 - 神諭祝福收回（2026-11-08 家長決定）：設定 → 神諭祝福 → 最近發送紀錄，**當天**送出的每筆有「收回」按鈕（要家長密碼，`store.revokeBlessing(id)`）。只收回還沒用掉的：道具從背包扣（神秘寶箱扣 `giftMysteryChest`），幸運星扣星星但不讓星星變負數（帳本「收回神諭祝福：幸運星」）；已打開的寶箱、已花掉的星星不追討。默默收回：設 `seen = true`，孩子沒打開過的領取畫面不再出現，不另外提示。紀錄存在 `blessings[].revoked = {ts, taken, total}`，道具紀錄的那筆「取得」改成實際留下的份數（全收回就刪除）。
 - 自動備份上限：每日 7 份＋「還原前的狀態」1 份，超過自動刪最舊；設定 → 備份 → 還原資料 每份都可「刪除」（`store.deleteSnapshot(id)`，需家長密碼，不影響目前資料）。
 - 孩子 4 位以上：頁首切換列改為每排 3 位（`.kid-switch.many`，名字過長分兩行）；3 位以下維持一排。設定頁 7 個分頁改為每排 4 個自動換行，不用左右滑。
@@ -169,7 +172,7 @@
 - 整個 ⚙️ 設定需要 4 位數家長密碼（第一次進入時設定）；離開設定自動上鎖。E2E 測試用 `passPin()` 輔助函式（密碼 1234）。
 
 ### 路由（hash，只用英數與連字號）
-`#minigame-test`（家長試玩「抓住星星」：不給星星、不算次數、不動存檔）、`#home`、`#child-<id>`（任務）、`#challenge-<id>`、`#shop-<id>`（兌換）、`#adventure-<id>`（冒險大廳）、`#map-<id>`（金島地圖）、`#report`、`#rules`、`#rules-<分頁>`。舊格式 `#/child/<id>` 仍相容。
+`#minigame-test`（家長試玩「抓住星星」：不給星星、不算次數、不動存檔）、`#leaf-test`（家長試玩木島「落葉找松果」，同上）、`#home`、`#child-<id>`（任務）、`#challenge-<id>`、`#shop-<id>`（兌換）、`#adventure-<id>`（冒險大廳）、`#map-<id>`（金島地圖）、`#report`、`#rules`、`#rules-<分頁>`。舊格式 `#/child/<id>` 仍相容。
 
 ### 重要資料規則
 - 總點數 = 起始點數 + 所有紀錄點數（不另存）。今日淨得分不含兌換與起始點數。

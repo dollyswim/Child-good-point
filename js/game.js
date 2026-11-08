@@ -27,6 +27,18 @@
   var MINIGAME_RATE = 3;
   function minigameStars(caught) { var c = Math.max(0, Math.floor(Number(caught) || 0)); return Math.min(MINIGAME_MAX_STARS, Math.ceil(c / MINIGAME_RATE)); }
   var MINIGAME_SECONDS = 10;
+  /**
+   * 木島小遊戲「落葉找松果」（2026-11-08 家長決定）：25 堆落葉（5×5），先亮出松果位置讓孩子記住，蓋回去後翻找。
+   * 計分版（木島小遊戲格）：3 回合越來越難，每回合翻錯 3 次就進下一回合；每 2 顆松果換 1 顆能量星星（無條件進位），最多 15 顆松果 → 8 顆。
+   * 劇情版（木島第 8 格）：1 回合、松果 5 顆、看 3 秒，翻錯沒關係、找齊就完成。
+   */
+  var LEAF_GAME = { piles: 25, misses: 3, rate: 2,
+    rounds: [{ pine: 4, show: 3000 }, { pine: 5, show: 2500 }, { pine: 6, show: 2000 }],
+    story: { pine: 5, show: 3000 } };
+  var LEAF_MAX_FOUND = LEAF_GAME.rounds.reduce(function (n, r) { return n + r.pine; }, 0);
+  function leafStars(found) { var c = Math.max(0, Math.min(LEAF_MAX_FOUND, Math.floor(Number(found) || 0))); return Math.ceil(c / LEAF_GAME.rate); }
+  /** 這座島的小遊戲（木島＝落葉找松果，其他島＝抓住星星） */
+  function minigameOf(island) { return island === 'wood' ? 'leaf' : 'stars'; }
 
   /** 道具圖示：家長提供的白底插圖（images/items/，256×256 WebP，原圖 1024×1024 PNG），介面以白色圖示框＋contain 顯示 */
   /**
@@ -640,22 +652,25 @@
           : '得到特殊任務：「' + sp.task.name + '」\n已加到任務頁，3 天內完成可得 +' + sp.task.points + ' 點！';
       }
     } else if (tile.type === 'minigame') {
-      ev.title = '🎮 小遊戲：抓住星星';
+      var leaf = minigameOf(this.getPlayer(childId).island) === 'leaf';
+      ev.title = leaf ? '🎮 小遊戲：落葉找松果' : '🎮 小遊戲：抓住星星';
       var mg = this.getMinigameToday(childId);
       if (!mg) {
         mg = { id: uid(), childId: childId, date: this.today(), tile: tile.n, status: 'pending', caught: 0, stars: 0, ts: this.now().getTime() };
+        if (leaf) mg.game = 'leaf';
         this.data.adventure.minigames.push(mg);
         ev.minigame = { id: mg.id };
-        ev.text = '點星星收集能量星星！第 1 顆在正中央，點到後開始 ' + MINIGAME_SECONDS + ' 秒計時。';
+        ev.text = leaf ? '記住松果藏在哪幾堆落葉下，再把它們翻出來！共 3 回合。' : '點星星收集能量星星！第 1 顆在正中央，點到後開始 ' + MINIGAME_SECONDS + ' 秒計時。';
       } else if (mg.status === 'pending') {
         ev.minigame = { id: mg.id };
         ev.text = '今天的小遊戲還沒玩完，現在開始吧！';
       } else if (this._useBonus(childId, 'games')) {
         // 再來 3 次：額外的小遊戲（不轉神秘寶箱）
         mg = { id: uid(), childId: childId, date: this.today(), tile: tile.n, status: 'pending', bonus: true, caught: 0, stars: 0, ts: this.now().getTime() };
+        if (leaf) mg.game = 'leaf';
         this.data.adventure.minigames.push(mg);
         ev.minigame = { id: mg.id, bonus: true };
-        ev.text = '🎮 再來 3 次：額外的小遊戲！點星星收集能量星星。';
+        ev.text = '🎮 再來 3 次：額外的小遊戲！' + (leaf ? '記住松果的位置再翻出來。' : '點星星收集能量星星。');
       } else {
         // 今天已玩過：每天最多 1 次 → 這次機會轉成神秘寶箱（下次冒險時出現在前方；每天最多 2 個）
         ev.minigameOverflow = true;
@@ -791,7 +806,7 @@
   ]);
   /** 「抓住星星」單局最多抓到幾顆 */
   function bestCatch(s, c) {
-    return s.data.adventure.minigames.reduce(function (m, g) { return g.childId === c && g.status === 'done' && g.caught > m ? g.caught : m; }, ((s.data.carry || {})[c] || {}).bestCatch || 0);   // 含封存結轉
+    return s.data.adventure.minigames.reduce(function (m, g) { return g.childId === c && g.status === 'done' && g.game !== 'leaf' && g.caught > m ? g.caught : m; }, ((s.data.carry || {})[c] || {}).bestCatch || 0);   // 含封存結轉
   }
   /** 完成的特殊任務數 */
   function specialDone(s, c) {
@@ -877,10 +892,12 @@
     this._requirePlay(childId);
     var m = this.getPendingMinigame(childId);
     if (!m) throw new Error('今天沒有可以玩的小遊戲');
+    var leaf = m.game === 'leaf';
     var got = Math.max(0, Math.floor(Number(caught) || 0));
-    var n = minigameStars(got);
+    if (leaf) got = Math.min(LEAF_MAX_FOUND, got);
+    var n = leaf ? leafStars(got) : minigameStars(got);
     m.status = 'done'; m.caught = got; m.stars = n; m.doneTs = this.now().getTime();
-    if (n > 0) this._ledger(childId, n, '小遊戲：抓住星星');
+    if (n > 0) this._ledger(childId, n, leaf ? '小遊戲：落葉找松果' : '小遊戲：抓住星星');
     this.save();
     return m;
   };
@@ -1142,7 +1159,7 @@
     return this.getBonusQuota(childId);
   };
 
-  var api = { STORIES: STORIES, storiesOf: storiesOf, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { LEAF_GAME: LEAF_GAME, LEAF_MAX_FOUND: LEAF_MAX_FOUND, leafStars: leafStars, minigameOf: minigameOf, STORIES: STORIES, storiesOf: storiesOf, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

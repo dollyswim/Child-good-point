@@ -2383,3 +2383,27 @@ test('木島劇情：四個任務（每區 1 個、都在一般格）各給 ⭐3
   const s2 = new Store({ storage, seed: false, now: () => store.now() });
   assert.deepEqual(Object.keys(s2.getPlayer(a.id).story).sort(), ['bridge', 'elftree', 'fruit', 'pinecone']);
 });
+
+test('木島小遊戲「落葉找松果」：木島小遊戲格產生 leaf 小遊戲、每 2 顆松果換 1 星（最多 15 顆 → 8 星）、不算星星捕手、存檔保留', () => {
+  const { store, a, push, storage } = p3Store();
+  assert.deepEqual([G.minigameOf('wood'), G.minigameOf('gold')], ['leaf', 'stars']);
+  assert.equal(G.LEAF_MAX_FOUND, 15, '3 回合 4＋5＋6 顆');
+  assert.deepEqual([0, 1, 2, 3, 15, 99].map(G.leafStars), [0, 1, 1, 2, 8, 8]);
+  G.registerBoard('wood', fakeWood());
+  try {
+    const p = store.getPlayer(a.id); p.island = 'wood'; p.tileId = 'wood-01-004'; store.save();
+    store.buyItem(a.id, 'd6');
+    push(face(3));                                // 擲 3 → 第 7 格小遊戲
+    const r = store.rollDice(a.id, 'd6');
+    assert.equal(r.event.title, '🎮 小遊戲：落葉找松果');
+    assert.equal(store.getPendingMinigame(a.id).game, 'leaf');
+    const s2 = new Store({ storage, seed: false, now: () => store.now() });
+    assert.equal(s2.getPendingMinigame(a.id).game, 'leaf', '重新整理後還是落葉找松果');
+    const bal = store.getStarBalance(a.id);
+    const m = store.finishMinigame(a.id, 30);
+    assert.deepEqual([m.caught, m.stars], [15, 8], '最多 15 顆松果 → 8 星');
+    assert.equal(store.getStarBalance(a.id), bal + 8);
+    assert.ok(store.data.adventure.ledger.some(x => x.reason === '小遊戲：落葉找松果' || x.note === '小遊戲：落葉找松果' || JSON.stringify(x).includes('落葉找松果')));
+    assert.ok(!store.checkAchievements(a.id).some(x => x.id === 'catch5'), '松果不算「星星捕手」');
+  } finally { delete G.BOARDS.wood; }
+});

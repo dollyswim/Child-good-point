@@ -317,7 +317,7 @@
         }).map(function (x) {
           return { id: String(x.id), childId: String(x.childId), date: x.date, tile: toInt(x.tile, 0), bonus: !!x.bonus,
             status: x.status === 'done' || x.status === 'expired' ? x.status : 'pending', caught: Math.max(0, toInt(x.caught, 0)), stars: Math.max(0, toInt(x.stars, 0)),
-            ts: toInt(x.ts, Date.now()), doneTs: x.doneTs ? toInt(x.doneTs, 0) : undefined, limitReset: !!x.limitReset || undefined, starCall: !!x.starCall || undefined };
+            ts: toInt(x.ts, Date.now()), doneTs: x.doneTs ? toInt(x.doneTs, 0) : undefined, limitReset: !!x.limitReset || undefined, starCall: !!x.starCall || undefined, game: x.game === 'leaf' ? 'leaf' : undefined };   // game：leaf＝木島落葉找松果（沒有＝抓住星星）
         });
       })(),
       // 結束今日冒險（當天鎖住）
@@ -1290,7 +1290,7 @@
         var c = cc(x.childId);
         if (k === 'settlements') { c.stars += x.stars || 0; c.settled = true; }
         if (k === 'ledger') c.stars += x.delta || 0;
-        if (k === 'minigames' && x.status === 'done' && x.caught > c.bestCatch) c.bestCatch = x.caught;
+        if (k === 'minigames' && x.status === 'done' && x.game !== 'leaf' && x.caught > c.bestCatch) c.bestCatch = x.caught;   // 只算抓住星星
         c.advCount++;
       });
       var ids = {};
