@@ -1980,3 +1980,8 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .leaf-pile.missed .leaf-under img { opacity: .75; }
 .leaf-ico { width: 1.5em; height: 1.5em; object-fit: contain; vertical-align: middle; }
 .leaf-pines .leaf-ico { width: 26px; height: 26px; }
+/* 2026-11-08 家長調整（附示意圖藍框）：25 格往下移，置中放在背景中間的空草地（背景圖高度約 31%～78%，中心約 54.6%），避開上方樹木
+   背景是 cover 置中：圖高 H＝max(螢幕高, 螢幕寬 × 2752/1536)，藍框中心 y＝50vh＋0.0465 × H；格子高度約等於寬度 */
+.leaf-mg { --lg-w: min(94vw, 420px); --lg-top: max(118px, calc(50vh + 0.0465 * max(100vh, 179.2vw) - var(--lg-w) / 2)); }
+.leaf-mg .leaf-grid { position: absolute; left: 50%; top: var(--lg-top); transform: translateX(-50%); width: var(--lg-w); }
+.leaf-mg .leaf-msg { position: absolute; left: 50%; top: calc(var(--lg-top) - 50px); transform: translateX(-50%); white-space: nowrap; max-width: 94vw; overflow: hidden; text-overflow: ellipsis; }
