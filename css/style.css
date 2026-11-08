@@ -1999,3 +1999,7 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .leaf-mg .leaf-msg:empty, .leaf-mg .leaf-round:empty, .leaf-mg .leaf-miss:empty { visibility: hidden; }
 .leaf-title { display: inline-flex; align-items: center; gap: 6px; }
 .leaf-title .leaf-ico { width: 1.6em; height: 1.6em; }
+/* 2026-11-08 家長調整：「先看」時 25 堆落葉全部掀開，松果、松鼠、泥土空地都看得到（松果、松鼠仍在淡色卡上） */
+.leaf-grid.peek .leaf-pile .leaf-cover { transform: translate(40%, -40%) rotate(40deg) scale(.6); opacity: 0; }
+.leaf-grid.peek .leaf-pile .leaf-under { opacity: 1; }
+.leaf-grid.peek .leaf-pile:not(.pine):not(.squirrel) .leaf-under img { width: 96%; height: 96%; }

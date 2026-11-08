@@ -1792,6 +1792,7 @@ async function main() {
     assert.equal(await q.locator('.leaf-pile[data-pine]').count(), 5);
     assert.equal(await q.locator('.leaf-pile[data-squirrel]').count(), 2, '2 隻松鼠干擾物');
     assert.equal(await q.locator('.leaf-grid.peek').count(), 1, '先亮出松果位置');
+    assert.ok(await q.evaluate(() => [...document.querySelectorAll('.leaf-pile')].every((p) => getComputedStyle(p.querySelector('.leaf-under')).opacity === '1')), '先看時 25 堆全部掀開（松果、松鼠、泥土都看得到）');
     assert.match(await q.locator('#leaf-msg').innerText(), /記住松果的位置/);
     await q.waitForSelector('.leaf-grid:not(.peek)', { timeout: 6000 });
     for (let k = 0; k < 4; k++) await q.locator('.leaf-pile:not([data-pine]):not([data-squirrel])').nth(k).click();   // 翻錯 4 次也不會失敗
