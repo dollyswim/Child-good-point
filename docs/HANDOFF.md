@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-08｜App 版本 `2026.11.08-88`｜Service Worker 快取 `cgp-shell-v98`｜`main` 最新：轉轍器改成拖曳拉桿
+> 最後更新：2026-11-08｜App 版本 `2026.11.08-89`｜Service Worker 快取 `cgp-shell-v99`｜`main` 最新：礦車換正式圖
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -14,7 +14,7 @@
 - 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v98`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.08-88`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v99`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.08-89`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 132 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -47,7 +47,7 @@
 - 「載入封存檔」回 App（目前封存檔只能保存）。
 - 角色動畫延伸到冒險大廳、通關畫面；星星呼喚、成就徽章的正式圖。
 - 「星星捕手」「星海傳說」徽章圖案描述可改成銀色星星（小遊戲已改抓銀色星星）。
-- 金島礦車正式圖（家長請 Gemini 做，提示詞在 `docs/art-prompts.md`；到貨後去背，換掉第 30 格劇情 `.story-cart` 與機會卡礦車面板的 🚃）。
+- 金島礦車正式圖已上線（`images/gold/minecart.webp`，家長 Gemini 圖；去除外框相連白底＋鐵軌間被圍住的大塊白底，閃光保留）：第 30 格劇情開走的礦車（左右翻成車頭朝右）、機會卡「礦車來了！」面板。
 - 第 30 格轉轍器改成真的拖曳拉桿：`pullLever()`，紅色把手往下拉到 85% 以上放開（或拉到底）才觸發，沒到底會彈回；地圖上的拉桿跟著扳下（`--pull`）；鍵盤 ↓／Enter 也可以。木島吊橋仍是按鈕。
 - 金島發光金礦石正式圖已上線（`images/gold/ore.webp`，家長 Gemini 圖，只去除與外框相連的白底）。
 - 修正：撿礦石任務進行中點商店，關掉後地圖重畫、礦石消失而卡住 → 劇情任務中地圖按鈕暫停（`body.story-on`），重畫後把沒撿的東西放回地圖。

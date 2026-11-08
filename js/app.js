@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-88';
+  var APP_VERSION = '2026.11.08-89';
   var store;
   try {
     store = new CGP.Store();
@@ -769,7 +769,7 @@
   }
   /** 機會卡「前進 2 格」的演出文字：金島礦車、木島藤蔓（其他島還沒有主題時沿用礦車） */
   var CART_UI = {
-    gold: { icon: '🚃', title: '🚃 礦車來了！', text: function (n) { return '礦車可以載你額外前進 ' + n + ' 格！'; }, btn: '🚃 上車！' },
+    gold: { icon: '🚃', img: 'images/gold/minecart.webp', title: '🚃 礦車來了！', text: function (n) { return '礦車可以載你額外前進 ' + n + ' 格！'; }, btn: '🚃 上車！' },
     wood: { icon: '🌿', title: '🌿 藤蔓垂下來了！', text: function (n) { return '抓住藤蔓盪過去，額外前進 ' + n + ' 格！'; }, btn: '🌿 抓住！' }
   };
   function cartUI(island) { return CART_UI[island] || CART_UI.gold; }
@@ -779,7 +779,7 @@
     return new Promise(function (resolve) {
       var el = document.createElement('div');
       el.className = 'charge-panel cart-panel'; el.id = 'cart-panel';
-      el.innerHTML = '<b>' + U.title + '</b><small>' + h(text || U.text(2)) + '</small>' +
+      el.innerHTML = (U.img ? '<img class="cart-art" src="' + U.img + '" alt="" aria-hidden="true" width="320" height="320" decoding="async">' : '') + '<b>' + U.title + '</b><small>' + h(text || U.text(2)) + '</small>' +
         '<button type="button" class="btn primary charge-btn" id="cart-btn">' + U.btn + '</button>';
       document.body.appendChild(el);
       el.querySelector('#cart-btn').addEventListener('click', function () { el.remove(); resolve(); });
@@ -907,7 +907,7 @@
     if (sp.effect === 'cart') {
       var lever = document.getElementById('story-lever'); if (lever) lever.classList.add('pulled');
       var cart = document.createElement('div');
-      cart.className = 'story-cart'; cart.textContent = '🚃';
+      cart.className = 'story-cart'; cart.innerHTML = '<img src="images/gold/minecart.webp" alt="" aria-hidden="true" width="320" height="320" decoding="async">';   // 2026-11-08 礦車正式圖
       cart.style.left = a.x + 'px'; cart.style.top = a.y + 'px';
       world.appendChild(cart);
       await sleep(reduceMotion ? 50 : 400);
