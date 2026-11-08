@@ -462,6 +462,40 @@
     this.save();
     return rec;
   };
+  /**
+   * 家長收回當天送出的神諭祝福：只收回孩子還沒用掉的部分（背包裡還在的道具、還在的星星；星星不會變負數），孩子那邊不另外提示
+   * @returns {{taken:number, used:number, stars:boolean}} taken＝收回幾份（幸運星為星星數），used＝已用掉幾份
+   */
+  Store.prototype.revokeBlessing = function (id) {
+    this._requireParent();
+    var rec = this.data.adventure.blessings.find(function (x) { return x.id === id; });
+    if (!rec) throw new Error('找不到這筆神諭祝福');
+    if (rec.revoked) throw new Error('這筆已經收回了');
+    if (rec.date !== this.today()) throw new Error('只能收回今天送出的神諭祝福');
+    var childId = rec.childId, p = this.getPlayer(childId), total, taken;
+    if (rec.kind === 'luckyStar') {
+      total = LUCKY_STAR * rec.qty;
+      taken = Math.min(total, Math.max(0, this.getStarBalance(childId)));
+      if (taken) this._ledger(childId, -taken, '收回神諭祝福：幸運星');
+    } else {
+      var key = rec.kind === 'mysteryChest' ? 'giftMysteryChest' : rec.kind;
+      total = rec.qty;
+      taken = Math.min(total, Math.max(0, p.bag[key] || 0));
+      p.bag[key] -= taken;
+    }
+    rec.revoked = { ts: this.now().getTime(), taken: taken, total: total };
+    rec.seen = true;   // 還沒打開的領取畫面不再出現
+    // 道具紀錄：把當初那筆「取得」改成實際留下的份數（全部收回就刪掉），每日摘要才不會多算
+    var log = this.data.adventure.itemLog, keep = rec.kind === 'luckyStar' ? (taken === total ? 0 : rec.qty) : rec.qty - taken;
+    var gi = -1, best = Infinity;
+    log.forEach(function (x, i) {
+      var d = Math.abs(x.ts - rec.ts);
+      if (x.childId === childId && x.action === 'grant' && x.item === rec.kind && x.source === '神諭祝福' && d < 2000 && d < best) { gi = i; best = d; }
+    });
+    if (gi >= 0) { if (keep > 0) log[gi].qty = keep; else log.splice(gi, 1); }
+    this.save();
+    return { taken: taken, used: total - taken, stars: rec.kind === 'luckyStar' };
+  };
   Store.prototype.getBlessings = function (childId) {
     // 新的在前；同一時間時依發送順序（後送的在前）
     return this.data.adventure.blessings.filter(function (x) { return !childId || x.childId === childId; })

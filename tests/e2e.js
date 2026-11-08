@@ -965,6 +965,19 @@ async function main() {
     assert.match(await q.locator('.bless-hist').innerText(), /幸運星 ×1 → 波妞[\s\S]*神秘寶箱 ×2 → 波妞[\s\S]*主動收玩具/);
     assert.deepEqual(await q.evaluate((id) => [window.__cgpStore.getPlayer(id).bag.giftMysteryChest, window.__cgpStore.getStarBalance(id)], k2), [2, 10]);
     assert.equal(await q.evaluate((id) => window.__cgpStore.getPlayer(id).bag.giftMysteryChest, k1), 0, '端端不受影響');
+    // 收回當天送錯的：送一般寶箱 ×1 → 按「收回」→ 背包歸零、紀錄顯示已收回、孩子不會看到
+    await q.click('.bless-kind:has(input[value=chest])');
+    await q.click('[data-action=blessing-send]');
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction(() => document.querySelectorAll('.bless-hist li').length === 3);
+    assert.equal(await q.locator('[data-action=blessing-revoke]').count(), 3, '今天送的都可以收回');
+    await q.click('.bless-hist li:first-child [data-action=blessing-revoke]');
+    assert.match(await q.locator('#confirm').innerText(), /收回[\s\S]*一般寶箱 ×1[\s\S]*還沒用掉/);
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction(() => /已收回 1 份/.test(document.querySelector('.bless-hist li:first-child').textContent));
+    assert.equal(await q.locator('.bless-hist li:first-child [data-action=blessing-revoke]').count(), 0, '收回後不能再收');
+    assert.equal(await q.evaluate((id) => window.__cgpStore.getPlayer(id).bag.chest, k2), 0);
+    console.log('✔ 神諭祝福收回：當天可收回、只收回還沒用掉的、孩子不會看到');
     // 離開設定 → 自動上鎖；錯誤密碼進不去；寫入端也擋
     await q.goto(url + '#home');
     await q.goto(url + '#rules-children');

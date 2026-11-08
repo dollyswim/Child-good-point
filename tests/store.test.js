@@ -1317,6 +1317,41 @@ test('神諭祝福：5 種獎勵入庫、幸運星直接 +10 星、發送紀錄�
   assert.equal(store.data.adventure.itemLog.filter(x => x.action === 'grant' && x.source === '神諭祝福').length, 5);
 });
 
+test('神諭祝福收回：當天可收回、只收回還沒用掉的、星星不變負數、孩子不再看到領取畫面、存檔保留', () => {
+  const { store, a, setDate } = tsStore();
+  store.setParentPin('1234');
+  const c = store.sendBlessing(a.id, 'chest', 3);
+  store.random = () => 0.1;
+  store.openChest(a.id, 'chest');                          // 用掉 1 個（開出 2 星）
+  let r = store.revokeBlessing(c.id);
+  assert.deepEqual(r, { taken: 2, used: 1, stars: false });
+  assert.equal(store.getPlayer(a.id).bag.chest, 0);
+  assert.equal(store.getUnseenBlessings(a.id).length, 0, '收回後不顯示領取畫面');
+  assert.equal(store.data.adventure.itemLog.find(x => x.action === 'grant' && x.source === '神諭祝福').qty, 1, '取得紀錄改成實際留下的份數');
+  assert.throws(() => store.revokeBlessing(c.id), /已經收回/);
+  // 幸運星：星星花掉一部分 → 只收回剩下的，不變負數
+  const ls = store.sendBlessing(a.id, 'luckyStar', 2);     // +20 星
+  const left = store.getStarBalance(a.id) - 15;
+  store._ledger(a.id, -15, '測試花掉');
+  r = store.revokeBlessing(ls.id);
+  assert.deepEqual(r, { taken: left, used: 20 - left, stars: true });
+  assert.equal(store.getStarBalance(a.id), 0);
+  assert.ok(store.data.adventure.ledger.some(x => x.reason === '收回神諭祝福：幸運星' && x.delta === -left));
+  // 全部收回：紀錄刪掉
+  const m = store.sendBlessing(a.id, 'mysteryChest', 1);
+  assert.deepEqual(store.revokeBlessing(m.id), { taken: 1, used: 0, stars: false });
+  assert.equal(store.data.adventure.itemLog.filter(x => x.item === 'mysteryChest' && x.source === '神諭祝福').length, 0);
+  // 存檔重新載入後保留收回狀態
+  const s2 = new Store({ storage: store.storage, seed: false, now: () => store.now() });
+  assert.deepEqual(s2.getBlessings().find(x => x.id === m.id).revoked.taken, 1);
+  // 隔天不能收回；沒密碼不能收回
+  const t = store.sendBlessing(a.id, 'rerollTicket', 1);
+  setDate('2026-11-07T09:00:00');
+  assert.throws(() => store.revokeBlessing(t.id), /只能收回今天/);
+  store.lockParent && store.lockParent();
+  if (store.lockParent) assert.throws(() => store.revokeBlessing(t.id), /需要家長密碼|只能收回今天/);
+});
+
 test('寶箱庫存：一般寶箱沿用地圖寶箱內容；神諭祝福的神秘寶箱免鑰匙、開出特殊道具；紀錄開箱結果', () => {
   const { store, a } = tsStore();
   store.setParentPin('1234');

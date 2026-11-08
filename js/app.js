@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-76';
+  var APP_VERSION = '2026.11.08-77';
   var store;
   try {
     store = new CGP.Store();
@@ -1931,9 +1931,26 @@
         var t = new Date(x.ts);
         return '<li class="row"><span class="row-main"><b>' + b.icon + ' ' + h(b.name) + ' ×' + x.qty + ' → ' + h(c ? c.name : '') + '</b>' +
           '<small>' + (t.getMonth() + 1) + '/' + t.getDate() + ' ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0') +
-          (x.message ? '・「' + h(x.message) + '」' : '') + (x.seen ? '・已領取' : '・尚未打開') + '</small></span></li>';
+          (x.message ? '・「' + h(x.message) + '」' : '') + (x.revoked ? '・' + revokedText(x) : x.seen ? '・已領取' : '・尚未打開') + '</small></span>' +
+          (!x.revoked && x.date === store.today() ? '<button class="btn small" data-action="blessing-revoke" data-id="' + h(x.id) + '">收回</button>' : '') + '</li>';
       }).join('') + '</ul>' : '<p class="muted small">還沒有發送紀錄</p>') + '</section>' +
       '<section class="card"><h2>🔐 家長密碼</h2><button class="btn block" data-action="pin-change">更換家長密碼</button></section>';
+  }
+  function revokedText(x) {
+    var r = x.revoked, star = x.kind === 'luckyStar';
+    if (!r.taken) return '已收回（都已用掉，沒有收回東西）';
+    return '已收回 ' + (star ? '⭐' + r.taken : r.taken + ' 份') + (r.taken < r.total ? '（' + (star ? '⭐' + (r.total - r.taken) : (r.total - r.taken) + ' 份') + '已用掉）' : '');
+  }
+  /** 收回當天的神諭祝福：只收回還沒用掉的，孩子那邊不另外提示 */
+  function revokeBlessing(id) {
+    var x = store.getBlessings().find(function (y) { return y.id === id; });
+    if (!x) return;
+    var b = GAME.BLESSINGS.find(function (y) { return y.id === x.kind; }) || { icon: '🎁', name: x.kind };
+    var c = store.getChild(x.childId);
+    confirmThen('要收回送給 ' + (c ? c.name : '') + ' 的「' + b.icon + ' ' + b.name + ' ×' + x.qty + '」嗎？\n只會收回還沒用掉的部分（已打開的寶箱、已花掉的星星不會追討），孩子那邊不會跳出提示。', '收回', true, function () {
+      var r = store.revokeBlessing(id);
+      toast(r.taken ? '↩️ 已收回 ' + (r.stars ? '⭐' + r.taken : r.taken + ' 份') + (r.used ? '，' + (r.stars ? '⭐' + r.used : r.used + ' 份') + '已用掉' : '') : '都已用掉，沒有可收回的', r.taken ? 'pos' : '');
+    });
   }
   function sendBlessingFromForm() {
     var c = app.querySelector('input[name=bless-child]:checked'), k = app.querySelector('input[name=bless-kind]:checked');
@@ -2905,6 +2922,7 @@
         case 'pin-cancel': ui.pinMode = null; render(); break;
         case 'pin-change': ui.pinMode = 'reset'; render(); break;
         case 'blessing-send': sendBlessingFromForm(); break;
+        case 'blessing-revoke': revokeBlessing(id); break;
         case 'restore-snap': {
           var sn = store.getSnapshots().find(function (x) { return x.id === id; });
           var what = sn.kind === 'before' ? '還原前的狀態' : shortDate(sn.date) + ' 開始時的狀態';

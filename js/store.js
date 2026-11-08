@@ -347,7 +347,8 @@
         return x && x.id && childIdSet.has(String(x.childId)) && x.kind;
       }).map(function (x) {
         return { id: String(x.id), childId: String(x.childId), kind: String(x.kind), qty: Math.max(1, toInt(x.qty, 1)),
-          message: String(x.message || '').slice(0, 100), date: String(x.date || ''), ts: toInt(x.ts, Date.now()), seen: !!x.seen };
+          message: String(x.message || '').slice(0, 100), date: String(x.date || ''), ts: toInt(x.ts, Date.now()), seen: !!x.seen,
+          revoked: x.revoked && typeof x.revoked === 'object' ? { ts: toInt(x.revoked.ts, Date.now()), taken: Math.max(0, toInt(x.revoked.taken, 0)), total: Math.max(0, toInt(x.revoked.total, 0)) } : undefined };
       }),
       // 道具與寶箱紀錄：取得、開箱、使用（時間、孩子、道具、來源、結果）
       itemLog: (Array.isArray(adv.itemLog) ? adv.itemLog : []).filter(function (x) {
