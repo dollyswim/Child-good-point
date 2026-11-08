@@ -29,11 +29,11 @@
   var MINIGAME_SECONDS = 10;
   /**
    * 木島小遊戲「落葉找松果」（2026-11-08 家長決定）：25 堆落葉（5×5），先亮出松果位置讓孩子記住，蓋回去後翻找。
-   * 計分版（木島小遊戲格）：3 回合越來越難，每回合翻錯 3 次就進下一回合；每 2 顆松果換 1 顆能量星星（無條件進位），最多 15 顆松果 → 8 顆。
+   * 計分版（木島小遊戲格）：3 回合越來越難，每回合翻錯 3 次就進下一回合；每 1 顆松果換 1 顆能量星星（2026-11-08 家長調整，原本 2 換 1），最多 15 顆松果 → 15 顆。
    * 劇情版（木島第 8 格）：1 回合、松果 5 顆、看 3 秒，翻錯沒關係、找齊就完成。
    */
   // 干擾物（2026-11-08 家長決定）：每回合 2 隻吃松果的松鼠，先看時和松果一起亮出來（同樣淡色底）；翻到松鼠算翻錯 1 次（劇情版不會失敗）
-  var LEAF_GAME = { piles: 25, misses: 3, rate: 2, decoys: 2,
+  var LEAF_GAME = { piles: 25, misses: 3, rate: 1, decoys: 2,
     rounds: [{ pine: 4, show: 3000 }, { pine: 5, show: 2500 }, { pine: 6, show: 2000 }],
     story: { pine: 5, show: 3000 } };
   var LEAF_MAX_FOUND = LEAF_GAME.rounds.reduce(function (n, r) { return n + r.pine; }, 0);
@@ -66,6 +66,7 @@
     { id: 'luckyMedal', name: '好運金牌', icon: '🥇', img: 'images/items/lucky_medal.webp', price: 100, desc: '下一次停在寶箱或機會格，效果發生 2 次' },
     { id: 'wings', name: '飛行翼', icon: '🪽', img: 'images/items/flying_wings.webp', price: 100, desc: '向前飛行 20 格（和溜冰鞋合計每天最多 5 次）' },
     { id: 'starCall', name: '星星呼喚', icon: '🌠', img: 'images/minigame/star.webp', price: 50, desc: '馬上玩一局「抓住星星」（不占每天 1 次，每天最多用 1 個）' },   // 2026-11-08 新增
+    { id: 'pineHide', name: '松果躲躲', icon: '🌰', img: 'images/wood/leaf_pinecone.webp', price: 50, desc: '馬上玩一局「落葉找松果」（不占每天 1 次，每天最多用 1 個）' },   // 2026-11-08 新增（比照星星呼喚，和星星呼喚各自計算）
     { id: 'door', name: '任意門', icon: '🚪', img: 'images/items/magic_door.webp', price: 200, desc: '傳送到本島指定的格子（每天最多 1 次）' }
   ];
 
@@ -1140,6 +1141,20 @@
     var mg = { id: uid(), childId: childId, date: this.today(), tile: p.pos, status: 'pending', bonus: true, starCall: true, caught: 0, stars: 0, ts: this.now().getTime() };
     this.data.adventure.minigames.push(mg);
     this._logItem(childId, 'use', 'starCall', 1, '背包', '額外一局抓住星星');
+    this.save();
+    return mg;
+  };
+  /** 松果躲躲：馬上玩一局「落葉找松果」（額外一局，不占每天 1 次；每天最多用 1 個，和星星呼喚各自計算）@returns 小遊戲紀錄 */
+  Store.prototype.usePineHide = function (childId) {
+    this._requirePlay(childId);
+    var p = this.getPlayer(childId);
+    if (!(p.bag.pineHide > 0)) throw new Error('背包裡沒有松果躲躲');
+    if (this.getPendingMinigame(childId)) throw new Error('先把還沒玩完的小遊戲玩完');
+    if (this._usesToday(childId, ['pineHide'])) throw new Error('松果躲躲每天只能用 1 個，明天再用！');
+    p.bag.pineHide--;
+    var mg = { id: uid(), childId: childId, date: this.today(), tile: p.pos, status: 'pending', bonus: true, starCall: true, game: 'leaf', caught: 0, stars: 0, ts: this.now().getTime() };
+    this.data.adventure.minigames.push(mg);
+    this._logItem(childId, 'use', 'pineHide', 1, '背包', '額外一局落葉找松果');
     this.save();
     return mg;
   };

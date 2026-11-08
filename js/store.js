@@ -53,7 +53,7 @@
   };
   var SPECIAL_TASK_POINTS = 20;
   /** 冒險背包的道具代號（穩定、唯一；不以中文名稱判斷） */
-  var BAG_KEYS = ['d6', 'd12', 'skates', 'shield', 'magicDice', 'luckyMedal', 'wings', 'door', 'airplane', 'goldenKey', 'magnet', 'rerollTicket', 'bonusPlay', 'starCall',
+  var BAG_KEYS = ['d6', 'd12', 'skates', 'shield', 'magicDice', 'luckyMedal', 'wings', 'door', 'airplane', 'goldenKey', 'magnet', 'rerollTicket', 'bonusPlay', 'starCall', 'pineHide',
     'chest', 'giftMysteryChest', 'mysteryChest']; // 寶箱庫存：一般寶箱、神諭祝福的神秘寶箱（免鑰匙）、地圖撿到的神秘寶箱（要鑰匙）
   function emptyBag() { var b = {}; BAG_KEYS.forEach(function (k) { b[k] = 0; }); return b; }
   var SPECIAL_TASK_DAYS = 3;

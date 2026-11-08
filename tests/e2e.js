@@ -872,7 +872,7 @@ async function main() {
     await q.waitForSelector('[data-testid=treasure]');
     await q.waitForFunction(() => [...document.querySelectorAll('.treasure-art img')].every((i) => i.complete && i.naturalWidth === 256));
     const cards = await q.$$eval('.treasure-card', (cs) => cs.map((c) => [c.dataset.treasure, c.querySelector('.treasure-price').textContent.trim()]));
-    assert.deepEqual(cards, [['skates', '點10 點'], ['shield', '點10 點'], ['magicDice', '點10 點'], ['luckyMedal', '點100 點'], ['wings', '點100 點'], ['starCall', '點50 點'], ['door', '點200 點']]);
+    assert.deepEqual(cards, [['skates', '點10 點'], ['shield', '點10 點'], ['magicDice', '點10 點'], ['luckyMedal', '點100 點'], ['wings', '點100 點'], ['starCall', '點50 點'], ['pineHide', '點50 點'], ['door', '點200 點']]);
     assert.equal(await q.evaluate(() => getComputedStyle(document.querySelector('.treasure-art img')).objectFit), 'contain');
     // 兌換防護罩
     await q.click('[data-treasure=shield] [data-action=buy-treasure]');
@@ -1862,10 +1862,10 @@ async function main() {
     await roundPlay(2, 5, false);
     await roundPlay(3, 6, false);
     await q.waitForSelector('.leaf-result [data-mg=claim]', { timeout: 8000 });
-    assert.match(await q.locator('.leaf-result').innerText(), /找到 11 \/ 15 顆松果[\s\S]*每 2 顆松果換 1 顆[\s\S]*\+6 能量星星/);
+    assert.match(await q.locator('.leaf-result').innerText(), /找到 11 \/ 15 顆松果[\s\S]*每顆松果換 1 顆[\s\S]*\+11 能量星星/);
     await q.click('[data-mg=claim]');
     await q.waitForFunction(() => !document.getElementById('mg'));
-    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), starsMg + 6, '11 顆松果 → 6 星');
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), starsMg + 11, '11 顆松果 → 11 星');
     // 家長試玩 #leaf-test：不給星星、不算次數
     const snapLeaf = await q.evaluate(() => localStorage.getItem('cgp-data'));
     await q.goto(url + '#leaf-test'); await q.reload();
@@ -1874,7 +1874,7 @@ async function main() {
     await q.click('[data-mg=later]');
     await q.waitForFunction(() => !document.getElementById('mg') && location.hash === '#home');
     assert.equal(await q.evaluate(() => localStorage.getItem('cgp-data')), snapLeaf, '試玩不動存檔');
-    console.log('✔ 木島小遊戲：落葉找松果 3 回合、翻錯 3 次進下一回合、11 顆換 6 星、家長試玩 #leaf-test');
+    console.log('✔ 木島小遊戲：落葉找松果 3 回合、翻錯 3 次進下一回合、11 顆換 11 星、家長試玩 #leaf-test');
     // 木島機會卡「前進 2 格」：藤蔓垂下來，按「抓住！」才前進（效果同金島礦車）
     await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.getPlayer(cid).bag.d6 = 2; s.setPlayerTile(cid, 1); s.save(); }, id);
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
@@ -1942,7 +1942,19 @@ async function main() {
     await q.click('.dice-btn.d6');                     // 擲 3 → 金島第 7 格小遊戲
     await q.waitForSelector('#mg.leaf-mg [data-leaf=start]', { timeout: 15000 });
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getPendingMinigame(cid).game, id), 'leaf');
-    console.log('✔ 金島小遊戲：木島上線前也會出現落葉找松果');
+    // 松果躲躲：背包按一下 → 確認 → 馬上開始一局落葉找松果（不占今天的 1 次）
+    await q.click('#mg [data-mg=later]');
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.minigames = s.data.adventure.minigames.filter((m) => m.childId !== cid); s.getPlayer(cid).bag.pineHide = 1; s.save(); }, id);
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);
+    await q.waitForSelector('.item-btn[data-kind=pineHide]');
+    assert.match(await q.locator('.item-btn[data-kind=pineHide]').innerText(), /松果躲躲[\s\S]*×1・玩一局/);
+    await q.click('.item-btn[data-kind=pineHide]');
+    assert.match(await q.locator('#confirm').innerText(), /松果躲躲[\s\S]*落葉找松果[\s\S]*不占今天的 1 次小遊戲/);
+    await q.click('#confirm [data-yes]');
+    await q.waitForSelector('#mg.leaf-mg [data-leaf=start]');
+    assert.match(await q.locator('#mg-tip').innerText(), /松果躲躲：額外一局/);
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.pineHide, id), 0);
+    console.log('✔ 金島小遊戲：木島上線前也會出現落葉找松果；松果躲躲馬上玩一局');
     await cg.close();
   }
 
