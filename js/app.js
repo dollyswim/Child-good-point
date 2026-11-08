@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-73';
+  var APP_VERSION = '2026.11.08-74';
   var store;
   try {
     store = new CGP.Store();
@@ -692,7 +692,7 @@
       '<img src="images/gold/technician.webp" alt="" width="150" height="231" draggable="false"></button>';
   }
   /** 技師說一句話（地圖上的對話泡泡，約 3 秒消失） */
-  function techTalk(child) {
+  function techTalk(child, ms) {
     var view = document.getElementById('map-view'), tech = document.querySelector('.gold-tech');
     if (!view || !tech) return;
     var lit = goldMaxOf(store.getPlayer(child.id)) >= TOWER_LIT_AT;
@@ -702,10 +702,13 @@
     // 泡泡放在地圖視窗上（不跟著地圖縮放，字才看得清楚），位置在技師頭上
     var vr = view.getBoundingClientRect(), tr = tech.getBoundingClientRect();
     b.style.left = Math.max(8, Math.min(vr.width - 196, tr.left - vr.left + tr.width / 2 - 40)) + 'px';
-    b.style.top = Math.max(8, tr.top - vr.top - 8) + 'px';
     b.textContent = lit ? '謝謝你！能源塔亮起來了，金冠城堡就在前面！' : '能源塔還沒通電！走到第 80 格就能點亮它！';
     view.appendChild(b);
-    setTimeout(function () { b.classList.add('bye'); setTimeout(function () { b.remove(); }, 300); }, 3200);
+    // 放在技師腳下（不蓋住技師，也不擋到主塔）；下方放不下才放到頭上
+    var below = tr.bottom - vr.top + 12;
+    if (below + b.offsetHeight <= vr.height - 8) { b.style.top = below + 'px'; b.classList.add('below'); }
+    else b.style.top = Math.max(8, tr.top - vr.top - b.offsetHeight - 10) + 'px';
+    setTimeout(function () { b.classList.add('bye'); setTimeout(function () { b.remove(); }, 300); }, ms || 3200);
   }
   /** 第一次通電：亮起動畫（資料已寫入，只是演出） */
   function towerPowerOn() {
@@ -1114,12 +1117,17 @@
     } finally { ui.busy = false; }
     render();
     if (towerBefore < TOWER_LIT_AT && goldMaxOf(store.getPlayer(childId)) >= TOWER_LIT_AT && document.getElementById('gold-tower')) {
+      ui.busy = true; document.body.classList.add('pawn-acting');   // 演出期間暫停骰子
       document.getElementById('gold-tower').classList.remove('lit');   // 先顯示未通電，再播亮起動畫
-      if (ui.cam) { ui.cam.cx = TOWER.gx - 40; ui.cam.cy = TOWER.gy - 120; applyCam(true); await sleep(reduceMotion ? 50 : 600); }   // 鏡頭移到主塔
+      // 地圖上的變化要讓孩子看到：鏡頭移到主塔 → 閃光亮起 → 技師自動說台詞 → 台詞說完才回到角色
+      if (ui.cam) { ui.cam.cx = TOWER.gx - 40; ui.cam.cy = TOWER.gy - 120; applyCam(true); await sleep(reduceMotion ? 50 : 800); }
       towerPowerOn();
-      await sleep(reduceMotion ? 100 : 1600);
+      await sleep(reduceMotion ? 50 : 700);
+      techTalk(child, 3600);
+      await sleep(reduceMotion ? 1500 : 3600);
       followPawn(true);   // 回到角色
-      await sleep(reduceMotion ? 50 : 400);
+      await sleep(reduceMotion ? 50 : 500);
+      ui.busy = false; document.body.classList.remove('pawn-acting');
     }
     var react = pawnReaction(res);
     if (react) { ui.busy = true; document.body.classList.add('pawn-acting'); try { await pawnPlay(react); } finally { ui.busy = false; document.body.classList.remove('pawn-acting'); } }   // 角色先反應，再顯示事件說明（pawn-acting：動作中，骰子暫停）

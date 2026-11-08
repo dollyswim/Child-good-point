@@ -1781,8 +1781,10 @@ body.mg-open { overflow: hidden; }
 .gold-tech { position: absolute; transform: translate(-50%, -100%); padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .gold-tech img { display: block; width: 100%; height: auto; animation: tech-wave 2.6s ease-in-out infinite; transform-origin: 50% 100%; }
 @keyframes tech-wave { 50% { transform: rotate(-3deg) translateY(-2px); } }
-.tech-bubble { position: absolute; z-index: 8; transform: translateY(-100%); width: 188px; padding: 8px 10px; border-radius: 14px; background: #fff; color: #4e4339;
-  font-size: 13px; font-weight: 800; line-height: 1.4; box-shadow: 0 4px 12px rgba(0, 0, 0, .25); pointer-events: none; animation: mg-in .2s ease-out both; }
+.tech-bubble { position: absolute; z-index: 8; width: 188px; padding: 8px 10px; border-radius: 14px; background: #fff; color: #4e4339;
+  font-size: 13px; font-weight: 800; line-height: 1.4; box-shadow: 0 4px 12px rgba(0, 0, 0, .25); pointer-events: none; animation: bubble-in .25s ease-out both; }
+@keyframes bubble-in { from { opacity: 0; } }
 .tech-bubble::after { content: ""; position: absolute; left: 32px; bottom: -8px; border: 8px solid transparent; border-top-color: #fff; border-bottom: 0; }
 .tech-bubble.bye { opacity: 0; transition: opacity .3s; }
 @media (prefers-reduced-motion: reduce) { .tower-sparks i, .gold-tower.lit .tower-on, .gold-tech img { animation: none; } .gold-tower.just-lit::after { display: none; } }
+.tech-bubble.below::after { bottom: auto; top: -8px; border: 8px solid transparent; border-bottom-color: #fff; border-top: 0; }   /* 泡泡在技師下方：尾巴朝上 */

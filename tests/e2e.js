@@ -1679,6 +1679,10 @@ async function main() {
     await q.click('.dice-btn.d6');
     await q.waitForSelector('#gold-tower.just-lit', { timeout: 10000 });
     await q.waitForFunction(() => /通電了/.test(document.getElementById('toast').textContent), null, { timeout: 5000 });
+    await q.waitForSelector('#tech-bubble', { timeout: 5000 });   // 通電時技師自動說台詞
+    assert.match(await q.locator('#tech-bubble').innerText(), /謝謝你[\s\S]*能源塔亮起來了/);
+    assert.ok(await q.evaluate(() => { const t = document.getElementById('gold-tower').getBoundingClientRect(), v = document.getElementById('map-view').getBoundingClientRect(); return t.left >= v.left - 20 && t.right <= v.right + 20 && t.top < v.bottom && t.bottom > v.top; }), '鏡頭移到主塔，整座塔在畫面內');
+    assert.ok(await q.evaluate(() => document.body.classList.contains('pawn-acting')), '演出期間暫停骰子');
     await q.waitForFunction(() => !document.body.classList.contains('pawn-acting') && !!document.querySelector('#gold-tower.lit:not(.just-lit)'), null, { timeout: 10000 });
     if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
     await q.reload(); await q.waitForSelector('#gold-tower');
