@@ -1887,3 +1887,6 @@ body.mg-open { overflow: hidden; }
 .leaf-under { opacity: 0; }
 .leaf-grid.peek .leaf-pile.pine .leaf-under, .leaf-pile.open .leaf-under { opacity: 1; }
 .leaf-pile.empty .leaf-under::after { content: "🍃"; font-size: .6em; opacity: .5; }
+/* 2026-11-08 家長調整：有松果的格子用淡色底，和落葉堆（深棕）一眼分得出來（先看、找到、沒找到亮出來都一樣） */
+.leaf-grid.peek .leaf-pile.pine, .leaf-pile.open.pine:not(.missed) { background: radial-gradient(circle, #fffbe8, #ffeab0); }
+.leaf-pile.missed { background: radial-gradient(circle, #fffbe8, #f1e4c4); }
