@@ -1084,11 +1084,11 @@ test('Phase 4：命運卡後退 1～2 格（不觸發落點事件）、路障沒
   assert.equal(store.getSpecialTasks(a.id).length, 0);
 });
 
-test('Phase 4：命運卡後退不會退到起點之前；機率 75／10／15', () => {
+test('Phase 4：命運卡後退不會退到起點之前；機率 66／19／15', () => {
   const total = G.FATE_CARDS.reduce((s, c) => s + c.weight, 0);
   const w = Object.fromEntries(G.FATE_CARDS.map(c => [c.id, c.weight]));
   assert.equal(total, 100);
-  assert.deepEqual([w.chore + w.praise + w.helper, w.back, w.roadblock], [75, 10, 15]);
+  assert.deepEqual([w.chore + w.praise + w.helper, w.back, w.roadblock], [66, 19, 15]);
   const { store, a } = p3Store();
   store.setPlayerTile(a.id, 1);
   store.random = () => 0.8;                  // 後退、退 2 格
@@ -1187,7 +1187,7 @@ function tsStore(startPoints = 1000, dateStr = '2026-11-06T10:00:00') {   // 202
 
 test('寶物商店：6 款商品與價格', () => {
   assert.deepEqual(G.TREASURES.map(t => [t.id, t.price]),
-    [['skates', 10], ['shield', 20], ['magicDice', 10], ['luckyMedal', 100], ['wings', 100], ['door', 200]]);
+    [['skates', 10], ['shield', 10], ['magicDice', 10], ['luckyMedal', 100], ['wings', 100], ['door', 200]]);
   assert.ok(!G.TREASURES.some(t => t.id === 'airplane'), '呼叫專機不放商店');
   assert.deepEqual([G.TREASURE_WEEKLY_LIMIT, G.TREASURE_HOLD_LIMIT], [3, 2]);
 });
@@ -1196,8 +1196,8 @@ test('寶物商店：扣生活點數、放進背包，不動能量星星與等�
   const { store, a, b } = tsStore(1000);
   const lv = store.getLevel(a.id).level;
   const rec = store.buyTreasure(a.id, 'shield');
-  assert.deepEqual([rec.type, rec.points, rec.refId, rec.name], ['reward', -20, 'treasure:shield', '寶物：防護罩']);
-  assert.equal(store.getTotal(a.id), 980);
+  assert.deepEqual([rec.type, rec.points, rec.refId, rec.name], ['reward', -10, 'treasure:shield', '寶物：防護罩']);
+  assert.equal(store.getTotal(a.id), 990);
   assert.equal(store.getPlayer(a.id).bag.shield, 1);
   assert.equal(store.getStarBalance(a.id), 0, '不消耗也不增加能量星星');
   assert.equal(store.getLevel(a.id).level, lv, '兌換不影響等級');
@@ -1212,7 +1212,7 @@ test('寶物商店：每週最多 3 件、下週重新計算；點數不足不�
   assert.equal(store.getTreasureBoughtThisWeek(a.id), 3);
   assert.deepEqual(store.canBuyTreasure(a.id, 'wings'), { ok: false, reason: '本週已兌換 3 件' });
   assert.throws(() => store.buyTreasure(a.id, 'wings'), /本週已兌換 3 件/);
-  assert.equal(store.getTotal(a.id), 960, '被擋下時不扣點');
+  assert.equal(store.getTotal(a.id), 970, '被擋下時不扣點');
   setDate('2026-11-09T09:00:00');           // 下週一
   assert.equal(store.getTreasureBoughtThisWeek(a.id), 0);
   assert.ok(store.canBuyTreasure(a.id, 'wings').ok);
@@ -2233,4 +2233,31 @@ test('匯出目前規則表（CSV）：欄位與匯入相同；匯出再匯入�
   store.mergeRules(csvToRules(edited).data);
   assert.equal(store.data.items.find(i => i.name === '說謊').points, -20);
   assert.equal(store.data.items.length, n);
+});
+
+test('防護罩：擋住命運卡往回退；推開路障前進 1 格（落點不觸發事件）；沒有防護罩時照舊', () => {
+  const { store, a } = p3Store();
+  const p = store.getPlayer(a.id);
+  const tiles = store.getBoard(a.id).tiles;
+  // 第 11 格是命運格；路障＝亂數落在 85～100
+  p.bag.shield = 2;
+  store.setPlayerTile(a.id, 11);
+  store.random = () => 0.9;
+  let ev = store._resolveTile(a.id, 0);
+  assert.equal(ev.card, 'roadblock');
+  assert.ok(ev.shielded);
+  assert.deepEqual([p.pos, ev.extraPath, p.bag.shield], [12, [12], 1], '推開路障前進 1 格，用掉 1 個');
+  assert.match(ev.text, /防護罩推開了路障/);
+  assert.equal(tiles[12].type, 'chest', '第 12 格是寶箱，但前進的落點不觸發事件');
+  assert.ok(!ev.then);
+  // 往回退：擋住
+  store.setPlayerTile(a.id, 11);
+  store.random = () => 0.7;
+  ev = store._resolveTile(a.id, 0);
+  assert.deepEqual([ev.card, ev.shielded, p.pos, p.bag.shield], ['back', true, 11, 0]);
+  // 沒有防護罩：路障照舊停下
+  store.random = () => 0.9;
+  ev = store._resolveTile(a.id, 0);
+  assert.deepEqual([ev.card, !!ev.shielded, p.pos], ['roadblock', false, 11]);
+  assert.match(ev.text, /這次沒有影響/);
 });

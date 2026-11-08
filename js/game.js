@@ -36,7 +36,7 @@
   var TREASURE_WEEKLY_LIMIT = 3, TREASURE_HOLD_LIMIT = 2;
   var TREASURES = [
     { id: 'skates', name: '溜冰鞋', icon: '🛼', img: 'images/items/roller_skate.webp', price: 10, desc: '向前移動 3 格（和飛行翼合計每天最多 5 次）' },
-    { id: 'shield', name: '防護罩', icon: '🛡️', img: 'images/items/shield.webp', price: 20, desc: '抵擋一次冒險中的負面效果' },
+    { id: 'shield', name: '防護罩', icon: '🛡️', img: 'images/items/shield.webp', price: 10, desc: '自動擋住一次命運卡的「往回退」或「路障」（擋住路障還能前進 1 格）' },
     { id: 'magicDice', name: '神奇骰子', icon: '🎲', img: 'images/items/magic_dice.webp', price: 10, desc: '額外擲一次 12 面骰（不占每日 3 次，每天最多用 1 顆）' },
     { id: 'luckyMedal', name: '好運金牌', icon: '🥇', img: 'images/items/lucky_medal.webp', price: 100, desc: '下一次停在寶箱或機會格，效果發生 2 次' },
     { id: 'wings', name: '飛行翼', icon: '🪽', img: 'images/items/flying_wings.webp', price: 100, desc: '向前飛行 20 格（和溜冰鞋合計每天最多 5 次）' },
@@ -90,11 +90,11 @@
 
   /**
    * Phase 4 命運卡（家長決定：特殊任務多一點）
-   * 特殊任務 3 種各 25%、後退 1～2 格 10%、路障 15%
+   * 特殊任務 3 種各 22%、後退 1～2 格 19%、路障 15%（2026-11-08 家長調整：原本各 25%／10%／15%，讓防護罩更有用）
    */
   var FATE_CARDS = [
-    { id: 'chore', weight: 25 }, { id: 'praise', weight: 25 }, { id: 'helper', weight: 25 },
-    { id: 'back', weight: 10 }, { id: 'roadblock', weight: 15 }
+    { id: 'chore', weight: 22 }, { id: 'praise', weight: 22 }, { id: 'helper', weight: 22 },
+    { id: 'back', weight: 19 }, { id: 'roadblock', weight: 15 }
   ];
   var ROADBLOCKS = [
     '一隻小螃蟹橫著走過來擋路，停下來跟牠打個招呼吧！',
@@ -570,7 +570,7 @@
       var card = pickWeighted(rand, FATE_CARDS);
       ev.card = card.id;
       if (card.id === 'back' && p.bag.shield > 0) {
-        // 防護罩自動抵擋後退（路障沒有實際影響，不消耗防護罩）
+        // 防護罩自動抵擋後退
         p.bag.shield--;
         ev.shielded = true;
         ev.text = '一陣大風吹來，🛡️ 防護罩擋住了！沒有後退。';
@@ -582,6 +582,17 @@
         p.tileId = this.getBoard(childId).tiles[p.pos].id;
         this._found = (this._found || 0) + this._collectAt(childId, ev.backPath);
         ev.text = '一陣大風吹來，往回退了 ' + ev.backPath.length + ' 格！';
+      } else if (card.id === 'roadblock' && p.bag.shield > 0 && p.pos < this.getBoard(childId).tiles.length - 1) {
+        // 防護罩推開路障：前進 1 格（落點不觸發事件，和往回退一樣）
+        var rb = ROADBLOCKS[Math.floor(rand() * ROADBLOCKS.length)];
+        p.bag.shield--;
+        ev.shielded = true;
+        p.pos++; p.tileId = this.getBoard(childId).tiles[p.pos].id;
+        if (p.pos > p.maxReached) p.maxReached = p.pos;
+        ev.extraPath.push(p.pos);
+        this._found = (this._found || 0) + this._collectAt(childId, ev.extraPath);
+        ev.text = '🛡️ 防護罩推開了路障，往前走 1 格！\n（路障：' + rb + '）';
+        this._logItem(childId, 'use', 'shield', 1, '背包', '推開路障前進 1 格');
       } else if (card.id === 'roadblock') {
         ev.text = '路障：' + ROADBLOCKS[Math.floor(rand() * ROADBLOCKS.length)] + '（這次沒有影響，下次繼續前進）';
       } else {

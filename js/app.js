@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-68';
+  var APP_VERSION = '2026.11.08-69';
   var store;
   try {
     store = new CGP.Store();
@@ -934,6 +934,7 @@
     if (!ev) return null;
     if (ev.clear || (last && last.clear)) return 'happy';
     if (ev.type === 'chest' || (last && last.type === 'chest')) return 'openChest';
+    if (ev.shielded) return 'happy';   // 防護罩擋住往回退或推開路障
     if (ev.type === 'fate' || (ev.backPath && ev.backPath.length) || (last && last.backPath && last.backPath.length)) return 'surprised';
     if (res.found) return 'surprised';
     if (ev.type === 'chance') return 'happy';
@@ -1055,7 +1056,7 @@
       }
       await hopAlong(child, res.path);
       if (ev && ev.extraPath && ev.extraPath.length) {
-        toast('🚃 ' + ev.text.split('\n')[0], 'pos');
+        toast((ev.shielded ? '' : '🚃 ') + ev.text.split('\n')[0], 'pos');   // 礦車或防護罩推開路障
         await sleep(400);
         await hopAlong(child, ev.extraPath);
       }
@@ -1787,7 +1788,7 @@
     return games + (list.length ? '<section class="item-bar" data-testid="item-bar"><h3 class="item-bar-title">🎒 背包道具</h3>' + list.join('') + '</section>' : '');
   }
   var ITEM_INFO = {
-    shield: '🛡️ 防護罩：停在命運格抽到「後退」時，會自動擋住，不用手動使用。',
+    shield: '🛡️ 防護罩：停在命運格抽到「往回退」或「路障」時會自動用掉 1 個：擋住往回退；推開路障還能前進 1 格。不用手動使用。',
     rerollTicket: '🎲 命運重骰券：擲骰後會先問你要不要重擲；重擲以新的點數為準，同一次只能用 1 張。',
     airplane: '✈️ 呼叫專機：可以直接飛到其他島嶼的入口，其他島嶼開放後才能使用。',
     goldenKey: '🔑 黃金鑰匙：打開地圖上撿到的神秘寶箱。累計得分每 +500 點送 1 把，星星商店也有賣。'

@@ -869,7 +869,7 @@ async function main() {
     await q.waitForSelector('[data-testid=treasure]');
     await q.waitForFunction(() => [...document.querySelectorAll('.treasure-art img')].every((i) => i.complete && i.naturalWidth === 256));
     const cards = await q.$$eval('.treasure-card', (cs) => cs.map((c) => [c.dataset.treasure, c.querySelector('.treasure-price').textContent.trim()]));
-    assert.deepEqual(cards, [['skates', '點10 點'], ['shield', '點20 點'], ['magicDice', '點10 點'], ['luckyMedal', '點100 點'], ['wings', '點100 點'], ['door', '點200 點']]);
+    assert.deepEqual(cards, [['skates', '點10 點'], ['shield', '點10 點'], ['magicDice', '點10 點'], ['luckyMedal', '點100 點'], ['wings', '點100 點'], ['door', '點200 點']]);
     assert.equal(await q.evaluate(() => getComputedStyle(document.querySelector('.treasure-art img')).objectFit), 'contain');
     // 兌換防護罩
     await q.click('[data-treasure=shield] [data-action=buy-treasure]');
