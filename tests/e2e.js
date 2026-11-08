@@ -875,9 +875,9 @@ async function main() {
     await q.click('[data-treasure=shield] [data-action=buy-treasure]');
     await q.click('#confirm [data-yes]');
     await q.waitForFunction(() => /背包 ×1/.test(document.querySelector('[data-treasure=shield]').textContent));
-    assert.match(await q.locator('[data-testid=total]').innerText(), /130/);
+    assert.match(await q.locator('[data-testid=total]').innerText(), /140/);   // 150 − 防護罩 10 點
     assert.match(await q.locator('[data-testid=treasure] h2').innerText(), /本週已兌換 1 \/ 3 件/);
-    assert.match(await q.locator('.records').innerText(), /寶物：防護罩[\s\S]*-20/);
+    assert.match(await q.locator('.records').innerText(), /寶物：防護罩[\s\S]*-10/);
     // 再買 2 件 → 本週 3 件，全部按鈕停用並顯示原因
     for (const t of ['skates', 'magicDice']) {
       await q.click('[data-treasure=' + t + '] [data-action=buy-treasure]');
