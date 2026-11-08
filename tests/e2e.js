@@ -1785,6 +1785,7 @@ async function main() {
     await q.click('.dice-btn.d6');
     await q.waitForSelector('#mg.leaf-mg [data-leaf=start]', { timeout: 15000 });
     assert.match(await q.locator('#mg-tip').innerText(), /找回松果/);
+    assert.equal(await q.locator('#leaf-msg').isVisible(), false, '開始前提示框是空的，不顯示白色小圓點');
     assert.equal(await q.locator('#mg-tip [data-mg=later]').count(), 0, '劇情版不能稍後再玩');
     await q.click('[data-leaf=start]');
     assert.equal(await q.locator('.leaf-pile').count(), 25);

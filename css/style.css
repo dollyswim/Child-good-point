@@ -1995,3 +1995,5 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .leaf-mg .leaf-msg { font-size: 1rem; text-wrap: balance; }   /* 兩行時長度平均，避免最後一兩個字掉到第二行 */
 /* 提示文字固定在逗號後換行（文字裡的 \n），沒有逗號的短句維持一行 */
 .leaf-mg .leaf-msg { white-space: pre-line; text-wrap: wrap; max-width: max(200px, min(94vw, calc(0.28 * max(100vh, 179.2vw)))); }
+/* 按「開始！」之前提示、回合數、剩餘機會還是空的：不顯示白底（避免出現白色小圓點） */
+.leaf-mg .leaf-msg:empty, .leaf-mg .leaf-round:empty, .leaf-mg .leaf-miss:empty { visibility: hidden; }
