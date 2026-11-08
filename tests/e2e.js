@@ -1653,6 +1653,36 @@ async function main() {
     }
   }
 
+  // ---------- 金島第三區：能源主塔與技師 ----------
+  {
+    const ct = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block' });
+    const q = await ct.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '波妞' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+      s.getPlayer(a.id).bag.d6 = 1; s.setPlayerTile(a.id, 76); s.getPlayer(a.id).maxReached = 76; s.save(); return a.id; });
+    await q.goto(url + '#map-' + id); await q.waitForSelector('#gold-tower');
+    assert.equal(await q.locator('#gold-tower.lit').count(), 0, '還沒走到第 80 格：未通電');
+    await q.click('.gold-tech');
+    await q.waitForSelector('#tech-bubble');
+    assert.match(await q.locator('#tech-bubble').innerText(), /還沒通電[\s\S]*第 80 格/);
+    // 擲 5：76 → 81，經過第 80 格 → 通電動畫
+    await q.evaluate(() => { window.__cgpStore.random = () => 4.5 / 6; });
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#gold-tower.just-lit', { timeout: 10000 });
+    await q.waitForFunction(() => /通電了/.test(document.getElementById('toast').textContent), null, { timeout: 5000 });
+    await q.waitForFunction(() => !document.body.classList.contains('pawn-acting') && !!document.querySelector('#gold-tower.lit:not(.just-lit)'), null, { timeout: 10000 });
+    if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
+    await q.reload(); await q.waitForSelector('#gold-tower');
+    assert.equal(await q.locator('#gold-tower.lit').count(), 1, '重新整理後仍是通電');
+    assert.equal(await q.locator('#gold-tower.just-lit').count(), 0, '通電動畫只播一次');
+    await q.click('.gold-tech', { force: true });
+    await q.waitForSelector('#tech-bubble');
+    assert.match(await q.locator('#tech-bubble').innerText(), /謝謝你[\s\S]*金冠城堡/);
+    console.log('✔ 能源主塔：第 80 格前未通電、經過第 80 格播通電動畫、重新整理保持通電；點技師說話');
+    await ct.close();
+  }
+
   // ---------- 設定 → 備份：封存舊紀錄 ----------
   {
     const ca = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', acceptDownloads: true });

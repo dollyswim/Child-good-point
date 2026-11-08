@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-08｜App 版本 `2026.11.08-70`｜Service Worker 快取 `cgp-shell-v80`｜`main` 最新：寶物商店新增「星星呼喚」
+> 最後更新：2026-11-08｜App 版本 `2026.11.08-71`｜Service Worker 快取 `cgp-shell-v81`｜`main` 最新：寶物商店新增「星星呼喚」
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -38,7 +38,6 @@
 | 項目 | 規格 | 接入方式 |
 |---|---|---|
 | 成就徽章 24 張 | `docs/art/CODEX_ACHIEVEMENT_BADGES_BRIEF.md`（＋`.en.md`）、清單 `docs/art/achievement_badges.csv` | 放 `images/badges/`，在 `js/app.js` 的 `BADGE_IMG` 依代號加入；目前用程式畫的類別色徽章 |
-| 能源主塔（暗／亮）＋技師 | `docs/art/CODEX_GOLD_TOWER_BRIEF.md` | 放第三區 (850, 190) 空地；走過第 80 格後通電；點技師說一句話（家長已決定） |
 | 木島全島配置草圖 → 正式背景 | `docs/art/CODEX_WOOD_ISLAND_BRIEF.md`、規劃 `docs/art/WOOD_ISLAND_PLAN.md` | 換島機制已完成；資料到貨用 `GAME.registerBoard('wood', board)` 開放（同金島：4 區、1080×5400、data → `tools/gen_board_region.py`） |
 
 ### 可能的下一步（家長尚未指定）
@@ -117,6 +116,7 @@
 - 角色動畫（2026-11-07，Codex character-animation-pack-1 移植，原包說明 `docs/art/CODEX_CHARACTER_ANIMATION_README.md`）：地圖角色五種動作（`pawnIdle`、`pawnPlay('jump'|'happy'|'surprised'|'openChest')`），Web Animations API 作用在 `.pawn-inner`，特效放 `.pawn-fx`；依角色 `PAWN_PROFILE` 調整節奏與跳高。未直接引入原套件：其 `.pawn` 樣式名與 App 衝突、寶箱貼紙圖 2MB，改用現有 `images/chest.webp` 與角色圖。觸發：停著＝待機；每格＝跳格；寶箱格／背包開箱＝開寶箱；命運格、往回退、撿到神秘寶箱＝驚訝；機會格、全島終點＝開心。動畫在資料寫入之後播放；減少動態效果時不播。
 - 頭像就代表孩子（2026-11-08 家長決定）：介面不再顯示角色名稱（石球獸等）。設定的頭像欄位標題為「頭像」、選項只有圖；冒險大廳夥伴標籤顯示孩子名字；更換視窗標題「更換 X 的頭像」；通關畫面「X 抵達了…」。角色名稱只保留在 aria-label 給讀屏。
 - 匯出目前規則表（2026-11-08，設定 → 備份 → 匯入規則表卡片）：`CGPCsv.rulesToCSV(items, children)`，欄位與匯入相同（規則ID、規則類型、適用對象、任務或行為、點數變動、計算頻率、額外獎勵），UTF-8 BOM；規則ID＝`sourceId` 或內部 id，再匯入時更新同一條、不會重複。獎勵（兌換項目）不在規則表內。
+- 能源主塔與技師（2026-11-08 上線）：圖由家長用 Gemini 製作（白底 JPG），Claude 去背（只去除和外框相連的白底，地面影子轉半透明）；**通電版由程式從未通電圖產生**（只把核心水晶與三個燈泡改成金黃、加半透明光暈），兩張保證對齊。檔案 `images/gold/tower_off.webp`、`tower_on.webp`、`technician.webp`。地圖 `towerDecor()`：主塔腳底 (850, 1625)、寬 180；技師 (752, 1632)、寬 54。金島最遠格子 ≥ 80 就通電（`goldMaxOf`）；經過第 80 格那一次鏡頭移到主塔播閃光（`towerPowerOn`）。點技師：地圖觸控在 `setupMap` 的放開判斷（地圖接管觸控，click 不會傳到技師），泡泡放在地圖視窗上不跟著縮放。
 - 自動備份上限：每日 7 份＋「還原前的狀態」1 份，超過自動刪最舊；設定 → 備份 → 還原資料 每份都可「刪除」（`store.deleteSnapshot(id)`，需家長密碼，不影響目前資料）。
 - 孩子 4 位以上：頁首切換列改為每排 3 位（`.kid-switch.many`，名字過長分兩行）；3 位以下維持一排。設定頁 7 個分頁改為每排 4 個自動換行，不用左右滑。
 - 新增孩子（2026-11-07）：首頁只在還沒有孩子時顯示；有孩子後改在小孩頁面設定城堡正下方（小圖示＋文字，`.add-kid`，`alignHeroLinks()` 對齊城堡中心）；設定 → 孩子也可新增。
