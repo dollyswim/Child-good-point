@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-08｜App 版本 `2026.11.08-99`｜Service Worker 快取 `cgp-shell-v109`｜`main` 最新：落葉找松果提示框對準蘑菇、松果松鼠試看不加淡色卡
+> 最後更新：2026-11-08｜App 版本 `2026.11.08-100`｜Service Worker 快取 `cgp-shell-v110`｜`main` 最新：落葉找松果定案（松果、松鼠不加淡色卡；提示框對準蘑菇）
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -14,7 +14,7 @@
 - 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v109`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.08-99`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v110`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.08-100`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 132 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -53,6 +53,7 @@
 - 金島發光金礦石正式圖已上線（`images/gold/ore.webp`，家長 Gemini 圖，只去除與外框相連的白底）。
 - 修正：撿礦石任務進行中點商店，關掉後地圖重畫、礦石消失而卡住 → 劇情任務中地圖按鈕暫停（`body.story-on`），重畫後把沒撿的東西放回地圖。
 - 森林小精靈正式圖：提示詞在 `docs/art-prompts.md`，目前 🧚 佔位。
+- 落葉找松果畫面定案（家長）：25 格置中在背景中間空草地；提示框在上方、中線對準兩側蘑菇，逗號後換行；先看時 25 堆全部掀開；松果、松鼠不加淡色卡（只用去背圖）；回合數、剩餘機會加半透明白底。
 - 落葉找松果正式圖已上線（家長 Gemini 圖，`images/wood/leaf_*.webp`：森林背景、落葉堆、松果、松鼠、翻開的空地；4 張只去除與外框相連的白底，保留奶油色貼紙邊框）。
 - 木島草圖到貨後：核對木島劇情的導遊／道具位置（`ISLAND_STORY.wood` 的相對位移）。
 - 實機確認：第 5 格撿礦石面板、第 30 格拉轉轍器、能源塔連點充電在手機上的手感與位置。

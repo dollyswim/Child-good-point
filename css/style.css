@@ -2005,6 +2005,6 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .leaf-grid.peek .leaf-pile:not(.pine):not(.squirrel) .leaf-under img { width: 96%; height: 96%; }
 /* 2026-11-08 家長調整：提示框中線對準上方兩側的蘑菇（背景圖高度約 19%） */
 .leaf-mg .leaf-msg { top: max(64px, calc(50vh - 0.31 * max(100vh, 179.2vw))); }
-/* 2026-11-08 家長試看：松果、松鼠不加淡色卡，只用去背圖（先看、翻到、沒找到亮出來都一樣） */
+/* 2026-11-08 家長定案：松果、松鼠不加淡色卡，只用去背圖（先看、翻到、沒找到亮出來都一樣） */
 .leaf-grid.peek .leaf-pile.pine, .leaf-grid.peek .leaf-pile.squirrel, .leaf-pile.open.pine:not(.missed), .leaf-pile.missed, .leaf-pile.caught { background: transparent; box-shadow: none; }
 .leaf-pile.pine .leaf-under img, .leaf-pile.squirrel .leaf-under img { width: 90%; height: 90%; }
