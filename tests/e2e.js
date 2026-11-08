@@ -908,7 +908,7 @@ async function main() {
     await q.goto(url + '#child-' + id);
     await q.click('[data-action=undo]');
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.magicDice, id), 0);
-    assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), 120);
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), 130);   // 150 − 防護罩 10 − 溜冰鞋 10
     const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(over <= 0);
     console.log('✔ 寶物商店：6 款商品、兌換扣點進背包、每週 3 件、點數不足原因、背包顯示、撤銷收回道具');
