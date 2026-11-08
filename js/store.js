@@ -286,6 +286,9 @@
           bonusStars: Math.max(0, toInt(x.bonusStars, 0)),
           stars: Math.max(0, toInt(x.stars, 0)),
           paidRecordIds: Array.isArray(x.paidRecordIds) ? x.paidRecordIds.map(String) : [],
+          lateIds: Array.isArray(x.lateIds) ? x.lateIds.map(String) : [],   // 已換成星星的「出發後才拿到的加分」紀錄
+          latePoints: Math.max(0, toInt(x.latePoints, 0)),                  // 這次結算併入的出發後加分
+          resettles: Array.isArray(x.resettles) ? x.resettles : undefined,
           ts: toInt(x.ts, Date.now())
         };
       }),
@@ -1396,6 +1399,25 @@
   };
 
   /** 星星餘額（Phase 3 起扣除商店花費） */
+  /**
+   * 出發後才拿到的加分（2026-11-08 家長決定）：某天已進入冒險（已結算）之後才記的「加分」紀錄
+   * （例如冒險中抽到特殊任務、當天就完成），留到下一次進入冒險時一起換成能量星星；
+   * 扣分留在當天，不往後帶。只算 LATE_CARRY_FROM 以後的紀錄，避免更新後把很久以前的紀錄一次補發。
+   */
+  var LATE_CARRY_FROM = '2026-11-07';
+  Store.prototype._lateBonusRecords = function (childId) {
+    var adv = this.data.adventure, settledTs = {}, paid = new Set();
+    adv.settlements.forEach(function (x) {
+      if (x.childId !== childId) return;
+      settledTs[x.date] = x.ts;
+      (x.lateIds || []).forEach(function (id) { paid.add(id); });
+    });
+    return this.data.records.filter(function (r) {
+      return r.childId === childId && SCORE_TYPES.indexOf(r.type) >= 0 && r.points > 0 && r.date >= LATE_CARRY_FROM &&
+        settledTs[r.date] !== undefined && r.ts > settledTs[r.date] && !paid.has(r.id);
+    });
+  };
+
   Store.prototype.getStarBalance = function (childId) {
     var adv = this.data.adventure;
     var fromSettle = adv.settlements.reduce(function (sum, x) { return x.childId === childId ? sum + x.stars : sum; }, 0);
@@ -1412,14 +1434,16 @@
     var net = this.getTodayNet(childId);
     var settlement = this.getSettlement(childId);
     var bonus = this._unpaidStarRecords(childId).reduce(function (sum, r) { return sum + r.stars; }, 0);
+    var late = settlement ? 0 : this._lateBonusRecords(childId).reduce(function (sum, r) { return sum + r.points; }, 0);
+    var base = net > 0 ? starsForNet(net + late) : 0;   // 出發後的加分併入（解鎖仍只看今日淨得分）
     return {
       unlocked: !!settlement || net > 0,     // 今天結算過就維持解鎖
       settled: !!settlement,
       settlement: settlement,
       net: net,
-      previewBase: starsForNet(net),
+      previewBase: base,
       previewBonus: bonus,
-      previewStars: starsForNet(net) + bonus,
+      previewStars: base + bonus,
       balance: this.getStarBalance(childId)
     };
   };
@@ -1435,12 +1459,15 @@
     var net = this.getTodayNet(childId);
     if (net <= 0) throw new Error('今日冒險尚未解鎖：今日淨得分要大於 0');
     var unpaid = this._unpaidStarRecords(childId);
-    var base = starsForNet(net);
+    var late = this._lateBonusRecords(childId);   // 之前出發後才拿到的加分，這次一起換成星星
+    var latePoints = late.reduce(function (sum, r) { return sum + r.points; }, 0);
+    var base = starsForNet(net + latePoints);
     var bonus = unpaid.reduce(function (sum, r) { return sum + r.stars; }, 0);
     var x = {
       id: uid(), childId: childId, date: this.today(), net: net,
       baseStars: base, bonusStars: bonus, stars: base + bonus,
       paidRecordIds: unpaid.map(function (r) { return r.id; }),
+      lateIds: late.map(function (r) { return r.id; }), latePoints: latePoints,
       ts: this.now().getTime()
     };
     this.data.adventure.settlements.push(x);
@@ -1456,10 +1483,13 @@
     var x = this.getSettlement(childId);
     if (!x) return null;
     var net = this.getTodayNet(childId);
-    var base = Math.max(0, starsForNet(net) - x.baseStars);
+    var base = Math.max(0, starsForNet(net + (x.latePoints || 0)) - x.baseStars);
     var unpaid = this._unpaidStarRecords(childId);
     var bonus = unpaid.reduce(function (sum, r) { return sum + r.stars; }, 0);
-    return { settlement: x, net: net, base: base, bonus: bonus, added: base + bonus, recordIds: unpaid.map(function (r) { return r.id; }) };
+    // 重新結算會把今天出發後的加分算進今天 → 標記為已換星星，明天不再重複併入
+    var today = this.today(), lateToday = this._lateBonusRecords(childId).filter(function (r) { return r.date === today; });
+    return { settlement: x, net: net, base: base, bonus: bonus, added: base + bonus, recordIds: unpaid.map(function (r) { return r.id; }),
+      lateIds: lateToday.map(function (r) { return r.id; }) };
   };
 
   /**
@@ -1471,6 +1501,7 @@
     var pv = this.getResettlePreview(childId);
     if (!pv) throw new Error('今天還沒結算，請先進入今日冒險');
     var x = pv.settlement;
+    if (pv.lateIds.length) { x.lateIds = (x.lateIds || []).concat(pv.lateIds); this.save(); }
     if (pv.added > 0) {
       x.net = Math.max(x.net, pv.net);
       x.baseStars += pv.base;

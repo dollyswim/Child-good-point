@@ -2440,3 +2440,54 @@ test('木島卡片：機會卡／命運卡效果與機率不變，文字換森�
   s2.buyItem(b.id, 'd6'); s2.setPlayerTile(b.id, 1); push2(face(2), 0.3);
   assert.equal(s2.rollDice(b.id, 'd6').event.text, '發現發光礦石，得到 ⭐2', '金島照舊');
 });
+
+test('出發後才拿到的加分：留到下一次進入冒險一起換星星；扣分留在當天；解鎖仍看當天淨得分；不重複發放', () => {
+  const { store, setDate } = makeStore('2026-11-08T09:00:00');
+  const c = store.addChild({ name: '端端' });
+  const plus = store.addItem({ kind: 'bonus', name: '加分', points: 10 });
+  const minus = store.addItem({ kind: 'penalty', name: '扣分', points: 5 });
+  store.recordItem(c.id, plus.id);                       // 11/8 出發前 +10 → ⭐2
+  assert.equal(store.settleToday(c.id).stars, 2);
+  // 出發後：特殊任務 +20、加分 +10、扣分 -5（扣分留在當天，不往後帶）
+  const t = store.addSpecialTask(c.id, 'chore').task;
+  store.completeSpecialTask(t.id);
+  store.recordItem(c.id, plus.id);
+  store.recordItem(c.id, minus.id);
+  assert.equal(store.getStarBalance(c.id), 2, '當天不再發星星');
+  // 隔天：當天淨得分 0 → 仍不能出發（只靠昨天留下的加分不解鎖）
+  setDate('2026-11-09T09:00:00');
+  assert.equal(store.getAdventureStatus(c.id).unlocked, false);
+  assert.throws(() => store.settleToday(c.id), /尚未解鎖/);
+  // 當天 +10 → 解鎖；昨天出發後的 +30 一起算：ceil(40 / 5) = ⭐8
+  store.recordItem(c.id, plus.id);
+  assert.equal(store.getAdventureStatus(c.id).previewStars, 8, '預覽也含留下的加分');
+  const x = store.settleToday(c.id);
+  assert.deepEqual([x.net, x.latePoints, x.baseStars], [10, 30, 8]);
+  assert.equal(store.getStarBalance(c.id), 10);
+  // 再隔天：已併入的加分不會再算一次
+  setDate('2026-11-10T09:00:00');
+  store.recordItem(c.id, plus.id);
+  assert.equal(store.settleToday(c.id).baseStars, 2, '不重複發放');
+});
+
+test('出發後才拿到的加分：家長「重新結算今天」已補發的，隔天不再併入；更新前（11/7 以前）的舊紀錄不補發', () => {
+  const { store, setDate } = makeStore('2026-11-08T09:00:00');
+  const c = store.addChild({ name: '端端' });
+  const plus = store.addItem({ kind: 'bonus', name: '加分', points: 10 });
+  store.recordItem(c.id, plus.id);
+  store.settleToday(c.id);
+  store.recordItem(c.id, plus.id);                       // 出發後 +10
+  store.allowPinReset();                                 // 測試用：直接解鎖家長權限
+  assert.equal(store.resettleToday(c.id).added, 2, '重新結算補發 ⭐2');
+  setDate('2026-11-09T09:00:00');
+  store.recordItem(c.id, plus.id);
+  assert.equal(store.settleToday(c.id).latePoints, 0, '已補發過，不再併入');
+  // 11/6 的舊資料：出發後才記的加分不往後帶
+  const old = makeStore('2026-11-06T09:00:00');
+  const d = old.store.addChild({ name: '舊' });
+  const p2 = old.store.addItem({ kind: 'bonus', name: '加分', points: 10 });
+  old.store.recordItem(d.id, p2.id); old.store.settleToday(d.id); old.store.recordItem(d.id, p2.id);
+  old.setDate('2026-11-08T09:00:00');
+  old.store.recordItem(d.id, p2.id);
+  assert.equal(old.store.settleToday(d.id).latePoints, 0);
+});
