@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-82';
+  var APP_VERSION = '2026.11.08-83';
   var store;
   try {
     store = new CGP.Store();
@@ -1404,6 +1404,9 @@
     if (clearEv) { await mapFireworks(); showClear(child, clearEv); return; }
     var mgEv = ev && ev.minigame ? ev : (ev && ev.then && ev.then.minigame ? ev.then : null);
     if (mgEv) { openMinigame(childId, head + '・停在第 ' + store.getPlayer(childId).pos + ' 格'); return; }
+    var foot = head + '・停在第 ' + store.getPlayer(childId).pos + ' 格';
+    var rw = rollReward(res);   // 拿到星星／道具：獲得獎勵彈窗
+    if (rw) { rw.foot = foot; rewardPopup(rw); return; }
     var msg = eventText(res.event);
     if (res.found) msg = '🎁 撿到 ' + res.found + ' 個神秘寶箱！放進冒險背包了，用 🔑 黃金鑰匙打開。' + (msg ? '\n\n' + msg : '');
     if (msg) showInfo(head + '・停在第 ' + store.getPlayer(childId).pos + ' 格', msg);
@@ -1677,7 +1680,7 @@
         try {
           var r = store.useMagnet(childId, b.getAttribute('data-type'), b.getAttribute('data-id'));
           render();
-          showReward('🧲 寶物磁鐵', r.text, r.type === 'mystery' ? 'images/items/mystery_chest.webp' : 'images/tiles/chest.webp', r.type === 'mystery' ? 'mystery' : 'chest');
+          showReward('寶物磁鐵吸到了！', r, r.type === 'mystery', '🧲 第 ' + r.n + ' 格');
         } catch (err) { toast(err.message, 'neg'); render(); }
       };
     });
@@ -2212,14 +2215,79 @@
     confirmEl.oncancel = function (e) { e.preventDefault(); };
     if (typeof confirmEl.showModal === 'function') confirmEl.showModal(); else confirmEl.setAttribute('open', '');
   }
-  /** 開箱結果（簡短動畫；動畫失敗不影響已存檔的結果） */
-  function showReward(title, text, img, kind) {
-    confirmEl.innerHTML = '<div class="confirm-box reward-box rb-' + kind + '"><h2>' + h(title) + '</h2>' +
-      '<span class="reward-art"><img src="' + img + '" alt="" aria-hidden="true"></span>' +
-      '<p class="confirm-msg">' + h(text) + '</p><div class="modal-actions"><button type="button" class="btn primary" data-yes>太好了！</button></div></div>';
-    confirmEl.querySelector('[data-yes]').onclick = function () { confirmEl.close(); };
+  // ---------- 獲得獎勵彈窗（2026-11-08 家長指定版型：一般版／稀有版同版型，只換 CSS 主題變數） ----------
+  // 版面由上而下：獎勵標籤 → 主標題 → 主獎勵卡（圖、名稱 ×數量、說明）→ 額外獎勵（沒有就不顯示）→「收下戰利品！」→ 骰子與停留格數（沒有就不顯示）
+  // 獎勵在顯示前就已由 store 寫入存檔；按鈕只關閉視窗，不會重複發放
+  var RARE_ITEMS = ['magicDice', 'luckyMedal', 'shield', 'wings', 'door', 'airplane', 'mysteryChest', 'giftMysteryChest'];
+  /**
+   * 把 { stars, items, found } 整理成獎勵清單（第一個是主獎勵，其餘是額外獎勵）
+   * found＝撿到的地圖神秘寶箱數（已收入背包）
+   */
+  function rewardEntries(stars, items, found) {
+    var list = [];
+    if (found) list.push({ key: 'mysteryChest', qty: found });
+    Object.keys(items || {}).forEach(function (k) { if (items[k] > 0) list.push({ key: k, qty: items[k] }); });
+    if (stars > 0) list.push({ key: 'stars', qty: stars });
+    list.forEach(function (e) {
+      if (e.key === 'stars') { e.name = '能量星星'; e.img = 'images/items/star.webp'; e.desc = '已存入能量星星'; return; }
+      var b = BAG_INFO[e.key] || {};
+      e.img = b.img || 'images/tiles/chest.webp';
+      e.name = e.key === 'mysteryChest' ? '神秘寶箱' : b.name || e.key;
+      e.desc = e.key === 'mysteryChest' ? '已收入冒險背包・黃金鑰匙開啟' : '已收入冒險背包';
+    });
+    // 主獎勵：稀有道具優先，其次一般道具，最後才是星星
+    list.sort(function (a, b) { return rank(a) - rank(b); });
+    function rank(e) { return e.key === 'stars' ? 2 : RARE_ITEMS.indexOf(e.key) >= 0 ? 0 : 1; }
+    return list;
+  }
+  /**
+   * r：{ rare, title, entries（rewardEntries 的結果）, desc（主獎勵說明，可省略）, foot（骰子結果，可省略）, onClose }
+   */
+  function rewardPopup(r) {
+    var main = r.entries[0], extras = r.entries.slice(1);
+    confirmEl.classList.add('rw-modal');
+    confirmEl.innerHTML = '<div class="rw ' + (r.rare ? 'rw-rare' : 'rw-normal') + '" data-testid="reward">' +
+      '<span class="rw-tag">✦ ' + (r.rare ? '稀有獎勵' : '一般獎勵') + ' ✦</span>' +
+      '<h2 class="rw-title">' + h(r.title) + '</h2>' +
+      '<div class="rw-card"><span class="rw-art"><img src="' + main.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></span>' +
+      '<b class="rw-name">' + h(main.name) + ' ×' + main.qty + '</b><small class="rw-desc">' + h(r.desc || main.desc) + '</small></div>' +
+      (extras.length ? '<ul class="rw-extra">' + extras.map(function (e) {
+        return '<li><span class="rw-extra-ico" aria-hidden="true">' + (e.key === 'stars' ? '⭐' : '<img src="' + e.img + '" alt="" width="64" height="64" decoding="async">') + '</span>' +
+          '<span class="rw-extra-label">' + (e.key === 'stars' ? '額外收穫' : h(e.name)) + '</span><b>' + (e.key === 'stars' ? '+' + e.qty + ' 星' : '×' + e.qty) + '</b></li>';
+      }).join('') + '</ul>' : '') +
+      '<button type="button" class="rw-btn" data-yes>收下戰利品！</button>' +
+      (r.foot ? '<p class="rw-foot">' + h(r.foot) + '</p>' : '') + '</div>';
+    var btn = confirmEl.querySelector('[data-yes]');
+    btn.onclick = function () { btn.disabled = true; confirmEl.close(); };   // 獎勵已發放，這裡只關閉
+    confirmEl.addEventListener('close', function done() {
+      confirmEl.removeEventListener('close', done);
+      confirmEl.classList.remove('rw-modal');
+      if (r.onClose) r.onClose();
+    });
     confirmEl.oncancel = null;
     if (typeof confirmEl.showModal === 'function') confirmEl.showModal(); else confirmEl.setAttribute('open', '');
+  }
+  /** 開箱、寶物磁鐵的結果：res＝store 回傳的 { stars, items }；rare＝神秘寶箱；note＝說明前綴 */
+  function showReward(title, res, rare, note) {
+    var entries = rewardEntries(res.stars, res.items, 0);
+    if (!entries.length) { showInfo(title, res.text); return; }
+    rare = rare || entries.some(function (e) { return RARE_ITEMS.indexOf(e.key) >= 0; });
+    rewardPopup({ rare: rare, title: title, entries: entries, desc: note ? note + '・' + entries[0].desc : '' });
+  }
+  /**
+   * 擲骰後停在寶箱／機會格（或沿路撿到神秘寶箱）有拿到東西：回傳獎勵彈窗資料；
+   * 其他事件（命運卡、特殊任務、礦車接著觸發下一格…）回傳 null，照舊用文字說明
+   */
+  function rollReward(res) {
+    var ev = res.event, found = res.found || 0;
+    var plain = !ev || ev.type === 'normal' || ev.type === 'start';
+    if (!plain && (ev.type !== 'chest' && ev.type !== 'chance' || ev.then || ev.special)) return null;
+    var entries = rewardEntries(plain ? 0 : ev.stars, plain ? {} : ev.items, found);
+    if (!entries.length) return null;
+    var rare = !!found || !!(ev && ev.medal) || entries.some(function (e) { return RARE_ITEMS.indexOf(e.key) >= 0; });
+    var title = ev && ev.medal ? '好運加倍！' : entries.length > 1 ? '寶物大豐收！'
+      : plain ? '撿到神秘寶箱！' : ev.type === 'chest' ? '打開寶箱！' : '好運降臨！';
+    return { rare: rare, title: title, entries: entries, desc: !plain && ev.type === 'chance' && !found ? ev.text.replace(/\n/g, '・') : '' };
   }
 
   /** 地圖上的特殊道具列（只顯示持有的道具） */
@@ -3126,8 +3194,9 @@
         }
         case 'open-chest': {
           var cres = store.openChest(childId, id);   // 在地圖道具列開箱（先記錄獎勵，再播動畫）
-          if (document.getElementById('pawn')) { pawnPlay('openChest').then(function () { showReward(id === 'chest' ? '📦 一般寶箱' : '🎁 神秘寶箱', (id === 'mysteryChest' ? '🔑 用掉 1 把黃金鑰匙・' : '') + cres.text, id === 'chest' ? 'images/tiles/chest.webp' : 'images/items/mystery_chest.webp', id === 'chest' ? 'chest' : 'mystery'); render(); }); break; }
-          showReward(id === 'chest' ? '📦 一般寶箱' : '🎁 神秘寶箱', (id === 'mysteryChest' ? '🔑 用掉 1 把黃金鑰匙・' : '') + cres.text, id === 'chest' ? 'images/tiles/chest.webp' : 'images/items/mystery_chest.webp', id === 'chest' ? 'chest' : 'mystery');
+          var chestTitle = id === 'chest' ? '打開一般寶箱！' : '打開神秘寶箱！', chestNote = id === 'mysteryChest' ? '🔑 用掉 1 把黃金鑰匙' : '';
+          if (document.getElementById('pawn')) { pawnPlay('openChest').then(function () { showReward(chestTitle, cres, id !== 'chest', chestNote); render(); }); break; }
+          showReward(chestTitle, cres, id !== 'chest', chestNote);
           render();
           break;
         }

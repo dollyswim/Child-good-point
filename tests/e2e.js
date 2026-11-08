@@ -1010,8 +1010,10 @@ async function main() {
     assert.match(await q.locator('.chest-btn[data-kind=giftMysteryChest]').innerText(), /神秘寶箱[\s\S]*×2/);
     await q.evaluate(() => { window.__cgpStore.random = () => 0.5; });
     await q.click('.chest-btn[data-kind=giftMysteryChest]');
-    await q.waitForSelector('#confirm .reward-box');
-    assert.match(await q.locator('#confirm .reward-box').innerText(), /神秘寶箱[\s\S]*得到/);
+    await q.waitForSelector('#confirm .rw.rw-rare');   // 神秘寶箱：稀有版獎勵彈窗
+    assert.match(await q.locator('#confirm .rw').innerText(), /稀有獎勵[\s\S]*打開神秘寶箱[\s\S]*×1[\s\S]*已收入冒險背包[\s\S]*收下戰利品/);
+    assert.equal(await q.locator('#confirm .rw-extra').count(), 0, '沒有額外獎勵就不顯示');
+    assert.equal(await q.locator('#confirm .rw-foot').count(), 0, '開背包寶箱沒有骰子資訊');
     await q.click('#confirm [data-yes]');
     assert.match(await q.locator('.chest-btn[data-kind=giftMysteryChest]').innerText(), /×1/);
     const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -1133,7 +1135,7 @@ async function main() {
     await q.evaluate(() => { window.__cgpStore.random = () => 0.3; });
     await q.click('.dice-btn.skates');
     await q.waitForSelector('#confirm[open]', { timeout: 10000 });
-    assert.match(await q.locator('#confirm').innerText(), /撿到 1 個神秘寶箱/);
+    assert.match(await q.locator('#confirm .rw.rw-rare').innerText(), /稀有獎勵[\s\S]*撿到神秘寶箱[\s\S]*神秘寶箱 ×1[\s\S]*黃金鑰匙開啟[\s\S]*收下戰利品[\s\S]*前進 3 格・停在第 4 格/);
     await q.click('#confirm [data-yes]');
     assert.equal(await q.locator('.map-chest').count(), 0);
     // 背包：沒有鑰匙打不開；有鑰匙就能開
@@ -1144,8 +1146,8 @@ async function main() {
     await q.evaluate((cid) => { window.__cgpStore.getPlayer(cid).bag.goldenKey = 1; window.__cgpStore.save(); }, id);
     await q.reload(); await q.waitForSelector('.chest-btn[data-kind=mysteryChest]');
     await q.click('.chest-btn[data-kind=mysteryChest]');
-    await q.waitForSelector('#confirm .reward-box');
-    assert.match(await q.locator('#confirm .reward-box').innerText(), /用掉 1 把黃金鑰匙[\s\S]*得到/);
+    await q.waitForSelector('#confirm .rw.rw-rare');
+    assert.match(await q.locator('#confirm .rw').innerText(), /用掉 1 把黃金鑰匙/);
     await q.click('#confirm [data-yes]');
     // 寶物磁鐵吸走第 5 格一般寶箱 → 地圖上那格的寶箱圖示消失（變普通石板）；新的一輪重新放滿
     await q.evaluate((cid) => { const s = window.__cgpStore; s.getPlayer(cid).bag.magnet = 1; s.random = () => 0.1; s.save(); }, id);
@@ -1858,6 +1860,46 @@ async function main() {
     console.log('✔ 木島機會卡：藤蔓「抓住！」才前進 2 格');
     console.log('✔ 木島劇情（假地圖）：小精靈導遊提示、第 8 格落葉找松果、第 40 格拉吊橋、第 92 格連點喚醒巨樹、各 ⭐3、木島小英雄');
     await cw.close();
+  }
+
+  // ---------- 獲得獎勵彈窗：一般版／稀有版同版型（只換配色），獎勵依實際結果、按鈕不重複發放 ----------
+  {
+    const cr = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block' });
+    const q = await cr.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '波妞' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+      const p = s.getPlayer(a.id); p.bag.d6 = 3; s.setPlayerTile(a.id, 3); s.save(); return a.id; });
+    await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    const layout = () => q.evaluate(() => { const box = document.querySelector('#confirm .rw'), r = (s) => Math.round(document.querySelector(s).getBoundingClientRect().width);
+      return { kids: [...box.children].map((e) => e.className), w: r('#confirm .rw'), card: r('.rw-card'), art: r('.rw-art'), btn: r('.rw-btn'), bg: getComputedStyle(box).backgroundColor }; });
+    // 一般版：第 5 格寶箱得到 ⭐3（沒有額外獎勵 → 不顯示額外區）
+    await q.evaluate(() => { const seq = [1.5 / 6, 0.1, 0.9]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0); });
+    const s0 = await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id);
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#confirm .rw.rw-normal', { timeout: 15000 });
+    assert.match(await q.locator('#confirm .rw').innerText(), /^✦ 一般獎勵 ✦\n打開寶箱！\n能量星星 ×3\n已存入能量星星\n收下戰利品！[\s\S]*擲出 2・停在第 5 格$/);
+    const normal = await layout();
+    assert.deepEqual(normal.kids, ['rw-tag', 'rw-title', 'rw-card', 'rw-btn', 'rw-foot'], '沒有額外獎勵：不保留空白區塊');
+    const s1 = await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id);
+    assert.equal(s1, s0 + 3, '顯示前就已發放');
+    await q.click('#confirm [data-yes]');
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), s1, '按「收下戰利品！」不會重複發放');
+    // 稀有版：好運金牌＋寶箱 → 主獎勵溜冰鞋、額外收穫 +3 星
+    await q.evaluate((cid) => { const s = window.__cgpStore; const p = s.getPlayer(cid); p.bag.luckyMedal = 1; p.medalArmed = true; s.setPlayerTile(cid, 10); s.save(); const seq = [1.5 / 6, 0.1, 0.9, 0.6]; s.random = () => (seq.length ? seq.shift() : 0); }, id);
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#confirm .rw.rw-rare', { timeout: 15000 });
+    assert.match(await q.locator('#confirm .rw').innerText(), /稀有獎勵[\s\S]*好運加倍！[\s\S]*溜冰鞋 ×1[\s\S]*額外收穫[\s\S]*\+3 星[\s\S]*收下戰利品！[\s\S]*停在第 12 格/);
+    const rare = await layout();
+    assert.deepEqual(rare.kids, ['rw-tag', 'rw-title', 'rw-card', 'rw-extra', 'rw-btn', 'rw-foot']);
+    assert.deepEqual([rare.w, rare.card, rare.art, rare.btn], [normal.w, normal.card, normal.art, normal.btn], '兩版尺寸完全相同');
+    assert.notEqual(rare.bg, normal.bg, '只換配色');
+    assert.ok(await q.evaluate(() => { const b = document.querySelector('.rw-btn').getBoundingClientRect(); return b.bottom <= innerHeight && b.top >= 0; }), '按鈕在畫面內');
+    await q.click('#confirm [data-yes]');
+    assert.equal(await q.locator('#confirm[open]').count(), 0);
+    console.log('✔ 獲得獎勵彈窗：一般版／稀有版同版型只換配色、依實際結果顯示、沒有額外獎勵就隱藏、收下不重複發放');
+    await cr.close();
   }
 
   // ---------- 金島第三區：能源主塔與技師 ----------
