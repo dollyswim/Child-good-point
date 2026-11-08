@@ -1927,7 +1927,7 @@ test('成就：23 項三類（冒險 5、收集 5、生活 13）；達成後記�
   assert.equal(store.getAchievements(a.id).filter(x => x.done).length, 0, '另一位孩子不受影響');
   const p = store.getPlayer(a.id);
   p.maxReached = 40; p.stats.chests = 10; p.stats.mystery = 1;
-  store.data.adventure.minigames.push({ id: 'm', childId: a.id, date: store.today(), status: 'done', caught: 12, stars: 12, ts: 1 });
+  store.data.adventure.minigames.push({ id: 'm', childId: a.id, date: store.today(), status: 'done', caught: 22, stars: 8, ts: 1 });
   assert.deepEqual(store.checkAchievements(a.id).map(x => x.id), ['advStart', 'reachR2', 'chest1', 'chests10', 'mystery1', 'catch5', 'catch10'], '進入過冒險：得到「冒險開始」');
   p.maxReached = 0;
   assert.equal(store.getAchievements(a.id).find(x => x.id === 'reachR2').done, true, '達成後不會消失');
@@ -2137,7 +2137,7 @@ test('封存舊紀錄：封存選定日期以前的生活與冒險紀錄；點�
   const p = store.getPlayer(a.id); p.bag.d6 = 2;
   setDate('2026-03-02T11:00:00');
   store.random = () => 0.1; store.rollDice(a.id, 'd6');
-  store.data.adventure.minigames.push({ id: 'mg-old', childId: a.id, date: '2026-03-02', tile: 7, bonus: false, status: 'done', caught: 12, stars: 12, ts: 1 });
+  store.data.adventure.minigames.push({ id: 'mg-old', childId: a.id, date: '2026-03-02', tile: 7, bonus: false, status: 'done', caught: 22, stars: 8, ts: 1 });
   store._ledger(a.id, 12, '小遊戲');
   setDate('2026-11-07T10:00:00');
   store.checkAchievements(a.id);
@@ -2171,4 +2171,14 @@ test('封存舊紀錄：封存選定日期以前的生活與冒險紀錄；點�
 test('小遊戲獎勵：每 3 顆換 1 顆能量星星、無條件進位、最多 15 星', () => {
   assert.equal(G.MINIGAME_RATE, 3);
   assert.deepEqual([0, 1, 2, 3, 4, 18, 27, 44, 45, 60].map(G.minigameStars), [0, 1, 1, 1, 2, 6, 9, 15, 15, 15]);
+});
+
+test('星海傳說：單局抓到 20 顆以上（19 顆不算）', () => {
+  const { store, a } = p3Store();
+  store.data.adventure.minigames.push({ id: 'm19', childId: a.id, date: store.today(), status: 'done', caught: 19, stars: 7, ts: 1 });
+  let ids = store.checkAchievements(a.id).map(x => x.id);
+  assert.ok(ids.includes('catch5') && !ids.includes('catch10'), '19 顆：只有星星捕手');
+  store.data.adventure.minigames.push({ id: 'm20', childId: a.id, date: store.today(), status: 'done', caught: 20, stars: 7, ts: 2 });
+  assert.deepEqual(store.checkAchievements(a.id).map(x => x.id), ['catch10'], '20 顆：星海傳說');
+  assert.match(G.ACHIEVEMENTS.find(x => x.id === 'catch10').desc, /20 顆/);
 });

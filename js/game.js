@@ -726,7 +726,7 @@
     { id: 'chests10', cat: 'collect', icon: '📦', name: '寶箱獵人', desc: '開過 10 個一般寶箱', check: function (s, c) { return s.getPlayer(c).stats.chests >= 10; } },
     { id: 'mystery1', cat: 'collect', icon: '🎁', name: '一個大秘寶', desc: '打開第一個神秘寶箱', check: function (s, c) { return s.getPlayer(c).stats.mystery >= 1; } },
     { id: 'catch5', cat: 'collect', icon: '⭐', name: '星星捕手', desc: '「抓住星星」單局抓到 5 顆以上', check: function (s, c) { return bestCatch(s, c) >= 5; } },
-    { id: 'catch10', cat: 'collect', icon: '🌟', name: '星海傳說', desc: '「抓住星星」單局抓到 10 顆以上', check: function (s, c) { return bestCatch(s, c) >= 10; } }
+    { id: 'catch10', cat: 'collect', icon: '🌟', name: '星海傳說', desc: '「抓住星星」單局抓到 20 顆以上', check: function (s, c) { return bestCatch(s, c) >= 20; } }   // 2026-11-08 由 10 顆改為 20 顆（代號沿用 catch10，保留既有紀錄）
   ].concat([1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000].map(function (n) {
     return { id: 'earn' + n, cat: 'life', icon: '🥇', name: '獲得 ' + n + ' 分', desc: '起始點數＋累計得分達到 ' + n, revocable: true, check: function (s, c) { return s.getEarned(c) >= n; } };
   })).concat([
