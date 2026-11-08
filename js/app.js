@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-77';
+  var APP_VERSION = '2026.11.08-78';
   var store;
   try {
     store = new CGP.Store();
@@ -721,19 +721,21 @@
   }
   /**
    * 連點充電：畫面下方電量條＋大按鈕，點滿 10 下就完成（不限時間、不會失敗）
+   * 金島能源塔用預設文字；其他劇情（木島精靈巨樹）傳 opts 換文字，onTap(比例) 讓地圖跟著變化
    * @returns Promise（充滿時完成）
    */
-  function chargeTower() {
+  function chargeTower(opts) {
+    opts = opts || {};
     return new Promise(function (resolve) {
       var NEED = 10, n = 0;
       var el = document.createElement('div');
       el.className = 'charge-panel'; el.id = 'charge-panel';
-      el.innerHTML = '<b>⚡ 快幫能源塔充電！</b><small>連續點下面的按鈕，把電量充滿</small>' +
+      el.innerHTML = '<b>' + h(opts.title || '⚡ 快幫能源塔充電！') + '</b><small>' + h(opts.sub || '連續點下面的按鈕，把電量充滿') + '</small>' +
         '<span class="charge-bar"><i id="charge-fill"></i></span>' +
-        '<button type="button" class="btn primary charge-btn" id="charge-btn">⚡ 充電！<span id="charge-count">0 / ' + NEED + '</span></button>';
+        '<button type="button" class="btn primary charge-btn" id="charge-btn">' + h(opts.btn || '⚡ 充電！') + '<span id="charge-count">0 / ' + NEED + '</span></button>';
       document.body.appendChild(el);
       var fill = el.querySelector('#charge-fill'), cnt = el.querySelector('#charge-count'), btn = el.querySelector('#charge-btn');
-      var tower = document.getElementById('gold-tower');
+      var tower = opts.title ? null : document.getElementById('gold-tower');
       btn.addEventListener('pointerdown', function (e) {
         e.preventDefault();
         if (n >= NEED) return;
@@ -741,8 +743,9 @@
         fill.style.width = (n / NEED * 100) + '%'; cnt.textContent = n + ' / ' + NEED;
         btn.classList.remove('zap'); void btn.offsetWidth; btn.classList.add('zap');
         if (tower) { tower.style.setProperty('--charge', (n / NEED).toFixed(2)); tower.classList.add('charging'); }
+        if (opts.onTap) opts.onTap(n / NEED);
         if (n >= NEED) {
-          btn.disabled = true; btn.textContent = '⚡ 充飽了！';
+          btn.disabled = true; btn.textContent = opts.full || '⚡ 充飽了！';
           setTimeout(function () { el.remove(); if (tower) tower.classList.remove('charging'); resolve(); }, reduceMotion ? 100 : 450);
         }
       });
@@ -774,81 +777,167 @@
     });
   }
 
-  // ---------- 金島劇情（技師當導遊）：第 5 格礦工求助、第 30 格礦車轉轍（第 80 格能源塔見上方） ----------
-  var STORY_SPOTS = {
-    ore: { tile: 5, guide: { gx: 860, gy: 5062 }, cam: { cx: 720, cy: 5000 },
-      ores: [[800, 4952], [866, 4918], [600, 5112], [520, 5012], [760, 5160]],
-      hint: '我的金礦石滾得到處都是…走到第 5 格幫我撿回來！', intro: '我的金礦石滾得到處都是！幫我把 5 顆發光的礦石撿回來！', done: '太好了！礦石都找回來了，謝謝你！' },
-    rail: { tile: 30, guide: { gx: 430, gy: 4522 }, cam: { cx: 470, cy: 4420 }, lever: { gx: 360, gy: 4556 }, cart: [[300, 4488], [578, 4300]],
-      hint: '礦場的轉轍器卡住了…走到第 30 格幫我拉下拉桿！', intro: '轉轍器卡住了，礦車過不去！幫我拉下拉桿！', done: '軌道接通了！礦車可以開往水晶礦谷了！' }
+  // ---------- 島嶼劇情（導遊 NPC＋地圖互動，每座島一份設定） ----------
+  // 金島：技師當導遊，第 5 格撿礦石、第 30 格拉轉轍器（第 80 格能源塔另有演出，見上方）
+  // 木島：森林小精靈當導遊，每區 1 個任務（2026-11-08 家長決定）；木島地圖還沒到貨，座標寫成「相對任務格子」的位移，
+  //       草圖到貨後會自動跟著格子走，必要時再微調 guide／cam／items 的位移即可
+  // 互動類型 type：collect＝點地圖上的東西撿起來、press＝按一個按鈕觸發地圖變化、charge＝連點充能
+  // 座標：rel 為 false 時是長地圖總覽座標 [x, y]；rel 為 true 時是相對任務格子中心的位移 [dx, dy]
+  var ISLAND_STORY = {
+    gold: {
+      rel: false,
+      guide: { cls: 'gold-tech', label: '技師', img: 'images/gold/technician.webp', iw: 150, ih: 231, w: TECH.w },
+      spots: {
+        ore: { type: 'collect', guide: [860, 5062], cam: [720, 5000], top: true,
+          items: [[800, 4952], [866, 4918], [600, 5112], [520, 5012], [760, 5160]], itemCls: 'story-ore', itemLabel: '金礦石',
+          title: '⛏️ 幫技師撿回金礦石！', sub: '點地圖上發光的礦石',
+          hint: '我的金礦石滾得到處都是…走到第 5 格幫我撿回來！', intro: '我的金礦石滾得到處都是！幫我把 5 顆發光的礦石撿回來！', done: '太好了！礦石都找回來了，謝謝你！' },
+        rail: { type: 'press', effect: 'cart', guide: [430, 4522], cam: [470, 4420], lever: [360, 4556], path: [[300, 4488], [578, 4300]],
+          title: '🔧 拉下轉轍器！', sub: '軌道接通後，礦車就能開往水晶礦谷', btn: '⬇️ 拉下拉桿',
+          hint: '礦場的轉轍器卡住了…走到第 30 格幫我拉下拉桿！', intro: '轉轍器卡住了，礦車過不去！幫我拉下拉桿！', done: '軌道接通了！礦車可以開往水晶礦谷了！' }
+      }
+    },
+    wood: {
+      rel: true,
+      guide: { cls: 'wood-elf', label: '森林小精靈', emoji: '🧚', w: 54 },   // 正式圖到貨前先用 🧚 佔位（提示詞見 docs/art-prompts.md）；道具位置避開左下角商店按鈕
+      spots: {
+        pinecone: { type: 'collect', guide: [90, -20], cam: [40, -60], top: true,
+          items: [[-120, -70], [-60, -130], [70, -110], [130, 40], [160, -40]], itemCls: 'story-pick', itemIcon: '🌰', itemLabel: '松果',
+          title: '🌰 幫小精靈撿回松果！', sub: '點地圖上發光的松果',
+          hint: '我的松果掉了一地…走到第 8 格幫我撿回來！', intro: '一陣風把我的松果吹得到處都是！幫我撿回 5 顆發光的松果！', done: '松果都回來了！森林的小動物冬天有糧食了，謝謝你！' },
+        bridge: { type: 'press', effect: 'bridge', guide: [-90, -10], cam: [0, -80], path: [[-150, -150], [150, -150]],
+          title: '🌿 拉緊藤蔓吊橋！', sub: '吊橋鬆掉了，拉緊藤蔓才能走過去', btn: '💪 用力拉！',
+          hint: '吊橋的藤蔓鬆掉了…走到第 40 格幫我拉緊！', intro: '藤蔓吊橋鬆垮垮的，好危險！幫我把藤蔓拉緊！', done: '吊橋變得又穩又牢！可以安心走過去了！' },
+        fruit: { type: 'collect', guide: [90, -20], cam: [30, -60], top: true,
+          items: [[-130, -60], [-40, -140], [80, -120], [140, 30], [170, -50]], itemCls: 'story-pick', itemIcon: '🍎', itemLabel: '果實',
+          title: '🍎 幫樹屋村撿回果實！', sub: '點地圖上發光的果實',
+          hint: '樹屋村的果實籃翻倒了…走到第 65 格幫忙撿！', intro: '小松鼠的果實籃翻倒了！幫牠撿回 5 顆發光的果實！', done: '果實都撿回來了！樹屋村今晚可以開派對了！' },
+        elftree: { type: 'charge', effect: 'glow', guide: [-90, -10], cam: [0, -120], glow: [60, -170],
+          title: '✨ 喚醒精靈巨樹！', sub: '連續點下面的按鈕，把精靈之光灌滿', btn: '✨ 灌注光芒！', full: '✨ 巨樹醒來了！',
+          hint: '精靈巨樹睡著了…走到第 92 格幫我把它喚醒！', intro: '精靈巨樹的光快熄滅了！和我一起把精靈之光灌滿！', done: '精靈巨樹亮起來了！螢火蟲都飛出來跳舞了！' }
+      }
+    }
   };
-  /** 還沒完成的劇情：技師站在劇情地點（頭上有「！」），點他會提示要去哪一格 */
+  /** 劇情座標換算成長地圖座標 */
+  function storyXY(board, id, v) {
+    var cfg = ISLAND_STORY[board.id], t = board.tiles[GAME.STORIES[id].tile];
+    return cfg.rel ? { x: t.gx + v[0], y: t.gy + v[1] } : { x: v[0], y: v[1] };
+  }
+  /** 現在這座島還沒完成、而且格子已開放的劇情代號 */
+  function storyOpen(board, player) {
+    var cfg = ISLAND_STORY[board.id];
+    if (!cfg || window.__cgpNoStory) return [];   // __cgpNoStory：自動測試用，劇情另有專門測試
+    return Object.keys(cfg.spots).filter(function (id) { return !player.story[id] && board.tiles[GAME.STORIES[id].tile]; });
+  }
+  /** 導遊的樣子（金島技師用圖，木島小精靈先用表情符號） */
+  function guideArt(g) {
+    return g.img ? '<img src="' + g.img + '" alt="" width="' + g.iw + '" height="' + g.ih + '" draggable="false">' : '<span class="guide-emoji" aria-hidden="true">' + g.emoji + '</span>';
+  }
+  /** 還沒完成的劇情：導遊站在劇情地點（頭上有「！」），點他會提示要去哪一格 */
   function storyDecor(board, player) {
-    if (board.id !== 'gold' || window.__cgpNoStory) return '';   // __cgpNoStory：自動測試用，劇情另有專門測試
-    return Object.keys(STORY_SPOTS).map(function (id) {
-      var sp = STORY_SPOTS[id];
-      if (player.story[id] || !board.tiles[sp.tile]) return '';
-      return '<div class="story-guide gold-tech" data-tap="guide" data-story="' + id + '" style="left:' + sp.guide.gx + 'px;top:' + sp.guide.gy + 'px;width:' + TECH.w + 'px;z-index:' + Math.round(sp.guide.gy / 6) + '" role="img" aria-label="技師（需要幫忙）">' +
-        '<img src="images/gold/technician.webp" alt="" width="150" height="231" draggable="false"><span class="story-bang" aria-hidden="true">！</span></div>' +
-        (sp.lever ? '<div class="story-lever" id="story-lever" style="left:' + sp.lever.gx + 'px;top:' + sp.lever.gy + 'px;z-index:' + Math.round(sp.lever.gy / 6) + '" aria-hidden="true"><i></i></div>' : '');
+    var cfg = ISLAND_STORY[board.id];
+    return storyOpen(board, player).map(function (id) {
+      var sp = cfg.spots[id], g = storyXY(board, id, sp.guide);
+      var lever = sp.lever ? storyXY(board, id, sp.lever) : null;
+      return '<div class="story-guide ' + cfg.guide.cls + '" data-tap="guide" data-story="' + id + '" style="left:' + g.x.toFixed(1) + 'px;top:' + g.y.toFixed(1) + 'px;width:' + cfg.guide.w + 'px;z-index:' + Math.round(g.y / 6) + '" role="img" aria-label="' + cfg.guide.label + '（需要幫忙）">' +
+        guideArt(cfg.guide) + '<span class="story-bang" aria-hidden="true">！</span></div>' +
+        (lever ? '<div class="story-lever" id="story-lever" style="left:' + lever.x.toFixed(1) + 'px;top:' + lever.y.toFixed(1) + 'px;z-index:' + Math.round(lever.y / 6) + '" aria-hidden="true"><i></i></div>' : '');
     }).join('');
   }
   /** 地圖上點到可互動的東西（地圖接管觸控，由 setupMap 的放開判斷呼叫） */
   function mapTap(child, el) {
     var kind = el.getAttribute('data-tap');
-    if (kind === 'ore') { collectOre(el); return; }
-    if (kind === 'guide') { var sp = STORY_SPOTS[el.getAttribute('data-story')]; techTalk(child, 3200, sp.hint, el); return; }
+    if (kind === 'pick') { collectPick(el); return; }
+    if (kind === 'guide') {
+      var id = el.getAttribute('data-story'), cfg = ISLAND_STORY[GAME.STORIES[id].island];
+      techTalk(child, 3200, cfg.spots[id].hint, el); return;
+    }
     techTalk(child);
   }
-  var oreJob = null;
-  function collectOre(el) {
-    if (!oreJob || el.classList.contains('got')) return;
+  var pickJob = null;
+  function collectPick(el) {
+    if (!pickJob || el.classList.contains('got')) return;
     el.classList.add('got');
-    oreJob.n++;
-    var c = document.getElementById('ore-count'); if (c) c.textContent = oreJob.n + ' / ' + oreJob.need;
-    var f = document.getElementById('ore-fill'); if (f) f.style.width = (oreJob.n / oreJob.need * 100) + '%';
+    pickJob.n++;
+    var c = document.getElementById('pick-count'); if (c) c.textContent = pickJob.n + ' / ' + pickJob.need;
+    var f = document.getElementById('pick-fill'); if (f) f.style.width = (pickJob.n / pickJob.need * 100) + '%';
     setTimeout(function () { el.remove(); }, 400);
-    if (oreJob.n >= oreJob.need) { var done = oreJob.done; oreJob = null; setTimeout(function () { var p = document.getElementById('story-panel'); if (p) p.remove(); done(); }, reduceMotion ? 100 : 500); }
+    if (pickJob.n >= pickJob.need) { var done = pickJob.done; pickJob = null; setTimeout(function () { var p = document.getElementById('story-panel'); if (p) p.remove(); done(); }, reduceMotion ? 100 : 500); }
   }
-  /** 劇情演出：鏡頭移過去 → 技師說明 → 孩子互動 → 地圖變化 → 技師道謝＋⭐3 → 回到角色 */
+  /** 互動 collect：地圖上出現幾個發光的東西，點一下撿起來 */
+  function storyCollect(board, id, sp, world) {
+    sp.items.forEach(function (o) {
+      var q = storyXY(board, id, o), b = document.createElement('div');
+      b.className = sp.itemCls; b.setAttribute('data-tap', 'pick'); b.setAttribute('role', 'button'); b.setAttribute('aria-label', sp.itemLabel);
+      if (sp.itemIcon) b.textContent = sp.itemIcon;
+      b.style.left = q.x + 'px'; b.style.top = q.y + 'px'; b.style.zIndex = 1500;
+      world.appendChild(b);
+    });
+    var panel = document.createElement('div');
+    panel.className = 'charge-panel story-panel' + (sp.top ? ' top' : ''); panel.id = 'story-panel';   // 面板放上方，不擋住地圖上的東西
+    panel.innerHTML = '<b>' + h(sp.title) + '</b><small>' + h(sp.sub) + '</small><span class="charge-bar"><i id="pick-fill"></i></span><span class="story-count" id="pick-count">0 / ' + sp.items.length + '</span>';
+    document.body.appendChild(panel);
+    return new Promise(function (resolve) { pickJob = { n: 0, need: sp.items.length, done: resolve }; });
+  }
+  /** 互動 press：按一個按鈕，地圖上出現變化（礦車開走、吊橋拉緊） */
+  async function storyPress(board, id, sp, world) {
+    var panel = document.createElement('div');
+    panel.className = 'charge-panel story-panel'; panel.id = 'story-panel';
+    panel.innerHTML = '<b>' + h(sp.title) + '</b><small>' + h(sp.sub) + '</small><button type="button" class="btn primary charge-btn" id="story-btn">' + h(sp.btn) + '</button>';
+    document.body.appendChild(panel);
+    await new Promise(function (resolve) { panel.querySelector('#story-btn').addEventListener('click', resolve); });
+    panel.remove();
+    var a = storyXY(board, id, sp.path[0]), z = storyXY(board, id, sp.path[1]);
+    if (sp.effect === 'cart') {
+      var lever = document.getElementById('story-lever'); if (lever) lever.classList.add('pulled');
+      var cart = document.createElement('div');
+      cart.className = 'story-cart'; cart.textContent = '🚃';
+      cart.style.left = a.x + 'px'; cart.style.top = a.y + 'px';
+      world.appendChild(cart);
+      await sleep(reduceMotion ? 50 : 400);
+      cart.style.left = z.x + 'px'; cart.style.top = z.y + 'px'; cart.classList.add('go');
+      await sleep(reduceMotion ? 100 : 1700);
+      cart.remove();
+    } else {
+      // 吊橋：一排木板從左到右拉緊出現
+      var br = document.createElement('div');
+      br.className = 'story-bridge'; br.id = 'story-bridge';
+      var len = Math.hypot(z.x - a.x, z.y - a.y);
+      br.style.left = a.x + 'px'; br.style.top = a.y + 'px'; br.style.width = len + 'px'; br.style.zIndex = 1500;
+      br.style.transform = 'rotate(' + Math.atan2(z.y - a.y, z.x - a.x) + 'rad)';
+      world.appendChild(br);
+      await sleep(30); br.classList.add('go');
+      await sleep(reduceMotion ? 100 : 1500);
+      br.classList.add('bye');
+      setTimeout(function () { br.remove(); }, 600);
+    }
+  }
+  /** 互動 charge：連點充能，地圖上的光跟著變亮 */
+  async function storyCharge(board, id, sp, world) {
+    var q = storyXY(board, id, sp.glow), glow = document.createElement('div');
+    glow.className = 'story-glow'; glow.id = 'story-glow';
+    glow.style.left = q.x + 'px'; glow.style.top = q.y + 'px'; glow.style.zIndex = 1500;
+    world.appendChild(glow);
+    await chargeTower({ title: sp.title, sub: sp.sub, btn: sp.btn, full: sp.full, onTap: function (r) { glow.style.setProperty('--charge', r.toFixed(2)); } });
+    glow.classList.add('full');
+    await sleep(reduceMotion ? 100 : 1400);
+    glow.classList.add('bye');
+    setTimeout(function () { glow.remove(); }, 600);
+  }
+  /** 劇情演出：鏡頭移過去 → 導遊說明 → 孩子互動 → 地圖變化 → 導遊道謝＋⭐3 → 回到角色 */
   async function runStory(child, id) {
-    var sp = STORY_SPOTS[id], world = document.getElementById('map-world');
+    var board = store.getBoard(child.id), cfg = ISLAND_STORY[board.id], sp = cfg && cfg.spots[id], world = document.getElementById('map-world');
     var guide = document.querySelector('.story-guide[data-story="' + id + '"]');
-    if (!world || !guide) return;
+    if (!sp || !world || !guide) return;
     ui.busy = true; document.body.classList.add('pawn-acting');
     try {
-      if (ui.cam) { ui.cam.cx = sp.cam.cx; ui.cam.cy = sp.cam.cy; applyCam(true); await sleep(reduceMotion ? 50 : 800); }
+      var cam = storyXY(board, id, sp.cam);
+      if (ui.cam) { ui.cam.cx = cam.x; ui.cam.cy = cam.y; applyCam(true); await sleep(reduceMotion ? 50 : 800); }
       techTalk(child, 3000, sp.intro, guide);
       await sleep(reduceMotion ? 800 : 2600);
-      var panel = document.createElement('div');
-      panel.className = 'charge-panel story-panel' + (id === 'ore' ? ' top' : ''); panel.id = 'story-panel';   // 撿礦石時面板放上方，不擋住地圖上的礦石
-      if (id === 'ore') {
-        // 地圖上出現 5 顆發光礦石，點一下撿起來
-        sp.ores.forEach(function (o) {
-          var b = document.createElement('div');
-          b.className = 'story-ore'; b.setAttribute('data-tap', 'ore'); b.setAttribute('role', 'button'); b.setAttribute('aria-label', '金礦石');
-          b.style.left = o[0] + 'px'; b.style.top = o[1] + 'px'; b.style.zIndex = 1500;
-          world.appendChild(b);
-        });
-        panel.innerHTML = '<b>⛏️ 幫技師撿回金礦石！</b><small>點地圖上發光的礦石</small><span class="charge-bar"><i id="ore-fill"></i></span><span class="story-count" id="ore-count">0 / ' + sp.ores.length + '</span>';
-        document.body.appendChild(panel);
-        await new Promise(function (resolve) { oreJob = { n: 0, need: sp.ores.length, done: resolve }; });
-      } else {
-        // 拉下轉轍器：拉桿扳下、礦車沿軌道開往水晶礦谷
-        panel.innerHTML = '<b>🔧 拉下轉轍器！</b><small>軌道接通後，礦車就能開往水晶礦谷</small><button type="button" class="btn primary charge-btn" id="lever-btn">⬇️ 拉下拉桿</button>';
-        document.body.appendChild(panel);
-        await new Promise(function (resolve) { panel.querySelector('#lever-btn').addEventListener('click', resolve); });
-        panel.remove();
-        var lever = document.getElementById('story-lever'); if (lever) lever.classList.add('pulled');
-        var cart = document.createElement('div');
-        cart.className = 'story-cart'; cart.textContent = '🚃';
-        cart.style.left = sp.cart[0][0] + 'px'; cart.style.top = sp.cart[0][1] + 'px';
-        world.appendChild(cart);
-        await sleep(reduceMotion ? 50 : 400);
-        cart.style.left = sp.cart[1][0] + 'px'; cart.style.top = sp.cart[1][1] + 'px'; cart.classList.add('go');
-        await sleep(reduceMotion ? 100 : 1700);
-        cart.remove();
-      }
+      if (sp.type === 'collect') await storyCollect(board, id, sp, world);
+      else if (sp.type === 'press') await storyPress(board, id, sp, world);
+      else await storyCharge(board, id, sp, world);
       var first = store.completeStory(child.id, id);
       techTalk(child, 3400, sp.done + (first ? ' 送你 ⭐' + GAME.STORY_STARS + '！' : ''), guide);
       if (first) toast('⭐ 完成任務「' + GAME.STORIES[id].name + '」：+' + GAME.STORY_STARS + ' 能量星星', 'pos');
@@ -856,7 +945,7 @@
       guide.classList.add('bye');
       followPawn(true);
       await sleep(reduceMotion ? 50 : 500);
-    } finally { ui.busy = false; document.body.classList.remove('pawn-acting'); oreJob = null; }
+    } finally { ui.busy = false; document.body.classList.remove('pawn-acting'); pickJob = null; }
   }
 
   /** 第一次通電：亮起動畫（資料已寫入，只是演出） */
@@ -1286,9 +1375,11 @@
       ui.busy = false; document.body.classList.remove('pawn-acting');
     }
     var visited = [].concat(res.path || [], (ev && ev.extraPath) || [], (ev && ev.backPath) || [], (ev && ev.then && ev.then.extraPath) || []);
-    for (var sid in STORY_SPOTS) {
-      var spp = STORY_SPOTS[sid], pl = store.getPlayer(childId);
-      if (!window.__cgpNoStory && !res.travel && pl.island === 'gold' && !pl.story[sid] && visited.indexOf(spp.tile) >= 0) { await runStory(child, sid); render(); }
+    if (!res.travel) {   // 這次走過的格子有還沒完成的劇情：依序演出（換島那一步不演）
+      var sboard = store.getBoard(childId), sids = storyOpen(sboard, store.getPlayer(childId));
+      for (var si = 0; si < sids.length; si++) {
+        if (visited.indexOf(GAME.STORIES[sids[si]].tile) >= 0) { await runStory(child, sids[si]); render(); }
+      }
     }
     await towerIntro(child);
     var react = pawnReaction(res);

@@ -1949,13 +1949,13 @@ test('金島通關：第一次＝神秘寶箱 ×1（免鑰匙）＋成就；之�
   });
 });
 
-test('成就：24 項三類（冒險 6、收集 5、生活 13）；達成後記錄日期、不重複、不會消失；兩位孩子各自計算', () => {
+test('成就：25 項三類（冒險 7、收集 5、生活 13）；達成後記錄日期、不重複、不會消失；兩位孩子各自計算', () => {
   const { store, a } = p3Store();
   const b2 = store.addChild({ name: 'B', startPoints: 6000 });
-  assert.equal(G.ACHIEVEMENTS.length, 24);
-  assert.deepEqual(['adventure', 'collect', 'life'].map(c => G.ACHIEVEMENTS.filter(x => x.cat === c).length), [6, 5, 13]);
-  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.id)).size, 24, '代號不重複');
-  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.name)).size, 24, '名稱不重複');
+  assert.equal(G.ACHIEVEMENTS.length, 25);
+  assert.deepEqual(['adventure', 'collect', 'life'].map(c => G.ACHIEVEMENTS.filter(x => x.cat === c).length), [7, 5, 13]);
+  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.id)).size, 25, '代號不重複');
+  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.name)).size, 25, '名稱不重複');
   assert.deepEqual([...new Set(G.ACHIEVEMENTS.map(x => x.cat))], ['adventure', 'collect', 'life']);
   assert.deepEqual(store.checkAchievements(b2.id).map(x => x.id), ['earn1000', 'earn2000', 'earn3000', 'earn4000', 'earn5000', 'earn6000'], '起始點數也算累計得分；每 1000 分一個；還沒進入冒險：沒有「冒險開始」');
   assert.deepEqual(store.checkAchievements(b2.id), [], '不重複');
@@ -2352,7 +2352,7 @@ test('家長重置今天的次數上限：骰子、小遊戲、前進道具、�
 test('金島劇情：第一次完成各給 ⭐3、不重複給；三個都完成解鎖「金島小英雄」（更新前已點亮能源塔也算）；存檔重開保留', () => {
   const { store, a, storage } = p3Store();
   const bal = store.getStarBalance(a.id);
-  assert.deepEqual(Object.keys(G.STORIES), ['ore', 'rail', 'tower']);
+  assert.deepEqual(G.storiesOf('gold'), ['ore', 'rail', 'tower']);
   assert.equal(store.completeStory(a.id, 'ore'), true);
   assert.equal(store.completeStory(a.id, 'ore'), false, '不重複給');
   assert.equal(store.getStarBalance(a.id), bal + 3);
@@ -2364,4 +2364,22 @@ test('金島劇情：第一次完成各給 ⭐3、不重複給；三個都完成
   const s2 = new Store({ storage, seed: false, now: () => store.now() });
   assert.deepEqual(Object.keys(s2.getPlayer(a.id).story).sort(), ['ore', 'rail']);
   assert.throws(() => store.completeStory(a.id, 'nope'), /沒有這個劇情/);
+});
+
+test('木島劇情：四個任務（每區 1 個、都在一般格）各給 ⭐3、不重複；四個都完成解鎖「木島小英雄」；不影響金島小英雄；存檔重開保留', () => {
+  const { store, a, storage } = p3Store();
+  assert.deepEqual(G.storiesOf('wood'), ['pinecone', 'bridge', 'fruit', 'elftree']);
+  // 每區 1 個：第一區 1～30、第二區 31～55、第三區 56～80、第四區 81～100
+  assert.deepEqual(G.storiesOf('wood').map(k => G.STORIES[k].tile), [8, 40, 65, 92]);
+  const bal = store.getStarBalance(a.id);
+  ['pinecone', 'bridge', 'fruit'].forEach(k => assert.equal(store.completeStory(a.id, k), true));
+  assert.equal(store.completeStory(a.id, 'bridge'), false, '不重複給');
+  assert.ok(!store.checkAchievements(a.id).some(x => x.id === 'woodHero'), '還差精靈巨樹');
+  store.completeStory(a.id, 'elftree');
+  const got = store.checkAchievements(a.id).map(x => x.id);
+  assert.ok(got.includes('woodHero'));
+  assert.ok(!got.includes('goldHero'), '木島任務不算金島');
+  assert.equal(store.getStarBalance(a.id), bal + 12);
+  const s2 = new Store({ storage, seed: false, now: () => store.now() });
+  assert.deepEqual(Object.keys(s2.getPlayer(a.id).story).sort(), ['bridge', 'elftree', 'fruit', 'pinecone']);
 });

@@ -187,7 +187,7 @@
     if (!(p.maxReached >= p.pos)) p.maxReached = p.pos || 0;
     if (!p.islands || typeof p.islands !== 'object') p.islands = {};           // 其他島的保存進度 { 島: { laps, maxReached } }
     if (!p.islandClears || typeof p.islandClears !== 'object') p.islandClears = {};   // 金島以外的通關次數（金島沿用 goldClears）
-    if (!p.story || typeof p.story !== 'object') p.story = {};   // 劇情完成日期 { ore, rail, tower }
+    if (!p.story || typeof p.story !== 'object') p.story = {};   // 劇情完成日期 { ore, rail, tower, pinecone, bridge, fruit, elftree }
     // 位置以穩定格子 ID 為準；舊存檔只有整數格號時對應到同號的格子（第 n 格 → gold-01-00n）
     var board = BOARDS[p.island] || GOLD;
     var idx = p.tileId ? board.tiles.findIndex(function (t) { return t.id === p.tileId; }) : -1;
@@ -773,6 +773,9 @@
       var p = s.getPlayer(c);
       return !!(p.story.ore && p.story.rail && (p.story.tower || goldMax(p) >= 80)); } },   // 更新前就點亮能源塔的也算
     { id: 'reachR4', cat: 'adventure', icon: '👑', name: '抵達金冠城堡', desc: '走到第 81 格以後', check: function (s, c) { return goldMax(s.getPlayer(c)) >= 81; } },
+    { id: 'woodHero', cat: 'adventure', icon: '🧚', name: '木島小英雄', desc: '幫森林小精靈完成木島的 4 個任務：撿回松果、拉緊吊橋、撿回果實、點亮精靈巨樹', check: function (s, c) {
+      var p = s.getPlayer(c);
+      return storiesOf('wood').every(function (k) { return !!p.story[k]; }); } },
     { id: 'chest1', cat: 'collect', icon: '🧰', name: '第一個寶箱', desc: '開過第一個一般寶箱', check: function (s, c) { return s.getPlayer(c).stats.chests >= 1; } },
     { id: 'chests10', cat: 'collect', icon: '📦', name: '寶箱獵人', desc: '開過 10 個一般寶箱', check: function (s, c) { return s.getPlayer(c).stats.chests >= 10; } },
     { id: 'mystery1', cat: 'collect', icon: '🎁', name: '一個大秘寶', desc: '打開第一個神秘寶箱', check: function (s, c) { return s.getPlayer(c).stats.mystery >= 1; } },
@@ -1089,7 +1092,16 @@
    * tower＝第 80 格能源主塔（連點充電）。每個第一次完成給 ⭐STORY_STARS；三個都完成解鎖成就「金島小英雄」
    */
   var STORY_STARS = 3;
-  var STORIES = { ore: { tile: 5, name: '礦工求助' }, rail: { tile: 30, name: '礦車轉轍' }, tower: { tile: 80, name: '能源主塔' } };
+  // 木島劇情（2026-11-08 家長決定，森林小精靈當導遊，每區 1 個）：pinecone＝第 8 格撿回松果、bridge＝第 40 格拉緊藤蔓吊橋、
+  // fruit＝第 65 格幫樹屋村撿果實、elftree＝第 92 格連點點亮精靈巨樹；四個都完成解鎖成就「木島小英雄」
+  // 格號先沿用 WOOD_ISLAND_PLAN 的一般格，木島草圖到貨後可再調；完成紀錄存在 players[id].story（代號各島不重複）
+  var STORIES = {
+    ore: { island: 'gold', tile: 5, name: '礦工求助' }, rail: { island: 'gold', tile: 30, name: '礦車轉轍' }, tower: { island: 'gold', tile: 80, name: '能源主塔' },
+    pinecone: { island: 'wood', tile: 8, name: '撿回松果' }, bridge: { island: 'wood', tile: 40, name: '藤蔓吊橋' },
+    fruit: { island: 'wood', tile: 65, name: '樹屋果實' }, elftree: { island: 'wood', tile: 92, name: '精靈巨樹' }
+  };
+  /** 某座島的劇情代號（依 STORIES 的順序） */
+  function storiesOf(island) { return Object.keys(STORIES).filter(function (k) { return STORIES[k].island === island; }); }
   /** @returns {boolean} 這次是第一次完成（有給獎勵） */
   Store.prototype.completeStory = function (childId, id) {
     if (!STORIES[id]) throw new Error('沒有這個劇情');
@@ -1130,7 +1142,7 @@
     return this.getBonusQuota(childId);
   };
 
-  var api = { STORIES: STORIES, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { STORIES: STORIES, storiesOf: storiesOf, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

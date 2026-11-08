@@ -1270,7 +1270,7 @@ async function main() {
     assert.equal(await q.locator('h1, .plaque').first().innerText().then((t) => /小孩/.test(t)), true, '頁面標題改為「小孩」');
     assert.match(await q.locator('.bottom-nav, nav').last().innerText(), /小孩/);
     assert.equal(await q.locator('[data-testid=achievements]').getAttribute('open'), null, '小孩頁面：全部成就預設收起');
-    assert.match(await q.locator('[data-testid=achievements] summary').innerText(), /全部成就[\s\S]*已解鎖 5 \/ 24/);   // 冒險開始、獲得 1000 分、抵達水晶礦谷、抵達齒輪工坊、抵達金冠城堡
+    assert.match(await q.locator('[data-testid=achievements] summary').innerText(), /全部成就[\s\S]*已解鎖 5 \/ 25/);   // 冒險開始、獲得 1000 分、抵達水晶礦谷、抵達齒輪工坊、抵達金冠城堡
     assert.match(await q.locator('[data-testid=achievements] summary').innerText(), /最近：/, '摺疊時顯示最近得到的一個成就');
     assert.ok(await q.evaluate(() => { const d = document.querySelector('[data-testid=achievements]').getBoundingClientRect(), n = document.querySelector('[data-testid=achievements]').nextElementSibling.getBoundingClientRect(); return n.top - d.bottom >= 12; }), '和最近紀錄之間留間距，不疊在一起');
     assert.ok(await q.evaluate(() => { const d = document.querySelector('[data-testid=achievements]'), r = [...document.querySelectorAll('.panel h2')].find((x) => /最近紀錄/.test(x.textContent)); return d.compareDocumentPosition(r) & Node.DOCUMENT_POSITION_FOLLOWING; }), '在最近紀錄上方');
@@ -1281,7 +1281,7 @@ async function main() {
     // 首頁：最近得到的成就（最近 3 個），點一列進到小孩頁面並展開
     await q.goto(url + '#home');
     await q.waitForSelector('[data-testid=home-achievements]');
-    assert.match(await q.locator('[data-testid=home-achievements]').innerText(), /最近得到的成就[\s\S]*端端[\s\S]*5 \/ 24/);
+    assert.match(await q.locator('[data-testid=home-achievements]').innerText(), /最近得到的成就[\s\S]*端端[\s\S]*5 \/ 25/);
     assert.equal(await q.locator('[data-testid=home-achievements] .ach-mini').count(), 3);
     assert.ok(await q.evaluate(() => { const a = document.querySelector('[data-testid=home-achievements]'), w = document.querySelector('.week-card'); return a.compareDocumentPosition(w) & Node.DOCUMENT_POSITION_FOLLOWING; }), '在本週進度上方');
     await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'home-achievements.png') : path.join(require('os').tmpdir(), 'ha.png'), fullPage: true });
@@ -1709,8 +1709,8 @@ async function main() {
     await q.reload(); await q.waitForSelector('.story-guide[data-story=rail]');
     await q.evaluate(() => { window.__cgpStore.random = () => 2.5 / 6; });
     await q.click('.dice-btn.d6');
-    await q.waitForSelector('#lever-btn', { timeout: 15000 });
-    await q.click('#lever-btn');
+    await q.waitForSelector('#story-btn', { timeout: 15000 });
+    await q.click('#story-btn');
     await q.waitForSelector('#story-lever.pulled');
     await q.waitForFunction(() => /軌道接通了/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
     await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 15000 });
@@ -1731,6 +1731,72 @@ async function main() {
     await q.waitForFunction(() => document.getElementById('pawn').dataset.pos === '5', null, { timeout: 8000 });
     console.log('✔ 金島劇情：技師導遊提示、第 5 格撿礦石、第 30 格拉轉轍器、各 ⭐3、不重複；機會卡礦車按上車才前進');
     await cs.close();
+  }
+
+  // ---------- 木島劇情（用測試假地圖：複製金島格子當木島）：小精靈導遊、第 8 格撿松果、第 40 格拉吊橋、第 92 格喚醒巨樹 ----------
+  {
+    const cw = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', story: true });
+    const q = await cw.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    const id = await q.evaluate(() => {
+      const G = window.CGPGame, g = G.buildGold(), s = window.__cgpStore;
+      G.registerBoard('wood', { name: '木島', goalName: '精靈巨樹', totalTiles: 100, world: g.world, regions: g.regions,
+        tiles: g.tiles.map((t) => Object.assign({}, t, { id: t.id.replace('gold', 'wood'), regionId: t.regionId.replace('gold', 'wood') })) });
+      const a = s.addChild({ name: '波妞' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+      const p = s.getPlayer(a.id); p.island = 'wood'; p.tileId = 'wood-01-006'; p.bag.d6 = 5; s.save(); return a.id; });
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);   // 用 hash 換頁，保留假地圖
+    await q.waitForSelector('.story-guide.wood-elf[data-story=pinecone] .story-bang');
+    assert.match(await q.locator('.plaque h1').innerText(), /木島/);
+    assert.equal(await q.locator('.wood-elf').count(), 4, '四個任務都有小精靈導遊');
+    assert.equal(await q.locator('.gold-tech').count(), 0, '木島沒有金島技師');
+    await q.click('.story-guide[data-story=pinecone]', { force: true });
+    await q.waitForSelector('#tech-bubble');
+    assert.match(await q.locator('#tech-bubble').innerText(), /第 8 格/);
+    const stars0 = await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id);
+    // 擲 2 → 第 8 格：撿回 5 顆松果
+    await q.evaluate(() => { window.__cgpStore.random = () => 1.5 / 6; });
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('.story-pick', { timeout: 15000 });
+    assert.equal(await q.locator('.story-pick').count(), 5);
+    assert.match(await q.locator('#story-panel').innerText(), /撿回松果[\s\S]*0 \/ 5/);
+    for (const o of await q.$$('.story-pick')) await o.click({ force: true });
+    await q.waitForFunction(() => /松果都回來了[\s\S]*⭐3/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
+    await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 15000 });
+    if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
+    assert.ok(await q.evaluate(([cid, s0]) => window.__cgpStore.getStarBalance(cid) >= s0 + 3 && !!window.__cgpStore.getPlayer(cid).story.pinecone, [id, stars0]), '完成松果任務 ⭐3');
+    assert.equal(await q.locator('.story-guide[data-story=pinecone]').count(), 0, '完成後小精靈離開');
+    // 第 40 格：拉緊藤蔓吊橋
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 38); s.random = () => 1.5 / 6; s.save(); }, id);
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);
+    await q.waitForSelector('.story-guide[data-story=bridge]');
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#story-btn', { timeout: 15000 });
+    assert.match(await q.locator('#story-panel').innerText(), /拉緊藤蔓吊橋/);
+    await q.click('#story-btn');
+    await q.waitForSelector('#story-bridge.go', { state: 'attached' });
+    await q.waitForFunction(() => /吊橋變得又穩又牢/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
+    await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 15000 });
+    if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
+    assert.ok(await q.evaluate((cid) => !!window.__cgpStore.getPlayer(cid).story.bridge, id));
+    // 第 92 格：連點喚醒精靈巨樹（果實任務和松果同一種互動，這裡直接標記完成）→ 四個都完成解鎖「木島小英雄」
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.completeStory(cid, 'fruit'); s.data.adventure.rolls = []; s.setPlayerTile(cid, 90); s.random = () => 1.5 / 6; s.save(); }, id);
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);
+    await q.waitForSelector('.story-guide[data-story=elftree]');
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#charge-panel', { timeout: 15000 });
+    assert.match(await q.locator('#charge-panel').innerText(), /喚醒精靈巨樹/);
+    assert.equal(await q.locator('#story-glow').count(), 1, '地圖上出現精靈之光');
+    for (let k = 0; k < 10; k++) await q.click('#charge-btn');
+    await q.waitForSelector('#story-glow.full', { state: 'attached', timeout: 5000 });
+    await q.waitForFunction(() => /精靈巨樹亮起來了/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
+    await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 15000 });
+    assert.ok(await q.evaluate((cid) => window.__cgpStore.getAchievements(cid).find((a) => a.id === 'woodHero').done, id), '解鎖木島小英雄');
+    if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    assert.equal(await q.locator('.story-guide').count(), 0, '全部完成後沒有導遊');
+    console.log('✔ 木島劇情（假地圖）：小精靈導遊提示、第 8 格撿松果、第 40 格拉吊橋、第 92 格連點喚醒巨樹、各 ⭐3、木島小英雄');
+    await cw.close();
   }
 
   // ---------- 金島第三區：能源主塔與技師 ----------

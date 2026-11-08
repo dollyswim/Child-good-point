@@ -1,6 +1,6 @@
 # Achievement Badge Art Brief (for Codex)
 
-> Approved by the parent: `docs/art/achievement_badges.csv` (2026-11-07). 25 images: 24 achievements + 1 "locked" badge. Chinese version: `CODEX_ACHIEVEMENT_BADGES_BRIEF.md`.
+> Approved by the parent: `docs/art/achievement_badges.csv` (2026-11-07). 26 images: 25 achievements + 1 "locked" badge (#25 `woodHero` added 2026-11-08; it may be delivered later). Chinese version: `CODEX_ACHIEVEMENT_BADGES_BRIEF.md`.
 
 ## Common spec
 - Each image: 1024×1024 PNG, **plain white background**, badge centered with ~8% margin. The app shows it at about 56px, so keep shapes simple with clear silhouettes.
@@ -38,7 +38,8 @@
 | 22 | `badge_special5.png` | gold | 特殊任務達人 | a fortune-telling crystal ball with a small medal badge beside it |
 | 23 | `badge_streak7.png` | gold | 連續 7 天冒險 | a calendar page with exactly 7 small boxes, all checked, and a small flame beside it (no numbers) |
 | 24 | `badge_goldHero.png` | green | 金島小英雄 | a little caped hero in a miner's helmet holding a glowing gold ore, a small energy tower behind (added 2026-11-08) |
-| 25 | `badge_locked.png` | gray | （未解鎖） | a padlock with a question mark |
+| 25 | `badge_woodHero.png` | green | 木島小英雄 | a little hero in a leaf cape holding a glowing pinecone, a glowing fairy great tree with fireflies behind (added 2026-11-08, may be delivered later) |
+| 26 | `badge_locked.png` | gray | （未解鎖） | a padlock with a question mark |
 
 ## Prompt template (swap the motif and rim color for each badge)
 
@@ -46,4 +47,4 @@
 Bright cute chibi 3D game achievement badge icon, round badge with a thick {rim color} rim, {motif} in the center, soft lighting, rounded shapes, clear silhouette, plain white background, centered with margin, no text, no watermark.
 ```
 
-Deliverables: 25 PNGs + one contact sheet showing all badges side by side + `CODEX_HANDOFF.md` listing each file name and any notes.
+Deliverables: 26 PNGs + one contact sheet showing all badges side by side + `CODEX_HANDOFF.md` listing each file name and any notes.

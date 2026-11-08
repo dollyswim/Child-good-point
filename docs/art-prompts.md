@@ -338,6 +338,21 @@ No characters, no text, no UI. Bright sunny, cute children's game map.
 
 ---
 
+## 木島導遊：森林小精靈（1 張，2026-11-08 新增）
+
+木島劇情的導遊，目前地圖上用 🧚 表情符號佔位。交件後 Claude 放進 `images/wood/elf.webp`，在 `js/app.js` 的 `ISLAND_STORY.wood.guide` 加上 `img`。
+
+```
+A cute chibi forest fairy guide character for a children's board game, full body, standing pose facing the viewer and waving one hand,
+small translucent leaf-shaped wings, a little dress made of green leaves, a tiny acorn-cap hat, rosy cheeks, big friendly eyes,
+soft glowing light green aura, bright 3D cartoon style matching a cute mobile game, clear silhouette, plain white background,
+centered with margin, no text, no watermark. Vertical image, about 150 x 230 proportion (same size as the gold island technician).
+```
+
+中文：兒童棋盤遊戲用的可愛 Q 版森林小精靈導遊，全身、正面站姿、一隻手揮手，小小半透明的葉子形翅膀、綠葉做的小洋裝、橡實帽、紅臉頰、大眼睛，淡淡的綠色光暈，明亮的 3D 卡通風格，輪廓清楚，純白背景、置中留白，不要文字與浮水印。直式，比例約 150 × 230（和金島技師同大小）。
+
+---
+
 ## 已完成（不用再做）
 
 6 面骰、12 面骰、溜冰鞋、能量星星、寶箱格、機會格、小遊戲格、起點旗、終點旗、礦場木門、星星商店、五島入口插圖、神諭祝福道具 G-1 命運重骰券、G-2 再來 3 次、Phase 4 的 P4-01～P4-10（命運水晶球、神秘寶箱、黃金鑰匙、寶物磁鐵、好運金牌、神奇骰子、飛行翼、防護罩、任意門、呼叫專機）。、「抓住星星」小遊戲背景。

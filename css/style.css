@@ -1831,3 +1831,25 @@ body.mg-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .story-bang, .story-ore { animation: none; } }
 .charge-panel.top { bottom: auto; top: calc(env(safe-area-inset-top) + 12px); }
 .story-cart { font-size: 80px; }
+
+/* 木島劇情：森林小精靈導遊（正式圖到貨前用 🧚 佔位）、松果／果實、藤蔓吊橋、精靈之光 */
+.wood-elf { position: absolute; transform: translate(-50%, -100%); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.guide-emoji { display: block; font-size: 46px; line-height: 1; text-align: center; filter: drop-shadow(0 0 6px rgba(190, 255, 170, .95)) drop-shadow(0 4px 3px rgba(0, 0, 0, .3));
+  animation: elf-float 2.4s ease-in-out infinite; }
+@keyframes elf-float { 50% { transform: translateY(-6px) rotate(-4deg); } }
+.story-pick { position: absolute; width: 48px; height: 48px; margin: -24px 0 0 -24px; display: grid; place-items: center; border-radius: 50%; cursor: pointer;
+  font-size: 30px; line-height: 1; background: radial-gradient(circle, rgba(255, 252, 210, .95) 0, rgba(190, 255, 150, .6) 45%, rgba(190, 255, 150, 0) 70%);
+  box-shadow: 0 0 18px 8px rgba(200, 255, 150, .65); animation: ore-glow 1.1s ease-in-out infinite; }
+.story-pick.got { animation: ore-got .4s ease-out forwards; pointer-events: none; }
+.story-bridge { position: absolute; height: 22px; margin-top: -11px; transform-origin: 0 50%; border-radius: 6px; clip-path: inset(0 100% 0 0);
+  background: repeating-linear-gradient(90deg, #a8743f 0 22px, #6b4a2b 22px 26px); box-shadow: 0 -6px 0 -2px #5c8f3a, 0 6px 0 -2px #5c8f3a, 0 4px 8px rgba(0, 0, 0, .35);
+  transition: clip-path 1.2s ease-out, opacity .5s; }
+.story-bridge.go { clip-path: inset(0 0 0 0); }
+.story-bridge.bye { opacity: 0; }
+.story-glow { position: absolute; width: 260px; height: 260px; margin: -130px 0 0 -130px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 255, 220, .95), rgba(170, 255, 160, .55) 40%, transparent 70%);
+  opacity: calc(.15 + var(--charge, 0) * .85); transform: scale(calc(.5 + var(--charge, 0) * .5)); transition: opacity .15s, transform .15s; }
+.story-glow.full { animation: tower-flash-glow 1.3s ease-out forwards; }
+@keyframes tower-flash-glow { 40% { transform: scale(1.4); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+.story-glow.bye { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .guide-emoji, .story-pick { animation: none; } .story-bridge { transition: none; } }
