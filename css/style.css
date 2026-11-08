@@ -1943,7 +1943,10 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .story-lever i { transform: rotate(calc(-35deg + var(--pull, 0) * 70deg)); }
 .story-lever.pulled i { transform: rotate(35deg); }
 @media (prefers-reduced-motion: reduce) { .pull-arrow { animation: none; } }
-/* 2026-11-08 礦車正式圖（家長 Gemini 圖，去除外框相連白底＋鐵軌間被圍住的大塊白底）：地圖上開走的礦車、機會卡「礦車來了！」面板 */
-.story-cart { font-size: 0; width: 104px; }
-.story-cart img { display: block; width: 100%; height: auto; transform: scaleX(-1); }   /* 翻成車頭朝右，往右上開 */
+/* 2026-11-08 礦車正式圖（家長 Gemini 圖；去掉白底與圖上自帶的鐵軌，讓礦車直接開在背景的軌道上）：地圖上開走的礦車、機會卡「礦車來了！」面板 */
+.story-cart { font-size: 0; width: 110px; transform: translate(-50%, -88%); }   /* 輪子底部對齊路徑點（背景軌道） */
+.story-cart img { display: block; width: 100%; height: auto; }
+.story-cart { opacity: 0; transition: left 1.6s ease-in-out, top 1.6s ease-in-out, opacity .6s ease-out; }
+.story-cart.go { opacity: 1; }
+.story-cart.bye { opacity: 0; transition: opacity .45s; }
 .cart-art { width: 110px; height: 110px; object-fit: contain; margin: -6px 0 -4px; }

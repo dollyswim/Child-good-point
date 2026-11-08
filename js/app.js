@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-89';
+  var APP_VERSION = '2026.11.08-90';
   var store;
   try {
     store = new CGP.Store();
@@ -801,7 +801,7 @@
           items: [[800, 4952], [866, 4918], [600, 5112], [520, 5012], [760, 5160]], itemCls: 'story-ore', itemLabel: '金礦石',
           title: '⛏️ 幫技師撿回金礦石！', sub: '點地圖上發光的礦石',
           hint: '我的金礦石滾得到處都是…走到第 5 格幫我撿回來！', intro: '我的金礦石滾得到處都是！幫我把 5 顆發光的礦石撿回來！', done: '太好了！礦石都找回來了，謝謝你！' },
-        rail: { type: 'press', effect: 'cart', drag: true, top: true,   /* 2026-11-08 家長調整：真的拖曳拉桿往下拉；面板放上方，看得到地圖上的拉桿 */ guide: [430, 4522], cam: [470, 4420], lever: [360, 4556], path: [[300, 4488], [578, 4300]],
+        rail: { type: 'press', effect: 'cart', drag: true, top: true,   /* 2026-11-08 家長調整：真的拖曳拉桿往下拉；面板放上方，看得到地圖上的拉桿 */ guide: [430, 4522], cam: [270, 4450], lever: [360, 4556], path: [[150, 4434], [214, 4464]],   /* 鏡頭對準礦坑；礦車從礦坑口沿背景軌道開出來，停在背景礦車後面 */
           title: '🔧 拉下轉轍器！', sub: '抓住紅色把手，往下拉到底', btn: '⬇️ 拉下拉桿',
           hint: '礦場的轉轍器卡住了…走到第 30 格幫我拉下拉桿！', intro: '轉轍器卡住了，礦車過不去！幫我拉下拉桿！', done: '軌道接通了！礦車可以開往水晶礦谷了！' }
       }
@@ -911,8 +911,10 @@
       cart.style.left = a.x + 'px'; cart.style.top = a.y + 'px';
       world.appendChild(cart);
       await sleep(reduceMotion ? 50 : 400);
-      cart.style.left = z.x + 'px'; cart.style.top = z.y + 'px'; cart.classList.add('go');
-      await sleep(reduceMotion ? 100 : 1700);
+      cart.style.left = z.x + 'px'; cart.style.top = z.y + 'px'; cart.classList.add('go');   // 從礦坑裡淡入開出來
+      await sleep(reduceMotion ? 100 : 2400);
+      cart.classList.add('bye');
+      await sleep(reduceMotion ? 50 : 500);
       cart.remove();
     } else {
       // 吊橋：一排木板從左到右拉緊出現
