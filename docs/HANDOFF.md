@@ -1,79 +1,62 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.08-70`｜Service Worker 快取 `cgp-shell-v80`
-> 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
+> 最後更新：2026-11-08｜App 版本 `2026.11.08-70`｜Service Worker 快取 `cgp-shell-v80`｜`main` 最新：寶物商店新增「星星呼喚」
+> 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
 
-## 0. 為什麼要交接
+## 0. 新對話開始先看這裡
 
-- 原本的 repo `lulukiwkiw-prog/Child-good-point` 的 GitHub 帳號無法登入（收不到密碼重設信），已經無法推送；最近一次推送回應為 `repository not found`。
-- 專案改到新 repo：**`dollyswim/Child-good-point`**（新建、目前是空的）。
-- 舊 repo 的 `main` 停在 PR #7（`c4de1b8`）。其後有 **2 個 commit 只存在 bundle 裡**：
-  - `f340e94` 金島第一區：使用無格子正式背景與 JSON 座標建立第 1～30 格
-  - `eb51994` 金島第一區：石板改用家長提供的石板圖
-- 交付檔案：`child-good-point.bundle`（完整 git 紀錄，32 個 commit）、`child-good-point-gold-region01.zip`（純程式碼備份）。
+### 專案現況
+- Repo：**`dollyswim/Child-good-point`**，直接在 `main` 開發與推送（家長同意，不開 PR）；GitHub Pages：https://dollyswim.github.io/Child-good-point/
+- 純 HTML／CSS／JS 的 PWA，不需建置；資料存在手機瀏覽器 localStorage（自動備份存在 IndexedDB）。
+- 舊 repo 搬家、手機資料搬家都已完成（舊的交接步驟已移除）。
+- 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test
+
+### 每次修改的固定流程
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v80`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.08-70`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+2. 測試：`npm test`（單元，約 1 秒，目前 123 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
+3. 提交訊息用繁體中文；推送 `git push origin main`。
+4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
+
+### 自動測試的注意事項
+- E2E 的 `browser.newContext()` 已包一層：預設注入 `window.__cgpNoTheater = true`（成就改用文字提示，避免全螢幕劇場擋住點擊）；要測成就劇場時傳 `theater: true`。
+- 角色反應動畫（開寶箱、驚訝、開心）期間 `document.body` 有 `pawn-acting`，骰子暫停；E2E 連續擲骰前要等它消失。
+- 截圖用 `SHOT_DIR=… npm run test:e2e`；小遊戲星星有浮動動畫，點擊要用 `{ force: true }`。
+
+### 家長的固定規則（不要自行更改）
+- 每日 3 次擲骰；小遊戲每天 1 次（＋星星呼喚每天最多 1 次）；前進道具（溜冰鞋＋飛行翼）合計每天 5 次；任意門每天 1 次；神奇骰子每天 1 顆。
+- 保留既有存檔：新欄位在 `migrate()` 或 `getPlayer()` 補預設值。
+- 家長提供的圖多為白底：放白色卡片（contain、不裁切）；需要去背先回報，只去除與外框相連的白底。
+- 價格、機率等數值只在家長明確要求時才改（改了要同步更新 `docs/TREASURE_SHOP_PLAN.md`／`docs/PHASE4_PLAN.md` 與測試）。
 
 ---
 
-## 1. 接下來要做的工作（依順序）
+## 1. 目前狀態與待辦（2026-11-08）
 
-### A. 搬到新 repo（必做）
-
-1. 以 `dollyswim` 帳號連結 claude.ai 的 GitHub，安裝 Claude GitHub App 並勾選 `dollyswim/Child-good-point`。
-2. 開新的 Claude Code session，來源選 `dollyswim/Child-good-point`，上傳 `child-good-point.bundle`。
-3. 在新 session 執行：
-   ```bash
-   git fetch /path/to/child-good-point.bundle 'refs/heads/*:refs/remotes/bundle/*'
-   git checkout -B main bundle/claude/parent-child-points-adventure-app-syxbxi
-   npm test && npm run test:e2e        # 預期：單元 59 項、E2E 全部通過
-   git push -u origin main
-   ```
-   - **請用 `claude/parent-child-points-adventure-app-syxbxi` 分支**（最新，含交接文件）。bundle 裡的 `refs/heads/main` 是最早的初始 commit，請勿使用；舊 repo 的 main（PR #7，`c4de1b8`）在 `refs/remotes/origin/main`，已包含在最新分支的歷史中。
-   - 若 `main` 不是空的，先確認內容再決定是否覆蓋，勿直接強推。
-4. 開啟 GitHub Pages：Settings → Pages → Deploy from a branch → `main` / `(root)`。
-   新網址：`https://dollyswim.github.io/Child-good-point/`
-5. 開 Pages 後在手機實測（見第 6 節驗收清單），特別是金島第一區。
-
-### B. 手機資料搬家（家長操作）
-
-網址改變後 localStorage 不會帶過去：
-1. 舊 App（`lulukiwkiw-prog.github.io/Child-good-point`）：⚙️ 設定 → 備份 → **匯出 JSON**。
-2. 新網址加到主畫面 → ⚙️ 設定 → 備份 → **📥 完整還原**。
-3. 舊版存檔可直接還原：表情符號頭像會自動轉成冒險夥伴；冒險位置的整數格號會自動轉成穩定格子 ID。
-4. ⚠️ 舊 repo 若已刪除，舊網址可能打不開，資料仍在舊網址的瀏覽器儲存空間，但必須能開啟舊網址才拿得到。
-
-### C. 舊帳號申訴（家長操作，可平行進行）
-
-已提供中英文申訴信，於 https://support.github.com/contact（Account access）以 `dollyswim` 送出。
-
-### D. 下一個開發階段：Phase 4（進行中：第 1 步命運格＋特殊任務、第 2 步抓住星星已完成）
-
-> 詳細規劃（含家長已決定的規則）見 **`docs/PHASE4_PLAN.md`** 與 **`docs/TREASURE_SHOP_PLAN.md`**（寶物商店、神諭祝福）；以下為原始摘要。
-
-依 `PROJECT_SPEC.md` Phase 4：
-1. **「抓住星星」小遊戲**：約 10 秒、星星隨機出現、手指點擊、依表現給少量獎勵；從小遊戲格（第 7、17、24 格，`type: 'minigame'`）觸發。
-2. **每日小遊戲 1 次上限**：仿照擲骰紀錄 `data.adventure.rolls`，新增獨立紀錄，避免重新整理重複遊玩。
-3. **機會卡擴充**、**命運卡**（小麻煩，禁止大量倒退／清空星星／清空背包）。
-4. **溢出機會 → 神秘寶箱**：今日骰子 3/3 或小遊戲 1/1 時，事件再給的使用機會改成神秘寶箱。目前寶箱與機會格仍會直接給骰子，需加入轉換。
-5. **神秘寶箱**：下次冒險出現在角色前方 2～8 格，提示「附近似乎藏著神秘寶物……」。
-6. **回合結束結算畫面**：今日走了幾格、得到的道具與星星、神秘寶箱提示。
-
-開始前建議先用選擇題向家長確認：小遊戲獎勵數量、命運卡內容、神秘寶箱內容、結算畫面觸發時機。
-
-### E. 待補美術（家長以 AI 繪圖製作，提示詞在 `docs/art-prompts.md`）
-
-| 優先 | 項目 | 目前 |
+### 等外部美術（Codex 冷卻中，交件後由 Claude 核對接入）
+| 項目 | 規格 | 接入方式 |
 |---|---|---|
-| ✅ | 6 面骰、12 面骰（正式版）、溜冰鞋圖示 | `images/items/`（白底圖＋白色圖示框，contain） |
-| ✅ | 格子事件圖示：起點旗、寶箱、機會、小遊戲、終點旗 | `images/tiles/`（192px WebP，白色圓角圖示框浮在石板上；角色所在格 `.here` 時圖示縮小移到右上角）。第 30 格用礦場木門 `door.webp`，終點旗 `finish.webp` 保留給全島終點 |
-| ✅ | 能量星星圖示 | `images/items/star.webp`，以 `mix-blend-mode: multiply` 顯示在淺色底（星星卡、地圖 HUD、商店餘額、結算摘要）；句子、提示訊息、商店橘色價格按鈕仍用 ⭐ 文字 |
-| ✅ | 五島入口插圖（冒險大廳地圖關卡卡） | 金島 `images/gold-island.*`；木／水／火／土島 `images/islands/<wood|water|fire|earth>.*`，依 `players[id].island` 自動切換（`js/app.js` 的 `ISLANDS`）。木、火、土島原圖右下角的淡浮水印已修除（反算半透明白框＋周圍紋理補圖）；換圖時同檔名覆蓋並升 `sw.js` 快取版本 |
-| — | 「抓住星星」小遊戲素材 | Phase 4 需要 |
+| 成就徽章 24 張 | `docs/art/CODEX_ACHIEVEMENT_BADGES_BRIEF.md`（＋`.en.md`）、清單 `docs/art/achievement_badges.csv` | 放 `images/badges/`，在 `js/app.js` 的 `BADGE_IMG` 依代號加入；目前用程式畫的類別色徽章 |
+| 能源主塔（暗／亮）＋技師 | `docs/art/CODEX_GOLD_TOWER_BRIEF.md` | 放第三區 (850, 190) 空地；走過第 80 格後通電；點技師說一句話（家長已決定） |
+| 木島全島配置草圖 → 正式背景 | `docs/art/CODEX_WOOD_ISLAND_BRIEF.md`、規劃 `docs/art/WOOD_ISLAND_PLAN.md` | 換島機制已完成；資料到貨用 `GAME.registerBoard('wood', board)` 開放（同金島：4 區、1080×5400、data → `tools/gen_board_region.py`） |
 
-家長提供的圖通常需要：去背（若非透明）、裁切、統一尺寸、壓縮成 WebP、加入 `sw.js` 快取清單。
+### 可能的下一步（家長尚未指定）
+- 家長照 `docs/ACCEPTANCE_CHECKLIST.md` 在手機實機走一遍（最近改動很多，實機尚未全面驗收）。
+- 其他頁面（挑戰、兌換、紀錄）改成和「加分・扣分」一樣的清爽條列風格。
+- 「載入封存檔」回 App（目前封存檔只能保存）。
+- 角色動畫延伸到冒險大廳、通關畫面；星星呼喚、成就徽章的正式圖。
+- 「星星捕手」「星海傳說」徽章圖案描述可改成銀色星星（小遊戲已改抓銀色星星）。
 
----
+### 2026-11-07～08 這段期間完成的重點（細節見第 3 節各小節）
+- 金島第四區上線、全島 100 格；通關煙火＋全螢幕慶祝；換島機制（金→木→水→火→土）。
+- 成就 23 項（家長定稿）＋星光成就劇場演出；首頁「最近得到的成就」、小孩頁面「全部成就」；撤銷紀錄會收回分數／特殊任務成就並提醒。
+- 「任務」改名「小孩」；加分・扣分改單欄條列；4 位以上孩子切換列每排 3 位；設定分頁換行；新增孩子移到小孩頁面城堡下方；頭像不再顯示角色名稱。
+- 地圖角色五種動畫（待機、跳格、開心、驚訝、開寶箱）；寶物磁鐵吸走的寶箱格當輪變普通石板。
+- 小遊戲：銀色星星、每顆停留較久＋數量 1.5 倍、每 3 顆合成 1 顆能量星星（兩個結果視窗）；星海傳說改 20 顆。
+- 寶物商店：任意門 200 點、防護罩 10 點（也能推開路障前進 1 格）、新增星星呼喚 50 點；命運卡往回退 19%。
+- 設定：重新結算今天、封存舊紀錄（生活＋冒險，結轉不變）、刪除自動備份、匯出目前規則表 CSV。
+- 道具每日上限、右上角城堡與機器貓對齊。
 
 ## 2. 目前完成的功能
 
@@ -204,9 +187,11 @@
 - **全程使用繁體中文**（英文學習問題除外）。
 - **詳細回答前先釐清方向**；需要家長決定的事，用**可點選的選擇題**（附建議選項）。
 - 每階段完成後回報：修改檔案、新增功能、測試結果、已知問題、下一階段注意事項。
-- 合併前先詢問（家長通常選「開 PR 並合併」）。
+- 直接推送到 `main`（家長同意，不開 PR）。家長要求「整理移交資料」時更新本文件。
 - 家長常提供 AI 生成的原創美術（角色、場景、圖示），需要去背、裁切、統一尺寸並驗證手機顯示。
-- 家長主要用手機（Android，寬約 360px）使用 App；電腦偶爾用來整理規則（Excel CSV）。
+- 家長主要用手機（Android，寬約 360～412px）使用 App；電腦偶爾用來整理規則（Excel CSV）。
+- 家長會用 Codex 製作美術（有用量冷卻）；給 Codex 的規格放 `docs/art/CODEX_*_BRIEF.md`，中英文各一份。
+- 孩子會實際試玩並回饋（例如小遊戲太快／太簡單），調整數值前先用選擇題列出方案與影響。
 
 ---
 
