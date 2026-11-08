@@ -1187,7 +1187,7 @@ function tsStore(startPoints = 1000, dateStr = '2026-11-06T10:00:00') {   // 202
 
 test('寶物商店：6 款商品與價格', () => {
   assert.deepEqual(G.TREASURES.map(t => [t.id, t.price]),
-    [['skates', 10], ['shield', 20], ['magicDice', 10], ['luckyMedal', 100], ['wings', 100], ['door', 100]]);
+    [['skates', 10], ['shield', 20], ['magicDice', 10], ['luckyMedal', 100], ['wings', 100], ['door', 200]]);
   assert.ok(!G.TREASURES.some(t => t.id === 'airplane'), '呼叫專機不放商店');
   assert.deepEqual([G.TREASURE_WEEKLY_LIMIT, G.TREASURE_HOLD_LIMIT], [3, 2]);
 });
@@ -1246,7 +1246,7 @@ test('寶物商店：撤銷或刪除購買紀錄一併收回道具；道具用�
   store.getPlayer(a.id).bag.door = 0;      // 模擬已用掉
   assert.throws(() => store.undoLast(a.id), /已經用掉了/);
   assert.throws(() => store.deleteRecord(r.id), /已經用掉了/);
-  assert.equal(store.getTotal(a.id), 900, '擋下時紀錄仍在');
+  assert.equal(store.getTotal(a.id), 800, '擋下時紀錄仍在（任意門 200 點）');
   store.getPlayer(a.id).bag.door = 1;
   store.deleteRecord(r.id);
   assert.deepEqual([store.getTotal(a.id), store.getPlayer(a.id).bag.door], [1000, 0], '刪除：退點並收回道具');

@@ -40,7 +40,7 @@
     { id: 'magicDice', name: '神奇骰子', icon: '🎲', img: 'images/items/magic_dice.webp', price: 10, desc: '額外擲一次 12 面骰（不占每日 3 次，每天最多用 1 顆）' },
     { id: 'luckyMedal', name: '好運金牌', icon: '🥇', img: 'images/items/lucky_medal.webp', price: 100, desc: '下一次停在寶箱或機會格，效果發生 2 次' },
     { id: 'wings', name: '飛行翼', icon: '🪽', img: 'images/items/flying_wings.webp', price: 100, desc: '向前飛行 20 格（和溜冰鞋合計每天最多 5 次）' },
-    { id: 'door', name: '任意門', icon: '🚪', img: 'images/items/magic_door.webp', price: 100, desc: '傳送到本島指定的格子（每天最多 1 次）' }
+    { id: 'door', name: '任意門', icon: '🚪', img: 'images/items/magic_door.webp', price: 200, desc: '傳送到本島指定的格子（每天最多 1 次）' }
   ];
 
   var SHOP = [
