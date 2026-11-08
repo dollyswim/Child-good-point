@@ -784,7 +784,7 @@
   };
   /** 還沒完成的劇情：技師站在劇情地點（頭上有「！」），點他會提示要去哪一格 */
   function storyDecor(board, player) {
-    if (board.id !== 'gold') return '';
+    if (board.id !== 'gold' || window.__cgpNoStory) return '';   // __cgpNoStory：自動測試用，劇情另有專門測試
     return Object.keys(STORY_SPOTS).map(function (id) {
       var sp = STORY_SPOTS[id];
       if (player.story[id] || !board.tiles[sp.tile]) return '';
@@ -1288,7 +1288,7 @@
     var visited = [].concat(res.path || [], (ev && ev.extraPath) || [], (ev && ev.backPath) || [], (ev && ev.then && ev.then.extraPath) || []);
     for (var sid in STORY_SPOTS) {
       var spp = STORY_SPOTS[sid], pl = store.getPlayer(childId);
-      if (!res.travel && pl.island === 'gold' && !pl.story[sid] && visited.indexOf(spp.tile) >= 0) { await runStory(child, sid); render(); }
+      if (!window.__cgpNoStory && !res.travel && pl.island === 'gold' && !pl.story[sid] && visited.indexOf(spp.tile) >= 0) { await runStory(child, sid); render(); }
     }
     await towerIntro(child);
     var react = pawnReaction(res);

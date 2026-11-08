@@ -31,9 +31,10 @@ async function main() {
   // 其他流程測試：成就改用文字提示（不跳星光成就劇場，避免擋住後續點擊）；劇場另有專門測試（theater: true）
   const _newContext = browser.newContext.bind(browser);
   browser.newContext = async (opts = {}) => {
-    const { theater, ...rest } = opts;
+    const { theater, story, ...rest } = opts;
     const c = await _newContext(rest);
     if (!theater) await c.addInitScript(() => { window.__cgpNoTheater = true; });
+    if (!story) await c.addInitScript(() => { window.__cgpNoStory = true; });   // 金島劇情另有專門測試（story: true）
     return c;
   };
   const ctx = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block' });
@@ -581,8 +582,8 @@ async function main() {
     if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
     console.log('✔ Phase 3 案例 B：擲出 4 逐格移動 1→2→3→4');
 
-    // 案例 C：3 次後不能第 4 次（第 5 格的礦工劇情另有測試，這裡先標記完成）
-    await q.evaluate(() => { const s = window.__cgpStore; s.data.children.forEach((c) => { s.getPlayer(c.id).story = { ore: s.today(), rail: s.today() }; }); s.save(); s.random = () => 0; });
+    // 案例 C：3 次後不能第 4 次
+    await q.evaluate(() => { window.__cgpStore.random = () => 0; });
     for (let i = 0; i < 2; i++) {
       await q.click('[data-action=roll][data-kind=d6]');
       await q.waitForFunction((n) => document.querySelector('[data-testid=rolls]').textContent.startsWith(n + ' '), i + 2, { timeout: 8000 });
@@ -1664,7 +1665,7 @@ async function main() {
 
   // ---------- 金島劇情：第 5 格礦工求助、第 30 格礦車轉轍；機會卡礦車上車 ----------
   {
-    const cs = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block' });
+    const cs = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', story: true });
     const q = await cs.newPage();
     q.on('pageerror', (e) => errors.push(e.message));
     await q.goto(url);
