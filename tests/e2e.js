@@ -1382,6 +1382,7 @@ async function main() {
     assert.match(await q.locator('#confirm').innerText(), /刪除[\s\S]*目前的資料不受影響/);
     await q.click('#confirm [data-yes]');
     await q.waitForFunction((n) => document.querySelectorAll('.snap-row').length === n - 1, nSnap);
+    await q.waitForFunction(() => /已刪除這份備份/.test(document.getElementById('toast').textContent));   // 等刪除完成、畫面重新整理後再操作
     assert.equal(await q.evaluate((id) => window.__cgpStore.getTotal(id), cid), 150, '刪除備份不影響目前資料');
     // 載入備份檔覆蓋全部資料
     const f = path.join(require('os').tmpdir(), 'cgp-restore-' + Date.now() + '.json');
