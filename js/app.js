@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-61';
+  var APP_VERSION = '2026.11.08-62';
   var store;
   try {
     store = new CGP.Store();
@@ -1371,8 +1371,9 @@
     if (document.getElementById('mg')) return;
     if (!practice && !store.getPendingMinigame(childId)) return;
     var MAX = GAME.MINIGAME_MAX_STARS, SEC = GAME.MINIGAME_SECONDS;
-    var PHASES = [{ until: 5000, gap: 1000, life: 1200, count: 1, small: false },   // 前 5 秒
-      { until: SEC * 1000, gap: 700, life: 800, count: 2, small: true }];            // 後 5 秒：加快、一次 2 顆、縮小
+    // 2026-11-08 家長調整（孩子反映星星消失太快）：每顆多停留 0.5 秒、出現數量 1.5 倍（間隔縮為 2/3）
+    var PHASES = [{ until: 5000, gap: 667, life: 1700, count: 1, small: false },   // 前 5 秒
+      { until: SEC * 1000, gap: 467, life: 1300, count: 2, small: true }];           // 後 5 秒：加快、一次 2 顆、縮小
     var el = document.createElement('div');
     el.className = 'mg' + (practice ? ' practice' : ''); el.id = 'mg';
     el.innerHTML = '<div class="mg-top"><span class="mg-count"><img class="mg-ico" src="images/minigame/star.webp" alt="⭐" width="256" height="256"> <b id="mg-count">0</b></span>' +
