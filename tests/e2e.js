@@ -1257,7 +1257,7 @@ async function main() {
     assert.equal(await q.locator('h1, .plaque').first().innerText().then((t) => /小孩/.test(t)), true, '頁面標題改為「小孩」');
     assert.match(await q.locator('.bottom-nav, nav').last().innerText(), /小孩/);
     assert.equal(await q.locator('[data-testid=achievements]').getAttribute('open'), null, '小孩頁面：全部成就預設收起');
-    assert.match(await q.locator('[data-testid=achievements] summary').innerText(), /全部成就[\s\S]*已解鎖 5 \/ 23/);   // 冒險開始、獲得 1000 分、抵達水晶礦谷、抵達齒輪工坊、抵達金冠城堡
+    assert.match(await q.locator('[data-testid=achievements] summary').innerText(), /全部成就[\s\S]*已解鎖 5 \/ 24/);   // 冒險開始、獲得 1000 分、抵達水晶礦谷、抵達齒輪工坊、抵達金冠城堡
     assert.match(await q.locator('[data-testid=achievements] summary').innerText(), /最近：/, '摺疊時顯示最近得到的一個成就');
     assert.ok(await q.evaluate(() => { const d = document.querySelector('[data-testid=achievements]').getBoundingClientRect(), n = document.querySelector('[data-testid=achievements]').nextElementSibling.getBoundingClientRect(); return n.top - d.bottom >= 12; }), '和最近紀錄之間留間距，不疊在一起');
     assert.ok(await q.evaluate(() => { const d = document.querySelector('[data-testid=achievements]'), r = [...document.querySelectorAll('.panel h2')].find((x) => /最近紀錄/.test(x.textContent)); return d.compareDocumentPosition(r) & Node.DOCUMENT_POSITION_FOLLOWING; }), '在最近紀錄上方');
@@ -1268,7 +1268,7 @@ async function main() {
     // 首頁：最近得到的成就（最近 3 個），點一列進到小孩頁面並展開
     await q.goto(url + '#home');
     await q.waitForSelector('[data-testid=home-achievements]');
-    assert.match(await q.locator('[data-testid=home-achievements]').innerText(), /最近得到的成就[\s\S]*端端[\s\S]*5 \/ 23/);
+    assert.match(await q.locator('[data-testid=home-achievements]').innerText(), /最近得到的成就[\s\S]*端端[\s\S]*5 \/ 24/);
     assert.equal(await q.locator('[data-testid=home-achievements] .ach-mini').count(), 3);
     assert.ok(await q.evaluate(() => { const a = document.querySelector('[data-testid=home-achievements]'), w = document.querySelector('.week-card'); return a.compareDocumentPosition(w) & Node.DOCUMENT_POSITION_FOLLOWING; }), '在本週進度上方');
     await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'home-achievements.png') : path.join(require('os').tmpdir(), 'ha.png'), fullPage: true });
