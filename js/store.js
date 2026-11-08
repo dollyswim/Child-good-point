@@ -569,6 +569,14 @@
     this._snapWrite = Promise.all(old.map(function (x) { return self._snaps.remove(x.id); })).then(function () { return self._putSnap(snap); });
     return this._snapWrite;
   };
+  /** 刪除一份自動備份（需家長解鎖）@returns Promise */
+  Store.prototype.deleteSnapshot = function (id) {
+    this._requireParent();
+    var self = this;
+    if (!this._snapIndex.some(function (x) { return x.id === id; })) return Promise.reject(new Error('找不到這份備份'));
+    this._snapIndex = this._snapIndex.filter(function (x) { return x.id !== id; });   // 清單立即更新
+    return (this._snapWrite || Promise.resolve()).then(function () { return self._snaps.remove(id); });
+  };
   /** 還原到某一份自動備份（需家長解鎖）；整個 App 回到那時的狀態 @returns Promise */
   Store.prototype.restoreSnapshot = function (id) {
     this._requireParent();

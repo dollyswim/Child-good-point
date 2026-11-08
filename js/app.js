@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-65';
+  var APP_VERSION = '2026.11.08-66';
   var store;
   try {
     store = new CGP.Store();
@@ -2171,10 +2171,11 @@
         : '📅 ' + shortDate(x.date) + '（' + '日一二三四五六'.charAt(CGP.parseDateKey(x.date).getDay()) + '）' + (x.date === today ? '今天開始時' : '開始時');
       return '<li class="row snap-row" data-snap="' + h(x.id) + '"><span class="row-main"><b>' + label + '</b>' +
         '<small>' + (x.summary ? x.summary.children + ' 位孩子・' + x.summary.records + ' 筆紀錄' : '') + '</small></span>' +
-        '<button class="btn small" data-action="restore-snap" data-id="' + h(x.id) + '">還原</button></li>';
+        '<button class="btn small" data-action="restore-snap" data-id="' + h(x.id) + '">還原</button>' +
+        '<button class="btn small danger" data-action="delete-snap" data-id="' + h(x.id) + '" aria-label="刪除這份備份">刪除</button></li>';
     }).join('');
     return '<div class="card restore-card" data-testid="restore"><h2>♻️ 還原資料</h2>' +
-      '<p class="muted small">App 每天第一次打開時會自動備份，保留最近 7 天。還原會讓<b>整個 App 回到那時的狀態</b>（點數紀錄、星星、冒險進度、背包都會回去）；還原前會先自動備份目前狀態，按錯可以再還原回來。</p>' +
+      '<p class="muted small">App 每天第一次打開時會自動備份，保留最近 7 天（另外最多 1 份「還原前的狀態」），超過會自動刪除；不需要的也可以按「刪除」。還原會讓<b>整個 App 回到那時的狀態</b>（點數紀錄、星星、冒險進度、背包都會回去）；還原前會先自動備份目前狀態，按錯可以再還原回來。</p>' +
       '<ul class="rows">' + (snapRows || '<li class="muted">還沒有自動備份</li>') + '</ul>' +
       '<h3>📥 載入備份檔（覆蓋全部資料）</h3><p class="muted small">選擇先前匯出的 JSON 備份檔，<b>取代</b>目前所有資料。覆蓋前會先自動備份目前狀態。</p>' +
       '<label class="btn block file-btn">選擇備份 JSON 檔<input type="file" accept="application/json,.json" data-action="import" hidden></label></div>' +
@@ -2641,6 +2642,14 @@
           if (document.getElementById('pawn')) { pawnPlay('openChest').then(function () { showReward(id === 'chest' ? '📦 一般寶箱' : '🎁 神秘寶箱', (id === 'mysteryChest' ? '🔑 用掉 1 把黃金鑰匙・' : '') + cres.text, id === 'chest' ? 'images/tiles/chest.webp' : 'images/items/mystery_chest.webp', id === 'chest' ? 'chest' : 'mystery'); render(); }); break; }
           showReward(id === 'chest' ? '📦 一般寶箱' : '🎁 神秘寶箱', (id === 'mysteryChest' ? '🔑 用掉 1 把黃金鑰匙・' : '') + cres.text, id === 'chest' ? 'images/tiles/chest.webp' : 'images/items/mystery_chest.webp', id === 'chest' ? 'chest' : 'mystery');
           render();
+          break;
+        }
+        case 'delete-snap': {
+          var ds = store.getSnapshots().find(function (x) { return x.id === id; });
+          if (!ds) break;
+          confirmThen('刪除 ' + shortDate(ds.date) + ' 的這份自動備份？\n刪除後就不能還原到那時的狀態（目前的資料不受影響）。', '刪除', true, function () {
+            store.deleteSnapshot(id).then(function () { toast('已刪除這份備份'); render(); }, function (err) { toast(err.message, 'neg'); });
+          });
           break;
         }
         case 'archive': doArchive(); break;

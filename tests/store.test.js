@@ -2182,3 +2182,23 @@ test('星海傳說：單局抓到 20 顆以上（19 顆不算）', () => {
   assert.deepEqual(store.checkAchievements(a.id).map(x => x.id), ['catch10'], '20 顆：星海傳說');
   assert.match(G.ACHIEVEMENTS.find(x => x.id === 'catch10').desc, /20 顆/);
 });
+
+test('自動備份：可以刪除不要的一份（需家長密碼），其他不受影響、目前資料不變', async () => {
+  const backend = memorySnapBackend();
+  let t = new Date('2026-11-01T10:00:00').getTime();
+  const store = new Store({ storage: memoryStorage(), seed: false, now: () => new Date(t), snapBackend: backend });
+  await store.snapReady;
+  store.addChild({ name: 'A' });
+  await store.dailySnapshot();
+  t = new Date('2026-11-02T10:00:00').getTime();
+  await store.dailySnapshot();
+  assert.equal(store.getSnapshots().length, 2);
+  const target = store.getSnapshots()[1];
+  assert.throws(() => store.deleteSnapshot(target.id), /家長密碼/);
+  store.allowPinReset();
+  await store.deleteSnapshot(target.id);
+  assert.deepEqual(store.getSnapshots().map(x => x.date), ['2026-11-02']);
+  assert.equal((await backend.list()).length, 1, '儲存區也刪掉');
+  assert.equal(store.getChildren().length, 1, '目前資料不變');
+  await assert.rejects(() => store.deleteSnapshot('nope'), /找不到/);
+});

@@ -1354,6 +1354,14 @@ async function main() {
     await q.click('.snap-row:has-text("還原前的狀態") [data-action=restore-snap]');
     await q.click('#confirm [data-yes]');
     await q.waitForFunction((id) => window.__cgpStore.getTotal(id) === 150, cid);
+    // 刪除不要的備份：刪掉「還原前的狀態」，目前資料不變
+    await q.waitForSelector('.snap-row:has-text("還原前的狀態")');
+    const nSnap = await q.locator('.snap-row').count();
+    await q.click('.snap-row:has-text("還原前的狀態") [data-action=delete-snap]');
+    assert.match(await q.locator('#confirm').innerText(), /刪除[\s\S]*目前的資料不受影響/);
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction((n) => document.querySelectorAll('.snap-row').length === n - 1, nSnap);
+    assert.equal(await q.evaluate((id) => window.__cgpStore.getTotal(id), cid), 150, '刪除備份不影響目前資料');
     // 載入備份檔覆蓋全部資料
     const f = path.join(require('os').tmpdir(), 'cgp-restore-' + Date.now() + '.json');
     fs.writeFileSync(f, JSON.stringify({ children: [{ id: 'x1', name: '波妞', startPoints: 9 }] }));
