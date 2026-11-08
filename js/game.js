@@ -40,6 +40,7 @@
     { id: 'magicDice', name: '神奇骰子', icon: '🎲', img: 'images/items/magic_dice.webp', price: 10, desc: '額外擲一次 12 面骰（不占每日 3 次，每天最多用 1 顆）' },
     { id: 'luckyMedal', name: '好運金牌', icon: '🥇', img: 'images/items/lucky_medal.webp', price: 100, desc: '下一次停在寶箱或機會格，效果發生 2 次' },
     { id: 'wings', name: '飛行翼', icon: '🪽', img: 'images/items/flying_wings.webp', price: 100, desc: '向前飛行 20 格（和溜冰鞋合計每天最多 5 次）' },
+    { id: 'starCall', name: '星星呼喚', icon: '🌠', img: 'images/minigame/star.webp', price: 50, desc: '馬上玩一局「抓住星星」（不占每天 1 次，每天最多用 1 個）' },   // 2026-11-08 新增
     { id: 'door', name: '任意門', icon: '🚪', img: 'images/items/magic_door.webp', price: 200, desc: '傳送到本島指定的格子（每天最多 1 次）' }
   ];
 
@@ -1013,6 +1014,20 @@
     var event = this._resolveTile(childId, 0);
     this.save();
     return { die: 'door', value: 0, from: from, path: [n], event: event, found: this._found };
+  };
+  /** 星星呼喚：馬上玩一局「抓住星星」（額外一局，不占每天 1 次；每天最多用 1 個）@returns 小遊戲紀錄 */
+  Store.prototype.useStarCall = function (childId) {
+    this._requirePlay(childId);
+    var p = this.getPlayer(childId);
+    if (!(p.bag.starCall > 0)) throw new Error('背包裡沒有星星呼喚');
+    if (this.getPendingMinigame(childId)) throw new Error('先把還沒玩完的小遊戲玩完');
+    if (this._usesToday(childId, ['starCall'])) throw new Error('星星呼喚每天只能用 1 個，明天再用！');
+    p.bag.starCall--;
+    var mg = { id: uid(), childId: childId, date: this.today(), tile: p.pos, status: 'pending', bonus: true, starCall: true, caught: 0, stars: 0, ts: this.now().getTime() };
+    this.data.adventure.minigames.push(mg);
+    this._logItem(childId, 'use', 'starCall', 1, '背包', '額外一局抓住星星');
+    this.save();
+    return mg;
   };
   /** 好運金牌：啟用後，下一次停在寶箱格或機會格時效果發生 2 次 */
   Store.prototype.activateMedal = function (childId) {

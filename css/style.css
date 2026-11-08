@@ -1756,3 +1756,5 @@ body.mg-open { overflow: hidden; }
   .mg-silver-grid .mg-silver, .mg-energy { animation: none; }
   .mg-group .mg-fly { animation: none; opacity: 0; }
 }
+/* 星星呼喚：用小遊戲的星星圖，套成銀色（和遊戲裡抓的銀色星星一致） */
+[data-treasure=starCall] .treasure-art img, .item-btn[data-kind=starCall] img { filter: grayscale(1) brightness(1.12) contrast(1.1); }

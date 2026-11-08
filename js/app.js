@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-69';
+  var APP_VERSION = '2026.11.08-70';
   var store;
   try {
     store = new CGP.Store();
@@ -1778,6 +1778,7 @@
     if (bag.wings) btn('wings', 'use-item', '飛行翼 +20', '×' + bag.wings + (lim.move ? '・今天剩 ' + lim.move + ' 次' : '・今天已用完'), busy || !lim.move);
     if (bag.door) btn('door', 'pick-door', '任意門', '×' + bag.door + (lim.door ? '・每天 1 次' : '・今天已用'), busy || !lim.door);
     if (bag.luckyMedal) btn('luckyMedal', 'activate-medal', '好運金牌', player.medalArmed ? '已啟用・×' + bag.luckyMedal : '×' + bag.luckyMedal + '・點我啟用', !!player.medalArmed);
+    if (bag.starCall) { var scUsed = store._usesToday(child.id, ['starCall']) > 0; btn('starCall', 'use-starcall', '星星呼喚', scUsed ? '今天已用・×' + bag.starCall : '×' + bag.starCall + '・玩一局', busy || scUsed || !!store.getPendingMinigame(child.id)); }
     if (bag.bonusPlay) btn('bonusPlay', 'activate-bonus', '再來 3 次', '×' + bag.bonusPlay + '・點我啟用', busy);
     if (bag.magnet) btn('magnet', 'use-magnet', '寶物磁鐵', '×' + bag.magnet + '・前後 ' + GAME.MAGNET_RANGE + ' 格', busy);
     if (bag.shield) btn('shield', 'item-info', '防護罩', '×' + bag.shield + '・自動抵擋', false);
@@ -1826,6 +1827,7 @@
     magnet: { name: '寶物磁鐵', img: 'images/items/treasure_magnet.webp', note: '地圖上使用' },
     rerollTicket: { name: '命運重骰券', img: 'images/items/reroll_ticket.webp', note: '擲骰後可用' },
     bonusPlay: { name: '再來 3 次', img: 'images/items/bonus_play.webp', note: '地圖上啟用' },
+    starCall: { name: '星星呼喚', img: 'images/minigame/star.webp', note: '地圖上使用' },
     chest: { name: '一般寶箱', img: 'images/tiles/chest.webp', open: true },
     giftMysteryChest: { name: '神秘寶箱', img: 'images/items/mystery_chest.webp', open: true },
     mysteryChest: { name: '神秘寶箱（要鑰匙）', img: 'images/items/mystery_chest.webp', open: true }
@@ -2785,6 +2787,12 @@
         case 'activate-medal':
           confirmThen('啟用 🥇 好運金牌？\n下一次停在寶箱或機會格時，效果會發生 2 次。', '啟用', false, function () {
             store.activateMedal(childId); toast('🥇 好運金牌已啟用！', 'pos');
+          });
+          break;
+        case 'use-starcall':
+          confirmThen('使用 🌠 星星呼喚？\n馬上玩一局「抓住星星」（不占今天的 1 次小遊戲，每天最多用 1 個）。', '開始玩', false, function () {
+            store.useStarCall(childId);
+            setTimeout(function () { openMinigame(childId, '🌠 星星呼喚：額外一局'); }, 0);
           });
           break;
         case 'activate-bonus':

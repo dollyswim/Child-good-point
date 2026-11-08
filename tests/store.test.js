@@ -1185,9 +1185,9 @@ function tsStore(startPoints = 1000, dateStr = '2026-11-06T10:00:00') {   // 202
   return Object.assign(ctx, { a, b });
 }
 
-test('寶物商店：6 款商品與價格', () => {
+test('寶物商店：7 款商品與價格', () => {
   assert.deepEqual(G.TREASURES.map(t => [t.id, t.price]),
-    [['skates', 10], ['shield', 10], ['magicDice', 10], ['luckyMedal', 100], ['wings', 100], ['door', 200]]);
+    [['skates', 10], ['shield', 10], ['magicDice', 10], ['luckyMedal', 100], ['wings', 100], ['starCall', 50], ['door', 200]]);
   assert.ok(!G.TREASURES.some(t => t.id === 'airplane'), '呼叫專機不放商店');
   assert.deepEqual([G.TREASURE_WEEKLY_LIMIT, G.TREASURE_HOLD_LIMIT], [3, 2]);
 });
@@ -2260,4 +2260,20 @@ test('防護罩：擋住命運卡往回退；推開路障前進 1 格（落點�
   ev = store._resolveTile(a.id, 0);
   assert.deepEqual([ev.card, !!ev.shielded, p.pos], ['roadblock', false, 11]);
   assert.match(ev.text, /這次沒有影響/);
+});
+
+test('星星呼喚：寶物商店 50 點；從背包使用馬上多一局小遊戲（不占每天 1 次），每天最多 1 個', () => {
+  const { store, a, setDate } = tsStore(1000);
+  const it = store.addItem({ kind: 'bonus', name: '大', points: 10 });
+  store.recordItem(a.id, it.id); store.settleToday(a.id);   // 今天出發冒險
+  store.buyTreasure(a.id, 'starCall'); store.buyTreasure(a.id, 'starCall');
+  const p = store.getPlayer(a.id);
+  assert.equal(p.bag.starCall, 2);
+  const mg = store.useStarCall(a.id);
+  assert.deepEqual([mg.status, mg.bonus, p.bag.starCall], ['pending', true, 1]);
+  assert.equal(store.getMinigameToday(a.id), null, '不占今天的 1 次小遊戲');
+  assert.throws(() => store.useStarCall(a.id), /還沒玩完/);
+  assert.equal(store.finishMinigame(a.id, 9).stars, 3, '照一般規則換算能量星星');
+  assert.throws(() => store.useStarCall(a.id), /每天只能用 1 個/);
+  assert.equal(p.bag.starCall, 1, '被擋下時不消耗');
 });

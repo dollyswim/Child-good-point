@@ -869,7 +869,7 @@ async function main() {
     await q.waitForSelector('[data-testid=treasure]');
     await q.waitForFunction(() => [...document.querySelectorAll('.treasure-art img')].every((i) => i.complete && i.naturalWidth === 256));
     const cards = await q.$$eval('.treasure-card', (cs) => cs.map((c) => [c.dataset.treasure, c.querySelector('.treasure-price').textContent.trim()]));
-    assert.deepEqual(cards, [['skates', '點10 點'], ['shield', '點10 點'], ['magicDice', '點10 點'], ['luckyMedal', '點100 點'], ['wings', '點100 點'], ['door', '點200 點']]);
+    assert.deepEqual(cards, [['skates', '點10 點'], ['shield', '點10 點'], ['magicDice', '點10 點'], ['luckyMedal', '點100 點'], ['wings', '點100 點'], ['starCall', '點50 點'], ['door', '點200 點']]);
     assert.equal(await q.evaluate(() => getComputedStyle(document.querySelector('.treasure-art img')).objectFit), 'contain');
     // 兌換防護罩
     await q.click('[data-treasure=shield] [data-action=buy-treasure]');
@@ -904,6 +904,19 @@ async function main() {
     await q.waitForSelector('[data-testid=item-bar]');
     assert.match(await q.locator('.dice-btn.skates').innerText(), /×1/);
     assert.deepEqual(await q.$$eval('.item-btn', (els) => els.map((e) => e.dataset.kind)), ['magicDice', 'shield'], '背包道具在地圖道具列');
+    // 星星呼喚：背包按一下 → 確認 → 馬上開始一局抓住星星（不占今天的 1 次）
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.getPlayer(cid).bag.starCall = 1; s.save(); }, id);
+    await q.reload(); await q.waitForSelector('.item-btn[data-kind=starCall]');
+    assert.match(await q.locator('.item-btn[data-kind=starCall]').innerText(), /星星呼喚[\s\S]*×1・玩一局/);
+    await q.click('.item-btn[data-kind=starCall]');
+    assert.match(await q.locator('#confirm').innerText(), /星星呼喚[\s\S]*不占今天的 1 次小遊戲/);
+    await q.click('#confirm [data-yes]');
+    await q.waitForSelector('#mg .mg-star.first');
+    assert.match(await q.locator('#mg-tip').innerText(), /星星呼喚：額外一局/);
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.starCall, id), 0);
+    await q.click('#mg [data-mg=later]');
+    await q.waitForFunction(() => !document.getElementById('mg'));
+    assert.equal(await q.locator('.mg-resume').count(), 1, '稍後再玩：地圖出現繼續按鈕');
     // 撤銷最後一筆兌換 → 收回神奇骰子、退點
     await q.goto(url + '#child-' + id);
     await q.click('[data-action=undo]');
