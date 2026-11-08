@@ -1119,7 +1119,7 @@ test('Phase 4：停在小遊戲格 → 產生今天的小遊戲；完成後每�
   const { store, a, push } = p3Store();
   store.buyItem(a.id, 'd6'); store.buyItem(a.id, 'd6');
   store.setPlayerTile(a.id, 4);
-  push(face(3));                                // 擲 3 → 第 7 格小遊戲
+  push(face(3), 0.9);                       // 擲 3 → 第 7 格小遊戲；0.9 → 這場玩抓住星星（金島各 1/2 機率）
   const r = store.rollDice(a.id, 'd6');
   assert.equal(r.event.type, 'minigame');
   assert.ok(r.event.minigame, '可以開始小遊戲');
@@ -1136,7 +1136,7 @@ test('Phase 4：小遊戲每天 1 次、獎勵上限 15、隔天可再玩、重�
   const { store, a, push, setDate, storage } = p3Store();
   store.buyItem(a.id, 'd6'); store.buyItem(a.id, 'd12');
   store.setPlayerTile(a.id, 4);
-  push(face(3));
+  push(face(3), 0.9);                       // 0.9 → 這場玩抓住星星
   store.rollDice(a.id, 'd6');
   // 重新載入（模擬重新整理）：未完成的小遊戲仍在
   const s2 = new Store({ storage, seed: false, now: () => store.now() });
@@ -1159,7 +1159,7 @@ test('Phase 4：小遊戲每天 1 次、獎勵上限 15、隔天可再玩、重�
   store.recordItem(a.id, it.id); store.settleToday(a.id);
   store.buyItem(a.id, 'd6');
   store.setPlayerTile(a.id, 21);
-  push(face(3));                                // 第 24 格小遊戲
+  push(face(3), 0.9);                       // 第 24 格小遊戲；0.9 → 抓住星星
   assert.ok(store.rollDice(a.id, 'd6').event.minigame, '隔天可以再玩');
   assert.equal(store.finishMinigame(a.id, 0).stars, 0, '抓到 0 顆得 0 星');
 });
@@ -2490,4 +2490,33 @@ test('出發後才拿到的加分：家長「重新結算今天」已補發的�
   old.setDate('2026-11-08T09:00:00');
   old.store.recordItem(d.id, p2.id);
   assert.equal(old.store.settleToday(d.id).latePoints, 0);
+});
+
+test('金島小遊戲（木島上線前）：各 1/2 機率抓住星星或落葉找松果；木島上線後金島回到抓住星星；未完成的那場重新整理後不變', () => {
+  const { store, a, push, storage, setDate } = p3Store();
+  for (let i = 0; i < 3; i++) store.buyItem(a.id, 'd6');
+  store.setPlayerTile(a.id, 4);
+  push(face(3), 0.2);                           // 0.2 < 0.5 → 落葉找松果
+  const r = store.rollDice(a.id, 'd6');
+  assert.equal(r.event.title, '🎮 小遊戲：落葉找松果');
+  assert.equal(store.getPendingMinigame(a.id).game, 'leaf');
+  const s2 = new Store({ storage, seed: false, now: () => store.now() });
+  assert.equal(s2.getPendingMinigame(a.id).game, 'leaf', '重新整理後還是同一種');
+  assert.equal(store.finishMinigame(a.id, 15).stars, 8, '找松果照松果換算（2 顆 1 星、最多 8）');
+  // 隔天：0.7 → 抓住星星
+  setDate('2026-11-07T10:00:00');
+  const it = store.addItem({ kind: 'bonus', name: 'x', points: 10 });
+  store.recordItem(a.id, it.id); store.settleToday(a.id);
+  store.setPlayerTile(a.id, 21);
+  push(face(3), 0.7);
+  assert.equal(store.rollDice(a.id, 'd6').event.title, '🎮 小遊戲：抓住星星');
+  assert.equal(store.getPendingMinigame(a.id).game, undefined);
+  // 木島上線後：金島只有抓住星星（不用亂數）
+  G.registerBoard('wood', fakeWood());
+  try {
+    assert.equal(G.minigameOf('gold', () => 0), 'stars');
+    assert.equal(G.minigameOf('wood', () => 0.9), 'leaf');
+  } finally { delete G.BOARDS.wood; }
+  assert.equal(G.minigameOf('gold', () => 0.1), 'leaf');
+  assert.equal(G.minigameOf('gold'), 'stars', '沒有給亂數（例如只是查詢）時當作抓住星星');
 });

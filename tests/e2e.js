@@ -31,10 +31,12 @@ async function main() {
   // 其他流程測試：成就改用文字提示（不跳星光成就劇場，避免擋住後續點擊）；劇場另有專門測試（theater: true）
   const _newContext = browser.newContext.bind(browser);
   browser.newContext = async (opts = {}) => {
-    const { theater, story, ...rest } = opts;
+    const { theater, story, goldGame, ...rest } = opts;
     const c = await _newContext(rest);
     if (!theater) await c.addInitScript(() => { window.__cgpNoTheater = true; });
     if (!story) await c.addInitScript(() => { window.__cgpNoStory = true; });   // 金島劇情另有專門測試（story: true）
+    // 金島小遊戲（木島上線前各 1/2 機率）：其他流程固定抓住星星；落葉找松果另有專門測試（goldGame: 'leaf'）
+    await c.addInitScript((g) => { window.__cgpGoldGame = g; }, goldGame || 'stars');
     return c;
   };
   const ctx = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block' });
@@ -1926,6 +1928,22 @@ async function main() {
     assert.equal(await q.locator('#confirm[open]').count(), 0);
     console.log('✔ 獲得獎勵彈窗：一般版／稀有版同版型只換配色、依實際結果顯示、沒有額外獎勵就隱藏、收下不重複發放');
     await cr.close();
+  }
+
+  // ---------- 金島小遊戲（木島上線前）：也會出現落葉找松果 ----------
+  {
+    const cg = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', goldGame: 'leaf' });
+    const q = await cg.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '波妞' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+      s.getPlayer(a.id).bag.d6 = 1; s.setPlayerTile(a.id, 4); s.random = () => 2.5 / 6; s.save(); return a.id; });
+    await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    await q.click('.dice-btn.d6');                     // 擲 3 → 金島第 7 格小遊戲
+    await q.waitForSelector('#mg.leaf-mg [data-leaf=start]', { timeout: 15000 });
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPendingMinigame(cid).game, id), 'leaf');
+    console.log('✔ 金島小遊戲：木島上線前也會出現落葉找松果');
+    await cg.close();
   }
 
   // ---------- 金島第三區：能源主塔與技師 ----------

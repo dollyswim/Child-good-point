@@ -39,7 +39,19 @@
   var LEAF_MAX_FOUND = LEAF_GAME.rounds.reduce(function (n, r) { return n + r.pine; }, 0);
   function leafStars(found) { var c = Math.max(0, Math.min(LEAF_MAX_FOUND, Math.floor(Number(found) || 0))); return Math.ceil(c / LEAF_GAME.rate); }
   /** 這座島的小遊戲（木島＝落葉找松果，其他島＝抓住星星） */
-  function minigameOf(island) { return island === 'wood' ? 'leaf' : 'stars'; }
+  /**
+   * 這座島的小遊戲：木島＝落葉找松果；金島在木島上線前（2026-11-08 家長決定）各 1/2 機率抓住星星或落葉找松果，木島上線後回到抓住星星
+   * rand：決定金島這一場玩哪一種（只有真的要開新的一場時才傳，避免多用掉亂數）
+   */
+  var GOLD_LEAF_CHANCE = 0.5;
+  function minigameOf(island, rand) {
+    if (island === 'wood') return 'leaf';
+    if (island === 'gold' && !BOARDS.wood && rand) {
+      if (typeof window !== 'undefined' && window.__cgpGoldGame) return window.__cgpGoldGame;   // 自動測試用：固定金島玩哪一種（不用亂數）
+      return rand() < GOLD_LEAF_CHANCE ? 'leaf' : 'stars';
+    }
+    return 'stars';
+  }
 
   /** 道具圖示：家長提供的白底插圖（images/items/，256×256 WebP，原圖 1024×1024 PNG），介面以白色圖示框＋contain 顯示 */
   /**
@@ -673,20 +685,25 @@
           : '得到特殊任務：「' + sp.task.name + '」\n已加到任務頁，3 天內完成可得 +' + sp.task.points + ' 點！';
       }
     } else if (tile.type === 'minigame') {
-      var leaf = minigameOf(this.getPlayer(childId).island) === 'leaf';
-      ev.title = leaf ? '🎮 小遊戲：落葉找松果' : '🎮 小遊戲：抓住星星';
+      var island = this.getPlayer(childId).island, self = this;
+      function pickGame() { return minigameOf(island, self.random) === 'leaf'; }   // 開新的一場時才決定玩哪一種
+      var leaf = false;
+      ev.title = '🎮 小遊戲';
       var mg = this.getMinigameToday(childId);
       if (!mg) {
+        leaf = pickGame();
         mg = { id: uid(), childId: childId, date: this.today(), tile: tile.n, status: 'pending', caught: 0, stars: 0, ts: this.now().getTime() };
         if (leaf) mg.game = 'leaf';
         this.data.adventure.minigames.push(mg);
         ev.minigame = { id: mg.id };
         ev.text = leaf ? '記住松果藏在哪幾堆落葉下，再把它們翻出來！共 3 回合。' : '點星星收集能量星星！第 1 顆在正中央，點到後開始 ' + MINIGAME_SECONDS + ' 秒計時。';
       } else if (mg.status === 'pending') {
+        leaf = mg.game === 'leaf';
         ev.minigame = { id: mg.id };
         ev.text = '今天的小遊戲還沒玩完，現在開始吧！';
       } else if (this._useBonus(childId, 'games')) {
         // 再來 3 次：額外的小遊戲（不轉神秘寶箱）
+        leaf = pickGame();
         mg = { id: uid(), childId: childId, date: this.today(), tile: tile.n, status: 'pending', bonus: true, caught: 0, stars: 0, ts: this.now().getTime() };
         if (leaf) mg.game = 'leaf';
         this.data.adventure.minigames.push(mg);
@@ -700,6 +717,7 @@
           ev.text = '今天已經玩過小遊戲了（每天 1 次）。\n這次的機會變成了一個 🎁 神秘寶箱，下次冒險時會出現在你前方！';
         } else ev.text = '今天已經玩過小遊戲了（每天 1 次），明天再來挑戰！';
       }
+      if (ev.minigame) ev.title = leaf ? '🎮 小遊戲：落葉找松果' : '🎮 小遊戲：抓住星星';
     } else if (tile.type === 'boundary') {
       var ri = REGIONS.findIndex(function (r) { return r.id === tile.regionId; });
       var lastR = REGIONS[ri], nextR = REGIONS[ri + 1];
