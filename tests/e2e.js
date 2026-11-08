@@ -1111,6 +1111,19 @@ async function main() {
     await q.waitForSelector('#confirm .reward-box');
     assert.match(await q.locator('#confirm .reward-box').innerText(), /用掉 1 把黃金鑰匙[\s\S]*得到/);
     await q.click('#confirm [data-yes]');
+    // 寶物磁鐵吸走第 5 格一般寶箱 → 地圖上那格的寶箱圖示消失（變普通石板）；新的一輪重新放滿
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.getPlayer(cid).bag.magnet = 1; s.random = () => 0.1; s.save(); }, id);
+    await q.reload(); await q.waitForSelector('.item-btn[data-kind=magnet]');
+    assert.equal(await q.locator('.mtile[data-n="5"].mt-chest').count(), 1);
+    await q.click('.item-btn[data-kind=magnet]');
+    await q.click('#confirm .magnet-opt[data-id="gold-01-005"]');
+    await q.waitForFunction(() => !!document.querySelector('.mtile[data-n="5"].looted'), null, { timeout: 8000 });
+    assert.equal(await q.locator('.mtile[data-n="5"].mt-chest').count(), 0, '吸走後寶箱圖示消失');
+    assert.equal(await q.locator('.mtile[data-n="5"] .tile-art').count(), 0);
+    if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
+    await q.evaluate((cid) => { const s = window.__cgpStore; s._newLap(cid); s.save(); }, id);
+    await q.reload(); await q.waitForSelector('#pawn');
+    assert.equal(await q.locator('.mtile[data-n="5"].mt-chest').count(), 1, '新的一輪寶箱重新出現');
     // 里程碑：累計得分 +500 → 黃金鑰匙（提示訊息）
     await q.evaluate(() => { const s = window.__cgpStore; s.addItem({ kind: 'bonus', name: '超級幫忙', points: 500 }); });
     await q.goto(url + '#child-' + id);

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.07-59';
+  var APP_VERSION = '2026.11.08-60';
   var store;
   try {
     store = new CGP.Store();
@@ -713,8 +713,10 @@
           tileArt('start', 'start-art') + '<span>起點</span></div>';
       }
       // 疊放順序：越靠畫面下方（越近）的格子在越上層，避免後方石板蓋住前方格子的事件圖示
-      return '<div class="mtile mt-' + t.type + (t.id === player.tileId ? ' here' : '') + '" data-n="' + t.n + '" data-tile="' + t.id + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px;z-index:' + Math.round(t.gy / 6) + '"' +
-        (TILE_LABEL[t.type] ? ' title="' + TILE_LABEL[t.type] + '"' : '') + '>' + tileArt(t.type, 'mtile-icon') + '</div>';
+      // 寶物磁鐵吸走的寶箱：這一輪顯示成普通石板（新的一輪或換島回來會重新放滿）
+      var shown = t.type === 'chest' && player.looted.indexOf(t.id) >= 0 ? 'normal' : t.type;
+      return '<div class="mtile mt-' + shown + (shown !== t.type ? ' looted' : '') + (t.id === player.tileId ? ' here' : '') + '" data-n="' + t.n + '" data-tile="' + t.id + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px;z-index:' + Math.round(t.gy / 6) + '"' +
+        (TILE_LABEL[shown] ? ' title="' + TILE_LABEL[shown] + '"' : '') + '>' + tileArt(shown, 'mtile-icon') + '</div>';
     }).join('');
     var pp = worldXY(region, board.tiles[player.pos]);
     return pageHeader(board.name, child, 'map') +
