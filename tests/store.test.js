@@ -1914,13 +1914,13 @@ test('金島通關：第一次＝神秘寶箱 ×1（免鑰匙）＋成就；之�
   });
 });
 
-test('成就：23 項三類（冒險 5、收集 5、生活 13）；達成後記錄日期、不重複、不會消失；兩位孩子各自計算', () => {
+test('成就：24 項三類（冒險 6、收集 5、生活 13）；達成後記錄日期、不重複、不會消失；兩位孩子各自計算', () => {
   const { store, a } = p3Store();
   const b2 = store.addChild({ name: 'B', startPoints: 6000 });
-  assert.equal(G.ACHIEVEMENTS.length, 23);
-  assert.deepEqual(['adventure', 'collect', 'life'].map(c => G.ACHIEVEMENTS.filter(x => x.cat === c).length), [5, 5, 13]);
-  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.id)).size, 23, '代號不重複');
-  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.name)).size, 23, '名稱不重複');
+  assert.equal(G.ACHIEVEMENTS.length, 24);
+  assert.deepEqual(['adventure', 'collect', 'life'].map(c => G.ACHIEVEMENTS.filter(x => x.cat === c).length), [6, 5, 13]);
+  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.id)).size, 24, '代號不重複');
+  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.name)).size, 24, '名稱不重複');
   assert.deepEqual([...new Set(G.ACHIEVEMENTS.map(x => x.cat))], ['adventure', 'collect', 'life']);
   assert.deepEqual(store.checkAchievements(b2.id).map(x => x.id), ['earn1000', 'earn2000', 'earn3000', 'earn4000', 'earn5000', 'earn6000'], '起始點數也算累計得分；每 1000 分一個；還沒進入冒險：沒有「冒險開始」');
   assert.deepEqual(store.checkAchievements(b2.id), [], '不重複');
@@ -2312,4 +2312,21 @@ test('家長重置今天的次數上限：骰子、小遊戲、前進道具、�
   // 存檔重開仍有效
   const s2 = new Store({ storage, seed: false, now: () => store.now() });
   assert.equal(s2.getRollsLeft(a.id), 2);
+});
+
+test('金島劇情：第一次完成各給 ⭐3、不重複給；三個都完成解鎖「金島小英雄」（更新前已點亮能源塔也算）；存檔重開保留', () => {
+  const { store, a, storage } = p3Store();
+  const bal = store.getStarBalance(a.id);
+  assert.deepEqual(Object.keys(G.STORIES), ['ore', 'rail', 'tower']);
+  assert.equal(store.completeStory(a.id, 'ore'), true);
+  assert.equal(store.completeStory(a.id, 'ore'), false, '不重複給');
+  assert.equal(store.getStarBalance(a.id), bal + 3);
+  store.completeStory(a.id, 'rail');
+  assert.ok(!store.checkAchievements(a.id).some(x => x.id === 'goldHero'));
+  store.getPlayer(a.id).maxReached = 85;            // 更新前就點亮能源塔
+  assert.ok(store.checkAchievements(a.id).some(x => x.id === 'goldHero'));
+  assert.equal(store.getStarBalance(a.id), bal + 6);
+  const s2 = new Store({ storage, seed: false, now: () => store.now() });
+  assert.deepEqual(Object.keys(s2.getPlayer(a.id).story).sort(), ['ore', 'rail']);
+  assert.throws(() => store.completeStory(a.id, 'nope'), /沒有這個劇情/);
 });

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-75';
+  var APP_VERSION = '2026.11.08-76';
   var store;
   try {
     store = new CGP.Store();
@@ -689,12 +689,12 @@
       '<img class="tower-off" src="images/gold/tower_off.webp" alt="" width="420" height="537" draggable="false">' +
       '<img class="tower-on" src="images/gold/tower_on.webp" alt="" width="420" height="537" draggable="false">' +
       '<span class="tower-sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></div>' +
-      '<button type="button" class="gold-tech" data-action="tech-talk" style="left:' + TECH.gx + 'px;top:' + TECH.gy + 'px;width:' + TECH.w + 'px;z-index:' + Math.round(TECH.gy / 6) + '" aria-label="技師">' +
+      '<button type="button" class="gold-tech" data-action="tech-talk" data-tap="tech" style="left:' + TECH.gx + 'px;top:' + TECH.gy + 'px;width:' + TECH.w + 'px;z-index:' + Math.round(TECH.gy / 6) + '" aria-label="技師">' +
       '<img src="images/gold/technician.webp" alt="" width="150" height="231" draggable="false"></button>';
   }
   /** 技師說一句話（地圖上的對話泡泡，約 3 秒消失） */
-  function techTalk(child, ms, text) {
-    var view = document.getElementById('map-view'), tech = document.querySelector('.gold-tech');
+  function techTalk(child, ms, text, speaker) {
+    var view = document.getElementById('map-view'), tech = speaker || document.querySelector('.gold-tech');
     if (!view || !tech) return;
     var lit = goldMaxOf(store.getPlayer(child.id)) >= TOWER_LIT_AT;
     var old = document.getElementById('tech-bubble'); if (old) old.remove();
@@ -774,6 +774,91 @@
     });
   }
 
+  // ---------- 金島劇情（技師當導遊）：第 5 格礦工求助、第 30 格礦車轉轍（第 80 格能源塔見上方） ----------
+  var STORY_SPOTS = {
+    ore: { tile: 5, guide: { gx: 860, gy: 5062 }, cam: { cx: 720, cy: 5000 },
+      ores: [[800, 4952], [866, 4918], [600, 5112], [520, 5012], [760, 5160]],
+      hint: '我的金礦石滾得到處都是…走到第 5 格幫我撿回來！', intro: '我的金礦石滾得到處都是！幫我把 5 顆發光的礦石撿回來！', done: '太好了！礦石都找回來了，謝謝你！' },
+    rail: { tile: 30, guide: { gx: 430, gy: 4522 }, cam: { cx: 470, cy: 4420 }, lever: { gx: 360, gy: 4556 }, cart: [[300, 4488], [578, 4300]],
+      hint: '礦場的轉轍器卡住了…走到第 30 格幫我拉下拉桿！', intro: '轉轍器卡住了，礦車過不去！幫我拉下拉桿！', done: '軌道接通了！礦車可以開往水晶礦谷了！' }
+  };
+  /** 還沒完成的劇情：技師站在劇情地點（頭上有「！」），點他會提示要去哪一格 */
+  function storyDecor(board, player) {
+    if (board.id !== 'gold') return '';
+    return Object.keys(STORY_SPOTS).map(function (id) {
+      var sp = STORY_SPOTS[id];
+      if (player.story[id] || !board.tiles[sp.tile]) return '';
+      return '<div class="story-guide gold-tech" data-tap="guide" data-story="' + id + '" style="left:' + sp.guide.gx + 'px;top:' + sp.guide.gy + 'px;width:' + TECH.w + 'px;z-index:' + Math.round(sp.guide.gy / 6) + '" role="img" aria-label="技師（需要幫忙）">' +
+        '<img src="images/gold/technician.webp" alt="" width="150" height="231" draggable="false"><span class="story-bang" aria-hidden="true">！</span></div>' +
+        (sp.lever ? '<div class="story-lever" id="story-lever" style="left:' + sp.lever.gx + 'px;top:' + sp.lever.gy + 'px;z-index:' + Math.round(sp.lever.gy / 6) + '" aria-hidden="true"><i></i></div>' : '');
+    }).join('');
+  }
+  /** 地圖上點到可互動的東西（地圖接管觸控，由 setupMap 的放開判斷呼叫） */
+  function mapTap(child, el) {
+    var kind = el.getAttribute('data-tap');
+    if (kind === 'ore') { collectOre(el); return; }
+    if (kind === 'guide') { var sp = STORY_SPOTS[el.getAttribute('data-story')]; techTalk(child, 3200, sp.hint, el); return; }
+    techTalk(child);
+  }
+  var oreJob = null;
+  function collectOre(el) {
+    if (!oreJob || el.classList.contains('got')) return;
+    el.classList.add('got');
+    oreJob.n++;
+    var c = document.getElementById('ore-count'); if (c) c.textContent = oreJob.n + ' / ' + oreJob.need;
+    var f = document.getElementById('ore-fill'); if (f) f.style.width = (oreJob.n / oreJob.need * 100) + '%';
+    setTimeout(function () { el.remove(); }, 400);
+    if (oreJob.n >= oreJob.need) { var done = oreJob.done; oreJob = null; setTimeout(function () { var p = document.getElementById('story-panel'); if (p) p.remove(); done(); }, reduceMotion ? 100 : 500); }
+  }
+  /** 劇情演出：鏡頭移過去 → 技師說明 → 孩子互動 → 地圖變化 → 技師道謝＋⭐3 → 回到角色 */
+  async function runStory(child, id) {
+    var sp = STORY_SPOTS[id], world = document.getElementById('map-world');
+    var guide = document.querySelector('.story-guide[data-story="' + id + '"]');
+    if (!world || !guide) return;
+    ui.busy = true; document.body.classList.add('pawn-acting');
+    try {
+      if (ui.cam) { ui.cam.cx = sp.cam.cx; ui.cam.cy = sp.cam.cy; applyCam(true); await sleep(reduceMotion ? 50 : 800); }
+      techTalk(child, 3000, sp.intro, guide);
+      await sleep(reduceMotion ? 800 : 2600);
+      var panel = document.createElement('div');
+      panel.className = 'charge-panel story-panel' + (id === 'ore' ? ' top' : ''); panel.id = 'story-panel';   // 撿礦石時面板放上方，不擋住地圖上的礦石
+      if (id === 'ore') {
+        // 地圖上出現 5 顆發光礦石，點一下撿起來
+        sp.ores.forEach(function (o) {
+          var b = document.createElement('div');
+          b.className = 'story-ore'; b.setAttribute('data-tap', 'ore'); b.setAttribute('role', 'button'); b.setAttribute('aria-label', '金礦石');
+          b.style.left = o[0] + 'px'; b.style.top = o[1] + 'px'; b.style.zIndex = 1500;
+          world.appendChild(b);
+        });
+        panel.innerHTML = '<b>⛏️ 幫技師撿回金礦石！</b><small>點地圖上發光的礦石</small><span class="charge-bar"><i id="ore-fill"></i></span><span class="story-count" id="ore-count">0 / ' + sp.ores.length + '</span>';
+        document.body.appendChild(panel);
+        await new Promise(function (resolve) { oreJob = { n: 0, need: sp.ores.length, done: resolve }; });
+      } else {
+        // 拉下轉轍器：拉桿扳下、礦車沿軌道開往水晶礦谷
+        panel.innerHTML = '<b>🔧 拉下轉轍器！</b><small>軌道接通後，礦車就能開往水晶礦谷</small><button type="button" class="btn primary charge-btn" id="lever-btn">⬇️ 拉下拉桿</button>';
+        document.body.appendChild(panel);
+        await new Promise(function (resolve) { panel.querySelector('#lever-btn').addEventListener('click', resolve); });
+        panel.remove();
+        var lever = document.getElementById('story-lever'); if (lever) lever.classList.add('pulled');
+        var cart = document.createElement('div');
+        cart.className = 'story-cart'; cart.textContent = '🚃';
+        cart.style.left = sp.cart[0][0] + 'px'; cart.style.top = sp.cart[0][1] + 'px';
+        world.appendChild(cart);
+        await sleep(reduceMotion ? 50 : 400);
+        cart.style.left = sp.cart[1][0] + 'px'; cart.style.top = sp.cart[1][1] + 'px'; cart.classList.add('go');
+        await sleep(reduceMotion ? 100 : 1700);
+        cart.remove();
+      }
+      var first = store.completeStory(child.id, id);
+      techTalk(child, 3400, sp.done + (first ? ' 送你 ⭐' + GAME.STORY_STARS + '！' : ''), guide);
+      if (first) toast('⭐ 完成任務「' + GAME.STORIES[id].name + '」：+' + GAME.STORY_STARS + ' 能量星星', 'pos');
+      await sleep(reduceMotion ? 1500 : 3400);
+      guide.classList.add('bye');
+      followPawn(true);
+      await sleep(reduceMotion ? 50 : 500);
+    } finally { ui.busy = false; document.body.classList.remove('pawn-acting'); oreJob = null; }
+  }
+
   /** 第一次通電：亮起動畫（資料已寫入，只是演出） */
   function towerPowerOn() {
     var t = document.getElementById('gold-tower');
@@ -836,6 +921,7 @@
       '<div class="map-world" id="map-world" style="width:' + W + 'px;height:' + H + 'px" data-w="' + W + '" data-h="' + H + '">' +
       mapStrips(board) +
       towerDecor(board, player) +
+      storyDecor(board, player) +
       tiles +
       store.getMapChests(child.id).map(function (c) {
         var cp = worldXY(region, board.tiles[c.n]);
@@ -920,7 +1006,7 @@
       if (e.target.closest('.map-ctrl, .map-shop')) return;
       view.setPointerCapture(e.pointerId);
       pts[e.pointerId] = { x: e.clientX, y: e.clientY };
-      tap = Object.keys(pts).length === 1 ? { x: e.clientX, y: e.clientY, tech: !!e.target.closest('.gold-tech') } : null;   // 地圖接管觸控後點擊不會傳到技師，改在放開時判斷
+      tap = Object.keys(pts).length === 1 ? { x: e.clientX, y: e.clientY, el: e.target.closest('[data-tap]') } : null;   // 地圖接管觸控後點擊不會傳到地圖上的東西，改在放開時判斷
       last = null;
     });
     view.addEventListener('pointermove', function (e) {
@@ -939,10 +1025,10 @@
     });
     function up(e) {
       var wasTap = tap && e.type === 'pointerup' && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 8;
-      var tapTech = wasTap && tap.tech;
+      var tapEl = wasTap && tap.el;
       delete pts[e.pointerId]; last = null; tap = null;
       if (wasTap && ui.doorPick === child.id) pickDoorAt(child, e.clientX, e.clientY);
-      else if (tapTech) techTalk(child);   // 點技師：說一句話
+      else if (tapEl) mapTap(child, tapEl);   // 點技師、礦石等
     }
     view.addEventListener('pointerup', up); view.addEventListener('pointercancel', up);
     view.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY); }, { passive: false });
@@ -1190,12 +1276,19 @@
       await lookAtTower();
       await chargeTower();   // 孩子連點充電，充滿才通電
       towerPowerOn();
+      var towerFirst = store.completeStory(childId, 'tower');
       await sleep(reduceMotion ? 50 : 700);
-      techTalk(child, 3600);
+      techTalk(child, 3600, '謝謝你！能源塔亮起來了，金冠城堡就在前面！' + (towerFirst ? ' 送你 ⭐' + GAME.STORY_STARS + '！' : ''));
+      if (towerFirst) toast('⭐ 完成任務「能源主塔」：+' + GAME.STORY_STARS + ' 能量星星', 'pos');
       await sleep(reduceMotion ? 1500 : 3600);
       followPawn(true);   // 回到角色
       await sleep(reduceMotion ? 50 : 500);
       ui.busy = false; document.body.classList.remove('pawn-acting');
+    }
+    var visited = [].concat(res.path || [], (ev && ev.extraPath) || [], (ev && ev.backPath) || [], (ev && ev.then && ev.then.extraPath) || []);
+    for (var sid in STORY_SPOTS) {
+      var spp = STORY_SPOTS[sid], pl = store.getPlayer(childId);
+      if (!res.travel && pl.island === 'gold' && !pl.story[sid] && visited.indexOf(spp.tile) >= 0) { await runStory(child, sid); render(); }
     }
     await towerIntro(child);
     var react = pawnReaction(res);

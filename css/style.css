@@ -1808,3 +1808,26 @@ body.mg-open { overflow: hidden; }
 /* 充電中：主塔核心依電量漸漸變亮 */
 .gold-tower.charging .tower-on { transition: opacity .15s; opacity: calc(var(--charge, 0) * .85); }
 @media (prefers-reduced-motion: reduce) { .switch-ico { animation: none; } }
+
+/* 金島劇情：技師導遊、礦石、轉轍器、礦車 */
+.story-guide { pointer-events: auto; }
+.story-guide.bye { opacity: 0; transition: opacity .5s; }
+.story-bang { position: absolute; left: 50%; top: -14px; transform: translateX(-50%); width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%;
+  background: #ff5d3a; color: #fff; font-weight: 900; font-size: 17px; box-shadow: 0 2px 0 #c23a1e, 0 0 0 3px #fff; animation: story-bounce 1s ease-in-out infinite; }
+@keyframes story-bounce { 50% { transform: translateX(-50%) translateY(-5px); } }
+.story-ore { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; cursor: pointer;
+  background: radial-gradient(circle at 40% 35%, #fff8c8 0, #ffd23f 35%, #e69500 70%, rgba(230, 149, 0, 0) 72%);
+  box-shadow: 0 0 18px 8px rgba(255, 210, 63, .75); animation: ore-glow 1.1s ease-in-out infinite; }
+.story-ore::after { content: "✨"; position: absolute; right: -6px; top: -8px; font-size: 18px; }
+.story-ore.got { animation: ore-got .4s ease-out forwards; pointer-events: none; }
+@keyframes ore-glow { 50% { transform: scale(1.12); box-shadow: 0 0 26px 12px rgba(255, 210, 63, .9); } }
+@keyframes ore-got { to { transform: scale(1.8) translateY(-30px); opacity: 0; } }
+.story-count { font-weight: 900; color: #8a4f12; font-size: 1.1rem; }
+.story-lever { position: absolute; width: 36px; height: 52px; transform: translate(-50%, -100%); }
+.story-lever::before { content: ""; position: absolute; left: 6px; right: 6px; bottom: 0; height: 14px; border-radius: 6px; background: #6b4a2b; box-shadow: 0 2px 0 #3d2814; }
+.story-lever i { position: absolute; left: 50%; bottom: 10px; width: 8px; height: 40px; margin-left: -4px; border-radius: 4px; background: linear-gradient(#e2473f 0 26%, #c9a66b 26%); transform-origin: 50% 100%; transform: rotate(-35deg); transition: transform .5s cubic-bezier(.3, 1.6, .5, 1); box-shadow: 0 0 0 2px #fff; }
+.story-lever.pulled i { transform: rotate(35deg); }
+.story-cart { position: absolute; font-size: 48px; line-height: 1; transform: translate(-50%, -80%); z-index: 1500; transition: left 1.6s ease-in-out, top 1.6s ease-in-out; filter: drop-shadow(0 4px 3px rgba(0, 0, 0, .3)); }
+@media (prefers-reduced-motion: reduce) { .story-bang, .story-ore { animation: none; } }
+.charge-panel.top { bottom: auto; top: calc(env(safe-area-inset-top) + 12px); }
+.story-cart { font-size: 80px; }

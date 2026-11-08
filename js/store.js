@@ -380,6 +380,11 @@
             laps: Math.max(0, toInt(p.laps, 0)),   // 走完目前開放區域幾輪
             goldClears: Math.max(0, toInt(p.goldClears, 0)),   // 金島通關次數（走到第 100 格）
             towerIntro: !!p.towerIntro,   // 能源主塔：技師已主動求助過
+            story: (function () {   // 金島劇情完成日期 { ore, rail, tower }
+              var o = {}, src2 = p.story && typeof p.story === 'object' ? p.story : {};
+              Object.keys(src2).forEach(function (k) { if (/^\d{4}-\d{2}-\d{2}$/.test(src2[k])) o[k] = src2[k]; });
+              return o;
+            })(),
             // 換島：其他島的保存進度 { 島: { laps, maxReached } }、金島以外的通關次數 { 島: 次數 }
             islands: (function () {
               var o = {}, src2 = p.islands && typeof p.islands === 'object' ? p.islands : {};

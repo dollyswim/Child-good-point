@@ -581,8 +581,8 @@ async function main() {
     if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
     console.log('✔ Phase 3 案例 B：擲出 4 逐格移動 1→2→3→4');
 
-    // 案例 C：3 次後不能第 4 次
-    await q.evaluate(() => { window.__cgpStore.random = () => 0; });
+    // 案例 C：3 次後不能第 4 次（第 5 格的礦工劇情另有測試，這裡先標記完成）
+    await q.evaluate(() => { const s = window.__cgpStore; s.data.children.forEach((c) => { s.getPlayer(c.id).story = { ore: s.today(), rail: s.today() }; }); s.save(); s.random = () => 0; });
     for (let i = 0; i < 2; i++) {
       await q.click('[data-action=roll][data-kind=d6]');
       await q.waitForFunction((n) => document.querySelector('[data-testid=rolls]').textContent.startsWith(n + ' '), i + 2, { timeout: 8000 });
@@ -1660,6 +1660,63 @@ async function main() {
       await cx.close();
       console.log('✔ 金島第一～四區地圖 ' + width + 'px：100 格對齊、縮放拖曳、不橫向溢出' + (width === 390 ? '、逐格移動、重新整理恢復、舊存檔遷移、第 100 格通關停止' : ''));
     }
+  }
+
+  // ---------- 金島劇情：第 5 格礦工求助、第 30 格礦車轉轍；機會卡礦車上車 ----------
+  {
+    const cs = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block' });
+    const q = await cs.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '波妞' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+      s.getPlayer(a.id).bag.d6 = 5; s.setPlayerTile(a.id, 3); s.save(); return a.id; });
+    await q.goto(url + '#map-' + id);
+    await q.waitForSelector('.story-guide[data-story=ore] .story-bang');
+    assert.equal(await q.locator('.story-guide[data-story=rail]').count(), 1, '兩個劇情點都有技師導遊');
+    await q.click('.story-guide[data-story=ore]', { force: true });   // 點技師：提示要去哪一格
+    await q.waitForSelector('#tech-bubble');
+    assert.match(await q.locator('#tech-bubble').innerText(), /第 5 格/);
+    const stars0 = await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id);
+    // 擲 2 → 第 5 格：鏡頭移過去、技師說明、撿回 5 顆礦石
+    await q.evaluate(() => { window.__cgpStore.random = () => 1.5 / 6; });
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('.story-ore', { timeout: 15000 });
+    assert.equal(await q.locator('.story-ore').count(), 5);
+    assert.match(await q.locator('#story-panel').innerText(), /撿回金礦石[\s\S]*0 \/ 5/);
+    for (const o of await q.$$('.story-ore')) await o.click({ force: true });
+    await q.waitForFunction(() => /礦石都找回來了[\s\S]*⭐3/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
+    await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 15000 });
+    if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
+    assert.ok(await q.evaluate((cid) => !!window.__cgpStore.getPlayer(cid).story.ore, id));
+    assert.ok(await q.evaluate(([cid, s0]) => window.__cgpStore.getStarBalance(cid) >= s0 + 3, [id, stars0]), '完成任務得到 ⭐3');
+    assert.equal(await q.locator('.story-guide[data-story=ore]').count(), 0, '完成後導遊離開');
+    // 第 30 格：拉下轉轍器
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 27); s.save(); }, id);
+    await q.reload(); await q.waitForSelector('.story-guide[data-story=rail]');
+    await q.evaluate(() => { window.__cgpStore.random = () => 2.5 / 6; });
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#lever-btn', { timeout: 15000 });
+    await q.click('#lever-btn');
+    await q.waitForSelector('#story-lever.pulled');
+    await q.waitForFunction(() => /軌道接通了/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
+    await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 15000 });
+    if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
+    assert.ok(await q.evaluate((cid) => !!window.__cgpStore.getPlayer(cid).story.rail, id));
+    // 劇情完成後再進地圖：導遊不再出現
+    await q.reload(); await q.waitForSelector('#pawn');
+    assert.equal(await q.locator('.story-guide').count(), 0);
+    // 機會卡礦車：先按「上車！」才前進（第 3 格機會格：從第 1 格擲 2，機會卡抽到礦車）
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 1); s.save(); }, id);
+    await q.reload(); await q.waitForSelector('#pawn');
+    await q.evaluate(() => { const seq = [1.5 / 6, 0]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0); });
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#cart-panel', { timeout: 10000 });
+    assert.match(await q.locator('#cart-panel').innerText(), /礦車來了[\s\S]*上車/);
+    assert.equal(await q.locator('#pawn').getAttribute('data-pos'), '3', '按上車前還在機會格');
+    await q.click('#cart-btn');
+    await q.waitForFunction(() => document.getElementById('pawn').dataset.pos === '5', null, { timeout: 8000 });
+    console.log('✔ 金島劇情：技師導遊提示、第 5 格撿礦石、第 30 格拉轉轍器、各 ⭐3、不重複；機會卡礦車按上車才前進');
+    await cs.close();
   }
 
   // ---------- 金島第三區：能源主塔與技師 ----------
