@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-92';
+  var APP_VERSION = '2026.11.08-93';
   var store;
   try {
     store = new CGP.Store();
@@ -1910,7 +1910,7 @@
       var N = GAME.LEAF_GAME.piles, rounds = o.rounds, multi = rounds.length > 1;
       var el = document.createElement('div');
       el.className = 'mg leaf-mg'; el.id = 'mg';
-      el.innerHTML = '<div class="mg-top"><span class="mg-count">🌰 <b id="leaf-found">0</b></span>' +
+      el.innerHTML = '<div class="mg-top"><span class="mg-count" aria-label="找到的松果"><img class="leaf-ico" src="images/wood/leaf_pinecone.webp" alt="" width="256" height="256"> <b id="leaf-found">0</b></span>' +
         '<b class="leaf-round" id="leaf-round"></b><span class="leaf-miss" id="leaf-miss" aria-label="還可以翻錯的次數"></span></div>' +
         '<div class="leaf-field"><p class="leaf-msg" id="leaf-msg" role="status"></p><div class="leaf-grid" id="leaf-grid"></div></div>' +
         '<div class="mg-tip leaf-tip" id="mg-tip"><b>' + h(o.title) + '</b>' + (o.subtitle ? '<small>' + h(o.subtitle) + '</small>' : '') +
@@ -1943,7 +1943,10 @@
           b.type = 'button'; b.className = 'leaf-pile' + (pines[n] ? ' pine' : squirrels[n] ? ' squirrel' : ''); b.setAttribute('aria-label', '落葉堆');
           if (pines[n]) b.setAttribute('data-pine', '1');
           if (squirrels[n]) b.setAttribute('data-squirrel', '1');
-          b.innerHTML = '<span class="leaf-under" aria-hidden="true">' + (pines[n] ? '🌰' : squirrels[n] ? '🐿️' : '') + '</span><span class="leaf-cover" aria-hidden="true">🍂</span>';
+          // 2026-11-08 正式圖（家長 Gemini 圖，去除外框相連白底）：落葉堆蓋著，底下是松果／松鼠／空地
+          var under = pines[n] ? 'leaf_pinecone' : squirrels[n] ? 'leaf_squirrel' : 'leaf_empty';
+          b.innerHTML = '<span class="leaf-under" aria-hidden="true"><img src="images/wood/' + under + '.webp" alt="" width="256" height="256" draggable="false"></span>' +
+            '<span class="leaf-cover" aria-hidden="true"><img src="images/wood/leaf_pile.webp" alt="" width="256" height="256" draggable="false"></span>';
           b.addEventListener('pointerdown', tap);
           grid.appendChild(b);
         }
@@ -2004,7 +2007,7 @@
     m.className = 'mg-result leaf-result';
     m.innerHTML = '<b>' + (found >= GAME.LEAF_MAX_FOUND ? '🎉 全部找到了！' : found >= 10 ? '👏 記憶力好棒！' : '✨ 完成！') + '</b>' +
       '<p>找到 <strong>' + found + '</strong> / ' + GAME.LEAF_MAX_FOUND + ' 顆松果</p>' +
-      '<div class="leaf-pines" aria-hidden="true">' + new Array(found + 1).join('<i>🌰</i>') + '</div>' +
+      '<div class="leaf-pines" aria-hidden="true">' + new Array(found + 1).join('<i><img class="leaf-ico" src="images/wood/leaf_pinecone.webp" alt="" width="256" height="256"></i>') + '</div>' +
       '<p class="mg-rate">每 ' + LG.rate + ' 顆松果換 1 顆能量星星（不滿 ' + LG.rate + ' 顆也算 1 顆）</p>' +
       (practice ? '<p class="mg-gain">' + STAR_IMG + ' ' + gain + ' 能量星星</p><p class="mg-practice-note">🧪 試玩模式，不會真的得到星星</p>' +
         '<div class="mg-acts"><button type="button" class="btn" data-mg="exit">離開</button><button type="button" class="btn primary" data-mg="again">再玩一次</button></div>'
