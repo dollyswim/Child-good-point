@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-72';
+  var APP_VERSION = '2026.11.08-73';
   var store;
   try {
     store = new CGP.Store();
@@ -2089,6 +2089,7 @@
         '<span class="row-main"><b>' + h(c.name) + ' ' + (c.badge ? h(c.badge) : '') + '</b><small>' + h((c.title ? c.title + ' ' : '') + 'Lv.' + store.getLevel(c.id).level) +
         '・目前 ' + num(store.getTotal(c.id)) + ' 點' + (c.weeklyGoal ? '・每週目標 ' + num(c.weeklyGoal) : '') + '・起始 ' + c.startPoints + '</small></span>' +
         (store.getSettlement(c.id) ? '<button class="btn small" data-action="resettle-day" data-id="' + h(c.id) + '">重新結算今天</button>' : '') +
+        '<button class="btn small" data-action="reset-limits" data-id="' + h(c.id) + '">重置今天上限</button>' +
         (store.isAdventureEnded(c.id) ? '<button class="btn small" data-action="reopen-day" data-id="' + h(c.id) + '">解除今天的結束</button>' : '') +
         '<button class="btn small" data-action="edit-child" data-id="' + h(c.id) + '">編輯</button>' +
         '<button class="btn small danger" data-action="delete-child" data-id="' + h(c.id) + '">刪除</button></li>';
@@ -2824,6 +2825,13 @@
           confirmThen('重新結算 ' + rc.name + ' 今天的能量星星？\n已結算：⭐' + pv.settlement.stars + '（今日淨得分 ' + pv.settlement.net + '）\n目前今日淨得分 ' + pv.net + '，補發 ⭐' + pv.added +
             (pv.bonus ? '（含加碼星星 ' + pv.bonus + '）' : '') + '\n只補發差額，不會重複發放。', '補發', false, function () {
             var r = store.resettleToday(id); toast('已補發 ⭐' + r.added + ' 給 ' + rc.name, 'pos');
+          });
+          break;
+        }
+        case 'reset-limits': {
+          var lc = store.getChild(id);
+          confirmThen('重置 ' + lc.name + ' 今天的次數上限？\n骰子 3 次、小遊戲 1 次、前進道具 5 次、任意門 1 次、神奇骰子 1 顆、星星呼喚 1 個，今天都重新計算。\n已經用掉的道具不會退回；明天照常重新計算。', '重置', false, function () {
+            store.resetDailyLimits(id); toast('已重置 ' + lc.name + ' 今天的次數上限', 'pos');
           });
           break;
         }

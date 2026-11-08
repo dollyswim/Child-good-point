@@ -90,7 +90,7 @@
   // ---------- 預設資料 ----------
   function emptyData() {
     return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null, achievements: {}, carry: {}, backup: { lastExportAt: 0, since: 0, snoozeUntil: '' },
-      milestones: {}, adventure: { settlements: [], ledger: [], rolls: [], minigames: [], bonusQuota: [], mapChests: [], dayEnds: [], blessings: [], itemLog: [], players: {} } };
+      milestones: {}, adventure: { settlements: [], ledger: [], rolls: [], minigames: [], bonusQuota: [], mapChests: [], dayEnds: [], blessings: [], itemLog: [], limitResets: [], players: {} } };
   }
 
   function defaultData() {
@@ -302,7 +302,7 @@
       }).map(function (x) {
         return { id: String(x.id), childId: String(x.childId), date: x.date, die: x.die === 'd12' ? 'd12' : 'd6',
           kind: x.kind === 'bonus' || x.kind === 'magic' ? x.kind : 'base',   // base＝每日 3 次；bonus＝再來 3 次；magic＝神奇骰子
-          value: toInt(x.value, 0), from: toInt(x.from, 0), to: toInt(x.to, 0), ts: toInt(x.ts, Date.now()) };
+          value: toInt(x.value, 0), from: toInt(x.from, 0), to: toInt(x.to, 0), ts: toInt(x.ts, Date.now()), limitReset: !!x.limitReset || undefined };
       }),
       // Phase 4：小遊戲「抓住星星」（每孩子每天 1 筆；pending＝停在小遊戲格還沒玩完）
       minigames: (function () {
@@ -317,10 +317,14 @@
         }).map(function (x) {
           return { id: String(x.id), childId: String(x.childId), date: x.date, tile: toInt(x.tile, 0), bonus: !!x.bonus,
             status: x.status === 'done' || x.status === 'expired' ? x.status : 'pending', caught: Math.max(0, toInt(x.caught, 0)), stars: Math.max(0, toInt(x.stars, 0)),
-            ts: toInt(x.ts, Date.now()), doneTs: x.doneTs ? toInt(x.doneTs, 0) : undefined };
+            ts: toInt(x.ts, Date.now()), doneTs: x.doneTs ? toInt(x.doneTs, 0) : undefined, limitReset: !!x.limitReset || undefined, starCall: !!x.starCall || undefined };
         });
       })(),
       // 結束今日冒險（當天鎖住）
+      // 家長重置今天的次數上限：{ id, childId, date, ts }（之後的使用才計入今天的上限）
+      limitResets: (Array.isArray(adv.limitResets) ? adv.limitResets : []).filter(function (x) {
+        return x && x.id && childIdSet.has(String(x.childId)) && /^\d{4}-\d{2}-\d{2}$/.test(x.date);
+      }).map(function (x) { return { id: String(x.id), childId: String(x.childId), date: x.date, ts: toInt(x.ts, 0) }; }),
       dayEnds: (Array.isArray(adv.dayEnds) ? adv.dayEnds : []).filter(function (x) {
         return x && x.id && childIdSet.has(String(x.childId)) && /^\d{4}-\d{2}-\d{2}$/.test(x.date);
       }).map(function (x) { return { id: String(x.id), childId: String(x.childId), date: x.date, ts: toInt(x.ts, Date.now()) }; }),
@@ -350,7 +354,7 @@
         return x && x.id && childIdSet.has(String(x.childId));
       }).map(function (x) {
         return { id: String(x.id), childId: String(x.childId), action: String(x.action || ''), item: String(x.item || ''),
-          qty: toInt(x.qty, 1), source: String(x.source || ''), result: String(x.result || ''), date: String(x.date || ''), ts: toInt(x.ts, Date.now()) };
+          qty: toInt(x.qty, 1), source: String(x.source || ''), result: String(x.result || ''), date: String(x.date || ''), ts: toInt(x.ts, Date.now()), limitReset: !!x.limitReset || undefined };
       }),
       // Phase 3：每個孩子的棋子位置、角色、背包
       players: (function () {
@@ -698,6 +702,7 @@
     adv.bonusQuota = adv.bonusQuota.filter(function (x) { return x.childId !== id; });
     adv.mapChests = adv.mapChests.filter(function (x) { return x.childId !== id; });
     adv.dayEnds = adv.dayEnds.filter(function (x) { return x.childId !== id; });
+    adv.limitResets = (adv.limitResets || []).filter(function (x) { return x.childId !== id; });
     delete this.data.milestones[id];
     if (this.data.carry) delete this.data.carry[id];
     delete this.data.achievements[id];
@@ -1211,7 +1216,7 @@
     return d < max ? d : max;
   };
   /** 冒險紀錄中可以封存的種類（地圖寶箱、背包、位置不封存） */
-  var ARCHIVE_ADV = ['settlements', 'ledger', 'rolls', 'minigames', 'bonusQuota', 'dayEnds', 'itemLog', 'blessings'];
+  var ARCHIVE_ADV = ['settlements', 'ledger', 'rolls', 'minigames', 'bonusQuota', 'dayEnds', 'itemLog', 'blessings', 'limitResets'];
   function addDays(key, n) { var d = parseDateKey(key); d.setDate(d.getDate() + n); return dateKey(d); }
   /**
    * 封存計畫：日期早於 cutoff 的生活紀錄與冒險紀錄

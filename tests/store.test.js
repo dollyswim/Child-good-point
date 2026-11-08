@@ -2277,3 +2277,35 @@ test('星星呼喚：寶物商店 50 點；從背包使用馬上多一局小遊�
   assert.throws(() => store.useStarCall(a.id), /每天只能用 1 個/);
   assert.equal(p.bag.starCall, 1, '被擋下時不消耗');
 });
+
+test('家長重置今天的次數上限：骰子、小遊戲、前進道具、任意門、神奇骰子、星星呼喚都重新計算；道具不退回；明天照常；存檔重開保留', () => {
+  const { store, a, setDate, storage } = p3Store();
+  const p = store.getPlayer(a.id);
+  Object.assign(p.bag, { d6: 10, skates: 8, door: 2, magicDice: 2, starCall: 2 });
+  store.random = () => 0;
+  for (let i = 0; i < 3; i++) store.rollDice(a.id, 'd6');
+  for (let i = 0; i < 5; i++) store.useSkates(a.id);
+  store.useDoor(a.id, 40); store.rollDice(a.id, 'magic');
+  if (store.getPendingMinigame(a.id)) store.finishMinigame(a.id, 3);   // 移動途中停到小遊戲格：先玩完（也就用掉今天的 1 次）
+  if (!store.getMinigameToday(a.id)) store.data.adventure.minigames.push({ id: 'daily', childId: a.id, date: store.today(), status: 'done', caught: 3, stars: 1, ts: 1 });
+  store.useStarCall(a.id); store.finishMinigame(a.id, 3);
+  assert.equal(store.getRollsLeft(a.id), 0);
+  assert.deepEqual(store.getItemLimitsToday(a.id), { move: 0, door: 0 });
+  assert.ok(store.magicUsedToday(a.id) && store.getMinigameToday(a.id));
+  const bag = JSON.stringify(p.bag);
+  assert.throws(() => store.resetDailyLimits(a.id), /家長密碼/);
+  store.allowPinReset();
+  store.resetDailyLimits(a.id);
+  assert.equal(store.getRollsLeft(a.id), 3, '骰子 3 次重新計算');
+  assert.deepEqual(store.getItemLimitsToday(a.id), { move: 5, door: 1 });
+  assert.ok(!store.magicUsedToday(a.id), '神奇骰子可以再用');
+  assert.equal(store.getMinigameToday(a.id), null, '小遊戲可以再玩 1 次');
+  assert.equal(store._usesToday(a.id, ['starCall']), 0, '星星呼喚可以再用');
+  assert.equal(JSON.stringify(p.bag), bag, '道具不退回');
+  assert.equal(store.data.adventure.rolls.filter(r => r.childId === a.id).length, 4, '紀錄保留');
+  store.rollDice(a.id, 'd6');
+  assert.equal(store.getRollsLeft(a.id), 2, '重置後照常計算');
+  // 存檔重開仍有效
+  const s2 = new Store({ storage, seed: false, now: () => store.now() });
+  assert.equal(s2.getRollsLeft(a.id), 2);
+});

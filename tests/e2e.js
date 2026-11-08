@@ -1203,6 +1203,14 @@ async function main() {
     await q.click('[data-action=reopen-day]');
     await q.click('#confirm [data-yes]');
     await q.waitForFunction((cid) => !window.__cgpStore.isAdventureEnded(cid), id);
+    // 設定 → 孩子：重置今天的次數上限（骰子 3 次等重新計算，道具不退回）
+    const rollsBefore = await q.evaluate((cid) => window.__cgpStore.getRollsToday(cid), id);
+    assert.ok(rollsBefore > 0, '今天已經擲過骰子');
+    await q.click('[data-action=reset-limits]');
+    assert.match(await q.locator('#confirm').innerText(), /重置[\s\S]*骰子 3 次、小遊戲 1 次[\s\S]*不會退回/);
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction((cid) => window.__cgpStore.getRollsToday(cid) === 0, id);
+    assert.match(await q.locator('#toast').innerText(), /已重置/);
     // 設定 → 孩子：重新結算今天（結算後又加 20 分 → 補發 4 星）
     const bal0 = await q.evaluate((cid) => { const s = window.__cgpStore; const it = s.addItem({ kind: 'bonus', name: '補加分', points: 20 }); s.recordItem(cid, it.id); return s.getStarBalance(cid); }, id);
     await q.goto(url + '#rules-children'); await q.reload();

@@ -804,7 +804,23 @@
   /** 今天的小遊戲紀錄（pending＝已停在小遊戲格但還沒玩完；done＝已領取） */
   Store.prototype.getMinigameToday = function (childId) {
     var today = this.today();
-    return this.data.adventure.minigames.find(function (m) { return m.childId === childId && m.date === today && !m.bonus; }) || null;
+    return this.data.adventure.minigames.find(function (m) { return m.childId === childId && m.date === today && !m.bonus && !m.limitReset; }) || null;
+  };
+  /**
+   * 家長重置今天的次數上限（需家長密碼）：骰子 3 次、小遊戲 1 次、前進道具 5 次、任意門 1 次、神奇骰子 1 顆、星星呼喚 1 個都重新計算。
+   * 只影響今天；已用掉的道具不退回；舊紀錄保留（只是不再計入今天的上限）
+   */
+  Store.prototype.resetDailyLimits = function (childId) {
+    if (this._requireParent) this._requireParent();
+    if (!this.getChild(childId)) throw new Error('找不到孩子');
+    var today = this.today(), adv = this.data.adventure;
+    function mine(x) { return x.childId === childId && x.date === today; }
+    // 今天已計入上限的紀錄標記為「已重置」，之後計算次數時跳過（紀錄本身保留）
+    adv.rolls.forEach(function (r) { if (mine(r)) r.limitReset = true; });
+    adv.itemLog.forEach(function (x) { if (mine(x) && x.action === 'use') x.limitReset = true; });
+    adv.minigames.forEach(function (m) { if (mine(m) && !m.bonus && m.status !== 'pending') m.limitReset = true; });
+    adv.limitResets.push({ id: uid(), childId: childId, date: today, ts: this.now().getTime() });   // 重置紀錄
+    this.save();
   };
   /** 今天還有沒玩完的小遊戲（重新整理後可繼續） */
   Store.prototype.getPendingMinigame = function (childId) {
@@ -831,7 +847,7 @@
   /** 今天已用的「基本」擲骰次數（神奇骰子、再來 3 次的額外次數不算） */
   Store.prototype.getRollsToday = function (childId) {
     var today = this.today();
-    return this.data.adventure.rolls.filter(function (r) { return r.childId === childId && r.date === today && (!r.kind || r.kind === 'base'); }).length;
+    return this.data.adventure.rolls.filter(function (r) { return r.childId === childId && r.date === today && (!r.kind || r.kind === 'base') && !r.limitReset; }).length;
   };
   /** 再來 3 次：今天剩下的額外擲骰／小遊戲次數 */
   Store.prototype.getBonusQuota = function (childId) {
@@ -855,7 +871,7 @@
   /** 今天是否已用過神奇骰子（每天最多 1 顆） */
   Store.prototype.magicUsedToday = function (childId) {
     var today = this.today();
-    return this.data.adventure.rolls.some(function (r) { return r.childId === childId && r.date === today && r.kind === 'magic'; });
+    return this.data.adventure.rolls.some(function (r) { return r.childId === childId && r.date === today && r.kind === 'magic' && !r.limitReset; });
   };
   /**
    * 第一步：擲出點數（計入次數、消耗骰子），還沒前進。
@@ -962,7 +978,7 @@
   Store.prototype._usesToday = function (childId, items) {
     var today = this.today();
     return this.data.adventure.itemLog.filter(function (x) {
-      return x.childId === childId && x.action === 'use' && x.date === today && items.indexOf(x.item) >= 0;
+      return x.childId === childId && x.action === 'use' && x.date === today && items.indexOf(x.item) >= 0 && !x.limitReset;
     }).length;
   };
   /** 今天前進類道具與任意門還能用幾次 */
