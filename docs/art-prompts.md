@@ -338,6 +338,46 @@ No characters, no text, no UI. Bright sunny, cute children's game map.
 
 ---
 
+## 木島小遊戲「落葉找松果」（3 張必做＋1 張選做，2026-11-08 新增）
+
+目前畫面用表情符號佔位：松果 🌰（其實是栗子）、落葉堆 🍂。交件後 Claude 放進 `images/wood/`，換掉 `js/app.js` 的 `leafGame` 與 `css/style.css` 的 `.leaf-*` 樣式。
+L-1～L-3 規格同前：**正方形 1024×1024、白底、單一物件、置中、不要任何文字／數字**，先貼「共用風格」再貼主體描述。三張要放在同一格裡疊起來用，**請用同樣的視角（正面略俯視）和同樣的大小比例**。
+
+### L-1 松果（`pinecone`）
+```
+a single cute brown pinecone lying on its side, rounded chubby shape with clear layered scales,
+warm brown with lighter golden tips, a tiny green leaf attached, soft golden glow around it,
+slightly top-down front view, fills about 70% of the frame
+```
+中文：一顆可愛的棕色松果側躺著，圓胖、鱗片層次清楚，棕色帶淡金色尖端，旁邊黏一片小綠葉，周圍淡淡金色光暈；正面略俯視，約佔畫面 70%。（**要畫真正的松果，不是栗子或橡實**）
+
+### L-2 落葉堆（`leaf_pile`）
+```
+a small round mound of fallen autumn leaves, orange, red and golden yellow maple and oak leaves piled up,
+fluffy and soft looking, a few leaves curling at the edges, nothing visible underneath,
+slightly top-down front view, fills about 85% of the frame
+```
+中文：一小堆圓圓的秋天落葉，橘、紅、金黃色的楓葉和橡樹葉堆起來，蓬鬆柔軟，邊緣幾片葉子捲起，**看不到底下有任何東西**；正面略俯視，約佔畫面 85%。（25 堆會排成 5×5 一起出現，輪廓要簡單清楚）
+
+### L-3 翻開後的空地（`leaf_empty`）
+```
+a small patch of soft brown forest soil with two or three scattered small leaves and a tiny pebble,
+empty, nothing hidden, flat and calm, slightly top-down front view, fills about 85% of the frame
+```
+中文：一小塊鬆軟的棕色森林泥土，散落兩三片小葉子和一顆小石頭，空空的、沒有藏東西，平平的；正面略俯視，約佔畫面 85%。（翻錯時顯示；顏色要比落葉堆暗一點、低調一點）
+
+### L-4 選做：小遊戲背景（直式 1080×1920，**不要白底**）
+
+把共用風格最後的 `plain white background` 換成下面這段：
+```
+a soft sunny forest clearing seen from above, light green grass with dappled sunlight through the trees,
+a few mushrooms and flowers only around the edges, tall tree trunks at the left and right edges,
+large calm open empty space in the middle for a 5 by 5 grid of leaf piles, no characters, no text, no UI
+```
+中文：從上往下看的陽光森林空地，淺綠草地上有樹葉間灑下的光斑，只有**邊緣**有幾朵蘑菇、小花，左右兩側有高大樹幹；**中間保留大片平靜的空白**，放 5×5 的落葉堆，不要角色、文字、介面。
+
+---
+
 ## 木島導遊：森林小精靈（1 張，2026-11-08 新增）
 
 木島劇情的導遊，目前地圖上用 🧚 表情符號佔位。交件後 Claude 放進 `images/wood/elf.webp`，在 `js/app.js` 的 `ISLAND_STORY.wood.guide` 加上 `img`。
