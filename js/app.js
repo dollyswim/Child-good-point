@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-63';
+  var APP_VERSION = '2026.11.08-64';
   var store;
   try {
     store = new CGP.Store();
@@ -1364,7 +1364,7 @@
   /**
    * 全螢幕小遊戲：第 1 顆星在正中央，點到才開始 10 秒計時。
    * 前 5 秒：每 0.67 秒出現 1 顆、停留 1.7 秒；後 5 秒加快：每 0.47 秒出現 2 顆、停留 1.3 秒、大小 0.5 倍。
-   * 星星出現數不限；每抓 3 顆換 1 顆能量星星（無條件進位），最多 GAME.MINIGAME_MAX_STARS 顆；按「收下」才寫入。
+   * 抓的是「銀色星星」；結束後先排出抓到的銀色星星，再每 3 顆合成 1 顆能量星星（無條件進位，最多 GAME.MINIGAME_MAX_STARS 顆）；按「收下」才寫入。
    */
   function openMinigame(childId, subtitle, opts) {
     var practice = !!(opts && opts.practice);   // 試玩模式：不寫入存檔、不給星星、不算每日次數
@@ -1376,7 +1376,7 @@
       { until: SEC * 1000, gap: 467, life: 1300, count: 2, small: true }];           // 後 5 秒：加快、一次 2 顆、縮小
     var el = document.createElement('div');
     el.className = 'mg' + (practice ? ' practice' : ''); el.id = 'mg';
-    el.innerHTML = '<div class="mg-top"><span class="mg-count"><img class="mg-ico" src="images/minigame/star.webp" alt="⭐" width="256" height="256"> <b id="mg-count">0</b></span>' +
+    el.innerHTML = '<div class="mg-top"><span class="mg-count"><img class="mg-ico mg-silver-ico" src="images/minigame/star.webp" alt="銀色星星" width="256" height="256"> <b id="mg-count">0</b></span>' +
       '<span class="mg-time"><i id="mg-bar"></i></span><b class="mg-sec" id="mg-sec">' + SEC + '</b></div>' +
       '<div class="mg-field" id="mg-field"></div>' +
       '<div class="mg-tip" id="mg-tip"><b>⭐ 抓住星星！</b>' + (subtitle ? '<small>' + h(subtitle) + '</small>' : '') +
@@ -1432,29 +1432,50 @@
       ended = true;
       timers.forEach(function (t) { clearTimeout(t); clearInterval(t); });
       field.innerHTML = '';
-      var res = document.createElement('div');
-      res.className = 'mg-result';
       var gain = GAME.minigameStars(caught), rate = GAME.MINIGAME_RATE;
+      var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var SILVER = '<img class="mg-silver" src="images/minigame/star.webp" alt="" aria-hidden="true" width="256" height="256" draggable="false">';
+      // 第 1 個視窗：抓到幾顆銀色星星（一顆顆排出來）
+      var res = document.createElement('div');
+      res.className = 'mg-result mg-step1';
       res.innerHTML = '<b>' + (caught >= 20 ? '🎉 太厲害了！' : caught >= 10 ? '👏 好厲害！' : '✨ 完成！') + '</b>' +
-        '<p>抓到 <strong>' + caught + '</strong> 顆星星</p>' +
-        '<p class="mg-rate">每 ' + rate + ' 顆換 1 顆能量星星（不滿 ' + rate + ' 顆也算 1 顆）</p>' +
-        (practice ? '<p class="mg-practice-note">🧪 試玩模式，不會得到星星（正式玩可以得到 ' + STAR_IMG + ' ' + gain + '）</p>' +
-          '<div class="mg-acts"><button type="button" class="btn" data-mg="exit">離開</button><button type="button" class="btn primary" data-mg="again">再玩一次</button></div>'
-          : '<p class="mg-gain">' + STAR_IMG + ' +' + gain + ' 能量星星</p>' + (Math.ceil(caught / rate) > MAX ? '<p class="mg-cap">（每局最多 ' + MAX + ' 顆能量星星）</p>' : '') +
-            '<button type="button" class="btn primary" data-mg="claim">收下</button>');
+        '<p>抓到 <strong>' + caught + '</strong> 顆銀色星星</p>' +
+        '<div class="mg-silver-grid" aria-hidden="true">' + new Array(caught + 1).join(SILVER) + '</div>' +
+        '<button type="button" class="btn primary" data-mg="merge">' + (caught ? '✨ 合成能量星星' : '知道了') + '</button>';
       el.appendChild(res);
-      if (practice) {
-        res.querySelector('[data-mg=again]').onclick = function () { cleanup(); openMinigame(null, null, opts); };
-        res.querySelector('[data-mg=exit]').onclick = close;
-        return;
+      res.querySelectorAll('.mg-silver').forEach(function (img, k) { img.style.animationDelay = (still ? 0 : Math.min(k * 0.06, 1.6)) + 's'; });
+      res.querySelector('[data-mg=merge]').onclick = function () { res.remove(); showMerge(); };
+      // 第 2 個視窗：每 3 顆銀色星星聚在一起，合成 1 顆能量星星（實際得到的數量）
+      function showMerge() {
+        var m = document.createElement('div');
+        m.className = 'mg-result mg-step2';
+        var groups = [];
+        for (var g = 0; g < gain; g++) groups.push(Math.min(rate, Math.max(1, caught - g * rate)));   // 最後一組不滿 3 顆也算 1 顆
+        m.innerHTML = '<b>⭐ 合成能量星星</b>' +
+          '<p class="mg-rate">每 ' + rate + ' 顆銀色星星合成 1 顆能量星星（不滿 ' + rate + ' 顆也算 1 顆）</p>' +
+          '<div class="mg-merge" aria-hidden="true">' + groups.map(function (n, k) {
+            var d = still ? 0 : k * 0.35;
+            return '<span class="mg-group" style="--d:' + d + 's">' + new Array(n + 1).join(SILVER.replace('mg-silver', 'mg-silver mg-fly')) +
+              '<span class="mg-energy">' + STAR_IMG + '</span></span>';
+          }).join('') + '</div>' +
+          (practice ? '<p class="mg-gain">' + STAR_IMG + ' ' + gain + ' 能量星星</p><p class="mg-practice-note">🧪 試玩模式，不會真的得到星星</p>' +
+            '<div class="mg-acts"><button type="button" class="btn" data-mg="exit">離開</button><button type="button" class="btn primary" data-mg="again">再玩一次</button></div>'
+            : '<p class="mg-gain">' + STAR_IMG + ' +' + gain + ' 能量星星</p>' + (Math.ceil(caught / rate) > MAX ? '<p class="mg-cap">（每局最多 ' + MAX + ' 顆能量星星）</p>' : '') +
+              '<button type="button" class="btn primary" data-mg="claim">收下</button>');
+        el.appendChild(m);
+        if (practice) {
+          m.querySelector('[data-mg=again]').onclick = function () { cleanup(); openMinigame(null, null, opts); };
+          m.querySelector('[data-mg=exit]').onclick = close;
+          return;
+        }
+        m.querySelector('[data-mg=claim]').onclick = function () {
+          try {
+            var r = store.finishMinigame(childId, caught);
+            toast('⭐ 小遊戲得到 ' + r.stars + ' 顆能量星星！', 'pos');
+          } catch (err) { toast(err.message, 'neg'); }
+          close();
+        };
       }
-      res.querySelector('[data-mg=claim]').onclick = function () {
-        try {
-          var m = store.finishMinigame(childId, caught);
-          toast('⭐ 小遊戲得到 ' + m.stars + ' 顆能量星星！', 'pos');
-        } catch (err) { toast(err.message, 'neg'); }
-        close();
-      };
     }
     function cleanup() {
       timers.forEach(function (t) { clearTimeout(t); clearInterval(t); });

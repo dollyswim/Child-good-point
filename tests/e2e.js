@@ -799,9 +799,16 @@ async function main() {
     // 後 5 秒：一次出現 2 顆、縮小為 0.5 倍（約 39px）
     await q.waitForFunction(() => document.querySelectorAll('.mg-star.small:not(.got):not(.miss)').length >= 2, null, { timeout: 9000 });
     assert.equal(await q.evaluate(() => document.querySelector('.mg-star.small').offsetWidth), 39);
-    await q.waitForSelector('.mg-result', { timeout: 15000 });
-    assert.match(await q.locator('.mg-result').innerText(), /抓到 3 顆星星[\s\S]*每 3 顆換 1 顆能量星星[\s\S]*\+1 能量星星/);
-    await q.click('.mg-result [data-mg=claim]');
+    // 結束：先排出抓到的銀色星星，再合成能量星星（每 3 顆合成 1 顆）
+    await q.waitForSelector('.mg-step1', { timeout: 15000 });
+    assert.match(await q.locator('.mg-step1').innerText(), /抓到 3 顆銀色星星/);
+    assert.equal(await q.locator('.mg-step1 .mg-silver').count(), 3, '排出 3 顆銀色星星');
+    assert.equal(await q.locator('.mg-step1 [data-mg=claim]').count(), 0, '第 1 個視窗還不能收下');
+    await q.click('.mg-step1 [data-mg=merge]');
+    await q.waitForSelector('.mg-step2');
+    assert.match(await q.locator('.mg-step2').innerText(), /每 3 顆銀色星星合成 1 顆能量星星[\s\S]*\+1 能量星星/);
+    assert.equal(await q.locator('.mg-step2 .mg-group').count(), 1, '合成 1 顆能量星星');
+    await q.click('.mg-step2 [data-mg=claim]');
     await q.waitForFunction(() => !document.getElementById('mg'));
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), before + 1, '抓到 3 顆 → 1 顆能量星星');
     assert.equal(await q.locator('.mg-resume').count(), 0);
@@ -831,10 +838,12 @@ async function main() {
     await q.waitForSelector('#mg.practice .mg-star.first');
     assert.match(await q.locator('#mg-tip').innerText(), /試玩模式/);
     await q.click('.mg-star.first', { force: true });
-    await q.waitForSelector('.mg-result', { timeout: 15000 });
-    assert.match(await q.locator('.mg-result').innerText(), /試玩模式，不會得到星星/);
-    assert.equal(await q.locator('.mg-result [data-mg=claim]').count(), 0);
-    await q.click('.mg-result [data-mg=again]');
+    await q.waitForSelector('.mg-step1', { timeout: 15000 });
+    await q.click('.mg-step1 [data-mg=merge]');
+    await q.waitForSelector('.mg-step2');
+    assert.match(await q.locator('.mg-step2').innerText(), /試玩模式，不會真的得到星星/);
+    assert.equal(await q.locator('.mg-step2 [data-mg=claim]').count(), 0);
+    await q.click('.mg-step2 [data-mg=again]');
     await q.waitForSelector('#mg.practice .mg-star.first');
     assert.equal(await q.locator('#mg').count(), 1, '再玩一次只有一個遊戲畫面');
     await q.click('#mg [data-mg=later]');
