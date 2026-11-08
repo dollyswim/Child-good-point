@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-60';
+  var APP_VERSION = '2026.11.08-61';
   var store;
   try {
     store = new CGP.Store();
@@ -571,8 +571,8 @@
       ? '可以換 ' + Math.floor(bal / DICE_COST) + ' 顆 6 面骰 🎲'
       : '再 <b>' + toNext + '</b> 顆星可以換一顆 6 面骰 🎲';
     var starCard = '<section class="star-card" style="--c:' + h(child.color) + '">' +
-      '<button class="partner" data-action="pick-character" aria-label="選擇冒險夥伴"><span class="partner-ring">' + characterArt(child) + '</span>' +
-      '<span class="partner-tag">' + h(characterName(child)) + ' ✎</span></button>' +
+      '<button class="partner" data-action="pick-character" aria-label="更換頭像"><span class="partner-ring">' + characterArt(child) + '</span>' +
+      '<span class="partner-tag">' + h(child.name) + ' ✎</span></button>' +
       '<div class="star-main"><span class="star-label">' + h(child.name) + '的能量星星</span>' +
       '<b class="star-value" data-testid="stars"><span class="big-star">' + STAR_IMG + '</span> ' + num(bal) + '</b>' +
       '<span class="star-hint">' + hint + '</span>' + progressBar(bal % DICE_COST, DICE_COST, 'star') + '</div>' +
@@ -652,10 +652,6 @@
     var it = GAME.SHOP.filter(function (x) { return x.id === id; })[0];
     if (!it || !it.img) return '<span class="' + cls + '">' + (it ? it.icon : '') + '</span>';
     return '<span class="item-art ' + cls + '"><img src="' + it.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async" draggable="false"></span>';
-  }
-  function characterName(child) {
-    var id = characterId(child);
-    return GAME.CHARACTERS.find(function (c) { return c.id === id; }).name;
   }
 
   // ---------- 金島第一區地圖（背景＋格子＋事件圖示＋角色，同一個座標容器） ----------
@@ -1299,7 +1295,7 @@
     el.className = 'clear-screen'; el.id = 'clear-screen';
     el.innerHTML = '<div class="confetti" aria-hidden="true">' + new Array(25).join('<i></i>') + '</div>' +
       '<div class="clear-card"><div class="clear-crown">👑</div><h2>恭喜通關' + h(ev.clear.name || '金島') + '！</h2>' +
-      '<p class="clear-sub">' + h(child.name) + '和' + h(characterName(child)) + '抵達了' + h(ev.clear.goal || '終點') + (ev.clear.count > 1 ? '（第 ' + ev.clear.count + ' 次）' : '') + '</p>' +
+      '<p class="clear-sub">' + h(child.name) + ' 抵達了' + h(ev.clear.goal || '終點') + (ev.clear.count > 1 ? '（第 ' + ev.clear.count + ' 次）' : '') + '</p>' +
       '<span class="clear-pawn">' + characterArt(child) + '</span>' +
       '<ul class="clear-rewards">' + (ev.clear.first
         ? '<li><img src="images/items/mystery_chest.webp" alt="" width="48" height="48"> 神秘寶箱 ×1（不用鑰匙）</li>' + (ev.clear.island === 'gold' || !ev.clear.island ? '<li><span>🏅</span> 成就「金島通關」</li>' : '')
@@ -1508,14 +1504,13 @@
   function openCharacterPicker(childId) {
     var child = store.getChild(childId);
     var cur = characterId(child);
-    confirmEl.innerHTML = '<div class="confirm-box"><h2>選擇 ' + h(child.name) + ' 的冒險夥伴</h2><div class="char-pick">' +
-      GAME.CHARACTERS.map(function (c) {
-        return '<button class="char-opt ' + (c.id === cur ? 'active' : '') + '" data-char="' + c.id + '" data-name="' + h(c.name) + '">' + charImg(c.id) +
-          '<b>' + h(c.icon + ' ' + c.name) + '</b><small>' + h(c.trait) + '</small></button>';
+    confirmEl.innerHTML = '<div class="confirm-box"><h2>更換 ' + h(child.name) + ' 的頭像</h2><div class="char-pick">' +
+      GAME.CHARACTERS.map(function (c) {   // 頭像就代表孩子，不另外顯示角色名稱
+        return '<button class="char-opt ' + (c.id === cur ? 'active' : '') + '" data-char="' + c.id + '" aria-label="' + h(c.name) + '">' + charImg(c.id) + '</button>';
       }).join('') + '</div><p class="muted small">每個孩子各自選擇，隨時可以更換。</p>' +
       '<div class="modal-actions"><button type="button" class="btn" data-no>取消</button></div></div>';
     confirmEl.querySelectorAll('[data-char]').forEach(function (b) {
-      b.onclick = function () { store.setCharacter(childId, b.getAttribute('data-char')); confirmEl.close(); toast('已選擇 ' + b.getAttribute('data-name'), 'pos'); render(); };
+      b.onclick = function () { store.setCharacter(childId, b.getAttribute('data-char')); confirmEl.close(); toast('已更換頭像', 'pos'); render(); };
     });
     confirmEl.querySelector('[data-no]').onclick = function () { confirmEl.close(); };
     confirmEl.oncancel = null;
@@ -2239,9 +2234,9 @@
     var c = child || { name: '', avatar: store._nextCharacter(), color: COLORS[store.getChildren().length % COLORS.length], startPoints: 0, title: '', badge: '', weeklyGoal: 0 };
     var fields =
       '<label class="field">名稱<input type="text" name="name" maxlength="20" required value="' + h(c.name) + '"></label>' +
-      '<fieldset class="field"><legend>頭像（也是冒險夥伴）</legend><div class="pick char-radio">' + GAME.CHARACTERS.map(function (ch) {
-        return '<label class="pick-item char-item"><input type="radio" name="avatar" value="' + ch.id + '"' + (ch.id === c.avatar ? ' checked' : '') + '>' +
-          '<span>' + charImg(ch.id) + '<small>' + h(ch.name) + '</small></span></label>';
+      '<fieldset class="field"><legend>頭像</legend><div class="pick char-radio">' + GAME.CHARACTERS.map(function (ch) {   // 頭像就代表孩子，不另外顯示角色名稱
+        return '<label class="pick-item char-item"><input type="radio" name="avatar" value="' + ch.id + '"' + (ch.id === c.avatar ? ' checked' : '') + ' aria-label="' + h(ch.name) + '">' +
+          '<span>' + charImg(ch.id) + '</span></label>';
       }).join('') + '</div></fieldset>' +
       '<fieldset class="field"><legend>代表色</legend><div class="pick">' + COLORS.map(function (col) {
         return '<label class="pick-item color"><input type="radio" name="color" value="' + col + '"' + (col === c.color ? ' checked' : '') + '><span style="background:' + col + '"></span></label>';
