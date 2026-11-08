@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-90';
+  var APP_VERSION = '2026.11.08-91';
   var store;
   try {
     store = new CGP.Store();
@@ -801,8 +801,11 @@
           items: [[800, 4952], [866, 4918], [600, 5112], [520, 5012], [760, 5160]], itemCls: 'story-ore', itemLabel: '金礦石',
           title: '⛏️ 幫技師撿回金礦石！', sub: '點地圖上發光的礦石',
           hint: '我的金礦石滾得到處都是…走到第 5 格幫我撿回來！', intro: '我的金礦石滾得到處都是！幫我把 5 顆發光的礦石撿回來！', done: '太好了！礦石都找回來了，謝謝你！' },
-        rail: { type: 'press', effect: 'cart', drag: true, top: true,   /* 2026-11-08 家長調整：真的拖曳拉桿往下拉；面板放上方，看得到地圖上的拉桿 */ guide: [430, 4522], cam: [270, 4450], lever: [360, 4556], path: [[150, 4434], [214, 4464]],   /* 鏡頭對準礦坑；礦車從礦坑口沿背景軌道開出來，停在背景礦車後面 */
-          title: '🔧 拉下轉轍器！', sub: '抓住紅色把手，往下拉到底', btn: '⬇️ 拉下拉桿',
+        // 2026-11-08 家長決定：改成「視窗＋前後兩張圖」——先看礦車卡在坑道裡的圖，拖曳拉桿拉到底後，同一個視窗換成問題解決的圖（地圖上不再放礦車動畫）
+        // scene.before／after：Gemini 圖到貨後填入檔名；還沒有圖時用礦車圖暫代（拉之前紅色「！」、解決後「✨」）
+        rail: { type: 'scene', guide: [430, 4522], cam: [470, 4420], lever: [360, 4556],
+          scene: { before: '', after: '', fallback: 'images/gold/minecart.webp', doneTitle: '🎉 軌道接通了！', doneSub: '礦車可以開往水晶礦谷了', ok: '🎉 太好了！' },
+          title: '🔧 礦車卡住了！', sub: '抓住紅色把手，把轉轍器往下拉到底',
           hint: '礦場的轉轍器卡住了…走到第 30 格幫我拉下拉桿！', intro: '轉轍器卡住了，礦車過不去！幫我拉下拉桿！', done: '軌道接通了！礦車可以開往水晶礦谷了！' }
       }
     },
@@ -892,31 +895,12 @@
   async function storyPress(board, id, sp, world) {
     var panel = document.createElement('div');
     panel.className = 'charge-panel story-panel' + (sp.top ? ' top' : ''); panel.id = 'story-panel';
-    if (sp.drag) {
-      panel.innerHTML = '<b>' + h(sp.title) + '</b><small>' + h(sp.sub) + '</small>' + pullLeverHtml();
-      document.body.appendChild(panel);
-      await pullLever(panel.querySelector('#pull-lever'), document.getElementById('story-lever'));
-      await sleep(reduceMotion ? 50 : 350);
-    } else {
-      panel.innerHTML = '<b>' + h(sp.title) + '</b><small>' + h(sp.sub) + '</small><button type="button" class="btn primary charge-btn" id="story-btn">' + h(sp.btn) + '</button>';
-      document.body.appendChild(panel);
-      await new Promise(function (resolve) { panel.querySelector('#story-btn').addEventListener('click', resolve); });
-    }
+    panel.innerHTML = '<b>' + h(sp.title) + '</b><small>' + h(sp.sub) + '</small><button type="button" class="btn primary charge-btn" id="story-btn">' + h(sp.btn) + '</button>';
+    document.body.appendChild(panel);
+    await new Promise(function (resolve) { panel.querySelector('#story-btn').addEventListener('click', resolve); });
     panel.remove();
     var a = storyXY(board, id, sp.path[0]), z = storyXY(board, id, sp.path[1]);
-    if (sp.effect === 'cart') {
-      var lever = document.getElementById('story-lever'); if (lever) lever.classList.add('pulled');
-      var cart = document.createElement('div');
-      cart.className = 'story-cart'; cart.innerHTML = '<img src="images/gold/minecart.webp" alt="" aria-hidden="true" width="320" height="320" decoding="async">';   // 2026-11-08 礦車正式圖
-      cart.style.left = a.x + 'px'; cart.style.top = a.y + 'px';
-      world.appendChild(cart);
-      await sleep(reduceMotion ? 50 : 400);
-      cart.style.left = z.x + 'px'; cart.style.top = z.y + 'px'; cart.classList.add('go');   // 從礦坑裡淡入開出來
-      await sleep(reduceMotion ? 100 : 2400);
-      cart.classList.add('bye');
-      await sleep(reduceMotion ? 50 : 500);
-      cart.remove();
-    } else {
+    {
       // 吊橋：一排木板從左到右拉緊出現
       var br = document.createElement('div');
       br.className = 'story-bridge'; br.id = 'story-bridge';
@@ -929,6 +913,32 @@
       br.classList.add('bye');
       setTimeout(function () { br.remove(); }, 600);
     }
+  }
+  /**
+   * 互動 scene：視窗裡先顯示「出問題」的圖，孩子拖曳拉桿拉到底後，同一個視窗換成「問題解決」的圖，按按鈕關閉
+   * 還沒有正式圖時用 scene.fallback 暫代（加上「！」／「✨」標記）
+   */
+  async function storyScene(sp) {
+    var sc = sp.scene;
+    var panel = document.createElement('div');
+    panel.className = 'scene-panel story-panel'; panel.id = 'story-panel';
+    panel.innerHTML = '<div class="scene-art' + (sc.before ? '' : ' ph') + '" id="scene-art"><img id="scene-img" src="' + (sc.before || sc.fallback) + '" alt="礦車卡在坑道裡" width="1200" height="900" decoding="async"></div>' +
+      '<b id="scene-title">' + h(sp.title) + '</b><small id="scene-sub">' + h(sp.sub) + '</small>' + pullLeverHtml();
+    document.body.appendChild(panel);
+    if (sc.after) { var pre = new Image(); pre.src = sc.after; }   // 先載入解決後的圖，換圖不會閃
+    await pullLever(panel.querySelector('#pull-lever'), document.getElementById('story-lever'));
+    await sleep(reduceMotion ? 50 : 300);
+    var art = panel.querySelector('#scene-art'), img = panel.querySelector('#scene-img');
+    art.classList.add('solved');
+    img.src = sc.after || sc.fallback; img.alt = '問題解決了';
+    panel.querySelector('#scene-title').textContent = sc.doneTitle;
+    panel.querySelector('#scene-sub').textContent = sc.doneSub;
+    panel.querySelector('#pull-lever').remove();
+    var ok = document.createElement('button');
+    ok.type = 'button'; ok.className = 'btn primary charge-btn'; ok.id = 'scene-ok'; ok.textContent = sc.ok;
+    panel.appendChild(ok);
+    await new Promise(function (resolve) { ok.addEventListener('click', resolve); });
+    panel.remove();
   }
   /** 可以拖曳的拉桿：直立的軌道＋紅色把手，往下拖到底才算拉下（放開沒到底會彈回去） */
   function pullLeverHtml() {
@@ -1005,7 +1015,8 @@
       if (ui.cam) { ui.cam.cx = cam.x; ui.cam.cy = cam.y; applyCam(true); await sleep(reduceMotion ? 50 : 800); }
       techTalk(child, 3000, sp.intro, guide);
       await sleep(reduceMotion ? 800 : 2600);
-      if (sp.type === 'leaf') {   // 全螢幕記憶遊戲（劇情版不限翻錯次數）
+      if (sp.type === 'scene') await storyScene(sp);
+      else if (sp.type === 'leaf') {   // 全螢幕記憶遊戲（劇情版不限翻錯次數）
         var lr = await leafGame({ rounds: [GAME.LEAF_GAME.story], misses: 0, title: sp.title, subtitle: sp.sub, desc: '先記住松果藏在哪幾堆落葉下，落葉蓋回去後把它們翻出來！' });
         await sleep(reduceMotion ? 100 : 600);
         lr.el.remove(); document.body.classList.remove('mg-open');

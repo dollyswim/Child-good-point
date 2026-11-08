@@ -1730,8 +1730,14 @@ async function main() {
     assert.equal(await q.locator('#pull-lever').getAttribute('aria-valuenow'), '0', '沒拉到底會彈回');
     assert.equal(await q.locator('#story-lever.pulled').count(), 0);
     // 拉到底：觸發礦車
+    assert.match(await q.locator('#story-panel').innerText(), /礦車卡住了/);
+    assert.equal(await q.locator('#scene-art.solved').count(), 0, '拉之前是「出問題」的圖');
     await q.mouse.move(cx, cy); await q.mouse.down(); await q.mouse.move(cx, cy + 130, { steps: 8 }); await q.mouse.up();
     await q.waitForSelector('#story-lever.pulled');
+    await q.waitForSelector('#scene-art.solved', { timeout: 5000 });   // 同一個視窗換成「問題解決」的圖
+    assert.match(await q.locator('#story-panel').innerText(), /軌道接通了[\s\S]*太好了/);
+    assert.equal(await q.locator('.story-cart').count(), 0, '地圖上不再放礦車動畫');
+    await q.click('#scene-ok');
     await q.waitForFunction(() => /軌道接通了/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
     await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 15000 });
     if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');

@@ -374,6 +374,35 @@ three-quarter side view facing right, plain white background, centered with gene
 
 ---
 
+## 金島第 30 格劇情：礦車卡住／問題解決（2 張一組，2026-11-08 新增，請 Gemini 製作）
+
+第 30 格「轉轍器」改成視窗：先顯示 R-1「礦車卡住」，孩子把拉桿拉到底後，同一個視窗換成 R-2「問題解決」。
+**兩張要同一個構圖、同一個視角、同一台礦車**，只有「卡住→開走」不一樣（建議先生成 R-1，再請 Gemini「用同一張圖改成…」做 R-2）。
+規格：**橫式 4:3（1200×900）、畫滿整張場景、不要白底**；交件後放 `images/gold/rail_before.webp`、`rail_after.webp`，填進 `js/app.js` 的 `ISLAND_STORY.gold.spots.rail.scene`。
+
+### R-1 礦車卡在坑道裡（`rail_before`）
+```
+A cute children's mobile game scene illustration, bright cute 2.5D clay style, warm lantern lighting inside a small gold mine tunnel with wooden support beams,
+a wooden mine cart heaped with shiny gold ore is stuck at a rail junction: the track switch is set the wrong way so the rails don't line up,
+the cart is tilted with one wheel off the rail, a few gold nuggets have spilled on the ground, a small red-handled switch lever stands beside the track in the UP position,
+small puff of dust and a red exclamation mark above the cart, gentle and not scary, clear simple shapes,
+three-quarter side view, horizontal 4:3 composition, full scene with no white background, no characters, no text, no watermark
+```
+中文：兒童手機遊戲的場景插圖，明亮可愛的 2.5D 黏土風格；小金礦坑道裡，木頭支撐架、溫暖的燈籠光。一台堆滿金礦石的木頭礦車**卡在軌道分岔口**：轉轍器扳錯方向、兩段鐵軌沒對上，礦車歪一邊、一個輪子掉出軌道，幾顆金塊撒在地上；軌道旁有一支紅色把手的轉轍器拉桿，**拉桿朝上**；礦車上方一小團灰塵和紅色驚嘆號。可愛、不嚇人、形狀簡單。斜側面視角、橫式 4:3、畫滿整張場景（不要白底）、不要人物、文字、浮水印。
+
+### R-2 問題解決、礦車開出去（`rail_after`）
+```
+The same scene, same camera angle and same mine cart as the previous image, now fixed:
+the switch lever is pulled DOWN, the rails at the junction are connected smoothly, the cart sits upright on the rails rolling forward toward a bright glowing tunnel exit,
+small motion lines behind the wheels, golden sparkles and a few happy stars around the cart, the spilled nuggets are back in the cart, cheerful bright lighting,
+horizontal 4:3 composition, full scene with no white background, no characters, no text, no watermark
+```
+中文：**同一個場景、同一個視角、同一台礦車**，問題解決了：轉轍器拉桿**已經拉下**，分岔口的鐵軌順利接上，礦車端正地停在軌道上、往前方明亮的坑道出口開去；輪子後面有小小的速度線，礦車周圍有金色閃光和幾顆開心的小星星，撒出來的金塊回到車上，光線明亮愉快。橫式 4:3、畫滿整張場景（不要白底）、不要人物、文字、浮水印。
+
+> 小提醒：兩張不一致時，可以補一句「keep everything identical to the previous image except the lever, the rails and the cart」。
+
+---
+
 ## 木島小遊戲「落葉找松果」（4 張必做＋1 張選做，2026-11-08 新增）
 
 目前畫面用表情符號佔位：松果 🌰（其實是栗子）、落葉堆 🍂、松鼠 🐿️。交件後 Claude 放進 `images/wood/`，換掉 `js/app.js` 的 `leafGame` 與 `css/style.css` 的 `.leaf-*` 樣式。

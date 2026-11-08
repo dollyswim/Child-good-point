@@ -1950,3 +1950,20 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .story-cart.go { opacity: 1; }
 .story-cart.bye { opacity: 0; transition: opacity .45s; }
 .cart-art { width: 110px; height: 110px; object-fit: contain; margin: -6px 0 -4px; }
+
+/* 劇情視窗＋前後兩張圖（第 30 格轉轍器）：先看「出問題」的圖，拉下拉桿後換成「問題解決」的圖 */
+.scene-panel { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 12px); transform: translateX(-50%); z-index: 1200; width: min(92vw, 380px);
+  max-height: calc(100vh - 24px); overflow-y: auto; box-sizing: border-box; display: grid; justify-items: center; gap: 6px; padding: 12px 14px 14px;
+  border-radius: 22px; background: #fffdf6; border: 3px solid #f1d58f; box-shadow: 0 10px 30px rgba(60, 30, 0, .35); text-align: center; }
+.scene-panel b { font-size: 1.2rem; color: #8a4f12; }
+.scene-panel small { color: #8a6a3a; font-weight: 700; }
+.scene-art { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; background: #fff; }
+.scene-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.scene-art.ph img { object-fit: contain; padding: 10px; box-sizing: border-box; filter: grayscale(.45) brightness(.92); }   /* 正式圖到貨前：礦車圖暫代 */
+.scene-art.ph.solved img { filter: none; }
+.scene-art.ph::after { content: "！"; position: absolute; right: 14px; top: 12px; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%;
+  background: #ff5d3a; color: #fff; font-size: 24px; font-weight: 900; box-shadow: 0 3px 0 #c23a1e, 0 0 0 3px #fff; }
+.scene-art.ph.solved::after { content: "✨"; background: #ffe27a; box-shadow: 0 3px 0 #e0a800, 0 0 0 3px #fff; }
+.scene-panel .pull-lever { height: 150px; }
+.scene-panel .pull-slot { height: 114px; }
+.scene-panel #scene-ok { margin-top: 4px; }
