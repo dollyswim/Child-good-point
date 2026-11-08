@@ -247,7 +247,7 @@
         var c = src[cid];
         if (!childIdSet.has(cid) || !c || typeof c !== 'object') return;
         out[cid] = { total: toInt(c.total, 0), earned: toInt(c.earned, 0), special: Math.max(0, toInt(c.special, 0)),
-          stars: toInt(c.stars, 0), bestCatch: Math.max(0, toInt(c.bestCatch, 0)), settled: !!c.settled, advCount: Math.max(0, toInt(c.advCount, 0)),
+          stars: toInt(c.stars, 0), bestCatch: Math.max(0, toInt(c.bestCatch, 0)), bestLeaf: Math.max(0, toInt(c.bestLeaf, 0)), bestSquirrel: Math.max(0, toInt(c.bestSquirrel, 0)), settled: !!c.settled, advCount: Math.max(0, toInt(c.advCount, 0)),
           count: Math.max(0, toInt(c.count, 0)), until: /^\d{4}-\d{2}-\d{2}$/.test(c.until) ? c.until : '' };
       });
       return out;
@@ -320,7 +320,7 @@
         }).map(function (x) {
           return { id: String(x.id), childId: String(x.childId), date: x.date, tile: toInt(x.tile, 0), bonus: !!x.bonus,
             status: x.status === 'done' || x.status === 'expired' ? x.status : 'pending', caught: Math.max(0, toInt(x.caught, 0)), stars: Math.max(0, toInt(x.stars, 0)),
-            ts: toInt(x.ts, Date.now()), doneTs: x.doneTs ? toInt(x.doneTs, 0) : undefined, limitReset: !!x.limitReset || undefined, starCall: !!x.starCall || undefined, game: x.game === 'leaf' ? 'leaf' : undefined };   // game：leaf＝木島落葉找松果（沒有＝抓住星星）
+            ts: toInt(x.ts, Date.now()), doneTs: x.doneTs ? toInt(x.doneTs, 0) : undefined, limitReset: !!x.limitReset || undefined, starCall: !!x.starCall || undefined, game: x.game === 'leaf' ? 'leaf' : undefined, squirrels: x.game === 'leaf' && x.squirrels ? Math.max(0, toInt(x.squirrels, 0)) : undefined };   // game：leaf＝木島落葉找松果（沒有＝抓住星星）
         });
       })(),
       // 結束今日冒險（當天鎖住）
@@ -1280,7 +1280,7 @@
     var plan = this.getArchivePlan(cutoff);
     if (!plan.count) throw new Error('這個日期以前沒有可以封存的紀錄');
     var carry = this.data.carry || (this.data.carry = {}), done = {}, adv = this.data.adventure;
-    function cc(cid) { return carry[cid] || (carry[cid] = { total: 0, earned: 0, special: 0, stars: 0, bestCatch: 0, settled: false, advCount: 0, count: 0, until: '' }); }
+    function cc(cid) { return carry[cid] || (carry[cid] = { total: 0, earned: 0, special: 0, stars: 0, bestCatch: 0, bestLeaf: 0, bestSquirrel: 0, settled: false, advCount: 0, count: 0, until: '' }); }
     plan.records.forEach(function (r) {
       var c = cc(r.childId);
       c.total += r.points;
@@ -1294,6 +1294,10 @@
         if (k === 'settlements') { c.stars += x.stars || 0; c.settled = true; }
         if (k === 'ledger') c.stars += x.delta || 0;
         if (k === 'minigames' && x.status === 'done' && x.game !== 'leaf' && x.caught > c.bestCatch) c.bestCatch = x.caught;   // 只算抓住星星
+        if (k === 'minigames' && x.status === 'done' && x.game === 'leaf') {   // 落葉找松果單局最佳（成就用）
+          if (x.caught > (c.bestLeaf || 0)) c.bestLeaf = x.caught;
+          if ((x.squirrels || 0) > (c.bestSquirrel || 0)) c.bestSquirrel = x.squirrels;
+        }
         c.advCount++;
       });
       var ids = {};

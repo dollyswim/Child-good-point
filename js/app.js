@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-102';
+  var APP_VERSION = '2026.11.08-103';
   var store;
   try {
     store = new CGP.Store();
@@ -1551,7 +1551,7 @@
    * 正式徽章圖（Codex 交件後放 images/badges/badge_<代號>.webp，並把代號加進這裡）；
    * 沒有圖的成就用程式畫的徽章：類別色外框＋成就圖示（分數金牌另標數字）
    */
-  var BADGE_IMG = {};
+  var BADGE_IMG = { pine10: 'images/wood/leaf_pinecone.webp', squirrel5: 'images/wood/leaf_squirrel.webp' };   // 2026-11-08：松果、松鼠成就用遊戲圖
   /** 主徽章挑選：越高階／越稀有分數越高（只影響演出，不影響成就條件） */
   var ACH_RANK = { goldClear1: 300, streak7: 120, reachR4: 110, catch10: 100, special5: 95, reachR3: 80, chests10: 75, mystery1: 70,
     reachR2: 60, catch5: 45, special1: 40, chest1: 30, advStart: 20 };
@@ -1921,7 +1921,7 @@
       document.body.appendChild(el);
       document.body.classList.add('mg-open');
       var grid = el.querySelector('#leaf-grid'), msg = el.querySelector('#leaf-msg'), foundEl = el.querySelector('#leaf-found');
-      var total = 0, r = 0, timers = [];
+      var total = 0, squirrelsHit = 0, r = 0, timers = [];   // squirrelsHit：這局翻到幾隻松鼠（成就用）
       function later(fn, ms) { timers.push(setTimeout(fn, reduceMotion ? Math.min(ms, 300) : ms)); }
       el._stop = function () { timers.forEach(clearTimeout); timers.forEach(clearInterval); };
       function showMiss(left) {
@@ -1970,7 +1970,7 @@
             found++; total++; foundEl.textContent = total;
             if (found >= R.pine) end(true);
           } else {
-            if (b.hasAttribute('data-squirrel')) { b.classList.add('caught'); msg.textContent = '🐿️ 松鼠在吃松果，\n不是這裡！'; }   // 干擾物：算翻錯 1 次
+            if (b.hasAttribute('data-squirrel')) { squirrelsHit++; b.classList.add('caught'); msg.textContent = '🐿️ 松鼠在吃松果，\n不是這裡！'; }   // 干擾物：算翻錯 1 次
             else b.classList.add('empty');
             if (o.misses) { miss++; showMiss(o.misses - miss); if (miss >= o.misses) end(false); }
           }
@@ -1982,7 +1982,7 @@
           later(function () {
             r++;
             if (r < rounds.length) round();
-            else { el._stop(); resolve({ found: total, el: el }); }
+            else { el._stop(); resolve({ found: total, squirrels: squirrelsHit, el: el }); }
           }, 1300);
         }
       }
@@ -2020,7 +2020,7 @@
     }
     m.querySelector('[data-mg=claim]').onclick = function () {
       try {
-        var r = store.finishMinigame(childId, found);
+        var r = store.finishMinigame(childId, found, res.squirrels);
         toast('⭐ 小遊戲得到 ' + r.stars + ' 顆能量星星！', 'pos');
       } catch (err) { toast(err.message, 'neg'); }
       close();

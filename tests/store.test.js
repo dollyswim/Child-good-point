@@ -1949,13 +1949,13 @@ test('金島通關：第一次＝神秘寶箱 ×1（免鑰匙）＋成就；之�
   });
 });
 
-test('成就：25 項三類（冒險 7、收集 5、生活 13）；達成後記錄日期、不重複、不會消失；兩位孩子各自計算', () => {
+test('成就：27 項三類（冒險 7、收集 7、生活 13）；達成後記錄日期、不重複、不會消失；兩位孩子各自計算', () => {
   const { store, a } = p3Store();
   const b2 = store.addChild({ name: 'B', startPoints: 6000 });
-  assert.equal(G.ACHIEVEMENTS.length, 25);
-  assert.deepEqual(['adventure', 'collect', 'life'].map(c => G.ACHIEVEMENTS.filter(x => x.cat === c).length), [7, 5, 13]);
-  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.id)).size, 25, '代號不重複');
-  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.name)).size, 25, '名稱不重複');
+  assert.equal(G.ACHIEVEMENTS.length, 27);
+  assert.deepEqual(['adventure', 'collect', 'life'].map(c => G.ACHIEVEMENTS.filter(x => x.cat === c).length), [7, 7, 13]);
+  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.id)).size, 27, '代號不重複');
+  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.name)).size, 27, '名稱不重複');
   assert.deepEqual([...new Set(G.ACHIEVEMENTS.map(x => x.cat))], ['adventure', 'collect', 'life']);
   assert.deepEqual(store.checkAchievements(b2.id).map(x => x.id), ['earn1000', 'earn2000', 'earn3000', 'earn4000', 'earn5000', 'earn6000'], '起始點數也算累計得分；每 1000 分一個；還沒進入冒險：沒有「冒險開始」');
   assert.deepEqual(store.checkAchievements(b2.id), [], '不重複');
@@ -2384,11 +2384,11 @@ test('木島劇情：四個任務（每區 1 個、都在一般格）各給 ⭐3
   assert.deepEqual(Object.keys(s2.getPlayer(a.id).story).sort(), ['bridge', 'elftree', 'fruit', 'pinecone']);
 });
 
-test('木島小遊戲「落葉找松果」：木島小遊戲格產生 leaf 小遊戲、每 1 顆松果換 1 星（最多 15 顆 → 15 星）、不算星星捕手、存檔保留', () => {
+test('木島小遊戲「落葉找松果」：木島小遊戲格產生 leaf 小遊戲、每 2 顆松果換 1 星（最多 15 顆 → 8 星）、不算星星捕手、存檔保留', () => {
   const { store, a, push, storage } = p3Store();
   assert.deepEqual([G.minigameOf('wood'), G.minigameOf('gold')], ['leaf', 'stars']);
   assert.equal(G.LEAF_MAX_FOUND, 15, '3 回合 4＋5＋6 顆');
-  assert.deepEqual([0, 1, 2, 3, 15, 99].map(G.leafStars), [0, 1, 2, 3, 15, 15]);
+  assert.deepEqual([0, 1, 2, 3, 15, 99].map(G.leafStars), [0, 1, 1, 2, 8, 8]);
   G.registerBoard('wood', fakeWood());
   try {
     const p = store.getPlayer(a.id); p.island = 'wood'; p.tileId = 'wood-01-004'; store.save();
@@ -2401,8 +2401,8 @@ test('木島小遊戲「落葉找松果」：木島小遊戲格產生 leaf 小�
     assert.equal(s2.getPendingMinigame(a.id).game, 'leaf', '重新整理後還是落葉找松果');
     const bal = store.getStarBalance(a.id);
     const m = store.finishMinigame(a.id, 30);
-    assert.deepEqual([m.caught, m.stars], [15, 15], '最多 15 顆松果 → 15 星');
-    assert.equal(store.getStarBalance(a.id), bal + 15);
+    assert.deepEqual([m.caught, m.stars], [15, 8], '最多 15 顆松果 → 8 星');
+    assert.equal(store.getStarBalance(a.id), bal + 8);
     assert.ok(store.data.adventure.ledger.some(x => x.reason === '小遊戲：落葉找松果' || x.note === '小遊戲：落葉找松果' || JSON.stringify(x).includes('落葉找松果')));
     assert.ok(!store.checkAchievements(a.id).some(x => x.id === 'catch5'), '松果不算「星星捕手」');
   } finally { delete G.BOARDS.wood; }
@@ -2502,7 +2502,7 @@ test('金島小遊戲（木島上線前）：各 1/2 機率抓住星星或落葉
   assert.equal(store.getPendingMinigame(a.id).game, 'leaf');
   const s2 = new Store({ storage, seed: false, now: () => store.now() });
   assert.equal(s2.getPendingMinigame(a.id).game, 'leaf', '重新整理後還是同一種');
-  assert.equal(store.finishMinigame(a.id, 15).stars, 15, '找松果照松果換算（1 顆 1 星、最多 15）');
+  assert.equal(store.finishMinigame(a.id, 15).stars, 8, '找松果照松果換算（2 顆 1 星、最多 8）');
   // 隔天：0.7 → 抓住星星
   setDate('2026-11-07T10:00:00');
   const it = store.addItem({ kind: 'bonus', name: 'x', points: 10 });
@@ -2521,7 +2521,7 @@ test('金島小遊戲（木島上線前）：各 1/2 機率抓住星星或落葉
   assert.equal(G.minigameOf('gold'), 'stars', '沒有給亂數（例如只是查詢）時當作抓住星星');
 });
 
-test('松果躲躲：寶物商店 50 點、馬上玩一局落葉找松果（不占每天 1 次）、每天最多 1 個、和星星呼喚各自計算、1 顆松果 1 星', () => {
+test('松果躲躲：寶物商店 50 點、馬上玩一局落葉找松果（不占每天 1 次）、每天最多 1 個、和星星呼喚各自計算、2 顆松果 1 星', () => {
   const { store, a } = p3Store();
   const bag = store.getPlayer(a.id).bag;
   bag.pineHide = 2; bag.starCall = 1;
@@ -2529,8 +2529,30 @@ test('松果躲躲：寶物商店 50 點、馬上玩一局落葉找松果（不�
   assert.deepEqual([mg.game, mg.bonus, bag.pineHide], ['leaf', true, 1]);
   assert.throws(() => store.usePineHide(a.id), /先把還沒玩完/);
   const bal = store.getStarBalance(a.id);
-  assert.equal(store.finishMinigame(a.id, 11).stars, 11);
-  assert.equal(store.getStarBalance(a.id), bal + 11);
+  assert.equal(store.finishMinigame(a.id, 11).stars, 6);
+  assert.equal(store.getStarBalance(a.id), bal + 6);
   assert.throws(() => store.usePineHide(a.id), /每天只能用 1 個/);
   assert.equal(store.useStarCall(a.id).game, undefined, '同一天還可以用星星呼喚（抓住星星）');
+});
+
+test('成就「松果躲貓貓」「怎麼都是松鼠」：落葉找松果單局找到 10 顆以上／翻到 5 隻松鼠；只算小遊戲；抓住星星不算；存檔與封存結轉保留', () => {
+  const { store, a, storage } = p3Store();
+  const bag = store.getPlayer(a.id).bag;
+  bag.pineHide = 2; bag.starCall = 1;
+  store.useStarCall(a.id); store.finishMinigame(a.id, 30);       // 抓住星星 30 顆：不算松果
+  let got = store.checkAchievements(a.id).map(x => x.id);
+  assert.ok(!got.includes('pine10') && !got.includes('squirrel5'));
+  store.usePineHide(a.id); store.finishMinigame(a.id, 9, 4);      // 9 顆松果、4 隻松鼠：都還差一點
+  got = store.checkAchievements(a.id).map(x => x.id);
+  assert.ok(!got.includes('pine10') && !got.includes('squirrel5'), '單局 9 顆、4 隻還不算');
+  const s2 = new Store({ storage, seed: false, now: () => store.now() });
+  const done = s2.data.adventure.minigames.filter(m => m.game === 'leaf');
+  assert.equal(done[0].squirrels, 4, '翻到的松鼠數存檔保留');
+  store.data.adventure.bonusQuota.push({ childId: a.id, date: store.today(), rolls: 0, games: 1 });
+  store.data.adventure.itemLog.forEach(x => { if (x.item === 'pineHide') x.limitReset = true; });   // 測試用：同一天再玩一局
+  store.usePineHide(a.id); store.finishMinigame(a.id, 10, 5);
+  got = store.checkAchievements(a.id).map(x => x.id);
+  assert.ok(got.includes('pine10') && got.includes('squirrel5'), '單局 10 顆、5 隻：兩個成就');
+  const ach = G.ACHIEVEMENTS.filter(x => x.id === 'pine10' || x.id === 'squirrel5').map(x => [x.cat, x.name]);
+  assert.deepEqual(ach, [['collect', '松果躲貓貓'], ['collect', '怎麼都是松鼠']]);
 });

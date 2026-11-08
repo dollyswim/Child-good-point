@@ -1,5 +1,5 @@
 /* 親子集點 Service Worker：離線可用。資料存在 localStorage，不受快取影響。 */
-var CACHE = 'cgp-shell-v112';
+var CACHE = 'cgp-shell-v113';
 var SHELL = [
   './', 'index.html', 'css/style.css', 'js/store.js', 'js/rules-csv.js', 'js/report.js', 'js/board-gold.js', 'js/board-gold-02.js', 'js/board-gold-03.js', 'js/board-gold-04.js', 'js/game.js', 'js/art.js', 'js/app.js',
   'manifest.webmanifest', 'images/gold-island.webp', 'images/gold/region01.webp', 'images/gold/region02.webp', 'images/gold/region03.webp', 'images/gold/region04.webp', 'images/gold/tower_off.webp', 'images/gold/tower_on.webp', 'images/gold/technician.webp', 'images/gold/stone.webp', 'images/gold/ore.webp', 'images/gold/minecart.webp', 'images/gold/rail_before.webp', 'images/gold/rail_after.webp', 'images/wood/leaf_bg.webp', 'images/wood/leaf_pile.webp', 'images/wood/leaf_pinecone.webp', 'images/wood/leaf_squirrel.webp', 'images/wood/leaf_empty.webp', 'images/mascot.webp', 'images/float-castle.webp', 'images/chest.webp',

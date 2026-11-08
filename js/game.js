@@ -29,11 +29,11 @@
   var MINIGAME_SECONDS = 10;
   /**
    * 木島小遊戲「落葉找松果」（2026-11-08 家長決定）：25 堆落葉（5×5），先亮出松果位置讓孩子記住，蓋回去後翻找。
-   * 計分版（木島小遊戲格）：3 回合越來越難，每回合翻錯 3 次就進下一回合；每 1 顆松果換 1 顆能量星星（2026-11-08 家長調整，原本 2 換 1），最多 15 顆松果 → 15 顆。
+   * 計分版（木島小遊戲格）：3 回合越來越難，每回合翻錯 3 次就進下一回合；每 2 顆松果換 1 顆能量星星（無條件進位；2026-11-08 家長曾改 1 換 1，後來改回 2 換 1），最多 15 顆松果 → 8 顆。
    * 劇情版（木島第 8 格）：1 回合、松果 5 顆、看 3 秒，翻錯沒關係、找齊就完成。
    */
   // 干擾物（2026-11-08 家長決定）：每回合 2 隻吃松果的松鼠，先看時和松果一起亮出來（同樣淡色底）；翻到松鼠算翻錯 1 次（劇情版不會失敗）
-  var LEAF_GAME = { piles: 25, misses: 3, rate: 1, decoys: 2,
+  var LEAF_GAME = { piles: 25, misses: 3, rate: 2, decoys: 2,
     rounds: [{ pine: 4, show: 3000 }, { pine: 5, show: 2500 }, { pine: 6, show: 2000 }],
     story: { pine: 5, show: 3000 } };
   var LEAF_MAX_FOUND = LEAF_GAME.rounds.reduce(function (n, r) { return n + r.pine; }, 0);
@@ -835,7 +835,10 @@
     { id: 'chests10', cat: 'collect', icon: '📦', name: '寶箱獵人', desc: '開過 10 個一般寶箱', check: function (s, c) { return s.getPlayer(c).stats.chests >= 10; } },
     { id: 'mystery1', cat: 'collect', icon: '🎁', name: '一個大秘寶', desc: '打開第一個神秘寶箱', check: function (s, c) { return s.getPlayer(c).stats.mystery >= 1; } },
     { id: 'catch5', cat: 'collect', icon: '⭐', name: '星星捕手', desc: '「抓住星星」單局抓到 5 顆以上', check: function (s, c) { return bestCatch(s, c) >= 5; } },
-    { id: 'catch10', cat: 'collect', icon: '🌟', name: '星海傳說', desc: '「抓住星星」單局抓到 20 顆以上', check: function (s, c) { return bestCatch(s, c) >= 20; } }   // 2026-11-08 由 10 顆改為 20 顆（代號沿用 catch10，保留既有紀錄）
+    { id: 'catch10', cat: 'collect', icon: '🌟', name: '星海傳說', desc: '「抓住星星」單局抓到 20 顆以上', check: function (s, c) { return bestCatch(s, c) >= 20; } },   // 2026-11-08 由 10 顆改為 20 顆（代號沿用 catch10，保留既有紀錄）
+    // 2026-11-08 家長新增：落葉找松果（小遊戲與松果躲躲，第 8 格劇情不算），徽章用遊戲裡的松果圖、松鼠圖
+    { id: 'pine10', cat: 'collect', icon: '🌰', name: '松果躲貓貓', desc: '「落葉找松果」單局找到 10 顆以上松果', check: function (s, c) { return bestLeaf(s, c, 'caught') >= 10; } },
+    { id: 'squirrel5', cat: 'collect', icon: '🐿️', name: '怎麼都是松鼠', desc: '「落葉找松果」單局翻到 5 隻松鼠', check: function (s, c) { return bestLeaf(s, c, 'squirrels') >= 5; } }
   ].concat([1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000].map(function (n) {
     return { id: 'earn' + n, cat: 'life', icon: '🥇', name: '獲得 ' + n + ' 分', desc: '起始點數＋累計得分達到 ' + n, revocable: true, check: function (s, c) { return s.getEarned(c) >= n; } };
   })).concat([
@@ -845,6 +848,11 @@
       return longestStreak(s.data.adventure.settlements.filter(function (x) { return x.childId === c; }).map(function (x) { return x.date; })) >= 7; } }
   ]);
   /** 「抓住星星」單局最多抓到幾顆 */
+  /** 落葉找松果單局最佳成績：key＝caught（找到的松果）或 squirrels（翻到的松鼠）；含封存結轉 */
+  function bestLeaf(s, c, key) {
+    var carry = ((s.data.carry || {})[c] || {})[key === 'caught' ? 'bestLeaf' : 'bestSquirrel'] || 0;
+    return s.data.adventure.minigames.reduce(function (m, g) { return g.childId === c && g.status === 'done' && g.game === 'leaf' && (g[key] || 0) > m ? g[key] : m; }, carry);
+  }
   function bestCatch(s, c) {
     return s.data.adventure.minigames.reduce(function (m, g) { return g.childId === c && g.status === 'done' && g.game !== 'leaf' && g.caught > m ? g.caught : m; }, ((s.data.carry || {})[c] || {}).bestCatch || 0);   // 含封存結轉
   }
@@ -928,7 +936,7 @@
    * 小遊戲結束：每抓 1 顆得 1 顆能量星星（最多 15 顆），只能領取一次；caught 記實際抓到數
    * @returns 更新後的紀錄 { caught, stars }
    */
-  Store.prototype.finishMinigame = function (childId, caught) {
+  Store.prototype.finishMinigame = function (childId, caught, squirrels) {   // squirrels：落葉找松果這局翻到幾隻松鼠（成就「怎麼都是松鼠」）
     this._requirePlay(childId);
     var m = this.getPendingMinigame(childId);
     if (!m) throw new Error('今天沒有可以玩的小遊戲');
@@ -937,6 +945,7 @@
     if (leaf) got = Math.min(LEAF_MAX_FOUND, got);
     var n = leaf ? leafStars(got) : minigameStars(got);
     m.status = 'done'; m.caught = got; m.stars = n; m.doneTs = this.now().getTime();
+    if (leaf) m.squirrels = Math.max(0, Math.min(LEAF_GAME.decoys * LEAF_GAME.rounds.length, Math.floor(Number(squirrels) || 0)));
     if (n > 0) this._ledger(childId, n, leaf ? '小遊戲：落葉找松果' : '小遊戲：抓住星星');
     this.save();
     return m;

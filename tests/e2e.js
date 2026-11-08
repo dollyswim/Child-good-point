@@ -1274,7 +1274,7 @@ async function main() {
     assert.equal(await q.locator('h1, .plaque').first().innerText().then((t) => /小孩/.test(t)), true, '頁面標題改為「小孩」');
     assert.match(await q.locator('.bottom-nav, nav').last().innerText(), /小孩/);
     assert.equal(await q.locator('[data-testid=achievements]').getAttribute('open'), null, '小孩頁面：全部成就預設收起');
-    assert.match(await q.locator('[data-testid=achievements] summary').innerText(), /全部成就[\s\S]*已解鎖 5 \/ 25/);   // 冒險開始、獲得 1000 分、抵達水晶礦谷、抵達齒輪工坊、抵達金冠城堡
+    assert.match(await q.locator('[data-testid=achievements] summary').innerText(), /全部成就[\s\S]*已解鎖 5 \/ 27/);   // 冒險開始、獲得 1000 分、抵達水晶礦谷、抵達齒輪工坊、抵達金冠城堡
     assert.match(await q.locator('[data-testid=achievements] summary').innerText(), /最近：/, '摺疊時顯示最近得到的一個成就');
     assert.ok(await q.evaluate(() => { const d = document.querySelector('[data-testid=achievements]').getBoundingClientRect(), n = document.querySelector('[data-testid=achievements]').nextElementSibling.getBoundingClientRect(); return n.top - d.bottom >= 12; }), '和最近紀錄之間留間距，不疊在一起');
     assert.ok(await q.evaluate(() => { const d = document.querySelector('[data-testid=achievements]'), r = [...document.querySelectorAll('.panel h2')].find((x) => /最近紀錄/.test(x.textContent)); return d.compareDocumentPosition(r) & Node.DOCUMENT_POSITION_FOLLOWING; }), '在最近紀錄上方');
@@ -1285,7 +1285,7 @@ async function main() {
     // 首頁：最近得到的成就（最近 3 個），點一列進到小孩頁面並展開
     await q.goto(url + '#home');
     await q.waitForSelector('[data-testid=home-achievements]');
-    assert.match(await q.locator('[data-testid=home-achievements]').innerText(), /最近得到的成就[\s\S]*端端[\s\S]*5 \/ 25/);
+    assert.match(await q.locator('[data-testid=home-achievements]').innerText(), /最近得到的成就[\s\S]*端端[\s\S]*5 \/ 27/);
     assert.equal(await q.locator('[data-testid=home-achievements] .ach-mini').count(), 3);
     assert.ok(await q.evaluate(() => { const a = document.querySelector('[data-testid=home-achievements]'), w = document.querySelector('.week-card'); return a.compareDocumentPosition(w) & Node.DOCUMENT_POSITION_FOLLOWING; }), '在本週進度上方');
     await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'home-achievements.png') : path.join(require('os').tmpdir(), 'ha.png'), fullPage: true });
@@ -1862,10 +1862,11 @@ async function main() {
     await roundPlay(2, 5, false);
     await roundPlay(3, 6, false);
     await q.waitForSelector('.leaf-result [data-mg=claim]', { timeout: 8000 });
-    assert.match(await q.locator('.leaf-result').innerText(), /找到 11 \/ 15 顆松果[\s\S]*每顆松果換 1 顆[\s\S]*\+11 能量星星/);
+    assert.match(await q.locator('.leaf-result').innerText(), /找到 11 \/ 15 顆松果[\s\S]*每 2 顆松果換 1 顆[\s\S]*\+6 能量星星/);
     await q.click('[data-mg=claim]');
     await q.waitForFunction(() => !document.getElementById('mg'));
-    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), starsMg + 11, '11 顆松果 → 11 星');
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), starsMg + 6, '11 顆松果 → 6 星');
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.data.adventure.minigames.filter((m) => m.childId === cid && m.game === 'leaf' && m.status === 'done').pop().squirrels, id), 1, '這局翻到 1 隻松鼠（成就「怎麼都是松鼠」用）');
     // 家長試玩 #leaf-test：不給星星、不算次數
     const snapLeaf = await q.evaluate(() => localStorage.getItem('cgp-data'));
     await q.goto(url + '#leaf-test'); await q.reload();
@@ -1874,7 +1875,7 @@ async function main() {
     await q.click('[data-mg=later]');
     await q.waitForFunction(() => !document.getElementById('mg') && location.hash === '#home');
     assert.equal(await q.evaluate(() => localStorage.getItem('cgp-data')), snapLeaf, '試玩不動存檔');
-    console.log('✔ 木島小遊戲：落葉找松果 3 回合、翻錯 3 次進下一回合、11 顆換 11 星、家長試玩 #leaf-test');
+    console.log('✔ 木島小遊戲：落葉找松果 3 回合、翻錯 3 次進下一回合、11 顆換 6 星、家長試玩 #leaf-test');
     // 木島機會卡「前進 2 格」：藤蔓垂下來，按「抓住！」才前進（效果同金島礦車）
     await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.getPlayer(cid).bag.d6 = 2; s.setPlayerTile(cid, 1); s.save(); }, id);
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
