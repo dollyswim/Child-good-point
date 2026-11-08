@@ -116,6 +116,25 @@
     '一陣海風吹來，帽子差點飛走，先停下來整理一下。',
     '路邊的小花開得好漂亮，停下來欣賞一下再出發。'
   ];
+  /**
+   * 各島的卡片文字（2026-11-08 家長決定：木島的機會卡／命運卡效果與機率完全不變，只換成森林主題的文字）
+   * 沒列到的島沿用金島文字；cart＝機會卡「前進 2 格」、ore＝機會卡 ⭐2、back＝命運卡後退、roadblocks＝命運卡路障
+   */
+  var CARD_TEXT = {
+    gold: { cart: '礦車載你額外前進 2 格！', ore: '發現發光礦石，得到 ⭐2', oreLedger: '機會：發現礦石',
+      d6: '撿到一顆 🎲 6 面骰', chest: '找到一個小寶箱，得到 ⭐', skates: '撿到一雙 🛼 溜冰鞋',
+      backShield: '一陣大風吹來，🛡️ 防護罩擋住了！沒有後退。', back: '一陣大風吹來，往回退了 {n} 格！', roadblocks: ROADBLOCKS },
+    wood: { cart: '抓住藤蔓盪過去，額外前進 2 格！', ore: '發現一朵發光蘑菇，得到 ⭐2', oreLedger: '機會：發光蘑菇',
+      d6: '在樹洞裡撿到一顆 🎲 6 面骰', chest: '在樹根下找到一個小寶箱，得到 ⭐', skates: '在落葉堆裡撿到一雙 🛼 溜冰鞋',
+      backShield: '腳下的青苔好滑，🛡️ 防護罩擋住了！沒有滑回去。', back: '踩到滑滑的青苔，往回滑了 {n} 格！',
+      roadblocks: [
+        '一隻小刺蝟縮成一顆球擋在路中間，等牠慢慢走開吧！',
+        '一棵倒下的大樹橫在小路上，大家一起從旁邊繞過去。',
+        '松鼠們在路上排隊搬松果，先讓牠們過去。',
+        '一群螢火蟲在前面跳舞，停下來欣賞一下再出發。'
+      ] }
+  };
+  function cardText(island) { return CARD_TEXT[island] || CARD_TEXT.gold; }
   function pickWeighted(rand, list) {
     var total = list.reduce(function (s, x) { return s + x.weight; }, 0);
     var r = rand() * total;
@@ -571,6 +590,7 @@
     var tile = this.getBoard(childId).tiles[p.pos];
     var rand = this.random;
     var ev = { tile: tile.n, type: tile.type, title: '', text: '', stars: 0, items: {}, extraPath: [], backPath: [] };
+    var T = cardText(p.island);   // 卡片文字依所在島嶼換主題（效果相同）
     // 好運金牌：下一次停在寶箱或機會格，效果發生 2 次
     var looted = tile.type === 'chest' && p.looted.indexOf(tile.id) >= 0;
     var medal = !!(p.medalArmed && ((tile.type === 'chest' && !looted) || tile.type === 'chance'));
@@ -593,19 +613,19 @@
         // 機會卡（全部正向）：0 礦車前進 2 格、1 發光礦石 +2 星、2 撿到 6 面骰、3 小寶箱 +1～3 星、4 撿到溜冰鞋
         var c = rint(rand, 0, 4);
         if (c === 0 && depth < 1) {
-          lines.push('礦車載你額外前進 2 格！');
+          lines.push(T.cart);
           ev.extraPath = ev.extraPath.concat(this._advance(childId, 2));
           cart = true;
         } else if (c === 1 || (c === 0 && depth >= 1)) {
-          ev.stars += 2; this._ledger(childId, 2, '機會：發現礦石'); lines.push('發現發光礦石，得到 ⭐2');
+          ev.stars += 2; this._ledger(childId, 2, T.oreLedger); lines.push(T.ore);
         } else if (c === 2) {
-          p.bag.d6++; ev.items.d6 = (ev.items.d6 || 0) + 1; lines.push('撿到一顆 🎲 6 面骰');
+          p.bag.d6++; ev.items.d6 = (ev.items.d6 || 0) + 1; lines.push(T.d6);
           this._logItem(childId, 'grant', 'd6', 1, '機會卡', '撿到 6 面骰');
         } else if (c === 3) {
           var sm = rint(rand, 1, 3);
-          ev.stars += sm; this._ledger(childId, sm, '機會：小寶箱'); lines.push('找到一個小寶箱，得到 ⭐' + sm);
+          ev.stars += sm; this._ledger(childId, sm, '機會：小寶箱'); lines.push(T.chest + sm);
         } else {
-          p.bag.skates++; ev.items.skates = (ev.items.skates || 0) + 1; lines.push('撿到一雙 🛼 溜冰鞋');
+          p.bag.skates++; ev.items.skates = (ev.items.skates || 0) + 1; lines.push(T.skates);
           this._logItem(childId, 'grant', 'skates', 1, '機會卡', '撿到溜冰鞋');
         }
       }
@@ -623,7 +643,7 @@
         // 防護罩自動抵擋後退
         p.bag.shield--;
         ev.shielded = true;
-        ev.text = '一陣大風吹來，🛡️ 防護罩擋住了！沒有後退。';
+        ev.text = T.backShield;
         this._logItem(childId, 'use', 'shield', 1, '背包', '擋住命運卡後退');
       } else if (card.id === 'back') {
         var n = rint(rand, 1, 2);
@@ -631,10 +651,10 @@
         for (var b = 0; b < n && p.pos > 0; b++) { p.pos--; ev.backPath.push(p.pos); }
         p.tileId = this.getBoard(childId).tiles[p.pos].id;
         this._found = (this._found || 0) + this._collectAt(childId, ev.backPath);
-        ev.text = '一陣大風吹來，往回退了 ' + ev.backPath.length + ' 格！';
+        ev.text = T.back.replace('{n}', ev.backPath.length);
       } else if (card.id === 'roadblock' && p.bag.shield > 0 && p.pos < this.getBoard(childId).tiles.length - 1) {
         // 防護罩推開路障：前進 1 格（落點不觸發事件，和往回退一樣）
-        var rb = ROADBLOCKS[Math.floor(rand() * ROADBLOCKS.length)];
+        var rb = T.roadblocks[Math.floor(rand() * T.roadblocks.length)];
         p.bag.shield--;
         ev.shielded = true;
         p.pos++; p.tileId = this.getBoard(childId).tiles[p.pos].id;
@@ -644,7 +664,7 @@
         ev.text = '🛡️ 防護罩推開了路障，往前走 1 格！\n（路障：' + rb + '）';
         this._logItem(childId, 'use', 'shield', 1, '背包', '推開路障前進 1 格');
       } else if (card.id === 'roadblock') {
-        ev.text = '路障：' + ROADBLOCKS[Math.floor(rand() * ROADBLOCKS.length)] + '（這次沒有影響，下次繼續前進）';
+        ev.text = '路障：' + T.roadblocks[Math.floor(rand() * T.roadblocks.length)] + '（這次沒有影響，下次繼續前進）';
       } else {
         var sp = this.addSpecialTask(childId, card.id);
         ev.special = { id: sp.task.id, kind: card.id, name: sp.task.name, duplicate: sp.duplicate };
@@ -1160,7 +1180,7 @@
     return this.getBonusQuota(childId);
   };
 
-  var api = { LEAF_GAME: LEAF_GAME, LEAF_MAX_FOUND: LEAF_MAX_FOUND, leafStars: leafStars, minigameOf: minigameOf, STORIES: STORIES, storiesOf: storiesOf, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { CARD_TEXT: CARD_TEXT, LEAF_GAME: LEAF_GAME, LEAF_MAX_FOUND: LEAF_MAX_FOUND, leafStars: leafStars, minigameOf: minigameOf, STORIES: STORIES, storiesOf: storiesOf, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

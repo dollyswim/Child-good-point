@@ -1845,6 +1845,17 @@ async function main() {
     await q.waitForFunction(() => !document.getElementById('mg') && location.hash === '#home');
     assert.equal(await q.evaluate(() => localStorage.getItem('cgp-data')), snapLeaf, '試玩不動存檔');
     console.log('✔ 木島小遊戲：落葉找松果 3 回合、翻錯 3 次進下一回合、11 顆換 6 星、家長試玩 #leaf-test');
+    // 木島機會卡「前進 2 格」：藤蔓垂下來，按「抓住！」才前進（效果同金島礦車）
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.getPlayer(cid).bag.d6 = 2; s.setPlayerTile(cid, 1); s.save(); }, id);
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    await q.evaluate(() => { const seq = [1.5 / 6, 0]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0); });
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#cart-panel', { timeout: 10000 });
+    assert.match(await q.locator('#cart-panel').innerText(), /藤蔓垂下來了[\s\S]*額外前進 2 格[\s\S]*抓住/);
+    assert.equal(await q.locator('#pawn').getAttribute('data-pos'), '3', '按抓住前還在機會格');
+    await q.click('#cart-btn');
+    await q.waitForFunction(() => document.getElementById('pawn').dataset.pos === '5', null, { timeout: 8000 });
+    console.log('✔ 木島機會卡：藤蔓「抓住！」才前進 2 格');
     console.log('✔ 木島劇情（假地圖）：小精靈導遊提示、第 8 格落葉找松果、第 40 格拉吊橋、第 92 格連點喚醒巨樹、各 ⭐3、木島小英雄');
     await cw.close();
   }

@@ -2407,3 +2407,36 @@ test('木島小遊戲「落葉找松果」：木島小遊戲格產生 leaf 小�
     assert.ok(!store.checkAchievements(a.id).some(x => x.id === 'catch5'), '松果不算「星星捕手」');
   } finally { delete G.BOARDS.wood; }
 });
+
+test('木島卡片：機會卡／命運卡效果與機率不變，文字換森林主題（藤蔓、發光蘑菇、青苔、森林路障）；金島文字不變', () => {
+  const { store, a, push } = p3Store();
+  assert.deepEqual(Object.keys(G.CARD_TEXT.wood).sort(), Object.keys(G.CARD_TEXT.gold).sort(), '木島每種卡片都有文字');
+  G.registerBoard('wood', fakeWood());
+  try {
+    const p = store.getPlayer(a.id); p.island = 'wood'; p.tileId = 'wood-01-001'; store.save();
+    for (let i = 0; i < 4; i++) store.buyItem(a.id, 'd6');
+    push(face(2), 0.3);                         // 擲 2 → 第 3 格機會；0.3 → 發光蘑菇 ⭐2
+    const bal = store.getStarBalance(a.id);
+    const r = store.rollDice(a.id, 'd6');
+    assert.equal(r.event.type, 'chance');
+    assert.equal(r.event.text, '發現一朵發光蘑菇，得到 ⭐2');
+    assert.equal(store.getStarBalance(a.id), bal + 2, '效果和金島一樣 ⭐2');
+    store.setPlayerTile(a.id, 1);
+    push(face(2), 0);                           // 機會卡 0 → 藤蔓前進 2 格
+    const r2 = store.rollDice(a.id, 'd6');
+    assert.ok(r2.event.cart && r2.event.extraPath.length === 2);
+    assert.match(r2.event.text, /^抓住藤蔓盪過去，額外前進 2 格！/);
+    store.setPlayerTile(a.id, 11);
+    push(face(3), 0.8, 0.9);                    // 擲 3 → 第 14 格命運；後退 2 格
+    const r3 = store.rollDice(a.id, 'd6');
+    assert.equal(r3.event.text, '踩到滑滑的青苔，往回滑了 2 格！');
+    store.data.adventure.rolls = [];             // 每日 3 骰：測試用清掉
+    store.setPlayerTile(a.id, 18);
+    push(face(3), 0.95, 0);                     // 第 21 格命運；路障
+    const r4 = store.rollDice(a.id, 'd6');
+    assert.ok(G.CARD_TEXT.wood.roadblocks.some(t => r4.event.text === '路障：' + t + '（這次沒有影響，下次繼續前進）'), '森林路障');
+  } finally { delete G.BOARDS.wood; }
+  const { store: s2, a: b, push: push2 } = p3Store();
+  s2.buyItem(b.id, 'd6'); s2.setPlayerTile(b.id, 1); push2(face(2), 0.3);
+  assert.equal(s2.rollDice(b.id, 'd6').event.text, '發現發光礦石，得到 ⭐2', '金島照舊');
+});

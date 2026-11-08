@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-81';
+  var APP_VERSION = '2026.11.08-82';
   var store;
   try {
     store = new CGP.Store();
@@ -767,13 +767,20 @@
       await sleep(reduceMotion ? 50 : 500);
     } finally { ui.towerIntroRunning = false; ui.busy = false; document.body.classList.remove('pawn-acting'); }
   }
-  /** 礦車來了：按「上車！」才出發（資料已經前進，這裡是演出與互動） */
-  function cartBoard(text) {
+  /** 機會卡「前進 2 格」的演出文字：金島礦車、木島藤蔓（其他島還沒有主題時沿用礦車） */
+  var CART_UI = {
+    gold: { icon: '🚃', title: '🚃 礦車來了！', text: function (n) { return '礦車可以載你額外前進 ' + n + ' 格！'; }, btn: '🚃 上車！' },
+    wood: { icon: '🌿', title: '🌿 藤蔓垂下來了！', text: function (n) { return '抓住藤蔓盪過去，額外前進 ' + n + ' 格！'; }, btn: '🌿 抓住！' }
+  };
+  function cartUI(island) { return CART_UI[island] || CART_UI.gold; }
+  /** 礦車來了：按「上車！」才出發（資料已經前進，這裡是演出與互動）；木島是藤蔓「抓住！」 */
+  function cartBoard(text, ui0) {
+    var U = ui0 || CART_UI.gold;
     return new Promise(function (resolve) {
       var el = document.createElement('div');
       el.className = 'charge-panel cart-panel'; el.id = 'cart-panel';
-      el.innerHTML = '<b>🚃 礦車來了！</b><small>' + h(text || '礦車可以載你往前 2 格') + '</small>' +
-        '<button type="button" class="btn primary charge-btn" id="cart-btn">🚃 上車！</button>';
+      el.innerHTML = '<b>' + U.title + '</b><small>' + h(text || U.text(2)) + '</small>' +
+        '<button type="button" class="btn primary charge-btn" id="cart-btn">' + U.btn + '</button>';
       document.body.appendChild(el);
       el.querySelector('#cart-btn').addEventListener('click', function () { el.remove(); resolve(); });
     });
@@ -1349,8 +1356,9 @@
       }
       await hopAlong(child, res.path);
       if (ev && ev.extraPath && ev.extraPath.length) {
-        if (ev.cart) await cartBoard('礦車可以載你額外前進 ' + ev.extraPath.length + ' 格！');   // 機會卡礦車：按「上車！」才出發
-        toast((ev.shielded ? '' : '🚃 ') + ev.text.split('\n')[0], 'pos');   // 礦車或防護罩推開路障
+        var cu = cartUI(store.getPlayer(childId).island);
+        if (ev.cart) await cartBoard(cu.text(ev.extraPath.length), cu);   // 機會卡礦車（木島藤蔓）：按「上車！」才出發
+        toast((ev.shielded ? '' : cu.icon + ' ') + ev.text.split('\n')[0], 'pos');   // 礦車或防護罩推開路障
         await sleep(400);
         await hopAlong(child, ev.extraPath);
       }
