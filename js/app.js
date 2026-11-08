@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-96';
+  var APP_VERSION = '2026.11.08-97';
   var store;
   try {
     store = new CGP.Store();
@@ -814,7 +814,7 @@
       guide: { cls: 'wood-elf', label: '森林小精靈', emoji: '🧚', w: 54 },   // 正式圖到貨前先用 🧚 佔位（提示詞見 docs/art-prompts.md）；道具位置避開左下角商店按鈕
       spots: {
         pinecone: { type: 'leaf', guide: [90, -20], cam: [40, -60],   // 2026-11-08 家長決定：改成「落葉找松果」記憶遊戲（劇情版：看 3 秒、找齊 5 顆、不會失敗）
-          title: '🌰 幫小精靈找回松果！', sub: '松果被吹進 25 堆落葉裡了',
+          title: '幫小精靈找回松果！', sub: '松果被吹進 25 堆落葉裡了',
           hint: '我的松果被風吹進落葉堆裡了…走到第 8 格幫我找回來！', intro: '一陣風把我的松果吹進落葉堆裡了！看清楚它們藏在哪裡，再幫我翻出來！', done: '松果都找回來了！森林的小動物冬天有糧食了，謝謝你！' },
         bridge: { type: 'press', effect: 'bridge', guide: [-90, -10], cam: [0, -80], path: [[-150, -150], [150, -150]],
           title: '🌿 拉緊藤蔓吊橋！', sub: '吊橋鬆掉了，拉緊藤蔓才能走過去', btn: '💪 用力拉！',
@@ -1913,10 +1913,10 @@
       el.innerHTML = '<div class="mg-top"><span class="mg-count" aria-label="找到的松果"><img class="leaf-ico" src="images/wood/leaf_pinecone.webp" alt="" width="256" height="256"> <b id="leaf-found">0</b></span>' +
         '<b class="leaf-round" id="leaf-round"></b><span class="leaf-miss" id="leaf-miss" aria-label="還可以翻錯的次數"></span></div>' +
         '<div class="leaf-field"><p class="leaf-msg" id="leaf-msg" role="status"></p><div class="leaf-grid" id="leaf-grid"></div></div>' +
-        '<div class="mg-tip leaf-tip" id="mg-tip"><b>' + h(o.title) + '</b>' + (o.subtitle ? '<small>' + h(o.subtitle) + '</small>' : '') +
+        '<div class="mg-tip leaf-tip" id="mg-tip"><b class="leaf-title"><img class="leaf-ico" src="images/wood/leaf_pinecone.webp" alt="" width="256" height="256"> ' + h(o.title) + '</b>' + (o.subtitle ? '<small>' + h(o.subtitle) + '</small>' : '') +
         '<span>' + h(o.desc) + '</span>' +
         (o.practice ? '<small class="mg-practice">🧪 試玩模式：不會得到星星，也不算今天的次數</small>' : '') +
-        '<button type="button" class="btn primary leaf-start" data-leaf="start">🍂 開始！</button>' +
+        '<button type="button" class="btn primary leaf-start" data-leaf="start">開始！</button>' +
         (o.later ? '<button type="button" class="btn link mg-later" data-mg="later">' + (o.practice ? '離開試玩' : '稍後再玩') + '</button>' : '') + '</div>';
       document.body.appendChild(el);
       document.body.classList.add('mg-open');
@@ -1994,7 +1994,7 @@
   /** 木島小遊戲格：落葉找松果（計分版 3 回合；每 2 顆松果換 1 顆能量星星，按「收下」才寫入） */
   async function openLeafMinigame(childId, subtitle, opts) {
     var practice = !!(opts && opts.practice), LG = GAME.LEAF_GAME;
-    var res = await leafGame({ rounds: LG.rounds, misses: LG.misses, title: '🌰 落葉找松果', subtitle: subtitle, practice: practice, later: true,
+    var res = await leafGame({ rounds: LG.rounds, misses: LG.misses, title: '落葉找松果', subtitle: subtitle, practice: practice, later: true,
       desc: '先記住松果藏在哪幾堆落葉下，落葉蓋回去後把它們翻出來！共 ' + LG.rounds.length + ' 回合，每回合翻錯 ' + LG.misses + ' 次就進下一回合。' });
     if (!res) {
       if (!practice) toast('小遊戲留著，等一下再玩');
