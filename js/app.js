@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-66';
+  var APP_VERSION = '2026.11.08-67';
   var store;
   try {
     store = new CGP.Store();
@@ -2187,7 +2187,9 @@
       '<p class="muted small">用 Excel 或 Google 試算表整理規則，存成 CSV 後在這裡匯入。' +
       '<b>點數紀錄全部保留</b>；已有的規則會依「規則ID」更新分數、頻率、適用孩子，新的規則會新增。' +
       '孩子依名稱對應。檔案裡沒有的規則不會被刪除。</p>' +
-      '<label class="btn primary block file-btn">選擇 CSV 或 JSON 檔<input type="file" accept=".csv,text/csv,application/json,.json,text/plain" data-action="import-rules" hidden></label></div>' +
+      '<label class="btn primary block file-btn">選擇 CSV 或 JSON 檔<input type="file" accept=".csv,text/csv,application/json,.json,text/plain" data-action="import-rules" hidden></label>' +
+      '<p class="muted small">先匯出目前的規則表，用 Excel 修改後再匯入最方便（同一個規則ID會更新原本的規則，不會重複新增）。</p>' +
+      '<button class="btn block" data-action="export-rules">📄 匯出目前規則表（CSV）</button></div>' +
       '<p class="muted small center">App 版本：' + APP_VERSION + '</p>' +
       '<p class="muted small center">目前資料：' + d.children.length + ' 位孩子・' + d.items.length + ' 個規則・' +
       d.rewards.length + ' 個獎勵・' + d.records.length + ' 筆紀錄</p>';
@@ -2491,6 +2493,18 @@
     render();
   }
 
+  /** 匯出目前規則表（CSV，欄位和匯入相同，可用 Excel 修改後再匯入） */
+  function exportRules() {
+    var csv = window.CGPCsv.rulesToCSV(store.data.items, store.getChildren());
+    var n = csv.split('\r\n').length - 2;
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = 'child-points-rules-' + store.today() + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    toast('已匯出 ' + n + ' 條規則（CSV）', 'pos');
+  }
+
   /** 讀取文字檔：先試 UTF-8，失敗時改用 Big5（Excel 中文版預設存檔編碼） */
   function readTextFile(file, cb) {
     var reader = new FileReader();
@@ -2652,6 +2666,7 @@
           });
           break;
         }
+        case 'export-rules': exportRules(); break;
         case 'archive': doArchive(); break;
         case 'pin-submit': submitPin(); break;
         case 'pin-forgot': ui.pinMode = 'forgot'; ui.pinQuiz = null; render(); break;

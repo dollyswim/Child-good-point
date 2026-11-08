@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-07｜App 版本 `2026.11.08-66`｜Service Worker 快取 `cgp-shell-v76`
+> 最後更新：2026-11-07｜App 版本 `2026.11.08-67`｜Service Worker 快取 `cgp-shell-v77`
 > 給接手的開發者（或下一個 Claude session）。請先讀 `PROJECT_SPEC.md`，再讀本文件。
 
 ---
@@ -133,6 +133,7 @@
 - 封存舊紀錄（2026-11-07，設定 → 備份，需家長密碼）：封存日期早於家長選的日子的**生活紀錄與冒險紀錄**（`getArchivePlan`：records、settlements、ledger、rolls、minigames、bonusQuota、dayEnds、itemLog、看過的 blessings）。預設保留最近 6 個月；本週與本月不能封存；還沒發放的額外星星紀錄、封存日前 7 天的結算（連續 7 天）、未看過的媽媽加碼、進行中的小遊戲不封存；冒險位置、背包、地圖寶箱不動。先下載封存檔 `child-points-archive-before-日期.json`，再移除；總和記入 `data.carry[孩子] = { total, earned, special, stars, bestCatch, settled, count, advCount, until }`，點數、等級、累計得分、能量星星、所有成就條件都加上結轉，完全不變。
 - 角色動畫（2026-11-07，Codex character-animation-pack-1 移植，原包說明 `docs/art/CODEX_CHARACTER_ANIMATION_README.md`）：地圖角色五種動作（`pawnIdle`、`pawnPlay('jump'|'happy'|'surprised'|'openChest')`），Web Animations API 作用在 `.pawn-inner`，特效放 `.pawn-fx`；依角色 `PAWN_PROFILE` 調整節奏與跳高。未直接引入原套件：其 `.pawn` 樣式名與 App 衝突、寶箱貼紙圖 2MB，改用現有 `images/chest.webp` 與角色圖。觸發：停著＝待機；每格＝跳格；寶箱格／背包開箱＝開寶箱；命運格、往回退、撿到神秘寶箱＝驚訝；機會格、全島終點＝開心。動畫在資料寫入之後播放；減少動態效果時不播。
 - 頭像就代表孩子（2026-11-08 家長決定）：介面不再顯示角色名稱（石球獸等）。設定的頭像欄位標題為「頭像」、選項只有圖；冒險大廳夥伴標籤顯示孩子名字；更換視窗標題「更換 X 的頭像」；通關畫面「X 抵達了…」。角色名稱只保留在 aria-label 給讀屏。
+- 匯出目前規則表（2026-11-08，設定 → 備份 → 匯入規則表卡片）：`CGPCsv.rulesToCSV(items, children)`，欄位與匯入相同（規則ID、規則類型、適用對象、任務或行為、點數變動、計算頻率、額外獎勵），UTF-8 BOM；規則ID＝`sourceId` 或內部 id，再匯入時更新同一條、不會重複。獎勵（兌換項目）不在規則表內。
 - 自動備份上限：每日 7 份＋「還原前的狀態」1 份，超過自動刪最舊；設定 → 備份 → 還原資料 每份都可「刪除」（`store.deleteSnapshot(id)`，需家長密碼，不影響目前資料）。
 - 孩子 4 位以上：頁首切換列改為每排 3 位（`.kid-switch.many`，名字過長分兩行）；3 位以下維持一排。設定頁 7 個分頁改為每排 4 個自動換行，不用左右滑。
 - 新增孩子（2026-11-07）：首頁只在還沒有孩子時顯示；有孩子後改在小孩頁面設定城堡正下方（小圖示＋文字，`.add-kid`，`alignHeroLinks()` 對齊城堡中心）；設定 → 孩子也可新增。

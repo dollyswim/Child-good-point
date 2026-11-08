@@ -306,7 +306,7 @@ test('匯入規則：保留現有資料、孩子依名稱對應、相同規則�
 });
 
 // ---------- CSV 規則表 ----------
-const { csvToRules, parseCSV, parseFrequency } = require('../js/rules-csv.js');
+const { csvToRules, parseCSV, parseFrequency, rulesToCSV } = require('../js/rules-csv.js');
 const fsT = require('node:fs');
 const pathT = require('node:path');
 
@@ -2201,4 +2201,36 @@ test('自動備份：可以刪除不要的一份（需家長密碼），其他�
   assert.equal((await backend.list()).length, 1, '儲存區也刪掉');
   assert.equal(store.getChildren().length, 1, '目前資料不變');
   await assert.rejects(() => store.deleteSnapshot('nope'), /找不到/);
+});
+
+test('匯出目前規則表（CSV）：欄位與匯入相同；匯出再匯入不會重複、內容不變', () => {
+  const { store } = makeStore();
+  const a = store.addChild({ name: '端端' }), b = store.addChild({ name: '波妞' });
+  store.addItem({ kind: 'bonus', name: '幫忙,"倒垃圾"', points: 3, childIds: 'all' });
+  store.addItem({ kind: 'penalty', name: '說謊', points: -10, childIds: [a.id] });
+  store.addItem({ kind: 'bonus', name: '特殊表現', points: 0, custom: true, childIds: [a.id, b.id] });
+  store.addItem({ kind: 'bonus', name: '表達心情', points: 0, stars: 10 });
+  const freqs = [{ type: 'daily' }, { type: 'weekdays' }, { type: 'weekends' }, { type: 'once' }, { type: 'weeklyN', n: 3 }, { type: 'weeklyN', n: 1 }, { type: 'days', days: [1, 3, 5] }];
+  freqs.forEach((f, k) => store.addItem({ kind: 'task', name: '任務' + k, points: 5, frequency: f }));
+  const csv = rulesToCSV(store.data.items, store.getChildren());
+  assert.ok(csv.startsWith('\uFEFF規則ID,規則類型,適用對象,任務或行為,點數變動,計算頻率,額外獎勵'), 'UTF-8 BOM＋與匯入相同的欄位');
+  const rows = parseCSV(csv);
+  assert.equal(rows.length - 1, store.data.items.length);
+  assert.ok(csv.includes('"幫忙,""倒垃圾"""'), '逗號與引號正確跳脫');
+  // 匯出的內容再轉回規則：類型、名稱、點數、頻率、星星、適用對象都一致
+  const back = csvToRules(csv);
+  assert.deepEqual(back.warnings.filter(w => !/沒有點數/.test(w)), []);
+  const before = store.data.items.map(i => [i.kind, i.name, i.points, i.custom, i.stars || 0, JSON.stringify(i.kind === 'task' ? i.frequency : null)]);
+  const after = back.data.items.map(i => [i.kind, i.name, i.points, !!i.custom, i.stars || 0, JSON.stringify(i.kind === 'task' ? i.frequency : null)]);
+  assert.deepEqual(after, before);
+  // 匯入回同一個 App：全部是「沒變」，不會新增
+  const n = store.data.items.length;
+  const r = store.mergeRules(back.data);
+  assert.equal(store.data.items.length, n, '不會重複新增');
+  assert.equal(r.itemsAdded, 0);
+  // 用 Excel 改了分數再匯入 → 更新原本那一條
+  const edited = csv.replace('說謊,10,', '說謊,20,');
+  store.mergeRules(csvToRules(edited).data);
+  assert.equal(store.data.items.find(i => i.name === '說謊').points, -20);
+  assert.equal(store.data.items.length, n);
 });

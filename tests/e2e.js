@@ -1659,6 +1659,13 @@ async function main() {
     await q.goto(url + '#rules-backup');
     await passPin(q);
     await q.waitForSelector('[data-testid=archive]');
+    // 匯出目前規則表（CSV）
+    const [rdl] = await Promise.all([q.waitForEvent('download'), q.click('[data-action=export-rules]')]);
+    assert.equal(rdl.suggestedFilename(), 'child-points-rules-2026-11-07.csv');
+    const rcsv = require('fs').readFileSync(await rdl.path(), 'utf8');
+    assert.match(rcsv, /^\uFEFF規則ID,規則類型,適用對象,任務或行為,點數變動,計算頻率,額外獎勵\r\n/);
+    assert.match(rcsv, /舊加分,30,每次/);
+    assert.match(await q.locator('#toast').innerText(), /已匯出 \d+ 條規則/);
     assert.equal(await q.locator('#archive-date').inputValue(), '2026-05-01', '預設保留最近 6 個月');
     assert.equal(await q.locator('#archive-date').getAttribute('max'), '2026-11-01', '本週與本月不能封存');
     assert.match(await q.locator('[data-testid=archive-count]').innerText(), /會封存 3 筆/);

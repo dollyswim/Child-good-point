@@ -184,7 +184,42 @@
     return { data: { children: children, items: items, rewards: [] }, warnings: warnings };
   }
 
-  var api = { parseCSV: parseCSV, csvToRules: csvToRules, parseFrequency: parseFrequency };
+  /** 任務頻率 → 計算頻率文字（和 parseFrequency 互相對應，匯出後可直接再匯入） */
+  var DAY_CHARS = ['日', '一', '二', '三', '四', '五', '六'];
+  function frequencyText(item) {
+    if (item.kind !== 'task') return '每次';
+    var f = item.frequency || { type: 'daily' };
+    if (f.type === 'weekdays') return '上學日';
+    if (f.type === 'weekends') return '週末';
+    if (f.type === 'once') return '達成一次';
+    if (f.type === 'weeklyN') return (f.n || 1) > 1 ? '每週' + f.n + '次' : '每週';
+    if (f.type === 'days') return '每週' + (f.days || []).map(function (d) { return DAY_CHARS[d]; }).join('');
+    return '每天';
+  }
+  function csvCell(v) {
+    var t = String(v == null ? '' : v);
+    return /[",\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+  }
+  /**
+   * 目前規則 → CSV 文字（欄位與匯入相同；含 UTF-8 BOM，Excel 直接開不會亂碼）
+   * @param {Array} items 規則
+   * @param {Array} children 孩子（把適用對象的代號換成名字）
+   */
+  function rulesToCSV(items, children) {
+    var names = {};
+    (children || []).forEach(function (c) { names[c.id] = c.name; });
+    var rows = [['規則ID', '規則類型', '適用對象', '任務或行為', '點數變動', '計算頻率', '額外獎勵']];
+    (items || []).forEach(function (i) {
+      if (i.kind !== 'bonus' && i.kind !== 'penalty' && i.kind !== 'task') return;
+      var who = i.childIds === 'all' ? '全部' : (i.childIds || []).map(function (id) { return names[id]; }).filter(Boolean).join('、');
+      if (i.childIds !== 'all' && !who) return;   // 適用的孩子都已刪除
+      rows.push([i.sourceId || i.id, i.kind === 'penalty' ? '扣分' : '加分', who, i.name,
+        i.custom ? '自填' : Math.abs(i.points || 0), frequencyText(i), i.stars ? i.stars + '個能量星星' : '']);
+    });
+    return '\uFEFF' + rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n') + '\r\n';
+  }
+
+  var api = { parseCSV: parseCSV, csvToRules: csvToRules, parseFrequency: parseFrequency, rulesToCSV: rulesToCSV, frequencyText: frequencyText };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPCsv = api;
 })(typeof self !== 'undefined' ? self : this);
