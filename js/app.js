@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-91';
+  var APP_VERSION = '2026.11.08-92';
   var store;
   try {
     store = new CGP.Store();
@@ -804,7 +804,7 @@
         // 2026-11-08 家長決定：改成「視窗＋前後兩張圖」——先看礦車卡在坑道裡的圖，拖曳拉桿拉到底後，同一個視窗換成問題解決的圖（地圖上不再放礦車動畫）
         // scene.before／after：Gemini 圖到貨後填入檔名；還沒有圖時用礦車圖暫代（拉之前紅色「！」、解決後「✨」）
         rail: { type: 'scene', guide: [430, 4522], cam: [470, 4420], lever: [360, 4556],
-          scene: { before: '', after: '', fallback: 'images/gold/minecart.webp', doneTitle: '🎉 軌道接通了！', doneSub: '礦車可以開往水晶礦谷了', ok: '🎉 太好了！' },
+          scene: { before: 'images/gold/rail_before.webp', after: 'images/gold/rail_after.webp', fallback: 'images/gold/minecart.webp', doneTitle: '🎉 軌道接通了！', doneSub: '礦車可以開往水晶礦谷了', ok: '🎉 太好了！' },
           title: '🔧 礦車卡住了！', sub: '抓住紅色把手，把轉轍器往下拉到底',
           hint: '礦場的轉轍器卡住了…走到第 30 格幫我拉下拉桿！', intro: '轉轍器卡住了，礦車過不去！幫我拉下拉桿！', done: '軌道接通了！礦車可以開往水晶礦谷了！' }
       }
