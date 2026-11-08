@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-87';
+  var APP_VERSION = '2026.11.08-88';
   var store;
   try {
     store = new CGP.Store();
@@ -801,8 +801,8 @@
           items: [[800, 4952], [866, 4918], [600, 5112], [520, 5012], [760, 5160]], itemCls: 'story-ore', itemLabel: '金礦石',
           title: '⛏️ 幫技師撿回金礦石！', sub: '點地圖上發光的礦石',
           hint: '我的金礦石滾得到處都是…走到第 5 格幫我撿回來！', intro: '我的金礦石滾得到處都是！幫我把 5 顆發光的礦石撿回來！', done: '太好了！礦石都找回來了，謝謝你！' },
-        rail: { type: 'press', effect: 'cart', guide: [430, 4522], cam: [470, 4420], lever: [360, 4556], path: [[300, 4488], [578, 4300]],
-          title: '🔧 拉下轉轍器！', sub: '軌道接通後，礦車就能開往水晶礦谷', btn: '⬇️ 拉下拉桿',
+        rail: { type: 'press', effect: 'cart', drag: true, top: true,   /* 2026-11-08 家長調整：真的拖曳拉桿往下拉；面板放上方，看得到地圖上的拉桿 */ guide: [430, 4522], cam: [470, 4420], lever: [360, 4556], path: [[300, 4488], [578, 4300]],
+          title: '🔧 拉下轉轍器！', sub: '抓住紅色把手，往下拉到底', btn: '⬇️ 拉下拉桿',
           hint: '礦場的轉轍器卡住了…走到第 30 格幫我拉下拉桿！', intro: '轉轍器卡住了，礦車過不去！幫我拉下拉桿！', done: '軌道接通了！礦車可以開往水晶礦谷了！' }
       }
     },
@@ -891,10 +891,17 @@
   /** 互動 press：按一個按鈕，地圖上出現變化（礦車開走、吊橋拉緊） */
   async function storyPress(board, id, sp, world) {
     var panel = document.createElement('div');
-    panel.className = 'charge-panel story-panel'; panel.id = 'story-panel';
-    panel.innerHTML = '<b>' + h(sp.title) + '</b><small>' + h(sp.sub) + '</small><button type="button" class="btn primary charge-btn" id="story-btn">' + h(sp.btn) + '</button>';
-    document.body.appendChild(panel);
-    await new Promise(function (resolve) { panel.querySelector('#story-btn').addEventListener('click', resolve); });
+    panel.className = 'charge-panel story-panel' + (sp.top ? ' top' : ''); panel.id = 'story-panel';
+    if (sp.drag) {
+      panel.innerHTML = '<b>' + h(sp.title) + '</b><small>' + h(sp.sub) + '</small>' + pullLeverHtml();
+      document.body.appendChild(panel);
+      await pullLever(panel.querySelector('#pull-lever'), document.getElementById('story-lever'));
+      await sleep(reduceMotion ? 50 : 350);
+    } else {
+      panel.innerHTML = '<b>' + h(sp.title) + '</b><small>' + h(sp.sub) + '</small><button type="button" class="btn primary charge-btn" id="story-btn">' + h(sp.btn) + '</button>';
+      document.body.appendChild(panel);
+      await new Promise(function (resolve) { panel.querySelector('#story-btn').addEventListener('click', resolve); });
+    }
     panel.remove();
     var a = storyXY(board, id, sp.path[0]), z = storyXY(board, id, sp.path[1]);
     if (sp.effect === 'cart') {
@@ -920,6 +927,58 @@
       br.classList.add('bye');
       setTimeout(function () { br.remove(); }, 600);
     }
+  }
+  /** 可以拖曳的拉桿：直立的軌道＋紅色把手，往下拖到底才算拉下（放開沒到底會彈回去） */
+  function pullLeverHtml() {
+    return '<div class="pull-lever" id="pull-lever" role="slider" tabindex="0" aria-label="拉桿：往下拉到底" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">' +
+      '<span class="pull-slot" aria-hidden="true"></span><span class="pull-handle" id="pull-handle" aria-hidden="true"><i></i></span>' +
+      '<span class="pull-arrow" aria-hidden="true">⬇</span></div>';
+  }
+  /**
+   * 拖曳拉桿：把手跟著手指往下移；拉到 85% 以上放開（或直接拉到底）就完成。
+   * mapLever：地圖上的拉桿，跟著一起扳下。鍵盤可按 ↓／Enter／空白鍵（無障礙）
+   * @returns Promise（拉下時完成）
+   */
+  function pullLever(el, mapLever) {
+    return new Promise(function (resolve) {
+      var handle = el.querySelector('#pull-handle'), RANGE = 110, start = null, p = 0, done = false;
+      function set(v, anim) {
+        p = Math.max(0, Math.min(1, v));
+        handle.style.transition = anim ? 'transform .25s ease-out' : 'none';
+        handle.style.transform = 'translate(-50%, ' + (p * RANGE).toFixed(1) + 'px)';
+        el.setAttribute('aria-valuenow', Math.round(p * 100));
+        if (mapLever) mapLever.style.setProperty('--pull', p.toFixed(2));
+      }
+      function finish() {
+        if (done) return;
+        done = true; set(1, true); el.classList.add('pulled');
+        if (mapLever) mapLever.classList.add('pulled');
+        resolve();
+      }
+      el.addEventListener('pointerdown', function (e) {
+        if (done) return;
+        e.preventDefault();
+        start = { y: e.clientY, p: p };
+        el.classList.add('grab');
+        try { el.setPointerCapture(e.pointerId); } catch (err) { /* 舊瀏覽器 */ }
+      });
+      el.addEventListener('pointermove', function (e) {
+        if (!start || done) return;
+        set(start.p + (e.clientY - start.y) / RANGE, false);
+        if (p >= 1) finish();
+      });
+      function release() {
+        if (!start || done) return;
+        start = null; el.classList.remove('grab');
+        if (p >= 0.85) finish(); else set(0, true);   // 沒拉到底：彈回去
+      }
+      el.addEventListener('pointerup', release);
+      el.addEventListener('pointercancel', release);
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); finish(); }
+      });
+      set(0, false);
+    });
   }
   /** 互動 charge：連點充能，地圖上的光跟著變亮 */
   async function storyCharge(board, id, sp, world) {

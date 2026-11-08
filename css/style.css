@@ -1926,3 +1926,20 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 @keyframes ore-bob { 50% { transform: scale(1.1); } }
 .story-ore.got { animation: ore-got .4s ease-out forwards; }
 @media (prefers-reduced-motion: reduce) { .story-ore { animation: none; } }
+
+/* 轉轍器拉桿：拖曳紅色把手往下拉到底（2026-11-08 家長調整，取代按鈕） */
+.pull-lever { position: relative; width: 120px; height: 168px; margin: 4px auto 0; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.pull-lever.grab { cursor: grabbing; }
+.pull-slot { position: absolute; left: 50%; top: 18px; width: 22px; height: 132px; margin-left: -11px; border-radius: 11px;
+  background: linear-gradient(90deg, #5b3d22, #8a5f36 50%, #5b3d22); box-shadow: inset 0 3px 4px rgba(0, 0, 0, .45), 0 0 0 4px #c9a66b; }
+.pull-handle { position: absolute; left: 50%; top: 4px; width: 64px; height: 44px; transform: translate(-50%, 0); will-change: transform; }
+.pull-handle::before { content: ""; position: absolute; left: 50%; top: 20px; width: 12px; height: 26px; margin-left: -6px; border-radius: 4px; background: #c9a66b; box-shadow: inset -2px 0 0 #9c7a44; }
+.pull-handle i { position: absolute; left: 50%; top: 0; width: 44px; height: 32px; margin-left: -22px; border-radius: 16px;
+  background: radial-gradient(circle at 35% 30%, #ff8a7a, #e2473f 55%, #b12a24); box-shadow: 0 4px 0 #8a1f1a, 0 0 0 3px #fff; }
+.pull-arrow { position: absolute; right: -6px; top: 50%; transform: translateY(-50%); font-size: 26px; color: #e69500; animation: pull-hint 1s ease-in-out infinite; }
+.pull-lever.pulled .pull-arrow { display: none; }
+@keyframes pull-hint { 50% { transform: translateY(-20%); } }
+/* 地圖上的拉桿跟著拖曳角度扳下 */
+.story-lever i { transform: rotate(calc(-35deg + var(--pull, 0) * 70deg)); }
+.story-lever.pulled i { transform: rotate(35deg); }
+@media (prefers-reduced-motion: reduce) { .pull-arrow { animation: none; } }

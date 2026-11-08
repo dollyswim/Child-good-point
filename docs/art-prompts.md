@@ -356,6 +356,24 @@ slightly top-down three-quarter view, plain white background, centered with gene
 
 ---
 
+## 金島礦車（1 張，2026-11-08 新增，請 Gemini 製作）
+
+第 30 格「拉下轉轍器」後開走的礦車、機會卡「礦車來了！」用的礦車，目前是 🚃 表情符號（家長說不像）。交件後放 `images/gold/minecart.webp`，Claude 只去除與外框相連的白底（會先回報）。
+地圖上顯示約 80px，**側面看得出是礦車：有輪子、裝滿金礦石**。
+
+```
+A single cute mining cart for a children's mobile game, bright cute 2.5D clay style,
+a sturdy wooden mine cart with dark iron bands and rivets, four chunky round iron wheels sitting on a short piece of rail track,
+the cart is heaped full of shiny gold ore chunks and gold crystals, warm soft lighting, rounded friendly edges, clear simple silhouette,
+three-quarter side view facing right, plain white background, centered with generous margin, no characters, no text, no watermark, square 1024 x 1024
+```
+
+中文：兒童手機遊戲用的一台可愛礦車，明亮可愛的 2.5D 黏土風格；堅固的木頭礦車，有深色鐵條與鉚釘，四個圓圓粗粗的鐵輪子，停在一小段鐵軌上；車上堆滿閃亮的金礦石與金色結晶；柔和溫暖光影、邊角圓潤、輪廓簡單清楚；**斜側面、車頭朝右**；純白背景、置中、四周多留白，不要人物、文字與浮水印；正方形 1024×1024。
+
+> 小提醒：如果畫成火車或電車，可以補一句「not a train, not a tram, it is a small open-top mine cart」。
+
+---
+
 ## 木島小遊戲「落葉找松果」（4 張必做＋1 張選做，2026-11-08 新增）
 
 目前畫面用表情符號佔位：松果 🌰（其實是栗子）、落葉堆 🍂、松鼠 🐿️。交件後 Claude 放進 `images/wood/`，換掉 `js/app.js` 的 `leafGame` 與 `css/style.css` 的 `.leaf-*` 樣式。

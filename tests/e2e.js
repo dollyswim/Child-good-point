@@ -1720,8 +1720,17 @@ async function main() {
     await q.reload(); await q.waitForSelector('.story-guide[data-story=rail]');
     await q.evaluate(() => { window.__cgpStore.random = () => 2.5 / 6; });
     await q.click('.dice-btn.d6');
-    await q.waitForSelector('#story-btn', { timeout: 15000 });
-    await q.click('#story-btn');
+    await q.waitForSelector('#pull-lever', { timeout: 15000 });
+    assert.equal(await q.locator('#story-btn').count(), 0, '改成拖曳拉桿，不是按鈕');
+    const lv = await q.locator('#pull-handle').boundingBox();
+    const cx = lv.x + lv.width / 2, cy = lv.y + lv.height / 2;
+    // 只拉一半就放開：彈回去、沒有觸發
+    await q.mouse.move(cx, cy); await q.mouse.down(); await q.mouse.move(cx, cy + 40, { steps: 5 }); await q.mouse.up();
+    await q.waitForTimeout(400);
+    assert.equal(await q.locator('#pull-lever').getAttribute('aria-valuenow'), '0', '沒拉到底會彈回');
+    assert.equal(await q.locator('#story-lever.pulled').count(), 0);
+    // 拉到底：觸發礦車
+    await q.mouse.move(cx, cy); await q.mouse.down(); await q.mouse.move(cx, cy + 130, { steps: 8 }); await q.mouse.up();
     await q.waitForSelector('#story-lever.pulled');
     await q.waitForFunction(() => /軌道接通了/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
     await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 15000 });
