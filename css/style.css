@@ -1985,3 +1985,13 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .leaf-mg { --lg-w: min(94vw, 420px); --lg-top: max(118px, calc(50vh + 0.0465 * max(100vh, 179.2vw) - var(--lg-w) / 2)); }
 .leaf-mg .leaf-grid { position: absolute; left: 50%; top: var(--lg-top); transform: translateX(-50%); width: var(--lg-w); }
 .leaf-mg .leaf-msg { position: absolute; left: 50%; top: calc(var(--lg-top) - 50px); transform: translateX(-50%); white-space: nowrap; max-width: 94vw; overflow: hidden; text-overflow: ellipsis; }
+/* 2026-11-08 家長調整：提示文字移到上方兩側樹木之間的空草地（背景圖高度約 11.5%）；太長會碰到樹時自動換成 2 行
+   空草地寬度約背景圖寬的 47%（圖寬＝0.558 × 圖高 H）；上方回合數、剩餘機會比照松果計數加半透明白底 */
+.leaf-mg .leaf-msg { top: max(64px, calc(50vh - 0.385 * max(100vh, 179.2vw))); transform: translate(-50%, -50%);
+  white-space: normal; overflow: visible; text-overflow: clip; width: max-content; max-width: max(180px, min(94vw, calc(0.26 * max(100vh, 179.2vw))));
+  line-height: 1.35; text-align: center; border-radius: 18px; padding: 6px 14px; box-sizing: border-box; }
+.leaf-mg .leaf-round, .leaf-mg .leaf-miss { justify-self: center; padding: 4px 12px; border-radius: 99px; background: rgba(255, 255, 255, .6); text-shadow: none; }
+.leaf-mg .leaf-miss { justify-self: end; min-width: 0; }
+.leaf-mg .leaf-msg { font-size: 1rem; text-wrap: balance; }   /* 兩行時長度平均，避免最後一兩個字掉到第二行 */
+/* 提示文字固定在逗號後換行（文字裡的 \n），沒有逗號的短句維持一行 */
+.leaf-mg .leaf-msg { white-space: pre-line; text-wrap: wrap; max-width: max(200px, min(94vw, calc(0.28 * max(100vh, 179.2vw)))); }

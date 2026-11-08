@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-94';
+  var APP_VERSION = '2026.11.08-95';
   var store;
   try {
     store = new CGP.Store();
@@ -1958,7 +1958,7 @@
         later(function () {
           clearInterval(cd);
           grid.className = 'leaf-grid';
-          msg.textContent = '🍂 翻開落葉，找出 ' + R.pine + ' 顆松果！';
+          msg.textContent = '🍂 翻開落葉，\n找出 ' + R.pine + ' 顆松果！';
           locked = false;
         }, R.show);
         function tap(e) {
@@ -1970,7 +1970,7 @@
             found++; total++; foundEl.textContent = total;
             if (found >= R.pine) end(true);
           } else {
-            if (b.hasAttribute('data-squirrel')) { b.classList.add('caught'); msg.textContent = '🐿️ 松鼠在吃松果，不是這裡！'; }   // 干擾物：算翻錯 1 次
+            if (b.hasAttribute('data-squirrel')) { b.classList.add('caught'); msg.textContent = '🐿️ 松鼠在吃松果，\n不是這裡！'; }   // 干擾物：算翻錯 1 次
             else b.classList.add('empty');
             if (o.misses) { miss++; showMiss(o.misses - miss); if (miss >= o.misses) end(false); }
           }
@@ -1978,7 +1978,7 @@
         function end(all) {
           locked = true;
           grid.querySelectorAll('.leaf-pile.pine:not(.open)').forEach(function (b) { b.classList.add('open', 'missed'); });   // 沒找到的松果亮出來
-          msg.textContent = all ? '🎉 全部找到了！' : '🍃 翻錯 ' + o.misses + ' 次了，找到 ' + found + ' 顆';
+          msg.textContent = all ? '🎉 全部找到了！' : '🍃 翻錯 ' + o.misses + ' 次了，\n找到 ' + found + ' 顆';
           later(function () {
             r++;
             if (r < rounds.length) round();
