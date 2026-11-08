@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.08-80';
+  var APP_VERSION = '2026.11.08-81';
   var store;
   try {
     store = new CGP.Store();
@@ -1842,18 +1842,22 @@
         el.querySelector('#leaf-miss').innerHTML = o.misses ? new Array(left + 1).join('<i class="leaf-heart">🍃</i>') + new Array(o.misses - left + 1).join('<i class="leaf-heart off">🍃</i>') : '';
       }
       function round() {
-        var R = rounds[r], found = 0, miss = 0, locked = true, pines = {};
+        var R = rounds[r], found = 0, miss = 0, locked = true, pines = {}, squirrels = {}, D = GAME.LEAF_GAME.decoys;
         var idx = []; for (var i = 0; i < N; i++) idx.push(i);
-        for (var k = 0; k < R.pine; k++) { var j = k + Math.floor(Math.random() * (N - k)); var t = idx[k]; idx[k] = idx[j]; idx[j] = t; pines[idx[k]] = true; }
+        for (var k = 0; k < R.pine + D; k++) {   // 洗牌取前幾格：先放松果，再放干擾的松鼠
+          var j = k + Math.floor(Math.random() * (N - k)); var t = idx[k]; idx[k] = idx[j]; idx[j] = t;
+          if (k < R.pine) pines[idx[k]] = true; else squirrels[idx[k]] = true;
+        }
         el.querySelector('#leaf-round').textContent = multi ? '第 ' + (r + 1) + ' / ' + rounds.length + ' 回合' : '找出 ' + R.pine + ' 顆松果';
         showMiss(o.misses);
         grid.className = 'leaf-grid peek';
         grid.innerHTML = '';
         for (var n = 0; n < N; n++) {
           var b = document.createElement('button');
-          b.type = 'button'; b.className = 'leaf-pile' + (pines[n] ? ' pine' : ''); b.setAttribute('aria-label', '落葉堆');
+          b.type = 'button'; b.className = 'leaf-pile' + (pines[n] ? ' pine' : squirrels[n] ? ' squirrel' : ''); b.setAttribute('aria-label', '落葉堆');
           if (pines[n]) b.setAttribute('data-pine', '1');
-          b.innerHTML = '<span class="leaf-under" aria-hidden="true">' + (pines[n] ? '🌰' : '') + '</span><span class="leaf-cover" aria-hidden="true">🍂</span>';
+          if (squirrels[n]) b.setAttribute('data-squirrel', '1');
+          b.innerHTML = '<span class="leaf-under" aria-hidden="true">' + (pines[n] ? '🌰' : squirrels[n] ? '🐿️' : '') + '</span><span class="leaf-cover" aria-hidden="true">🍂</span>';
           b.addEventListener('pointerdown', tap);
           grid.appendChild(b);
         }
@@ -1877,7 +1881,8 @@
             found++; total++; foundEl.textContent = total;
             if (found >= R.pine) end(true);
           } else {
-            b.classList.add('empty');
+            if (b.hasAttribute('data-squirrel')) { b.classList.add('caught'); msg.textContent = '🐿️ 松鼠在吃松果，不是這裡！'; }   // 干擾物：算翻錯 1 次
+            else b.classList.add('empty');
             if (o.misses) { miss++; showMiss(o.misses - miss); if (miss >= o.misses) end(false); }
           }
         }

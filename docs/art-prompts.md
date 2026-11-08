@@ -338,10 +338,10 @@ No characters, no text, no UI. Bright sunny, cute children's game map.
 
 ---
 
-## 木島小遊戲「落葉找松果」（3 張必做＋1 張選做，2026-11-08 新增）
+## 木島小遊戲「落葉找松果」（4 張必做＋1 張選做，2026-11-08 新增）
 
-目前畫面用表情符號佔位：松果 🌰（其實是栗子）、落葉堆 🍂。交件後 Claude 放進 `images/wood/`，換掉 `js/app.js` 的 `leafGame` 與 `css/style.css` 的 `.leaf-*` 樣式。
-L-1～L-3 規格同前：**正方形 1024×1024、白底、單一物件、置中、不要任何文字／數字**，先貼「共用風格」再貼主體描述。三張要放在同一格裡疊起來用，**請用同樣的視角（正面略俯視）和同樣的大小比例**。
+目前畫面用表情符號佔位：松果 🌰（其實是栗子）、落葉堆 🍂、松鼠 🐿️。交件後 Claude 放進 `images/wood/`，換掉 `js/app.js` 的 `leafGame` 與 `css/style.css` 的 `.leaf-*` 樣式。
+L-1～L-3、L-5 規格同前：**正方形 1024×1024、白底、單一物件、置中、不要任何文字／數字**，先貼「共用風格」再貼主體描述。三張要放在同一格裡疊起來用，**請用同樣的視角（正面略俯視）和同樣的大小比例**。
 
 ### L-1 松果（`pinecone`）
 ```
@@ -365,6 +365,13 @@ a small patch of soft brown forest soil with two or three scattered small leaves
 empty, nothing hidden, flat and calm, slightly top-down front view, fills about 85% of the frame
 ```
 中文：一小塊鬆軟的棕色森林泥土，散落兩三片小葉子和一顆小石頭，空空的、沒有藏東西，平平的；正面略俯視，約佔畫面 85%。（翻錯時顯示；顏色要比落葉堆暗一點、低調一點）
+
+### L-5 干擾物：吃松果的松鼠（`leaf_squirrel`，2026-11-08 新增）
+```
+a cute chubby little red squirrel sitting and happily eating a pinecone held in its paws, big fluffy tail curled up behind,
+cheeks puffed, eyes half closed with joy, slightly top-down front view, fills about 70% of the frame, same size and view as the pinecone
+```
+中文：一隻圓胖可愛的小紅松鼠坐著，雙手捧著松果開心地啃，蓬鬆大尾巴捲在身後，臉頰鼓鼓、眼睛滿足地瞇起；正面略俯視，約佔畫面 70%，**和 L-1 松果一樣的大小與視角**（遊戲中會和松果一起亮出來當干擾物，放在同樣的淡色底上）。
 
 ### L-4 選做：小遊戲背景（直式 1080×1920，**不要白底**）
 

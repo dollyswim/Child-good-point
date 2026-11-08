@@ -32,7 +32,8 @@
    * 計分版（木島小遊戲格）：3 回合越來越難，每回合翻錯 3 次就進下一回合；每 2 顆松果換 1 顆能量星星（無條件進位），最多 15 顆松果 → 8 顆。
    * 劇情版（木島第 8 格）：1 回合、松果 5 顆、看 3 秒，翻錯沒關係、找齊就完成。
    */
-  var LEAF_GAME = { piles: 25, misses: 3, rate: 2,
+  // 干擾物（2026-11-08 家長決定）：每回合 2 隻吃松果的松鼠，先看時和松果一起亮出來（同樣淡色底）；翻到松鼠算翻錯 1 次（劇情版不會失敗）
+  var LEAF_GAME = { piles: 25, misses: 3, rate: 2, decoys: 2,
     rounds: [{ pine: 4, show: 3000 }, { pine: 5, show: 2500 }, { pine: 6, show: 2000 }],
     story: { pine: 5, show: 3000 } };
   var LEAF_MAX_FOUND = LEAF_GAME.rounds.reduce(function (n, r) { return n + r.pine; }, 0);

@@ -1763,11 +1763,15 @@ async function main() {
     await q.click('[data-leaf=start]');
     assert.equal(await q.locator('.leaf-pile').count(), 25);
     assert.equal(await q.locator('.leaf-pile[data-pine]').count(), 5);
+    assert.equal(await q.locator('.leaf-pile[data-squirrel]').count(), 2, '2 隻松鼠干擾物');
     assert.equal(await q.locator('.leaf-grid.peek').count(), 1, '先亮出松果位置');
     assert.match(await q.locator('#leaf-msg').innerText(), /記住松果的位置/);
     await q.waitForSelector('.leaf-grid:not(.peek)', { timeout: 6000 });
-    for (let k = 0; k < 4; k++) await q.locator('.leaf-pile:not([data-pine])').nth(k).click();   // 翻錯 4 次也不會失敗
+    for (let k = 0; k < 4; k++) await q.locator('.leaf-pile:not([data-pine]):not([data-squirrel])').nth(k).click();   // 翻錯 4 次也不會失敗
     assert.equal(await q.locator('.leaf-pile.empty').count(), 4);
+    await q.locator('.leaf-pile[data-squirrel]').first().click();   // 翻到松鼠：提示、劇情版不會失敗
+    assert.match(await q.locator('#leaf-msg').innerText(), /松鼠在吃松果/);
+    assert.equal(await q.locator('.leaf-pile.caught').count(), 1);
     for (const o of await q.$$('.leaf-pile[data-pine]')) await o.click();
     await q.waitForFunction(() => /松果都找回來了[\s\S]*⭐3/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
     await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 15000 });
@@ -1814,7 +1818,12 @@ async function main() {
     const roundPlay = async (no, pine, wrongOnly) => {
       await q.waitForFunction((n) => (document.getElementById('leaf-round') || {}).textContent === '第 ' + n + ' / 3 回合' && !!document.querySelector('.leaf-grid:not(.peek)'), no, { timeout: 8000 });
       assert.equal(await q.locator('.leaf-pile[data-pine]').count(), pine);
-      if (wrongOnly) { for (let k = 0; k < 3; k++) await q.locator('.leaf-pile:not([data-pine]):not(.open)').first().click(); }
+      assert.equal(await q.locator('.leaf-pile[data-squirrel]').count(), 2);
+      if (wrongOnly) {   // 翻到松鼠 1 次＋空地 2 次 = 翻錯 3 次
+        await q.locator('.leaf-pile[data-squirrel]').first().click();
+        assert.equal(await q.locator('.leaf-heart.off').count(), 1, '翻到松鼠算翻錯 1 次');
+        for (let k = 0; k < 2; k++) await q.locator('.leaf-pile:not([data-pine]):not([data-squirrel]):not(.open)').first().click();
+      }
       else for (const o of await q.$$('.leaf-pile[data-pine]')) await o.click();
     };
     await roundPlay(1, 4, true);                      // 第 1 回合翻錯 3 次：0 顆，沒找到的松果亮出來
