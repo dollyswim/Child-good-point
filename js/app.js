@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-110';
+  var APP_VERSION = '2026.11.09-111';
   var store;
   try {
     store = new CGP.Store();
@@ -1783,7 +1783,7 @@
         if (!mine.length) return '';
         return '<div class="ach-cat"><h3>' + c[1] + '</h3><div class="ach-grid">' + mine.map(function (a) {
           return '<button type="button" class="ach ach-' + a.cat + (a.done ? ' done' : '') + (ui.achNew && ui.achNew.indexOf(a.id) >= 0 ? ' is-new' : '') + '" data-action="ach-info" data-id="' + a.id + '" aria-label="' + h(a.name) + (a.done ? '（已解鎖）' : '（未解鎖）') + '">' +
-            (a.done ? badgeHtml(a, 'xs') : '<span class="ach-badge">🔒</span>') + '<small>' + h(a.name) + '</small></button>';   // 已解鎖：完整彩色徽章
+            (a.done ? badgeHtml(a, 'xs') : '<span class="ach-badge"><img src="' + BADGE_IMG.locked + '" alt="未解鎖" width="256" height="256" decoding="async" draggable="false"></span>') + '<small>' + h(a.name) + '</small></button>';   // 已解鎖：完整彩色徽章
         }).join('') + '</div></div>';
       }).join('') + '</div>';
   }
@@ -1836,7 +1836,10 @@
    * 正式徽章圖（Codex 交件後放 images/badges/badge_<代號>.webp，並把代號加進這裡）；
    * 沒有圖的成就用程式畫的徽章：類別色外框＋成就圖示（分數金牌另標數字）
    */
-  var BADGE_IMG = { pine10: 'images/wood/leaf_pinecone.webp', squirrel5: 'images/wood/leaf_squirrel.webp' };   // 2026-11-08：松果、松鼠成就用遊戲圖
+  var BADGE_IMG = {};   // 2026-11-09 正式徽章圖上線（家長 Gemini 圖：去白底、統一大小 256×256；松果、松鼠套紫色框）
+  ('advStart goldClear1 reachR2 reachR3 reachR4 goldHero woodHero chest1 chests10 mystery1 catch5 catch10 pine10 squirrel5 ' +
+    'earn1000 earn2000 earn3000 earn4000 earn5000 earn6000 earn7000 earn8000 earn9000 earn10000 special1 special5 streak7 locked').split(' ')
+    .forEach(function (id) { BADGE_IMG[id] = 'images/badges/badge_' + id + '.webp'; });
   /** 主徽章挑選：越高階／越稀有分數越高（只影響演出，不影響成就條件） */
   var ACH_RANK = { goldClear1: 300, streak7: 120, reachR4: 110, catch10: 100, special5: 95, reachR3: 80, chests10: 75, mystery1: 70,
     reachR2: 60, catch5: 45, special1: 40, chest1: 30, advStart: 20 };

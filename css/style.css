@@ -1408,6 +1408,7 @@ body.mg-open { overflow: hidden; }
 .ach small { font-size: .66rem; font-weight: 800; color: var(--muted); text-align: center; line-height: 1.25; }
 .ach.done { background: linear-gradient(#fffbe9, #ffefc2); border-color: #ffd23f; box-shadow: 0 2px 0 rgba(200, 150, 40, .3); }
 .ach.done .ach-badge { filter: none; opacity: 1; }
+.ach-badge img { display: block; width: 40px; height: 40px; }   /* 未解鎖：灰色鎖頭徽章 */
 .ach.done small { color: #8a5a00; }
 /* 外框顏色依類別：冒險＝綠、收集＝紫、生活＝金（未解鎖一律灰） */
 .ach.done.ach-adventure { background: linear-gradient(#f3fff0, #d6f5c9); border-color: #5cbf4a; box-shadow: 0 2px 0 rgba(60, 140, 50, .3); }

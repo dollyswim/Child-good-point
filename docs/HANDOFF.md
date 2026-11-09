@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-09｜App 版本 `2026.11.09-110`｜Service Worker 快取 `cgp-shell-v120`｜`main` 最新：效能優化（圖片獨立快取、升版不重抓圖、金島背景壓縮一半）
+> 最後更新：2026-11-09｜App 版本 `2026.11.09-111`｜Service Worker 快取 `cgp-shell-v121`｜`main` 最新：成就徽章正式圖上線（28 張）
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -14,7 +14,7 @@
 - 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v120`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.09-110`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v121`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.09-111`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 139 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -39,7 +39,7 @@
 ### 等外部美術（Codex 冷卻中，交件後由 Claude 核對接入）
 | 項目 | 規格 | 接入方式 |
 |---|---|---|
-| 成就徽章 26 張（25 成就＋未解鎖；新增 `goldHero`、`woodHero`，木島小英雄可之後補交） | `docs/art/CODEX_ACHIEVEMENT_BADGES_BRIEF.md`（＋`.en.md`）、清單 `docs/art/achievement_badges.csv` | 放 `images/badges/`，在 `js/app.js` 的 `BADGE_IMG` 依代號加入；目前用程式畫的類別色徽章 |
+| ✅ 成就徽章（2026-11-09 上線） | 家長 Gemini 圖 26 張（檔名沒照規則，依圖辨認改名）；去除與外框相連的白底、裁到徽章邊緣、統一 256×256 WebP；松果躲貓貓、怎麼都是松鼠用遊戲圖套「一個大秘寶」的紫色外框 | `images/badges/badge_<代號>.webp`，`js/app.js` 的 `BADGE_IMG`；未解鎖用 `badge_locked.webp` |
 | 木島全島配置草圖 → 正式背景 | `docs/art/CODEX_WOOD_ISLAND_BRIEF.md`、規劃 `docs/art/WOOD_ISLAND_PLAN.md` | 換島機制已完成；資料到貨用 `GAME.registerBoard('wood', board)` 開放（同金島：4 區、1080×5400、data → `tools/gen_board_region.py`） |
 
 ### 可能的下一步（家長尚未指定）

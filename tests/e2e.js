@@ -2207,7 +2207,8 @@ async function main() {
       const { c, q, id } = await unlockOn({}, 1000);
       assert.match(await q.locator('#ach-theater h2').innerText(), /^🎉 成就解鎖！$/);
       assert.match(await q.locator('#ach-theater .th-name').innerText(), /獲得 1000 分/);
-      assert.equal(await q.locator('#ach-theater .th-main .badge-life').count(), 1, '主徽章依成就類別上色');
+      assert.match(await q.locator('#ach-theater .th-main .badge-img img').getAttribute('src'), /images\/badges\/badge_earn1000\.webp$/, '主徽章用正式徽章圖');
+      assert.ok(await q.locator('#ach-theater .th-main .badge-img img').evaluate((im) => im.complete && im.naturalWidth === 256), '徽章圖載入成功');
       assert.equal(await q.locator('#ach-theater .th-mini').count(), 0, '單一成就沒有小徽章列');
       assert.equal(await q.locator('#toast:not([hidden])').filter({ hasText: '解鎖成就' }).count(), 0, '不再用綠色提示');
       assert.ok(await fitsScreen(q), '直式不超出畫面');
@@ -2255,10 +2256,11 @@ async function main() {
       assert.match(await q.locator('#ach-theater h2').innerText(), /一次解鎖 10 個成就/);
       assert.match(await q.locator('#ach-theater .th-name').innerText(), /獲得 10000 分/);
       assert.equal(await q.locator('#ach-theater .th-mini').count(), 10);
-      assert.equal(await q.locator('#ach-theater .badge-n').first().innerText(), '10,000', '分數金牌標出數字，不是全部同一個圖');
+      assert.match(await q.locator('#ach-theater .th-main img').getAttribute('src'), /badge_earn10000\.webp$/, '分數金牌每個分數各一張圖');
       assert.ok(await q.evaluate(() => { const s = document.querySelector('.th-strip'); return s.scrollWidth > s.clientWidth; }), '數量多：橫向捲動');
       assert.ok(await fitsScreen(q), dev + '：不超出畫面');
       assert.ok(await q.evaluate(() => { const b = document.querySelector('[data-th=close]').getBoundingClientRect(); return b.bottom <= innerHeight && b.top >= 0; }), dev + '：按鈕不用捲動就看得到');
+      await q.waitForTimeout(1600);   // 等主徽章彈出動畫跑完再截圖
       await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'theater-' + (dev.includes('landscape') ? 'landscape' : 'portrait') + '.png') : path.join(require('os').tmpdir(), 'th.png') });
       await q.click('[data-th=close]');
       await q.waitForFunction(() => !document.getElementById('ach-theater'));
