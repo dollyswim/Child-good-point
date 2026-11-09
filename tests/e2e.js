@@ -763,6 +763,62 @@ async function main() {
     await c7.close();
   }
 
+  // ---------- 一般冒險事件視窗（2026-11-09）：卡片式、單一視窗整合多個事件；內容沿用事件原文 ----------
+  for (const vp of [{ width: 360, height: 800 }, { width: 360, height: 560 }, { width: 1280, height: 800 }]) {
+    const c = await browser.newContext({ viewport: vp, deviceScaleFactor: 2, hasTouch: vp.width < 600, serviceWorkers: 'block' });
+    const q = await c.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    const id = await q.evaluate(() => {
+      const s = window.__cgpStore;
+      const a = s.addChild({ name: '甲', startPoints: 0 });
+      const it = s.addItem({ kind: 'bonus', name: '大加分', points: 100 });
+      s.recordItem(a.id, it.id); s.settleToday(a.id);
+      s.getPlayer(a.id).bag.d6 = 6; s.save();
+      return a.id;
+    });
+    const roll = async (from, seq, setup) => {
+      await q.evaluate(([cid, from, seq, setup]) => {
+        const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, from);
+        if (setup) { const ch = s._addMapChest(cid, 'milestone'); ch.n = setup; ch.tileId = s.getBoard(cid).tiles[setup].id; }
+        s.random = () => (seq.length ? seq.shift() : 0); s.save();
+      }, [id, from, seq, setup || 0]);
+      await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);
+      await q.click('.dice-btn.d6');
+      await q.waitForSelector('#confirm[open] [data-testid=event]', { timeout: 10000 });
+      const ok = await q.evaluate(() => { const b = document.querySelector('#confirm [data-yes]').getBoundingClientRect(), d = document.querySelector('#confirm .ev').getBoundingClientRect();
+        return b.bottom <= innerHeight && b.top >= 0 && d.top >= 0 && d.bottom <= innerHeight && d.right <= innerWidth && d.left >= 0; });
+      assert.ok(ok, vp.width + 'x' + vp.height + '：視窗與按鈕都在畫面內');
+      return q.locator('#confirm .ev').innerText();
+    };
+    const shot = async (name) => { if (SHOT_DIR) await q.locator('#confirm .ev').screenshot({ path: path.join(SHOT_DIR, 'event-' + name + '-' + vp.width + 'x' + vp.height + '.png') }); };
+    const close = async () => { await q.click('#confirm [data-yes]'); await q.waitForSelector('#confirm[open]', { state: 'detached', timeout: 3000 }).catch(() => {}); };
+    // 1. 命運卡後退：第 12 格擲 2 → 第 14 格 → 往回退 2 格
+    let t = await roll(12, [1.5 / 6, 0.8, 0.9]);
+    assert.match(t, /命運卡出現！[\s\S]*擲出 2・停在第 12 格[\s\S]*命運卡｜往回退[\s\S]*往回退了 2 格[\s\S]*繼續冒險！/);
+    assert.ok(await q.locator('#confirm .ev.ev-fate .ev-card.ev-fate').count());
+    await shot('fate'); await close();
+    // 2. 路障：第 10 格擲 1 → 第 11 格
+    t = await roll(10, [0.5 / 6, 0.95, 0.4]);
+    assert.match(t, /遇到小麻煩！[\s\S]*停在第 11 格[\s\S]*命運卡｜路障[\s\S]*這次沒有影響，下次繼續前進/);
+    assert.ok(await q.locator('#confirm .ev.ev-block .ev-card.ev-block').count());
+    await shot('block'); await close();
+    // 3. 沿路撿到神秘寶箱＋命運卡路障（同一個視窗）：第 8 格擲 3，經過第 10 格的神秘寶箱，停在第 11 格命運格
+    const bag0 = await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.mysteryChest || 0, id);
+    t = await roll(8, [2.5 / 6, 0.95, 0.6], 10);
+    assert.match(t, /冒險新發現！[\s\S]*擲出 3・停在第 11 格[\s\S]*神秘寶箱 ×1[\s\S]*黃金鑰匙[\s\S]*命運卡｜路障/);
+    assert.equal(await q.locator('#confirm .ev-card').count(), 2, '兩個事件放在同一個視窗');
+    assert.match(await q.locator('#confirm .ev-art img').getAttribute('src'), /mystery_chest/, '主圖用本次獲得的獎勵');
+    await shot('multi'); await close();
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.mysteryChest || 0, id), bag0 + 1, '神秘寶箱只收 1 個，關閉視窗不會重複發放');
+    // 4. 特殊任務（較長的文字）：第 12 格擲 2 → 第 14 格
+    t = await roll(12, [1.5 / 6, 0.3]);
+    assert.match(t, /命運卡出現！[\s\S]*命運卡｜特殊任務[\s\S]*已加到任務頁/);
+    await shot('special'); await close();
+    await c.close();
+  }
+  console.log('✔ 一般冒險事件視窗：命運卡後退、路障、撿到神秘寶箱＋命運卡合併一個視窗、特殊任務；手機、矮螢幕、桌面都不超出畫面');
+
   // ---------- Phase 4 第 2 步：小遊戲「抓住星星」 ----------
   {
     const c8 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 760 }, serviceWorkers: 'block' });

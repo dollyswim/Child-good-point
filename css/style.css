@@ -2107,3 +2107,28 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .scene-art .invite-card-img, .scene-art .friend-img { height: auto; object-fit: contain; }
 .scene-art .invite-draw { width: 100%; height: 100%; }
 .scene-art .meadow-img, .scene-art .party-slot img { object-fit: contain; }
+/* 一般冒險事件視窗（2026-11-09）：暖白大圓角面板、橘金主色；事件卡片依類型換淡色底（獎勵奶油黃／命運淡紫／路障珊瑚橘／其他天藍）；不用動畫 */
+.modal.confirm.ev-modal { background: transparent; box-shadow: none; overflow: visible; width: min(440px, calc(100vw - 24px)); max-height: none; }
+.ev { --ev-accent: #e0761c; display: flex; flex-direction: column; gap: 12px; max-height: calc(100dvh - 32px); box-sizing: border-box; padding: 20px 16px 16px;
+  border-radius: 32px; background: #fffdf8; color: #6b4a2b; text-align: center; box-shadow: 0 10px 30px rgba(60, 35, 10, .28); }
+@supports not (height: 100dvh) { .ev { max-height: calc(100vh - 32px); } }
+.ev-fate { --ev-accent: #7a52b8; } .ev-block { --ev-accent: #e2643f; } .ev-move { --ev-accent: #2f8fcf; }
+.ev-body { display: grid; gap: 10px; justify-items: center; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
+.ev-title { margin: 0; color: var(--ev-accent); font-size: 1.7rem; font-weight: 900; line-height: 1.2; }
+.ev-sub { margin: -4px 0 0; color: #8a6a4a; font-weight: 800; font-size: .95rem; }
+.ev-art { display: grid; place-items: center; width: min(40vw, 160px); aspect-ratio: 1; flex: none; box-sizing: border-box; padding: 8px; border-radius: 28px; background: #fff; box-shadow: 0 4px 12px rgba(120, 80, 30, .14); }   /* 素材多為白底：放白色卡片、contain 不裁切 */
+.ev-art img { width: 100%; height: 100%; object-fit: contain; }
+.ev-card { width: 100%; box-sizing: border-box; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px 14px; border-radius: 20px; text-align: left; }
+.ev-card .ev-ico { display: grid; place-items: center; width: 52px; height: 52px; padding-right: 12px; border-right: 2px solid rgba(0, 0, 0, .08); }
+.ev-card .ev-ico img { width: 48px; height: 48px; object-fit: contain; border-radius: 12px; background: #fff; padding: 2px; box-sizing: border-box; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+.ev-txt { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; font-weight: 700; line-height: 1.45; }
+.ev-txt b { font-size: 1.08rem; font-weight: 900; }
+.ev-txt .ev-note { font-size: .88rem; opacity: .85; }
+.ev-card.ev-reward { background: #fff4d7; color: #7a4a10; } .ev-card.ev-reward b { color: #8a4f00; }
+.ev-card.ev-fate { background: #f2eeff; color: #6f6289; } .ev-card.ev-fate b { color: #6847a1; }
+.ev-card.ev-block { background: #ffece4; color: #8a4a33; } .ev-card.ev-block b { color: #c44e28; }
+.ev-card.ev-info { background: #e8f5fd; color: #3d6680; } .ev-card.ev-info b { color: #23709f; }
+.ev-btn { flex: none; width: 100%; min-height: 56px; border: 0; border-radius: 22px; background: linear-gradient(#ffb04d, #ff8f1f); color: #fff; font: inherit; font-size: 1.3rem; font-weight: 900;
+  box-shadow: 0 5px 0 #d16a12; cursor: pointer; text-shadow: 0 1px 0 rgba(150, 70, 0, .35); }
+.ev-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #d16a12; }
+@media (max-height: 560px) { .ev { padding: 12px 12px 12px; gap: 8px; } .ev-art { width: min(26vh, 110px); } .ev-title { font-size: 1.35rem; } .ev-btn { min-height: 48px; } }

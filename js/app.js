@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-115';
+  var APP_VERSION = '2026.11.09-116';
   var store;
   try {
     store = new CGP.Store();
@@ -1631,12 +1631,6 @@
     ov.hidden = true;
   }
 
-  function eventText(ev) {
-    if (!ev || ev.type === 'normal' || ev.type === 'start') return '';
-    var t = ev.title + '\n' + ev.text;
-    if (ev.then) t += '\n\n' + eventText(ev.then);
-    return t;
-  }
 
   /** 任意門：找出被點到的格子並確認傳送 */
   function pickDoorAt(child, x, y) {
@@ -1766,10 +1760,56 @@
     var foot = head + '・停在第 ' + store.getPlayer(childId).pos + ' 格';
     var rw = rollReward(res);   // 拿到星星／道具：獲得獎勵彈窗
     if (rw) { rw.foot = foot; rewardPopup(rw); return; }
-    var msg = eventText(res.event);
-    if (res.found) msg = '🎁 撿到 ' + res.found + ' 個神秘寶箱！放進冒險背包了，用 🔑 黃金鑰匙打開。' + (msg ? '\n\n' + msg : '');
-    if (msg) showInfo(head + '・停在第 ' + store.getPlayer(childId).pos + ' 格', msg);
-    else toast(head + '，停在第 ' + store.getPlayer(childId).pos + ' 格');
+    var cards = eventCards(res.event, res.found);   // 2026-11-09：一般冒險事件改用卡片式視窗（內容與原本文字相同）
+    if (cards.length) eventPopup(head.replace(/^\S+\s/, '') + '・停在第 ' + store.getPlayer(childId).pos + ' 格', cards);
+    else toast(head + '，停在第 ' + store.getPlayer(childId).pos + ' 格');   // 一般移動：維持小提示，不另外跳視窗
+  }
+
+  // ---------- 一般冒險事件視窗（2026-11-09 家長指定：和成就視窗同風格；只換顯示方式，不改事件內容與效果） ----------
+  // 版面：主標題 → 移動結果 → 主題插圖 → 事件卡片（獎勵＝奶油黃、命運卡＝淡紫、路障＝珊瑚橘、其他＝天藍）→「繼續冒險！」
+  function evStrip(t) { return String(t || '').replace(/^(?:[\u2600-\u27bf\ud83c-\udbff][\udc00-\udfff]?\ufe0f?\s*)+/, '').trim(); }   // 去掉開頭的表情符號
+  /** 把 store 回傳的事件（含礦車連鎖的 then）與沿路撿到的神秘寶箱，整理成卡片清單；文字沿用事件原文 */
+  function eventCards(ev, found) {
+    var cards = [];
+    if (found) cards.push({ theme: 'reward', img: 'images/items/mystery_chest.webp', title: '神秘寶箱 ×' + found, lines: ['已放進冒險背包，用 🔑 黃金鑰匙打開'] });
+    (function add(e) {
+      if (!e || e.type === 'normal' || e.type === 'start') return;
+      var lines = String(e.text || '').split('\n').filter(Boolean), c;
+      if (e.type === 'fate') {
+        var block = e.card === 'roadblock' && !e.shielded, m = block && /^路障：(.*)（(.*)）$/.exec(lines[0] || '');
+        if (m) lines = [m[1], m[2]];
+        var sub = e.card === 'roadblock' ? (e.shielded ? '推開路障' : '路障') : e.card === 'back' ? (e.shielded ? '防護罩擋住了' : '往回退') : '特殊任務';
+        c = { theme: block ? 'block' : 'fate', img: e.shielded ? 'images/items/shield.webp' : 'images/tiles/fate.webp', title: '命運卡｜' + sub, lines: lines };
+      } else {
+        var got = (e.type === 'chest' || e.type === 'chance') && (e.stars > 0 || Object.keys(e.items || {}).some(function (k) { return e.items[k] > 0; }));
+        var art = got ? rewardEntries(e.stars, e.items, 0)[0] : null;
+        c = { theme: got ? 'reward' : 'info', img: art ? art.img : (TILE_ART[e.type] || 'images/items/dice_6.webp'), title: evStrip(e.title) || '冒險事件', lines: lines };
+      }
+      cards.push(c);
+      add(e.then);
+    })(ev);
+    return cards;
+  }
+  /** cards：eventCards 的結果；sub：移動結果（例如「擲出 4・停在第 11 格」） */
+  function eventPopup(sub, cards) {
+    var has = function (t) { return cards.some(function (c) { return c.theme === t; }); };
+    var theme = has('reward') ? 'reward' : has('block') ? 'block' : has('fate') ? 'fate' : 'move';
+    var title = { reward: '冒險新發現！', block: '遇到小麻煩！', fate: '命運卡出現！', move: '成功前進！' }[theme];
+    var main = cards.filter(function (c) { return c.theme === (theme === 'move' ? 'info' : theme); })[0] || cards[0];   // 主圖：獎勵 → 命運／路障 → 其他
+    confirmEl.classList.add('ev-modal');
+    confirmEl.innerHTML = '<div class="ev ev-' + theme + '" data-testid="event">' +
+      '<div class="ev-body"><h2 class="ev-title">' + title + '</h2><p class="ev-sub">' + h(sub) + '</p>' +
+      '<span class="ev-art"><img src="' + main.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></span>' +
+      cards.map(function (c) {
+        return '<div class="ev-card ev-' + c.theme + '"><span class="ev-ico"><img src="' + c.img + '" alt="" aria-hidden="true" width="64" height="64" decoding="async"></span>' +
+          '<span class="ev-txt"><b>' + h(c.title) + '</b>' + c.lines.map(function (l, i) { return '<span' + (i ? ' class="ev-note"' : '') + '>' + h(l) + '</span>'; }).join('') + '</span></div>';
+      }).join('') + '</div>' +
+      '<button type="button" class="ev-btn" data-yes>繼續冒險！</button></div>';
+    var btn = confirmEl.querySelector('[data-yes]');
+    btn.onclick = function () { btn.disabled = true; confirmEl.close(); };   // 事件效果在顯示前已完成，這裡只關閉
+    confirmEl.addEventListener('close', function done() { confirmEl.removeEventListener('close', done); confirmEl.classList.remove('ev-modal'); });
+    confirmEl.oncancel = null;
+    if (typeof confirmEl.showModal === 'function') confirmEl.showModal(); else confirmEl.setAttribute('open', '');
   }
 
   /** 冒險大廳：成就（徽章先用表情符號；點一下看說明與達成日期） */
