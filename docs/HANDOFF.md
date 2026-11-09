@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-09｜App 版本 `2026.11.09-111`｜Service Worker 快取 `cgp-shell-v121`｜`main` 最新：成就徽章正式圖上線（28 張）
+> 最後更新：2026-11-09｜App 版本 `2026.11.09-112`｜Service Worker 快取 `cgp-shell-v122`｜`main` 最新：全站字體改用 jf open 粉圓 2.0
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -14,7 +14,7 @@
 - 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v121`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.09-111`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v122`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.09-112`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 139 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -57,6 +57,7 @@
 - 落葉找松果畫面定案（家長）：25 格置中在背景中間空草地；提示框在上方、中線對準兩側蘑菇，逗號後換行；先看時 25 堆全部掀開；松果、松鼠不加淡色卡（只用去背圖）；回合數、剩餘機會加半透明白底。
 - 落葉找松果正式圖已上線（家長 Gemini 圖，`images/wood/leaf_*.webp`：森林背景、落葉堆、松果、松鼠、翻開的空地；4 張只去除與外框相連的白底，保留奶油色貼紙邊框）。
 - 木島草圖到貨後：核對木島劇情的導遊／道具位置（`ISLAND_STORY.wood` 的相對位移）。
+- 全站字體（2026-11-09 家長指定）：jf open 粉圓 2.0（SIL OFL 1.1），原版 TTF 直接轉 WOFF2 放 `fonts/`（約 2MB，字形未改；授權全文 `fonts/LICENSE-jf-openhuninn.txt`，再散布必須附上）；`@font-face` 加 `font-display: swap`，index.html 預先載入；字型和圖片一樣放在獨立快取 `cgp-img-v1`，只下載一次。只有一個字重，粗體由瀏覽器加粗。
 - 效能優化（2026-11-09）：`sw.js` 圖片改放獨立快取 `cgp-img-v1`（先用快取、背景確認新圖），升版只重抓程式與頁面（約 600KB，原本每次約 4.5MB）；安裝時已有的圖從舊快取搬過來；程式檔安裝改用 `cache: reload`，避免把瀏覽器暫存的舊程式存進新版。金島 4 張背景 WebP 品質 78 重壓（約 400KB → 200KB）。E2E 新增離線快取測試。CSS 派對區段已合併；全檔仍有約 140 個重複選擇器（多數在 media query 內），之後有空再整理。
 - 木島地圖 Gemini 第 1 版已驗收（2026-11-09，家長決定改請 Codex 週五重畫，不再請 Gemini 修）：格距與道路接縫通過；退回重畫：缺第 1～3 區原尺寸圖、接縫兩側樹木疊影對不上、第 93～99 格不在路上、第 65／92 格站位壓到路或欄杆。清單見 `docs/art/WOOD_MAP_REVIEW_2026-11-09.md`。
 - 實機確認：第 5 格撿礦石面板、第 30 格拉轉轍器、能源塔連點充電在手機上的手感與位置。

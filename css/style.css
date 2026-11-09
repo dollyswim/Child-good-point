@@ -1,3 +1,6 @@
+/* 全站字體：jf open 粉圓 2.0（SIL OFL 1.1，授權見 fonts/LICENSE-jf-openhuninn.txt）；只有一個字重，粗體由瀏覽器加粗 */
+@font-face { font-family: "jf-openhuninn"; src: url("../fonts/jf-openhuninn-2.0.woff2") format("woff2"); font-display: swap; }
+button, input, select, textarea { font-family: inherit; }
 :root {
   --bg: #fff8ef;
   --surface: #ffffff;
@@ -21,7 +24,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  font-family: "jf-openhuninn", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
   font-size: 16px;
   line-height: 1.45;
   overflow-x: hidden;
@@ -375,7 +378,7 @@ h2 { font-size: 1.05rem; margin: 0 0 8px; }
 }
 body {
   background: var(--bg);
-  font-family: "Arial Rounded MT Bold", "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  font-family: "jf-openhuninn", "Arial Rounded MT Bold", "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
 }
 .app { background: linear-gradient(var(--sky-2) 0, var(--bg) 340px) no-repeat; }
 .app[data-view="settings"] { background: var(--bg); }

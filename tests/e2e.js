@@ -8,7 +8,7 @@ const assert = require('assert/strict');
 
 const ROOT = path.join(__dirname, '..');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
-  '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png' };
+  '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' };
 const SHOT_DIR = process.env.SHOT_DIR || null;
 const REQ_LOG = [];          // 伺服器收到的路徑（離線快取測試用）
 let SW_OVERRIDE = null;      // 模擬升版：改由這段內容回應 sw.js
