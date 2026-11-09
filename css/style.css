@@ -1320,7 +1320,7 @@ body.mg-open { overflow: hidden; }
 .magnet-opt small { color: var(--muted); font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { .map-chest { animation: none; } }
 
-/* 頁首按鈕：機器貓（首頁／冒險大廳）、漂浮城堡（設定，取代齒輪）；每種螢幕寬度都要顯示 */
+/* 頁首按鈕：機器人吉祥物（首頁／冒險大廳）、漂浮城堡（設定，取代齒輪）；每種螢幕寬度都要顯示 */
 .hero-link { display: inline-grid; justify-items: center; text-decoration: none; color: inherit; -webkit-tap-highlight-color: transparent; }
 .hero-link:active { transform: translateY(2px); }
 .hero-label {
@@ -1383,7 +1383,7 @@ body.mg-open { overflow: hidden; }
 .summary-list span:last-child { font-size: .86rem; color: var(--text); font-weight: 700; text-align: right; }
 .map-view-link { grid-column: 1 / -1; justify-self: center; }
 @media (prefers-reduced-motion: reduce) { .summary-list li { animation: none; } }
-/* 小頁首：機器貓取代「‹」返回鍵 */
+/* 小頁首：機器人吉祥物取代「‹」返回鍵 */
 .sky-sm .mascot-link { position: relative; z-index: 2; flex: none; margin-left: 2px; }
 .sky-sm .mascot-link img.mascot, .sky-sm .mascot-link .mascot { width: 46px; height: auto; animation: none; }
 .sky-sm .mascot-link .hero-label { margin-top: -4px; font-size: .62rem; }

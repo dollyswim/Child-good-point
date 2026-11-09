@@ -67,7 +67,7 @@
     { id: 'wings', name: '飛行翼', icon: '🪽', img: 'images/items/flying_wings.webp', price: 100, desc: '向前飛行 20 格（和溜冰鞋合計每天最多 5 次）' },
     { id: 'starCall', name: '星星呼喚', icon: '🌠', img: 'images/minigame/star.webp', price: 50, desc: '馬上玩一局「抓住星星」（不占每天 1 次，每天最多用 1 個）' },   // 2026-11-08 新增
     { id: 'pineHide', name: '松果躲躲', icon: '🌰', img: 'images/wood/leaf_pinecone.webp', price: 50, desc: '馬上玩一局「落葉找松果」（不占每天 1 次，每天最多用 1 個）' },   // 2026-11-08 新增（比照星星呼喚，和星星呼喚各自計算）
-    { id: 'door', name: '任意門', icon: '🚪', img: 'images/items/magic_door.webp', price: 200, desc: '傳送到本島指定的格子（每天最多 1 次）' }
+    { id: 'door', name: '傳送門', icon: '🚪', img: 'images/items/magic_door.webp', price: 200, desc: '傳送到本島指定的格子（每天最多 1 次）' }
   ];
 
   var SHOP = [
@@ -319,7 +319,7 @@
   var MYSTERY_POOL = [
     { id: 'skates', name: '溜冰鞋', icon: '🛼', weight: 18 }, { id: 'magicDice', name: '神奇骰子', icon: '🎲', weight: 18 },
     { id: 'luckyMedal', name: '好運金牌', icon: '🥇', weight: 18 }, { id: 'shield', name: '防護罩', icon: '🛡️', weight: 18 },
-    { id: 'wings', name: '飛行翼', icon: '🪽', weight: 12 }, { id: 'door', name: '任意門', icon: '🚪', weight: 12 },
+    { id: 'wings', name: '飛行翼', icon: '🪽', weight: 12 }, { id: 'door', name: '傳送門', icon: '🚪', weight: 12 },
     { id: 'airplane', name: '呼叫專機', icon: '✈️', weight: 4 }
   ];
   Store.prototype._rollMysteryChest = function (childId) {
@@ -925,7 +925,7 @@
     return this.data.adventure.minigames.filter(function (m) { return m.childId === childId && m.date === today && !m.bonus && !m.limitReset; });
   };
   /**
-   * 家長重置今天的次數上限（需家長密碼）：骰子 3 次、小遊戲 1 次、前進道具 5 次、任意門 1 次、神奇骰子 1 顆、星星呼喚 1 個都重新計算。
+   * 家長重置今天的次數上限（需家長密碼）：骰子 3 次、小遊戲 1 次、前進道具 5 次、傳送門 1 次、神奇骰子 1 顆、星星呼喚 1 個都重新計算。
    * 只影響今天；已用掉的道具不退回；舊紀錄保留（只是不再計入今天的上限）
    */
   Store.prototype.resetDailyLimits = function (childId) {
@@ -1094,7 +1094,7 @@
   };
   /** 移動類道具：溜冰鞋 3 格、飛行翼 20 格（不算擲骰次數；到目前開放的最後一格就停） */
   var MOVE_ITEMS = { skates: { steps: 3, name: '溜冰鞋' }, wings: { steps: 20, name: '飛行翼' } };
-  /** 每日使用上限（2026-11-07 家長決定）：前進類（溜冰鞋＋飛行翼）合計 5 次、任意門 1 次 */
+  /** 每日使用上限（2026-11-07 家長決定）：前進類（溜冰鞋＋飛行翼）合計 5 次、傳送門 1 次 */
   var MOVE_DAILY_LIMIT = 5, DOOR_DAILY_LIMIT = 1;
   /** 今天用了幾次指定道具（依道具紀錄計算） */
   Store.prototype._usesToday = function (childId, items) {
@@ -1103,7 +1103,7 @@
       return x.childId === childId && x.action === 'use' && x.date === today && items.indexOf(x.item) >= 0 && !x.limitReset;
     }).length;
   };
-  /** 今天前進類道具與任意門還能用幾次 */
+  /** 今天前進類道具與傳送門還能用幾次 */
   Store.prototype.getItemLimitsToday = function (childId) {
     var L = this.getLimits();
     return { move: Math.max(0, L.move - this._usesToday(childId, ['skates', 'wings'])),
@@ -1132,17 +1132,17 @@
   Store.prototype.useSkates = function (childId) { return this._useMoveItem(childId, 'skates'); };
   /** 飛行翼：前進 20 格（第一區到第 30 格就停） */
   Store.prototype.useWings = function (childId) { return this._useMoveItem(childId, 'wings'); };
-  /** 任意門：傳送到本島已開放的指定格子（不含起點、目前位置與最後一格），落點觸發事件 */
+  /** 傳送門：傳送到本島已開放的指定格子（不含起點、目前位置與最後一格），落點觸發事件 */
   Store.prototype.useDoor = function (childId, n) {
     this._requirePlay(childId);
     var p = this.getPlayer(childId);
     if (p.pendingRoll) throw new Error('先完成上一次擲骰');
     var tiles = this.getBoard(childId).tiles, end = tiles.length - 1;
     n = Math.floor(Number(n));
-    if (!(n >= 1 && n < end)) throw new Error('任意門不能傳送到這一格');
+    if (!(n >= 1 && n < end)) throw new Error('傳送門不能傳送到這一格');
     if (n === p.pos) throw new Error('你已經在這一格了');
-    if (!(p.bag.door > 0)) throw new Error('背包裡沒有任意門');
-    if (!this.getItemLimitsToday(childId).door) throw new Error('任意門每天只能用 ' + this.getLimits().door + ' 次，明天再用！');
+    if (!(p.bag.door > 0)) throw new Error('背包裡沒有傳送門');
+    if (!this.getItemLimitsToday(childId).door) throw new Error('傳送門每天只能用 ' + this.getLimits().door + ' 次，明天再用！');
     this._markDayStart(childId);
     var from = p.pos;
     p.bag.door--;

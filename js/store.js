@@ -93,6 +93,8 @@
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
   // ---------- 預設資料 ----------
+  /** 孩子的代表色：只接受 #RGB／#RRGGBB／#RRGGBBAA，其他一律用預設黃色 */
+  function safeColor(v) { return /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(String(v || '')) ? String(v) : '#ffd166'; }
   function emptyData() {
     return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null, achievements: {}, carry: {}, backup: { lastExportAt: 0, since: 0, snoozeUntil: '' },
       settings: { limits: {} }, flags: { tourSeen: false, tipsDone: false },   // 新安裝：要看新手導覽與新手任務
@@ -172,7 +174,7 @@
         id: String(c.id),
         name: String(c.name || '未命名'),
         avatar: String(c.avatar || '🙂'),
-        color: String(c.color || '#ffd166'),
+        color: safeColor(c.color),   // 2026-11-09：只接受 #色碼，避免備份檔在畫面樣式裡塞東西
         startPoints: toInt(c.startPoints, 0),
         title: String(c.title || ''),
         badge: String(c.badge || ''),
@@ -703,7 +705,7 @@
       id: uid(),
       name: name,
       avatar: isCharacter(input.avatar) ? input.avatar : this._nextCharacter(),
-      color: input.color || '#ffd166',
+      color: safeColor(input.color),
       startPoints: toInt(input.startPoints, 0),
       title: String(input.title || '').trim(),
       badge: String(input.badge || ''),

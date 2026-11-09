@@ -177,7 +177,7 @@ a small pile of golden stars on the counter, warm and inviting, front 3/4 view
 | P4-6 | 神奇骰子 | 同上 | 第 3 步 |
 | P4-7 | 飛行翼 | 同上 | 第 3 步 |
 | P4-8 | 防護罩 | 同上 | 第 3 步 |
-| P4-9 | 任意門 | 同上 | 第 3 步 |
+| P4-9 | 傳送門 | 同上 | 第 3 步 |
 | P4-10 | 呼叫專機 | 同上 | 第 3 步 |
 | 選做 | 「抓住星星」小遊戲背景（直式 1080×1920） | 小遊戲畫面 | 第 2 步 |
 
@@ -256,7 +256,7 @@ golden rim, a small star emblem in the center, gentle protective glow
 
 中文：可愛的圓形盾牌，外面罩著一層發光的半透明天藍色泡泡護罩，金色邊框，中央有小星星徽章，柔和的守護光芒。
 
-### P4-9 任意門
+### P4-9 傳送門
 
 ```
 A cute standalone pink rounded door with a golden knob, standing on a tiny grass patch,
@@ -509,7 +509,7 @@ centered with margin, no text, no watermark. Vertical image, about 150 x 230 pro
 
 ## 已完成（不用再做）
 
-6 面骰、12 面骰、溜冰鞋、能量星星、寶箱格、機會格、小遊戲格、起點旗、終點旗、礦場木門、星星商店、五島入口插圖、神諭祝福道具 G-1 命運重骰券、G-2 再來 3 次、Phase 4 的 P4-01～P4-10（命運水晶球、神秘寶箱、黃金鑰匙、寶物磁鐵、好運金牌、神奇骰子、飛行翼、防護罩、任意門、呼叫專機）。、「抓住星星」小遊戲背景。
+6 面骰、12 面骰、溜冰鞋、能量星星、寶箱格、機會格、小遊戲格、起點旗、終點旗、礦場木門、星星商店、五島入口插圖、神諭祝福道具 G-1 命運重骰券、G-2 再來 3 次、Phase 4 的 P4-01～P4-10（命運水晶球、神秘寶箱、黃金鑰匙、寶物磁鐵、好運金牌、神奇骰子、飛行翼、防護罩、傳送門、呼叫專機）。、「抓住星星」小遊戲背景。
 
 ---
 

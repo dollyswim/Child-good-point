@@ -12,7 +12,7 @@ function makeStore(dateStr = '2026-11-06T10:00:00', storage = memoryStorage()) {
 
 test('案例 A：起始 100，今日 +20、-5 → 總點數 115、今日 +15', () => {
   const { store } = makeStore();
-  const c = store.addChild({ name: '端端', startPoints: 100 });
+  const c = store.addChild({ name: '小安', startPoints: 100 });
   const plus = store.addItem({ kind: 'bonus', name: '大加分', points: 20 });
   const minus = store.addItem({ kind: 'penalty', name: '違反約定', points: 5 });
   assert.equal(store.getTotal(c.id), 100);
@@ -41,8 +41,8 @@ test('今日淨得分：+20、+10、-5 → +25，昨天的紀錄不算', () => {
 
 test('案例 B：共同任務 A 完成，B 不得同步完成', () => {
   const { store } = makeStore();
-  const a = store.addChild({ name: '端端' });
-  const b = store.addChild({ name: '波妞' });
+  const a = store.addChild({ name: '小安' });
+  const b = store.addChild({ name: '小樂' });
   const task = store.addItem({ kind: 'task', name: '刷牙', points: 5, childIds: [a.id, b.id], frequency: { type: 'daily' } });
   assert.equal(store.getItems('task').length, 1, '任務只建立一次');
   assert.equal(store.getTodayTasks(a.id).length, 1);
@@ -71,7 +71,7 @@ test('專屬任務只出現在指定孩子；全部孩子任務包含之後新�
 
 test('案例 C：點錯 +10 後撤銷，總點數與今日得分恢復，紀錄同步', () => {
   const { store } = makeStore();
-  const c = store.addChild({ name: '端端', startPoints: 50 });
+  const c = store.addChild({ name: '小安', startPoints: 50 });
   const p5 = store.addItem({ kind: 'bonus', name: '整理書包', points: 5 });
   const p10 = store.addItem({ kind: 'bonus', name: '完成功課', points: 10 });
   store.recordItem(c.id, p5.id);
@@ -102,7 +102,7 @@ test('撤銷只影響該孩子；撤銷任務會讓任務恢復未完成', () =>
 test('案例 D：重新載入（同一 storage）資料保留', () => {
   const storage = memoryStorage();
   const { store } = makeStore('2026-11-06T10:00:00', storage);
-  const c = store.addChild({ name: '端端', startPoints: 100 });
+  const c = store.addChild({ name: '小安', startPoints: 100 });
   const p = store.addItem({ kind: 'bonus', name: 'p', points: 20 });
   store.recordItem(c.id, p.id);
   const reopened = new Store({ storage, seed: false, now: () => new Date('2026-11-06T12:00:00') });
@@ -207,7 +207,7 @@ test('刪除規則項目後，歷史紀錄保留', () => {
 
 test('備份與還原：匯出後匯入可完整還原', () => {
   const { store } = makeStore();
-  const c = store.addChild({ name: '端端', startPoints: 100 });
+  const c = store.addChild({ name: '小安', startPoints: 100 });
   const p = store.addItem({ kind: 'bonus', name: 'p', points: 20 });
   store.recordItem(c.id, p.id);
   const json = store.exportJSON();
@@ -277,11 +277,11 @@ test('舊資料沒有 custom / stars 欄位時自動補預設值', () => {
 
 test('匯入規則：保留現有資料、孩子依名稱對應、相同規則不重複、新孩子自動新增', () => {
   const { store } = makeStore();
-  const a = store.addChild({ name: '端端', startPoints: 50 });
+  const a = store.addChild({ name: '小安', startPoints: 50 });
   const p = store.addItem({ kind: 'bonus', name: '主動幫忙', points: 5 });
   store.recordItem(a.id, p.id);
   const file = JSON.stringify({
-    children: [{ id: 'x1', name: '端端' }, { id: 'x2', name: '波妞' }],
+    children: [{ id: 'x1', name: '小安' }, { id: 'x2', name: '小樂' }],
     items: [
       { id: 'i1', kind: 'bonus', name: '主動幫忙', points: 5, childIds: 'all' },          // 重複
       { id: 'i2', kind: 'task', name: '說好話', points: 10, childIds: ['x1'], frequency: { type: 'daily' } },
@@ -291,10 +291,10 @@ test('匯入規則：保留現有資料、孩子依名稱對應、相同規則�
     records: [{ id: 'z', childId: 'x1', type: 'bonus', points: 999, date: '2026-11-06', ts: 1 }]
   });
   const r = store.mergeRules(file);
-  assert.deepEqual(r, { childrenAdded: ['波妞'], itemsAdded: 2, itemsUpdated: 0, itemsUnchanged: 1, itemsSkipped: 0,
+  assert.deepEqual(r, { childrenAdded: ['小樂'], itemsAdded: 2, itemsUpdated: 0, itemsUnchanged: 1, itemsSkipped: 0,
     rewardsAdded: 1, rewardsUpdated: 0, rewardsUnchanged: 0 });
   assert.equal(store.getTotal(a.id), 55, '原本的紀錄保留，檔案紀錄不匯入');
-  const bo = store.getChildren().find(c => c.name === '波妞');
+  const bo = store.getChildren().find(c => c.name === '小樂');
   assert.deepEqual(store.getTodayTasks(a.id).map(t => t.task.points), [10]);
   assert.deepEqual(store.getTodayTasks(bo.id).map(t => t.task.points), [5]);
   // 再匯入一次全部略過
@@ -405,8 +405,8 @@ test('使用者實際規則表可完整轉換（若有提供）', { skip: !proce
 
 test('CSV 只指定部分孩子的同名規則，不會把原本給全部孩子的規則搶走', () => {
   const { store } = makeStore();
-  const a = store.addChild({ name: '端端' });
-  const b = store.addChild({ name: '波妞' });
+  const a = store.addChild({ name: '小安' });
+  const b = store.addChild({ name: '小樂' });
   store.addItem({ kind: 'bonus', name: '主動幫忙', points: 5, childIds: 'all' });
   const csv = '規則ID,規則類型,適用對象,任務或行為,點數變動,計算頻率\nR1,加分,小美,主動幫忙,8,每次\n';
   const r = store.mergeRules(csvToRules(csv).data);
@@ -1183,8 +1183,8 @@ test('Phase 4：小遊戲存檔遷移（同一孩子同一天只留一筆）、�
 // ---------- 寶物商店 Phase 2：冒險寶物商店（生活點數） ----------
 function tsStore(startPoints = 1000, dateStr = '2026-11-06T10:00:00') {   // 2026-11-06 是週五
   const ctx = makeStore(dateStr);
-  const a = ctx.store.addChild({ name: '端端', startPoints });
-  const b = ctx.store.addChild({ name: '波妞', startPoints });
+  const a = ctx.store.addChild({ name: '小安', startPoints });
+  const b = ctx.store.addChild({ name: '小樂', startPoints });
   return Object.assign(ctx, { a, b });
 }
 
@@ -1249,7 +1249,7 @@ test('寶物商店：撤銷或刪除購買紀錄一併收回道具；道具用�
   store.getPlayer(a.id).bag.door = 0;      // 模擬已用掉
   assert.throws(() => store.undoLast(a.id), /已經用掉了/);
   assert.throws(() => store.deleteRecord(r.id), /已經用掉了/);
-  assert.equal(store.getTotal(a.id), 800, '擋下時紀錄仍在（任意門 200 點）');
+  assert.equal(store.getTotal(a.id), 800, '擋下時紀錄仍在（傳送門 200 點）');
   store.getPlayer(a.id).bag.door = 1;
   store.deleteRecord(r.id);
   assert.deepEqual([store.getTotal(a.id), store.getPlayer(a.id).bag.door], [1000, 0], '刪除：退點並收回道具');
@@ -1397,7 +1397,7 @@ test('自動備份：每天第一次開啟存一份、同一天不重複、保�
   const clock = { t: new Date('2026-11-01T09:00:00').getTime() };
   const open = async () => { const st = new Store({ storage, seed: false, now: () => new Date(clock.t), snapBackend }); await st.snapReady; return st; };
   let s = await open();
-  s.addChild({ name: '端端' });
+  s.addChild({ name: '小安' });
   assert.equal(s.getSnapshots().length, 1, '第一次開啟有 1 份');
   await open(); await open();
   assert.equal((await open()).getSnapshots().length, 1, '同一天不重複');
@@ -1415,7 +1415,7 @@ test('還原到前一天：整個 App 回到那天開始時；需家長密碼；
   const clock = { t: new Date('2026-11-06T09:00:00').getTime() };
   const open = async () => { const st = new Store({ storage, seed: false, now: () => new Date(clock.t), snapBackend }); await st.snapReady; return st; };
   let s = await open();
-  const c = s.addChild({ name: '端端', startPoints: 100 });
+  const c = s.addChild({ name: '小安', startPoints: 100 });
   const it = s.addItem({ kind: 'bonus', name: '加', points: 20 });
   s.recordItem(c.id, it.id);                                  // 11/6：120 點
   clock.t = new Date('2026-11-07T09:00:00').getTime();
@@ -1440,7 +1440,7 @@ test('還原到前一天：整個 App 回到那天開始時；需家長密碼；
 test('載入備份檔覆蓋前，自動備份目前狀態', async () => {
   const s = new Store({ storage: memoryStorage(), seed: false, now: () => new Date('2026-11-06T10:00:00'), snapBackend: memorySnapBackend() });
   await s.snapReady;
-  const c = s.addChild({ name: '端端', startPoints: 77 });
+  const c = s.addChild({ name: '小安', startPoints: 77 });
   s.importJSON(JSON.stringify({ children: [{ id: 'z', name: '新的' }] }));
   assert.equal(s.getChildren()[0].name, '新的');
   const before = s.getSnapshots().find(x => x.kind === 'before');
@@ -1456,7 +1456,7 @@ test('自動備份（沒有 IndexedDB 時改用 localStorage）：空間不足�
   const storage = { getItem: (k) => inner.getItem(k), setItem: (k, v) => { if (k.endsWith('-snapshots') && v.length > limit) throw new Error('QuotaExceeded'); inner.setItem(k, v); }, removeItem: (k) => inner.removeItem && inner.removeItem(k) };
   const clock = { t: new Date('2026-11-01T09:00:00').getTime() };
   const open = async () => { const st = new Store({ storage, seed: false, now: () => new Date(clock.t) }); await st.snapReady; return st; };
-  let s = await open(); s.addChild({ name: '端端' });
+  let s = await open(); s.addChild({ name: '小安' });
   assert.equal(s._snaps.kind, 'local', 'Node 沒有 IndexedDB → localStorage');
   for (let d = 2; d <= 4; d++) { clock.t = new Date('2026-11-0' + d + 'T09:00:00').getTime(); s = await open(); }
   assert.equal(s.getSnapshots().length, 4);
@@ -1483,7 +1483,7 @@ test('容量警告：主資料超過約 3.5MB 標記接近上限；存不進去�
   let fail = false;
   const storage = { getItem: (k) => inner.getItem(k), setItem: (k, v) => { if (fail) throw new Error('QuotaExceeded'); inner.setItem(k, v); }, removeItem: (k) => inner.removeItem(k) };
   const s = new Store({ storage, seed: false, snapBackend: memorySnapBackend() });
-  s.addChild({ name: '端端' });
+  s.addChild({ name: '小安' });
   assert.equal(s.storageNearFull, false);
   s.data.items.push({ id: 'big', kind: 'bonus', name: 'x'.repeat(STORAGE_WARN_CHARS), points: 1, childIds: 'all' });
   s.save();
@@ -1587,7 +1587,7 @@ test('飛行翼：前進 20 格、到第 30 格就停、落點觸發事件、不
   assert.equal(store.getPlayer(a.id).pos, 20);
 });
 
-test('任意門：傳送到本島指定格子（可跨第一、二區）、落點觸發事件；不能到終點、目前位置、起點', () => {
+test('傳送門：傳送到本島指定格子（可跨第一、二區）、落點觸發事件；不能到終點、目前位置、起點', () => {
   const { store, a } = p3Store();
   const bag = store.getPlayer(a.id).bag;
   bag.door = 2;
@@ -1599,13 +1599,13 @@ test('任意門：傳送到本島指定格子（可跨第一、二區）、落�
   store.random = () => 0.1;
   const r = store.useDoor(a.id, 12);
   assert.deepEqual([store.getPlayer(a.id).pos, store.getPlayer(a.id).tileId, r.event.type], [12, 'gold-01-012', 'chest']);
-  assert.throws(() => store.useDoor(a.id, 40), /每天只能用 1 次/, '任意門每天最多 1 次');
+  assert.throws(() => store.useDoor(a.id, 40), /每天只能用 1 次/, '傳送門每天最多 1 次');
   assert.equal(bag.door, 1, '超過上限不消耗');
   store.data.adventure.itemLog.forEach(x => { x.date = '2026-11-05'; });   // 模擬隔天：重新計算
   store.useDoor(a.id, 40);
   assert.deepEqual([store.getPlayer(a.id).pos, store.getPlayer(a.id).tileId], [40, 'gold-02-040'], '可以傳送到第二區');
   assert.equal(bag.door, 0);
-  assert.throws(() => store.useDoor(a.id, 5), /沒有任意門/);
+  assert.throws(() => store.useDoor(a.id, 5), /沒有傳送門/);
 });
 
 test('好運金牌：啟用後下一次寶箱效果 2 次、機會卡抽 2 張，用完失效', () => {
@@ -1901,7 +1901,7 @@ test('金島第四區資料：20 格（81～100）、穩定 ID、格距 64～76�
 test('備份提醒：滿 7 天沒匯出才提醒；匯出後重新計算；明天再提醒；沒有孩子不提醒', () => {
   const { store, setDate } = makeStore('2026-11-01T09:00:00');
   assert.equal(store.getBackupStatus().due, false, '沒有孩子不提醒');
-  store.addChild({ name: '端端' });
+  store.addChild({ name: '小安' });
   setDate('2026-11-07T09:00:00');
   assert.deepEqual(store.getBackupStatus(), { days: 6, never: true, due: false });
   setDate('2026-11-08T09:30:00');
@@ -2042,7 +2042,7 @@ test('重新結算今天：只補發差額（含新的加碼星星）、不重�
   assert.equal(store.getStarBalance(a.id), bal + pv.added);
 });
 
-test('前進道具每日上限：溜冰鞋＋飛行翼合計 5 次（不占擲骰），隔天重新計算；任意門每天 1 次', () => {
+test('前進道具每日上限：溜冰鞋＋飛行翼合計 5 次（不占擲骰），隔天重新計算；傳送門每天 1 次', () => {
   const { store, a } = p3Store();
   const bag = store.getPlayer(a.id).bag;
   assert.deepEqual([G.MOVE_DAILY_LIMIT, G.DOOR_DAILY_LIMIT], [5, 1]);
@@ -2247,7 +2247,7 @@ test('自動備份：可以刪除不要的一份（需家長密碼），其他�
 
 test('匯出目前規則表（CSV）：欄位與匯入相同；匯出再匯入不會重複、內容不變', () => {
   const { store } = makeStore();
-  const a = store.addChild({ name: '端端' }), b = store.addChild({ name: '波妞' });
+  const a = store.addChild({ name: '小安' }), b = store.addChild({ name: '小樂' });
   store.addItem({ kind: 'bonus', name: '幫忙,"倒垃圾"', points: 3, childIds: 'all' });
   store.addItem({ kind: 'penalty', name: '說謊', points: -10, childIds: [a.id] });
   store.addItem({ kind: 'bonus', name: '特殊表現', points: 0, custom: true, childIds: [a.id, b.id] });
@@ -2320,7 +2320,7 @@ test('星星呼喚：寶物商店 50 點；從背包使用馬上多一局小遊�
   assert.equal(p.bag.starCall, 1, '被擋下時不消耗');
 });
 
-test('家長重置今天的次數上限：骰子、小遊戲、前進道具、任意門、神奇骰子、星星呼喚都重新計算；道具不退回；明天照常；存檔重開保留', () => {
+test('家長重置今天的次數上限：骰子、小遊戲、前進道具、傳送門、神奇骰子、星星呼喚都重新計算；道具不退回；明天照常；存檔重開保留', () => {
   const { store, a, setDate, storage } = p3Store();
   const p = store.getPlayer(a.id);
   Object.assign(p.bag, { d6: 10, skates: 8, door: 2, magicDice: 2, starCall: 2 });
@@ -2446,7 +2446,7 @@ test('木島卡片：機會卡／命運卡效果與機率不變，文字換森�
 
 test('出發後才拿到的加分：留到下一次進入冒險一起換星星；扣分留在當天；解鎖仍看當天淨得分；不重複發放', () => {
   const { store, setDate } = makeStore('2026-11-08T09:00:00');
-  const c = store.addChild({ name: '端端' });
+  const c = store.addChild({ name: '小安' });
   const plus = store.addItem({ kind: 'bonus', name: '加分', points: 10 });
   const minus = store.addItem({ kind: 'penalty', name: '扣分', points: 5 });
   store.recordItem(c.id, plus.id);                       // 11/8 出發前 +10 → ⭐2
@@ -2475,7 +2475,7 @@ test('出發後才拿到的加分：留到下一次進入冒險一起換星星�
 
 test('出發後才拿到的加分：家長「重新結算今天」已補發的，隔天不再併入；更新前（11/7 以前）的舊紀錄不補發', () => {
   const { store, setDate } = makeStore('2026-11-08T09:00:00');
-  const c = store.addChild({ name: '端端' });
+  const c = store.addChild({ name: '小安' });
   const plus = store.addItem({ kind: 'bonus', name: '加分', points: 10 });
   store.recordItem(c.id, plus.id);
   store.settleToday(c.id);
@@ -2602,7 +2602,7 @@ test('加分時另外給能量星星：馬上入帳、只限加分、上限 20�
   assert.equal(store.getStarBalance(a.id), 5, '刪除紀錄也收回');
 });
 
-test('冒險每日上限：全部孩子共用、0～10、要家長密碼；擲骰、小遊戲、前進道具、任意門、神奇骰子、星星呼喚、松果躲躲都照設定', () => {
+test('冒險每日上限：全部孩子共用、0～10、要家長密碼；擲骰、小遊戲、前進道具、傳送門、神奇骰子、星星呼喚、松果躲躲都照設定', () => {
   const { store, a, push } = p3Store();
   assert.deepEqual(store.getLimits(), { dice: 3, minigame: 1, move: 5, door: 1, magic: 1, starCall: 1, pineHide: 1 }, '預設＝原本的規則');
   assert.throws(() => store.setLimits({ dice: 5 }), /家長密碼/);
@@ -2659,7 +2659,7 @@ test('神秘寶箱：其他島嶼開放後才會開出呼叫專機', () => {
   const { store, a } = tsStore();
   store.getPlayer(a.id).bag.giftMysteryChest = 2;
   store.random = () => 0.999;
-  assert.equal(store.openChest(a.id, 'giftMysteryChest').item, 'door', '只有金島：最後一項是任意門');
+  assert.equal(store.openChest(a.id, 'giftMysteryChest').item, 'door', '只有金島：最後一項是傳送門');
   G.registerBoard('wood', fakeWood());
   try {
     assert.equal(store.openChest(a.id, 'giftMysteryChest').item, 'airplane', '木島開放後 0.999 → 呼叫專機（稀有）');
@@ -2678,4 +2678,12 @@ test('新手上手旗標：新安裝要看導覽；舊存檔（已有孩子）�
   store.setFlag('tipsDone', true);
   assert.equal(store.data.flags.tipsDone, true);
   assert.throws(() => store.setFlag('parentPin', true), /不明的旗標/);
+});
+
+test('資安：孩子代表色只接受 #色碼（備份檔不能在樣式裡塞東西）', () => {
+  const d = migrate({ children: [{ id: 'c1', name: 'A', color: 'red;background:url(https://example.com/x)' }, { id: 'c2', name: 'B', color: '#A1b2C3' }] });
+  assert.equal(d.children[0].color, '#ffd166');
+  assert.equal(d.children[1].color, '#A1b2C3');
+  const { store } = tsStore();
+  assert.equal(store.addChild({ name: 'C', color: 'url(x)' }).color, '#ffd166');
 });

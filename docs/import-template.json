@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "children": [
-    { "id": "c1", "name": "端端", "avatar": "🐻", "color": "#ffd166", "startPoints": 100 },
-    { "id": "c2", "name": "波妞", "avatar": "🐰", "color": "#ffadad", "startPoints": 0 }
+    { "id": "c1", "name": "小安", "avatar": "🐻", "color": "#ffd166", "startPoints": 100 },
+    { "id": "c2", "name": "小樂", "avatar": "🐰", "color": "#ffadad", "startPoints": 0 }
   ],
   "items": [
     { "id": "t1", "kind": "task", "name": "刷牙", "points": 5, "childIds": "all", "frequency": { "type": "daily" } },

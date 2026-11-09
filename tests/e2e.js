@@ -76,7 +76,7 @@ async function main() {
     await page.fill('input[name="startPoints"]', String(start));
     await page.click('#modal-form button[type="submit"]');
   }
-  await addChild('端端', 100);                                         // 沒有孩子時：首頁的「新增孩子」
+  await addChild('小安', 100);                                         // 沒有孩子時：首頁的「新增孩子」
   assert.equal(await page.locator('main [data-action="add-child"]').count(), 0, '有孩子後首頁不再顯示新增孩子');
   await page.click('.child-card >> nth=0');                            // 小孩頁面：設定城堡下方的新增孩子（圖示＋文字）
   await page.waitForSelector('.sky .add-kid');
@@ -84,7 +84,7 @@ async function main() {
   const ak = await page.evaluate(() => { const a = document.querySelector('.add-kid').getBoundingClientRect(), c = document.querySelector('.castle-link').getBoundingClientRect(); return { dx: Math.abs((a.left + a.right) / 2 - (c.left + c.right) / 2), below: a.top >= c.bottom - 2, h: a.height }; });
   assert.ok(ak.dx < 1.5 && ak.below, '新增孩子在設定城堡正下方');
   assert.ok(ak.h < 60, '按鈕縮小（高度 ' + ak.h + 'px）');
-  await addChild('波妞', 0);
+  await addChild('小樂', 0);
   // 孩子 4 位以上：切換列每排 3 位（第二排在下方）；3 位以下一排
   await page.evaluate(() => { const s = window.__cgpStore; s.addChild({ name: '小明同學' }); s.addChild({ name: '阿寶' }); });
   await page.reload(); await page.waitForSelector('.kid-switch');
@@ -131,13 +131,13 @@ async function main() {
   await page.check('input[name="childIds"] >> nth=1');
   await shot('03-task-form');
   await page.click('#modal-form button[type="submit"]');
-  assert.match(await text('.rows'), /📋 每日任務[\s\S]*共同閱讀[\s\S]*端端、波妞/);
+  assert.match(await text('.rows'), /📋 每日任務[\s\S]*共同閱讀[\s\S]*小安、小樂/);
   await noHScroll('設定頁');
   await shot('04-settings-tasks');
 
-  // 案例 A：端端起始 100，+20、-5 → 115 / +15
+  // 案例 A：小安起始 100，+20、-5 → 115 / +15
   await page.goto(url + '#home');
-  await page.click('.child-card >> text=端端');
+  await page.click('.child-card >> text=小安');
   await page.click('.score-btn.bonus >> text=超棒表現');          // 預設顯示加分
   await page.click('.seg-btn.penalty');                            // 切到扣分
   assert.equal(await page.locator('.score-btn.bonus').count(), 0, '扣分頁不顯示加分項目');
@@ -146,7 +146,7 @@ async function main() {
   assert.equal(await text('[data-testid=today]'), '+15');
   console.log('✔ 案例 A：總點數 115、今日 +15');
 
-  // 案例 B：端端完成共同任務，波妞不得同步
+  // 案例 B：小安完成共同任務，小樂不得同步
   await page.click('.task >> text=共同閱讀');
   assert.ok(await page.locator('.task.done >> text=共同閱讀').isVisible());
   assert.equal(await text('[data-testid=total]'), '123');
@@ -154,14 +154,14 @@ async function main() {
   await noHScroll('孩子頁');
   await page.click('a[aria-label="回首頁"]');
   assert.match(await text('.child-card >> nth=0'), /123 點[\s\S]*今日 \+23/);
-  await page.click('.child-card >> text=波妞');
+  await page.click('.child-card >> text=小樂');
   assert.equal(await page.locator('.task.done >> text=共同閱讀').count(), 0);
   assert.equal(await text('[data-testid=today]'), '0');
   console.log('✔ 案例 B：共同任務完成狀態各自獨立');
 
   // 案例 C：點錯 +10 後撤銷
   await page.click('a[aria-label="回首頁"]');
-  await page.click('.child-card >> text=端端');
+  await page.click('.child-card >> text=小安');
   const before = [await text('[data-testid=total]'), await text('[data-testid=today]')];
   const recCount = await page.locator('.rec').count();
   await page.fill('#score-search', '閱讀');
@@ -227,9 +227,9 @@ async function main() {
   await page.goto(url + '#rules-children');
   await passPin();
   await page.click('[data-action=edit-child] >> nth=1');
-  await page.fill('input[name="name"]', '波妞妞');
+  await page.fill('input[name="name"]', '小樂妞');
   await page.click('#modal-form button[type="submit"]');
-  assert.match(await text('.rows'), /波妞妞/);
+  assert.match(await text('.rows'), /小樂妞/);
   await page.click('[data-action=delete-child] >> nth=1');
   await page.click('#confirm [data-yes]');
   assert.equal(await page.locator('.rows .row').count(), 1);
@@ -747,7 +747,7 @@ async function main() {
     await q.waitForFunction(() => !document.querySelector('[data-testid=special]'));
     const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(over <= 0, '任務頁不可橫向溢出');
-    // 頁首按鈕：首頁機器貓 → 冒險大廳；冒險大廳機器貓 → 首頁；漂浮城堡 → 設定（360px 也顯示，沒有齒輪）
+    // 頁首按鈕：首頁機器人吉祥物 → 冒險大廳；冒險大廳機器人吉祥物 → 首頁；漂浮城堡 → 設定（360px 也顯示，沒有齒輪）
     await q.goto(url + '#home');
     assert.equal(await q.locator('.sky .castle-link').isVisible(), true, '360px 也看得到城堡');
     assert.equal(await q.locator('a.gear:not(.castle-link)').count(), 0, '齒輪已移除');
@@ -995,7 +995,7 @@ async function main() {
     await q.goto(url);
     const [id, id2] = await q.evaluate(() => {
       const s = window.__cgpStore;
-      return [s.addChild({ name: '端端', startPoints: 150 }).id, s.addChild({ name: '波妞', startPoints: 150 }).id];
+      return [s.addChild({ name: '小安', startPoints: 150 }).id, s.addChild({ name: '小樂', startPoints: 150 }).id];
     });
     await q.goto(url + '#shop-' + id);
     await q.waitForSelector('[data-testid=treasure]');
@@ -1068,7 +1068,7 @@ async function main() {
     q.on('pageerror', (e) => errors.push(e.message));
     q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
     await q.goto(url);
-    const [k1, k2] = await q.evaluate(() => { const s = window.__cgpStore; return [s.addChild({ name: '端端' }).id, s.addChild({ name: '波妞' }).id]; });
+    const [k1, k2] = await q.evaluate(() => { const s = window.__cgpStore; return [s.addChild({ name: '小安' }).id, s.addChild({ name: '小樂' }).id]; });
     // 第一次進設定 → 設定密碼
     await q.goto(url + '#rules-blessing');
     await q.waitForSelector('[data-testid=pin] #pin-2');
@@ -1080,22 +1080,22 @@ async function main() {
     await q.waitForSelector('[data-testid=blessing]');
     assert.equal(await q.locator('.bless-kind').count(), 5);
     await q.waitForFunction(() => [...document.querySelectorAll('.bless-art img')].length === 5 && [...document.querySelectorAll('.bless-art img')].every((i) => i.complete && i.naturalWidth > 0), null, { timeout: 8000 });   // 5 張獎勵圖都載入
-    // 送波妞 神秘寶箱 ×2＋鼓勵的話；再送幸運星
+    // 送小樂 神秘寶箱 ×2＋鼓勵的話；再送幸運星
     await q.click('.bless-kid:has(input[value="' + k2 + '"])');
     await q.click('.bless-kind:has(input[value=mysteryChest])');
     await q.selectOption('#bless-qty', '2');
     await q.fill('#bless-msg', '今天主動收玩具，好棒！');
     await q.click('[data-action=blessing-send]');
-    assert.match(await q.locator('#confirm').innerText(), /波妞[\s\S]*神秘寶箱 ×2[\s\S]*主動收玩具/);
+    assert.match(await q.locator('#confirm').innerText(), /小樂[\s\S]*神秘寶箱 ×2[\s\S]*主動收玩具/);
     await q.click('#confirm [data-yes]');
     await q.waitForSelector('.bless-hist li');
     await q.click('.bless-kind:has(input[value=luckyStar])');
     await q.click('[data-action=blessing-send]');
     await q.click('#confirm [data-yes]');
     await q.waitForFunction(() => document.querySelectorAll('.bless-hist li').length === 2);
-    assert.match(await q.locator('.bless-hist').innerText(), /幸運星 ×1 → 波妞[\s\S]*神秘寶箱 ×2 → 波妞[\s\S]*主動收玩具/);
+    assert.match(await q.locator('.bless-hist').innerText(), /幸運星 ×1 → 小樂[\s\S]*神秘寶箱 ×2 → 小樂[\s\S]*主動收玩具/);
     assert.deepEqual(await q.evaluate((id) => [window.__cgpStore.getPlayer(id).bag.giftMysteryChest, window.__cgpStore.getStarBalance(id)], k2), [2, 10]);
-    assert.equal(await q.evaluate((id) => window.__cgpStore.getPlayer(id).bag.giftMysteryChest, k1), 0, '端端不受影響');
+    assert.equal(await q.evaluate((id) => window.__cgpStore.getPlayer(id).bag.giftMysteryChest, k1), 0, '小安不受影響');
     // 收回當天送錯的：送一般寶箱 ×1 → 按「收回」→ 背包歸零、紀錄顯示已收回、孩子不會看到
     await q.click('.bless-kind:has(input[value=chest])');
     await q.click('[data-action=blessing-send]');
@@ -1164,7 +1164,7 @@ async function main() {
     await q.goto(url);
     const id = await q.evaluate(() => {
       const s = window.__cgpStore;
-      const a = s.addChild({ name: '端端' });
+      const a = s.addChild({ name: '小安' });
       const it = s.addItem({ kind: 'bonus', name: '大加分', points: 100 });
       s.recordItem(a.id, it.id); s.settleToday(a.id);
       Object.assign(s.getPlayer(a.id).bag, { magicDice: 1, rerollTicket: 1, door: 1, wings: 1, luckyMedal: 1, bonusPlay: 1, shield: 1 });
@@ -1197,7 +1197,7 @@ async function main() {
     await q.click('#confirm [data-yes]');
     await q.waitForSelector('.hud-bonus');
     assert.match(await q.locator('.hud-bonus').innerText(), /\+3/);
-    // 任意門：點地圖上的第 12 格（寶箱）→ 傳送，好運金牌讓寶箱效果 2 次
+    // 傳送門：點地圖上的第 12 格（寶箱）→ 傳送，好運金牌讓寶箱效果 2 次
     await q.click('.item-btn[data-kind=door]');
     await q.waitForSelector('.map-view.picking');
     await q.evaluate(() => { window.__cgpStore.random = () => 0.1; });
@@ -1220,10 +1220,10 @@ async function main() {
     await q.evaluate(() => { window.__cgpStore.random = () => 0.5; });
     await q.click('.item-btn[data-kind=wings]');
     await q.waitForFunction((b) => +document.querySelector('[data-testid=pos]').textContent.split(' ')[0] === Math.min(100, b + 20), before, { timeout: 15000 });
-    // 每日上限：任意門今天已用 1 次 → 變灰；飛行翼顯示前進類剩餘次數（合計 5 次）
+    // 每日上限：傳送門今天已用 1 次 → 變灰；飛行翼顯示前進類剩餘次數（合計 5 次）
     await q.evaluate((cid) => { const s = window.__cgpStore; Object.assign(s.getPlayer(cid).bag, { door: 1, wings: 1, skates: 1 }); s.save(); }, id);
     await q.reload(); await q.waitForSelector('[data-testid=item-bar]');
-    assert.ok(await q.locator('.item-btn[data-kind=door]').isDisabled(), '任意門每天 1 次，用過就變灰');
+    assert.ok(await q.locator('.item-btn[data-kind=door]').isDisabled(), '傳送門每天 1 次，用過就變灰');
     assert.match(await q.locator('.item-btn[data-kind=door]').innerText(), /今天已用/);
     assert.match(await q.locator('.item-btn[data-kind=wings]').innerText(), /今天剩 4 次/);
     await q.evaluate((cid) => { const s = window.__cgpStore; for (let i = 0; i < 4; i++) s._logItem(cid, 'use', 'skates', 1, '測試', ''); s.save(); }, id);
@@ -1233,7 +1233,7 @@ async function main() {
     assert.match(await q.locator('.dice-btn.skates').innerText(), /今天已用完/);
     const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(over <= 0);
-    console.log('✔ 寶物商店 Phase 4A：前進道具每日 5 次、任意門每日 1 次；道具列、神奇骰子＋命運重骰券、好運金牌、再來 3 次、任意門點選格子、飛行翼');
+    console.log('✔ 寶物商店 Phase 4A：前進道具每日 5 次、傳送門每日 1 次；道具列、神奇骰子＋命運重骰券、好運金牌、再來 3 次、傳送門點選格子、飛行翼');
     await c12.close();
   }
 
@@ -1247,7 +1247,7 @@ async function main() {
     await q.goto(url);
     const id = await q.evaluate(() => {
       const s = window.__cgpStore;
-      const a = s.addChild({ name: '端端' });
+      const a = s.addChild({ name: '小安' });
       const it = s.addItem({ kind: 'bonus', name: '大加分', points: 100 });
       s.recordItem(a.id, it.id); s.settleToday(a.id);
       s._addMapChest(a.id, 'milestone');
@@ -1317,7 +1317,7 @@ async function main() {
     await q.goto(url);
     const id = await q.evaluate(() => {
       const s = window.__cgpStore;
-      const a = s.addChild({ name: '端端' });
+      const a = s.addChild({ name: '小安' });
       const it = s.addItem({ kind: 'bonus', name: '大加分', points: 100 });
       s.recordItem(a.id, it.id); s.settleToday(a.id);
       s.getPlayer(a.id).bag.d6 = 2; s.save();
@@ -1377,10 +1377,10 @@ async function main() {
     // 重新整理仍然鎖住；任務頁顯示已結束
     await q.goto(url + '#child-' + id); await q.reload();
     assert.match(await q.locator('[data-testid=adventure]').innerText(), /今日冒險已結束/);
-    // 機器貓回首頁
+    // 機器人吉祥物回首頁
     await q.click('.mascot-link');
     await q.waitForSelector('.hero .mascot-link');
-    console.log('✔ Phase 5：結束今日冒險（作廢提示、今日小結、當天鎖住、冒險大廳再看小結、重新整理仍鎖住）、機器貓回首頁');
+    console.log('✔ Phase 5：結束今日冒險（作廢提示、今日小結、當天鎖住、冒險大廳再看小結、重新整理仍鎖住）、機器人吉祥物回首頁');
     await c14.close();
   }
 
@@ -1394,7 +1394,7 @@ async function main() {
     await q.goto(url);
     const id = await q.evaluate(() => {
       const s = window.__cgpStore;
-      const a = s.addChild({ name: '端端', startPoints: 1200 });
+      const a = s.addChild({ name: '小安', startPoints: 1200 });
       const it = s.addItem({ kind: 'bonus', name: '大加分', points: 100 });
       s.recordItem(a.id, it.id); s.settleToday(a.id);
       s.getPlayer(a.id).bag.d6 = 1; s.setPlayerTile(a.id, 97); s.save();
@@ -1417,7 +1417,7 @@ async function main() {
     // 首頁：最近得到的成就（最近 3 個），點一列進到小孩頁面並展開
     await q.goto(url + '#home');
     await q.waitForSelector('[data-testid=home-achievements]');
-    assert.match(await q.locator('[data-testid=home-achievements]').innerText(), /最近得到的成就[\s\S]*端端[\s\S]*5 \/ 27/);
+    assert.match(await q.locator('[data-testid=home-achievements]').innerText(), /最近得到的成就[\s\S]*小安[\s\S]*5 \/ 27/);
     assert.equal(await q.locator('[data-testid=home-achievements] .ach-mini').count(), 3);
     assert.ok(await q.evaluate(() => { const a = document.querySelector('[data-testid=home-achievements]'), w = document.querySelector('.week-card'); return a.compareDocumentPosition(w) & Node.DOCUMENT_POSITION_FOLLOWING; }), '在本週進度上方');
     await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'home-achievements.png') : path.join(require('os').tmpdir(), 'ha.png'), fullPage: true });
@@ -1482,7 +1482,7 @@ async function main() {
     await q.clock.setFixedTime(new Date('2026-11-01T10:00:00'));
     q.on('pageerror', (e) => errors.push(e.message));
     await q.goto(url);
-    await q.evaluate(() => window.__cgpStore.addChild({ name: '端端' }));
+    await q.evaluate(() => window.__cgpStore.addChild({ name: '小安' }));
     await q.reload();
     assert.equal(await q.locator('[data-testid=backup-remind]').count(), 0, '剛開始用不提醒');
     await q.clock.setFixedTime(new Date('2026-11-09T10:00:00'));
@@ -1513,8 +1513,8 @@ async function main() {
     q.on('pageerror', (e) => errors.push(e.message));
     q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
     await q.goto(url);
-    const cid = await q.evaluate(() => { const s = window.__cgpStore; const c = s.addChild({ name: '端端', startPoints: 100 }); return c.id; });
-    // 清空備份區後重建今天的自動備份（含端端 100 點）；備份放在 IndexedDB
+    const cid = await q.evaluate(() => { const s = window.__cgpStore; const c = s.addChild({ name: '小安', startPoints: 100 }); return c.id; });
+    // 清空備份區後重建今天的自動備份（含小安 100 點）；備份放在 IndexedDB
     assert.equal(await q.evaluate(async () => { const s = window.__cgpStore; await s.snapReady; await s._snaps.clear(); s._snapIndex = []; await s.dailySnapshot(); return s._snaps.kind; }), 'indexeddb');
     await q.evaluate((id) => { const s = window.__cgpStore; const it = s.addItem({ kind: 'bonus', name: '加', points: 50 }); s.recordItem(id, it.id); }, cid);
     await q.goto(url + '#rules-backup');
@@ -1543,11 +1543,11 @@ async function main() {
     assert.equal(await q.evaluate((id) => window.__cgpStore.getTotal(id), cid), 150, '刪除備份不影響目前資料');
     // 載入備份檔覆蓋全部資料
     const f = path.join(require('os').tmpdir(), 'cgp-restore-' + Date.now() + '.json');
-    fs.writeFileSync(f, JSON.stringify({ children: [{ id: 'x1', name: '波妞', startPoints: 9 }] }));
+    fs.writeFileSync(f, JSON.stringify({ children: [{ id: 'x1', name: '小樂', startPoints: 9 }] }));
     await q.setInputFiles('input[data-action=import]', f);
     await q.waitForFunction(() => /取代目前所有資料[\s\S]*先自動備份/.test(document.getElementById('confirm').textContent));   // 讀檔是非同步的
     await q.click('#confirm [data-yes]');
-    await q.waitForFunction(() => window.__cgpStore.getChildren().map((c) => c.name).join() === '波妞');
+    await q.waitForFunction(() => window.__cgpStore.getChildren().map((c) => c.name).join() === '小樂');
     console.log('✔ 還原資料：備份頁最上方、還原到今天開始時、可再還原回來、載入備份檔覆蓋前自動備份');
     await c11.close();
   }
@@ -1825,7 +1825,7 @@ async function main() {
     const q = await cs.newPage();
     q.on('pageerror', (e) => errors.push(e.message));
     await q.goto(url);
-    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '波妞' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '小樂' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
       s.getPlayer(a.id).bag.d6 = 5; s.setPlayerTile(a.id, 3); s.save(); return a.id; });
     await q.goto(url + '#map-' + id);
     await q.waitForSelector('.story-guide[data-story=ore] .story-bang');
@@ -1911,7 +1911,7 @@ async function main() {
       const G = window.CGPGame, g = G.buildGold(), s = window.__cgpStore;
       G.registerBoard('wood', { name: '木島', goalName: '精靈巨樹', totalTiles: 100, world: g.world, regions: g.regions,
         tiles: g.tiles.map((t) => Object.assign({}, t, { id: t.id.replace('gold', 'wood'), regionId: t.regionId.replace('gold', 'wood') })) });
-      const a = s.addChild({ name: '波妞' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+      const a = s.addChild({ name: '小樂' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
       const p = s.getPlayer(a.id); p.island = 'wood'; p.tileId = 'wood-01-006'; p.bag.d6 = 5; s.save(); return a.id; });
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);   // 用 hash 換頁，保留假地圖
     await q.waitForSelector('.story-guide.wood-elf[data-story=pinecone] .story-bang');
@@ -2118,7 +2118,7 @@ async function main() {
     const q = await cr.newPage();
     q.on('pageerror', (e) => errors.push(e.message));
     await q.goto(url);
-    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '波妞' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '小樂' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
       const p = s.getPlayer(a.id); p.bag.d6 = 3; s.setPlayerTile(a.id, 3); s.save(); return a.id; });
     await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
     // 第 5 格寶箱得到 ⭐3：一張奶油黃卡，主圖是能量星星
@@ -2157,7 +2157,7 @@ async function main() {
     const q = await cg.newPage();
     q.on('pageerror', (e) => errors.push(e.message));
     await q.goto(url);
-    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '波妞' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '小樂' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
       s.getPlayer(a.id).bag.d6 = 1; s.setPlayerTile(a.id, 4); s.random = () => 2.5 / 6; s.save(); return a.id; });
     await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
     await q.click('.dice-btn.d6');                     // 擲 3 → 金島第 7 格小遊戲
@@ -2185,7 +2185,7 @@ async function main() {
     const q = await cz.newPage();
     q.on('pageerror', (e) => errors.push(e.message));
     await q.goto(url);
-    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '端端' }); s.save(); return a.id; });
+    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '小安' }); s.save(); return a.id; });
     // 1. 2026-11-09 家長決定：拿掉「記錄時另外給能量星星」，加分清單上方只剩點數篩選
     await q.goto(url + '#child-' + id);
     await q.waitForSelector('.score-btn.bonus');
@@ -2227,7 +2227,7 @@ async function main() {
     const q = await ct.newPage();
     q.on('pageerror', (e) => errors.push(e.message));
     await q.goto(url);
-    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '波妞' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '小樂' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
       s.getPlayer(a.id).bag.d6 = 1; s.setPlayerTile(a.id, 76); s.getPlayer(a.id).maxReached = 76; s.save(); return a.id; });
     await q.goto(url + '#map-' + id); await q.waitForSelector('#gold-tower');
     assert.equal(await q.locator('#gold-tower.lit').count(), 0, '還沒走到第 80 格：未通電');
@@ -2279,7 +2279,7 @@ async function main() {
     q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
     await q.goto(url);
     const id = await q.evaluate(() => {
-      const s = window.__cgpStore, a = s.addChild({ name: '端端', startPoints: 100 });
+      const s = window.__cgpStore, a = s.addChild({ name: '小安', startPoints: 100 });
       const it = s.addItem({ kind: 'bonus', name: '舊加分', points: 30 });
       ['2026-03-03', '2026-03-10', '2026-04-20'].forEach((d) => s.addRecordOn(a.id, it.id, d));
       s.addRecordOn(a.id, it.id, '2026-11-06');
@@ -2325,7 +2325,7 @@ async function main() {
       q.on('pageerror', (e) => errors.push(e.message));
       q.on('dialog', (d) => { errors.push('不應出現原生對話框：' + d.message()); d.dismiss(); });
       await q.goto(url);
-      const id = await q.evaluate((p) => window.__cgpStore.addChild({ name: '波妞', startPoints: p }).id, startPoints);
+      const id = await q.evaluate((p) => window.__cgpStore.addChild({ name: '小樂', startPoints: p }).id, startPoints);
       await q.goto(url + '#report'); await q.goto(url + '#home');
       await q.waitForSelector('#ach-theater[open]');
       return { c, q, id };

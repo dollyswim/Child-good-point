@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-131';
+  var APP_VERSION = '2026.11.09-132';
   var store;
   try {
     store = new CGP.Store();
@@ -282,14 +282,14 @@
   function gear(cls) {
     return '<a class="hero-link castle-link ' + (cls || 'gear') + '" href="#rules" aria-label="設定">' + ART.FLOAT_CASTLE + '<span class="hero-label">設定</span></a>';
   }
-  /** 機器貓按鈕：在首頁時到冒險大廳，其他頁回首頁 */
+  /** 機器人吉祥物按鈕：在首頁時到冒險大廳，其他頁回首頁 */
   function mascotLink(onHome) {
     var c = currentChild() || store.getChildren()[0];
     var href = onHome ? (c ? '#adventure-' + c.id : '#home') : '#home';
     var label = onHome ? (c ? '冒險大廳' : '首頁') : '首頁';
     return '<a class="hero-link mascot-link" href="' + href + '" aria-label="' + (onHome ? label : '回首頁') + '">' + MASCOT + '<span class="hero-label">' + label + '</span></a>';
   }
-  /** 右上角城堡（設定）和左上角機器貓對稱：同樣高度、同樣上緣、離右邊的距離＝機器貓離左邊的距離 */
+  /** 右上角城堡（設定）和左上角機器人吉祥物對稱：同樣高度、同樣上緣、離右邊的距離＝機器人吉祥物離左邊的距離 */
   function alignHeroLinks() {
     var m = app.querySelector('.mascot-link img'), c = app.querySelector('.sky .castle-link');
     if (!m || !c) return;
@@ -344,7 +344,7 @@
     var add = tab === 'child' ? '<button type="button" class="add-kid" data-action="add-child" aria-label="新增孩子">' +
       '<span class="add-kid-icon" aria-hidden="true">🧒<i>＋</i></span><span>新增孩子</span></button>' : '';
     var row = sw || add ? '<div class="kid-row">' + (sw || '<span class="kid-row-fill"></span>') + add + '</div>' : '';
-    return sky(mascotLink(false) + plaque(title) + gear() + row, true);   // 機器貓取代「‹」：回首頁
+    return sky(mascotLink(false) + plaque(title) + gear() + row, true);   // 機器人吉祥物取代「‹」：回首頁
   }
 
   // 2026-11-09：底部導覽列改用家長提供的木製功能列＋五張透明圖示（images/nav/）；文字、通知數字由 HTML 顯示
@@ -441,7 +441,7 @@
     if (/android/i.test(ua)) return { title: 'Android：加到主畫面', steps: ['用 Chrome 打開這個網址', '點右上角「⋮」選單', '選「安裝應用程式」或「加到主畫面」'] };
     return { title: '電腦：安裝成 App', steps: ['用 Chrome 或 Edge 打開這個網址', '點網址列右邊的「安裝」圖示', '之後就能像 App 一樣打開'] };
   }
-  /** 新手導覽：機器貓用幾張卡片介紹玩法；第一次打開自動出現，首頁新手任務與設定可以再看 */
+  /** 新手導覽：機器人吉祥物用幾張卡片介紹玩法；第一次打開自動出現，首頁新手任務與設定可以再看 */
   function openTour() {
     if (document.getElementById('tour')) return;
     var ig = installGuide();
@@ -1438,7 +1438,7 @@
     var lim = store.getItemLimitsToday(child.id);
     var ended = store.isAdventureEnded(child.id);
     var reason = ended ? '🏁 今天的冒險已經結束了，明天見！' : !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
-      : picking ? '🚪 任意門：點地圖上的格子選擇要去的地方'
+      : picking ? '🚪 傳送門：點地圖上的格子選擇要去的地方'
       : atEnd ? (board.tiles[player.pos].type === 'end' ? '🏁 已抵達' + (board.goalName || '終點') + '、通關' + board.name + '！' + (GAME.nextIsland(player.island) ? '下次出發前往「' + GAME.BOARDS[GAME.nextIsland(player.island)].name + '」' : '下次出發從起點開始新的一輪') : '🚪 已抵達目前開放區域的終點！下次出發從起點開始新的一輪')
         : noRolls ? '今天的 ' + limit + ' 次骰子用完了，明天再來！' + (lim.move && (bag.skates || bag.wings) ? '（前進道具今天還可以用 ' + lim.move + ' 次）' : '')
           : (!bag.d6 && !bag.d12 && !bag.skates ? '背包是空的，點左下角的商店用能量星星購買骰子' : '選一個道具出發吧！');
@@ -1484,7 +1484,7 @@
       '<div class="dice-overlay" id="dice-overlay" hidden><div class="die-face" id="die-face">?</div></div>' +
       '</section>' +
       '<p class="map-hint">' + reason + '</p>' +
-      (picking ? '<button type="button" class="btn block" data-action="cancel-door">取消任意門</button>' : '') +
+      (picking ? '<button type="button" class="btn block" data-action="cancel-door">取消傳送門</button>' : '') +
       (canPlay && pending ? '<button type="button" class="btn primary block" data-action="roll" data-kind="' + pending.die + '">🎲 已擲出 ' + pending.value + '，點這裡繼續</button>' : '') +
       (player.medalArmed ? '<p class="medal-on">🥇 好運金牌已啟用：下一次停在寶箱或機會格，效果發生 2 次</p>' : '') +
       (canPlay && store.getPendingMinigame(child.id) ? '<button type="button" class="btn primary block mg-resume" data-action="play-minigame">🎮 今天的小遊戲還沒玩完，點這裡開始</button>' : '') +
@@ -1551,7 +1551,7 @@
       c.cx = wx - ox / c.z; c.cy = wy - oy / c.z;
       c.manual = true; applyCam(false);
     }
-    var tap = null;   // 任意門：手指幾乎沒移動就放開＝點選格子
+    var tap = null;   // 傳送門：手指幾乎沒移動就放開＝點選格子
     view.addEventListener('pointerdown', function (e) {
       if (e.target.closest('.map-ctrl, .map-shop')) return;
       view.setPointerCapture(e.pointerId);
@@ -1722,7 +1722,7 @@
   }
 
 
-  /** 任意門：找出被點到的格子並確認傳送 */
+  /** 傳送門：找出被點到的格子並確認傳送 */
   function pickDoorAt(child, x, y) {
     var hit = null;
     app.querySelectorAll('.map-world .mtile').forEach(function (el) {
@@ -1732,9 +1732,9 @@
     if (!hit) return;
     var n = Number(hit.dataset.n), p = store.getPlayer(child.id), end = store.getBoard(child.id).tiles.length - 1;
     if (n === p.pos) { toast('你已經在這一格了'); return; }
-    if (n >= end) { toast('任意門不能傳送到終點木門', 'neg'); return; }
+    if (n >= end) { toast('傳送門不能傳送到終點木門', 'neg'); return; }
     var label = TILE_LABEL[hit.className.match(/mt-(\w+)/)[1]];
-    confirmThen('用 🚪 任意門傳送到第 ' + n + ' 格' + (label ? '（' + label + '）' : '') + '？', '傳送', false, function () {
+    confirmThen('用 🚪 傳送門傳送到第 ' + n + ' 格' + (label ? '（' + label + '）' : '') + '？', '傳送', false, function () {
       ui.doorPick = null;
       setTimeout(function () { playMove(child.id, 'door', n); }, 0);
     });
@@ -1783,7 +1783,7 @@
         res = store.commitRoll(childId);
       } else if (kind === 'skates') { res = store.useSkates(childId); toast('🛼 溜冰鞋前進 3 格！', 'pos'); }
       else if (kind === 'wings') { res = store.useWings(childId); toast('🪽 飛行翼起飛！', 'pos'); }
-      else if (kind === 'door') { res = store.useDoor(childId, arg); toast('🚪 任意門傳送到第 ' + arg + ' 格！', 'pos'); }
+      else if (kind === 'door') { res = store.useDoor(childId, arg); toast('🚪 傳送門傳送到第 ' + arg + ' 格！', 'pos'); }
       else throw new Error('不明的移動方式');
     } catch (err) { ui.busy = false; toast(err.message, 'neg'); render(); return; }
     var ev = res.event;
@@ -1840,7 +1840,7 @@
     await towerIntro(child);
     var react = pawnReaction(res);
     if (react) { ui.busy = true; document.body.classList.add('pawn-acting'); try { await pawnPlay(react); } finally { ui.busy = false; document.body.classList.remove('pawn-acting'); } }   // 角色先反應，再顯示事件說明（pawn-acting：動作中，骰子暫停）
-    var head = kind === 'skates' ? '🛼 前進 3 格' : kind === 'wings' ? '🪽 飛行翼' : kind === 'door' ? '🚪 任意門'
+    var head = kind === 'skates' ? '🛼 前進 3 格' : kind === 'wings' ? '🪽 飛行翼' : kind === 'door' ? '🚪 傳送門'
       : (kind === 'magic' || (pr && pr.die === 'magic') ? '✨ 神奇骰子擲出 ' : '🎲 擲出 ') + res.value;
     // 停在小遊戲格（或礦車載到小遊戲格）：直接開始「抓住星星」
     var clearEv = ev && ev.clear ? ev : (ev && ev.then && ev.then.clear ? ev.then : null);
@@ -2803,9 +2803,9 @@
         '<span class="item-art item-btn-art">' + art + '</span><b>' + label + '</b><small>' + note + '</small></button>');
     }
     if (bag.magicDice) btn('magicDice', 'roll', '神奇骰子', magicUsed ? '今天已用・×' + bag.magicDice : '×' + bag.magicDice + '・不占次數', busy || magicUsed);
-    var lim = store.getItemLimitsToday(child.id);   // 前進類合計每天 5 次、任意門每天 1 次
+    var lim = store.getItemLimitsToday(child.id);   // 前進類合計每天 5 次、傳送門每天 1 次
     if (bag.wings) btn('wings', 'use-item', '飛行翼 +20', '×' + bag.wings + (lim.move ? '・今天剩 ' + lim.move + ' 次' : '・今天已用完'), busy || !lim.move);
-    if (bag.door) btn('door', 'pick-door', '任意門', '×' + bag.door + (lim.door ? '・今天剩 ' + lim.door + ' 次' : '・今天已用完'), busy || !lim.door);
+    if (bag.door) btn('door', 'pick-door', '傳送門', '×' + bag.door + (lim.door ? '・今天剩 ' + lim.door + ' 次' : '・今天已用完'), busy || !lim.door);
     if (bag.luckyMedal) btn('luckyMedal', 'activate-medal', '好運金牌', player.medalArmed ? '已啟用・×' + bag.luckyMedal : '×' + bag.luckyMedal + '・點我啟用', !!player.medalArmed);
     var L = store.getLimits();
     if (bag.pineHide) { var phUsed = store._usesToday(child.id, ['pineHide']) >= L.pineHide; btn('pineHide', 'use-pinehide', '松果躲躲', phUsed ? '今天已用・×' + bag.pineHide : '×' + bag.pineHide + '・玩一局', busy || phUsed || !!store.getPendingMinigame(child.id)); }
@@ -2852,7 +2852,7 @@
     magicDice: { name: '神奇骰子', img: 'images/items/magic_dice.webp', note: '地圖上使用' },
     luckyMedal: { name: '好運金牌', img: 'images/items/lucky_medal.webp', note: '地圖上啟用' },
     wings: { name: '飛行翼', img: 'images/items/flying_wings.webp', note: '地圖上使用' },
-    door: { name: '任意門', img: 'images/items/magic_door.webp', note: '地圖上使用' },
+    door: { name: '傳送門', img: 'images/items/magic_door.webp', note: '地圖上使用' },
     airplane: { name: '呼叫專機', img: 'images/items/airplane.webp', note: '其他島嶼開放後可用' },
     goldenKey: { name: '黃金鑰匙', img: 'images/items/golden_key.webp', note: '開神秘寶箱' },
     magnet: { name: '寶物磁鐵', img: 'images/items/treasure_magnet.webp', note: '地圖上使用' },
@@ -3193,7 +3193,7 @@
     ['dice', '🎲 每日擲骰次數', '設 0：今天不能擲骰（只能用道具前進）'],
     ['minigame', '🎮 小遊戲次數（停在小遊戲格）', '用完後再停到小遊戲格，會轉成神秘寶箱'],
     ['move', '🛼 前進道具（溜冰鞋＋飛行翼合計）', ''],
-    ['door', '🚪 任意門', ''],
+    ['door', '🚪 傳送門', ''],
     ['magic', '✨ 神奇骰子', ''],
     ['starCall', '🌠 星星呼喚', ''],
     ['pineHide', '🌰 松果躲躲', '']
@@ -3849,7 +3849,7 @@
         }
         case 'reset-limits': {
           var lc = store.getChild(id);
-          confirmThen('重置 ' + lc.name + ' 今天的次數上限？\n骰子 3 次、小遊戲 1 次、前進道具 5 次、任意門 1 次、神奇骰子 1 顆、星星呼喚 1 個，今天都重新計算。\n已經用掉的道具不會退回；明天照常重新計算。', '重置', false, function () {
+          confirmThen('重置 ' + lc.name + ' 今天的次數上限？\n骰子 3 次、小遊戲 1 次、前進道具 5 次、傳送門 1 次、神奇骰子 1 顆、星星呼喚 1 個，今天都重新計算。\n已經用掉的道具不會退回；明天照常重新計算。', '重置', false, function () {
             store.resetDailyLimits(id); toast('已重置 ' + lc.name + ' 今天的次數上限', 'pos');
           });
           break;
