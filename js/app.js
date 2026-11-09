@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-118';
+  var APP_VERSION = '2026.11.09-119';
   var store;
   try {
     store = new CGP.Store();
@@ -339,8 +339,8 @@
   }
 
   // 2026-11-09：底部導覽列改用家長提供的木製功能列＋五張透明圖示（images/nav/）；文字、通知數字由 HTML 顯示
-  var NAV = [['home', 'images/nav/nav_home.webp', '首頁'], ['child', 'images/nav/nav_child.webp', '小孩'], ['challenge', 'images/nav/nav_challenge.webp', '挑戰'],
-    ['shop', 'images/nav/nav_rewards.webp', '兌換'], ['report', 'images/nav/nav_records.webp', '紀錄']];
+  var NAV = [['home', 'images/nav/nav_home2.webp', '首頁'], ['child', 'images/nav/nav_child2.webp', '小孩'], ['challenge', 'images/nav/nav_challenge2.webp', '挑戰'],
+    ['shop', 'images/nav/nav_rewards2.webp', '兌換'], ['report', 'images/nav/nav_records2.webp', '紀錄']];
   function bottomNav(active) {
     var c = currentChild();
     // 通知數字：和首頁「小孩」磚塊同一份資料（所有孩子今天還能完成的任務數）
