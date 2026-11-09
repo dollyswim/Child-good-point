@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-128';
+  var APP_VERSION = '2026.11.09-129';
   var store;
   try {
     store = new CGP.Store();
@@ -318,10 +318,12 @@
     }
   }
   /** 分頁標題木牌圖（2026-11-09 家長提供）：有圖的用圖，沒有的照舊用 CSS 畫的木牌；標題文字留給讀屏與測試 */
-  var PLAQUE_IMG = { '親子集點冒險': 'images/plaque/home.webp', '小孩': 'images/plaque/child.webp', '本週挑戰': 'images/plaque/challenge.webp',
+  var PLAQUE_IMG = { '親子集點冒險': 'images/plaque/home2.webp', '小孩': 'images/plaque/child.webp', '本週挑戰': 'images/plaque/challenge.webp',
     '獎勵兌換': 'images/plaque/shop.webp', '記分總覽': 'images/plaque/report.webp', '冒險大廳': 'images/plaque/lobby.webp' };
+  var PLAQUE_WITH_SUB = { '親子集點冒險': true };   // 2026-11-09：首頁新木牌含星星與「完成任務・累積點數・解鎖獎勵」橫幅
   function plaque(title, sub) {
     var img = PLAQUE_IMG[title];
+    if (img && PLAQUE_WITH_SUB[title]) sub = '';   // 圖上已經畫了副標題橫幅，不再疊程式畫的
     return '<div class="plaque' + (img ? ' has-img' : '') + '">' +
       (img ? '<h1 class="plaque-img"><img src="' + img + '" alt="" aria-hidden="true" width="840" height="270" decoding="async" draggable="false"><span class="sr-only">' + h(title) + '</span></h1>'
         : '<h1>' + h(title) + '</h1>') + (sub ? '<div class="ribbon">' + sub.split('・').map(function (t, i, arr) {

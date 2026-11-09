@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-09｜App 版本 `2026.11.09-128`｜Service Worker 快取 `cgp-shell-v138`｜`main` 最新：今日冒險已出發改用藏寶地圖圖示（2026-11-09 工作段落結束，已整理交接）
+> 最後更新：2026-11-09｜App 版本 `2026.11.09-129`｜Service Worker 快取 `cgp-shell-v139`｜`main` 最新：今日冒險已出發改用藏寶地圖圖示（2026-11-09 工作段落結束，已整理交接）
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -14,7 +14,7 @@
 - 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v138`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.09-128`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v139`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.09-129`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 138 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -56,7 +56,7 @@
 
 ### 2026-11-09 完成的重點（新的在上面）
 - 本週挑戰卡片：進行中的挑戰圖示從 🏆 換成家長提供的任務卷軸圖（`images/challenge_scroll.webp`，去雜點、裁切、256×256，顯示 44px）；已領取換成獎章圖（`images/challenge_medal.webp`）；已達成還沒領取換成打勾卷軸圖（`images/challenge_done.webp`）。三種狀態都是家長提供的圖。
-- 分頁標題木牌換成家長圖（`images/plaque/`，`js/app.js` 的 `PLAQUE_IMG`）：六頁都已換上（親子集點冒險＝首頁、小孩、本週挑戰、獎勵兌換、記分總覽、冒險大廳）；之後新增頁面沒有圖時照舊用 CSS 木牌。圖片處理：去掉小於 400px 的零星雜點、裁到圖案、寬 840 WebP；標題文字放在讀屏用的隱藏文字。
+- 分頁標題木牌換成家長圖（`images/plaque/`，`js/app.js` 的 `PLAQUE_IMG`）：六頁都已換上（親子集點冒險＝首頁、小孩、本週挑戰、獎勵兌換、記分總覽、冒險大廳）；之後新增頁面沒有圖時照舊用 CSS 木牌。首頁木牌已換成含星星與副標題橫幅的新版（`images/plaque/home2.webp`，寬 720；`PLAQUE_WITH_SUB` 標記的頁面不再疊程式畫的副標題）。圖片處理：去掉小於 400px 的零星雜點、裁到圖案、寬 840 WebP；標題文字放在讀屏用的隱藏文字。
 - 「全部成就」卡片：固定三欄、徽章放大為卡片主角（可見直徑約卡片寬 56～58%）；點卡片開「我的成就」查看視窗（同成就劇場版型、徽章約 210px、無煙火音效）。
 - 拿掉「記錄時另外給能量星星」選擇列與自填欄位（規則附帶星星不變）。
 - 第 65 格邀請卡：貼紙 18%、最多 20 張、白色內框 5 色粉彩畫圖（橡皮擦、上一步、全部清除）、做好可下載 PNG。
