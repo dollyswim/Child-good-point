@@ -1405,13 +1405,15 @@ body.mg-open { overflow: hidden; }
 /* 冒險大廳：成就 */
 .ach-details h2 small { font-size: .75rem; color: var(--muted); font-weight: 800; }
 .ach-cat h3 { margin: 8px 0 6px; font-size: .88rem; color: var(--wood-2); }
-.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
-.ach { display: grid; justify-items: center; gap: 2px; padding: 8px 2px 6px; border-radius: 16px; border: 2px solid #eee3d2; background: #f6f1ea; font: inherit; cursor: pointer; }
+.ach-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }   /* 手機、桌面都固定三欄 */
+.ach { display: grid; justify-items: center; align-content: start; gap: 6px; padding: 6px 2px; border-radius: 16px; border: 2px solid #eee3d2; background: #f6f1ea; font: inherit; cursor: pointer; }
 .ach .ach-badge { font-size: 1.8rem; line-height: 1.1; filter: grayscale(1); opacity: .55; }
 .ach small { font-size: .66rem; font-weight: 800; color: var(--muted); text-align: center; line-height: 1.25; }
 .ach.done { background: linear-gradient(#fffbe9, #ffefc2); border-color: #ffd23f; box-shadow: 0 2px 0 rgba(200, 150, 40, .3); }
 .ach.done .ach-badge { filter: none; opacity: 1; }
-.ach-badge img { display: block; width: 40px; height: 40px; }   /* 未解鎖：灰色鎖頭徽章 */
+/* 徽章是卡片主角：容器占卡片內寬 65%（最大 140px），圖本身四周留白約 3%，實際可見直徑約為卡片寬度的 56～58%；正方形、contain 不裁切 */
+.ach .badge-xs, .ach .ach-badge { width: 65%; max-width: 140px; height: auto; aspect-ratio: 1 / 1; }
+.ach .ach-badge img, .ach .badge-img img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .ach.done small { color: #8a5a00; }
 /* 外框顏色依類別：冒險＝綠、收集＝紫、生活＝金（未解鎖一律灰） */
 .ach.done.ach-adventure { background: linear-gradient(#f3fff0, #d6f5c9); border-color: #5cbf4a; box-shadow: 0 2px 0 rgba(60, 140, 50, .3); }
