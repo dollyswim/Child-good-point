@@ -604,6 +604,7 @@ body {
 @keyframes glow { 50% { box-shadow: 0 0 0 4px rgba(255, 210, 63, .35); } }
 .ch-head { display: flex; gap: 10px; align-items: center; }
 .ch-icon { font-size: 1.8rem; }
+.ch-icon-img { display: block; width: 44px; height: 44px; object-fit: contain; }   /* 2026-11-09：進行中的挑戰用任務卷軸圖（家長提供） */
 .ch-main { display: grid; min-width: 0; }
 .ch-main b { word-break: break-word; }
 .ch-progress { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }

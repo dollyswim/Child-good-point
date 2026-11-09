@@ -1,6 +1,7 @@
 /* 親子集點 Service Worker：離線可用。資料存在 localStorage，不受快取影響。 */
-var CACHE = 'cgp-shell-v135';
+var CACHE = 'cgp-shell-v136';
 var SHELL = [
+  'images/challenge_scroll.webp',
   'images/plaque/home.webp', 'images/plaque/child.webp', 'images/plaque/challenge.webp', 'images/plaque/shop.webp', 'images/plaque/report.webp', 'images/plaque/lobby.webp',
   'images/adv_map.webp',
   'images/nav/nav_wood_bar.webp', 'images/nav/nav_home2.webp', 'images/nav/nav_child2.webp', 'images/nav/nav_challenge2.webp', 'images/nav/nav_rewards2.webp', 'images/nav/nav_records2.webp',
