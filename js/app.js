@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-119';
+  var APP_VERSION = '2026.11.09-120';
   var store;
   try {
     store = new CGP.Store();
@@ -373,14 +373,7 @@
         '</button>';
     }).join('');
 
-    var left = children.reduce(function (n, c) {
-      return n + store.getTodayTasks(c.id).filter(function (t) { return t.status.canComplete; }).length;
-    }, 0);
-    var tiles = children.length ? '<div class="tiles">' +
-      '<button class="tile t-task" data-action="pick-child" data-kind="child"><span class="tile-icon">📋</span>小孩' + (left ? '<span class="badge-num">' + left + '</span>' : '') + '</button>' +
-      '<button class="tile t-challenge" data-action="pick-child" data-kind="challenge"><span class="tile-icon">🏆</span>本週挑戰</button>' +
-      '<button class="tile t-shop" data-action="pick-child" data-kind="shop"><span class="tile-icon">🎁</span>獎勵兌換</button>' +
-      '<a class="tile t-report" href="#report"><span class="tile-icon">📊</span>記分總覽</a></div>' : '';
+    // 2026-11-09 家長決定：拿掉首頁的「小孩、本週挑戰、獎勵兌換、記分總覽」四個磚塊（和底部功能列重複）
 
     var goals = children.filter(function (c) { return c.weeklyGoal > 0; });
     var week = children.length ? '<section class="week-card"><div class="week-head"><h2>📅 本週進度 <small>（' + h(range.label.replace(/（.）/g, '')) + '）</small></h2></div>' +
@@ -399,7 +392,7 @@
       (children.length
         ? '<div class="child-list">' + cards + '</div>'
         : '<div class="empty card"><p class="big-emoji">👋</p><p><b>還沒有孩子資料</b></p><p class="muted">先新增孩子，就可以開始記錄生活積分。</p></div>') +
-      storageWarning() + tiles + homeAchievements(children) + week + backupReminder() +
+      storageWarning() + homeAchievements(children) + week + backupReminder() +
       (children.length ? '' : '<button class="btn add-child" data-action="add-child">＋ 新增孩子</button>') +   // 有孩子後改在小孩頁面右上角新增
       '</main>';
   }
@@ -3116,20 +3109,7 @@
   }
 
   /** 首頁大按鈕：先選孩子再進入 */
-  function pickChild(tab) {
-    var kids = store.getChildren();
-    if (kids.length === 1) { go('#' + tab + '-' + kids[0].id); return; }
-    var title = { child: '小孩', challenge: '本週挑戰', shop: '獎勵兌換' }[tab];
-    confirmEl.innerHTML = '<div class="confirm-box"><h2>' + h(title) + '：要看誰的？</h2><div class="pick-kids">' +
-      kids.map(function (c) {
-        return '<a class="pick-kid" href="#' + tab + '-' + h(c.id) + '" style="--c:' + h(c.color) + '">' + avatar(c, 'lg') + '<b>' + h(c.name) + '</b></a>';
-      }).join('') + '</div><div class="modal-actions"><button type="button" class="btn" data-no>取消</button></div></div>';
-    confirmEl.querySelector('[data-no]').onclick = function () { confirmEl.close(); };
-    confirmEl.querySelectorAll('.pick-kid').forEach(function (a) { a.onclick = function () { confirmEl.close(); }; });
-    confirmEl.oncancel = null;
-    if (typeof confirmEl.showModal === 'function') confirmEl.showModal();
-    else confirmEl.setAttribute('open', '');
-  }
+
 
   function settingsRewards() {
     var list = store.getRewards().map(function (r) {
@@ -3763,7 +3743,6 @@
         }
         case 'export': exportData(); break;
         case 'snooze-backup': store.snoozeBackup(); toast('好的，明天再提醒'); render(); break;
-        case 'pick-child': pickChild(el.getAttribute('data-kind')); break;
         case 'enter-adventure': enterAdventure(childId); break;
         case 'roll': { var rk = el.getAttribute('data-kind'); playMove(childId, rk === 'magicDice' ? 'magic' : rk); break; }   // 神奇骰子按鈕代號 magicDice → 擲骰種類 magic
         case 'use-skates': playMove(childId, 'skates'); break;

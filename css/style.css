@@ -2144,3 +2144,5 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
   box-shadow: 0 5px 0 #d16a12; cursor: pointer; text-shadow: 0 1px 0 rgba(150, 70, 0, .35); }
 .ev-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #d16a12; }
 @media (max-height: 560px) { .ev { padding: 12px 12px 12px; gap: 8px; } .ev-art { width: min(26vh, 110px); } .ev-title { font-size: 1.35rem; } .ev-btn { min-height: 48px; } }
+/* 2026-11-09：首頁拿掉四個磚塊後，孩子卡片和下方區塊之間保留原本的間距 */
+.ach-home, .week-card { margin-top: 16px; }

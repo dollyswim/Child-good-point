@@ -419,9 +419,8 @@ async function main() {
   assert.match(await text('.week-card'), /\/ 500 點/);
   await shot('13-home-new');
   await noHScroll('新首頁');
-  await page.click('.tile >> text=本週挑戰');
-  await page.waitForSelector('#confirm .pick-kid');
-  await page.click('#confirm .pick-kid >> nth=0');
+  assert.equal(await page.locator('.tiles, [data-action=pick-child]').count(), 0, '首頁不再有和底部功能列重複的四個磚塊');
+  await page.click('.bottom-nav a >> text=挑戰');
   await page.waitForSelector('.challenges');
   assert.ok(await page.locator('.bottom-nav .nav-item.active >> text=挑戰').isVisible());
   // 新增一個容易達成的挑戰並領取
