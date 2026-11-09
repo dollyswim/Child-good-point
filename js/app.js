@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-123';
+  var APP_VERSION = '2026.11.09-124';
   var store;
   try {
     store = new CGP.Store();
@@ -317,8 +317,13 @@
       if (over > 0) hero.style.paddingRight = (parseFloat(getComputedStyle(hero).paddingRight) + over) + 'px';
     }
   }
+  /** 分頁標題木牌圖（2026-11-09 家長提供）：有圖的用圖，沒有的照舊用 CSS 畫的木牌；標題文字留給讀屏與測試 */
+  var PLAQUE_IMG = { '親子集點冒險': 'images/plaque/home.webp', '小孩': 'images/plaque/child.webp', '本週挑戰': 'images/plaque/challenge.webp' };
   function plaque(title, sub) {
-    return '<div class="plaque"><h1>' + h(title) + '</h1>' + (sub ? '<div class="ribbon">' + sub.split('・').map(function (t, i, arr) {
+    var img = PLAQUE_IMG[title];
+    return '<div class="plaque' + (img ? ' has-img' : '') + '">' +
+      (img ? '<h1 class="plaque-img"><img src="' + img + '" alt="" aria-hidden="true" width="840" height="270" decoding="async" draggable="false"><span class="sr-only">' + h(title) + '</span></h1>'
+        : '<h1>' + h(title) + '</h1>') + (sub ? '<div class="ribbon">' + sub.split('・').map(function (t, i, arr) {
       // 只在「・」後面換行，避免把詞拆開
       return '<span class="nb">' + h(t) + (i < arr.length - 1 ? '・' : '') + '</span>';
     }).join('') + '</div>' : '') + '</div>';
