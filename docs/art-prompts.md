@@ -450,6 +450,48 @@ large calm open empty space in the middle for a 5 by 5 grid of leaf piles, no ch
 
 ---
 
+## 木島森林派對（劇情第 40、65、92 格，15 張，2026-11-09 新增，請 Gemini 製作）
+
+**貼紙類（P-2～P-9、P-11～P-14）**：正方形 1024×1024、白底、單一物件、置中、正面略俯視；和「落葉找松果」的松果同一種風格（會有奶油色貼紙邊框，Claude 會先問再去背）。每張前面貼這段共用風格：
+```
+Cute chibi 3D game asset, soft clay-toy style, rounded chunky shapes, glossy highlights, soft studio lighting, warm pastel colors, children's mobile game icon, clean silhouette readable at small size, slightly top-down front view, centered, single object, no text, no watermark, plain white background, square 1024 x 1024,
+```
+**場景類（P-1、P-10、P-15）**：橫式 4:3（1200×900）、畫滿整張、不要白底。每張前面貼這段：
+```
+Bright cute 2.5D clay style children's mobile game scene illustration, soft warm sunny lighting, rounded friendly shapes, horizontal 4:3 composition, full scene with no white background, no text, no watermark,
+```
+
+### 第 40 格：撿花朵和莓果
+- **P-1 森林草地（場景）**：`a sunny forest meadow seen slightly from above, soft green grass with dappled sunlight, small bushes and tree trunks only around the edges, large calm open grassy area in the middle, a small empty wicker basket at the bottom center, no characters, no flowers and no berries in the open area`
+  中文：從斜上方看的陽光森林草地，邊緣才有小樹叢和樹幹，中間保留大片空草地，下方中央一個空的小籐籃；**中間不要畫花和莓果**（程式會放上去）。
+- **P-2 花朵（貼紙）**：`a single cute pink flower with five round petals and a yellow center, two small green leaves`
+- **P-3 莓果（貼紙）**：`a small bunch of three glossy red wild berries with two little green leaves`
+
+### 第 65 格：派對邀請卡
+- **P-4 空白邀請卡（貼紙）**：`a blank party invitation card, cream colored thick paper with a scalloped edge, a tiny pink ribbon bow at the top, the center is completely empty, viewed from the front`
+  中文：空白的派對邀請卡，奶油色厚紙、波浪邊、上方一個小粉紅蝴蝶結，**中間完全空白**（孩子要貼貼紙）。
+- **P-5 花瓣（貼紙）**：`a single soft pink flower petal, smooth rounded teardrop shape`
+- **P-6 樹葉（貼紙）**：`a single small fresh green leaf with a light vein`
+- **P-7 兔子**：`a cute chubby little white bunny sitting, happy smile, holding both paws up as if receiving a gift`
+- **P-8 刺蝟**：`a cute chubby little brown hedgehog sitting, happy smile, holding both paws up as if receiving a gift`
+- **P-9 貓頭鷹**：`a cute chubby little owl sitting, big round eyes, happy smile, wings slightly open as if receiving a gift`
+  （三隻動物同大小、同視角，坐姿正面）
+
+### 第 92 格：森林派對
+- **P-10 空的派對現場（場景）**：`a forest party venue in a clearing under a huge glowing fairy tree, a long wooden picnic table, a small round wooden stage, soft grass, string lights hanging between branches but turned off, the table and the ground are empty with plenty of free space, no decorations, no characters`
+  中文：精靈巨樹下的森林空地派對場地，長木頭野餐桌、小圓形木頭舞台，樹枝間掛著還沒亮的串燈；**桌上和地上都是空的、留很多空位**，不要裝飾、不要角色。
+- **P-11 花朵花瓶（貼紙）**：`a small round clay vase with a colorful bunch of pink and yellow flowers`
+- **P-12 莓果汁（貼紙）**：`a glass of pink berry juice with a striped straw and a berry on the rim`
+- **P-13 一籃莓果（貼紙）**：`a small wicker basket full of glossy red and blue berries`
+- **P-14 汽球（貼紙）**：`a bunch of three round balloons, pink, yellow and light blue, tied with a ribbon`
+  （松果沿用「落葉找松果」的松果圖）
+- **P-15 派對完成（場景）**：`the same forest party venue under the huge glowing fairy tree, now fully decorated with flower vases, pinecones, berry juice and baskets of berries on the table and colorful balloons, string lights glowing warmly, fireflies, a cute white bunny, a brown hedgehog, an owl and a red squirrel dancing happily together, a tiny forest fairy with leaf wings waving, joyful festive mood`
+  中文：同一個派對場地，已經布置好：桌上有花、松果、莓果汁、一籃莓果，五彩汽球，串燈亮起、螢火蟲飛舞；兔子、刺蝟、貓頭鷹、小紅松鼠一起開心跳舞，森林小精靈在揮手。
+
+> 小提醒：P-10 和 P-15 最好是**同一個場地、同一個視角**（先做 P-10，再請 Gemini「用同一張圖改成布置好的派對、動物跳舞」）。動物和松鼠的造型可以參考「落葉找松果」的松鼠圖，風格會更一致。
+
+---
+
 ## 木島導遊：森林小精靈（1 張，2026-11-08 新增）
 
 木島劇情的導遊，目前地圖上用 🧚 表情符號佔位。交件後 Claude 放進 `images/wood/elf.webp`，在 `js/app.js` 的 `ISLAND_STORY.wood.guide` 加上 `img`。
