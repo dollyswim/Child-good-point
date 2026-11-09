@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-126';
+  var APP_VERSION = '2026.11.09-127';
   var store;
   try {
     store = new CGP.Store();
@@ -2494,7 +2494,7 @@
         : st.done ? '<button class="btn primary claim" data-action="claim" data-id="' + h(ch.id) + '">🎁 領取 ' + h(reward) + '</button>'
           : '<span class="muted small">還差 ' + (st.target - Math.max(0, st.progress)) + unit + '</span>';
       return '<div class="challenge ' + (st.claimed ? 'is-claimed' : st.done ? 'is-done' : '') + '">' +
-        '<div class="ch-head"><span class="ch-icon">' + (st.claimed ? '🏅' : st.done ? '🎉' : '<img class="ch-icon-img" src="images/challenge_scroll.webp" alt="" aria-hidden="true" width="256" height="256" decoding="async">') + '</span>' +
+        '<div class="ch-head"><span class="ch-icon">' + (st.claimed ? '<img class="ch-icon-img" src="images/challenge_medal.webp" alt="" aria-hidden="true" width="256" height="256" decoding="async">' : st.done ? '🎉' : '<img class="ch-icon-img" src="images/challenge_scroll.webp" alt="" aria-hidden="true" width="256" height="256" decoding="async">') + '</span>' +
         '<div class="ch-main"><b>' + h(ch.name) + '</b><small class="muted">' +
         (ch.metric === 'net' ? '本週淨得分' : '「' + h(item ? item.name : '（規則已刪除）') + '」') + '・獎勵 ' + h(reward || '無') + '</small></div></div>' +
         '<div class="ch-progress">' + progressBar(st.progress, st.target) + '<span class="ch-val">' + Math.max(0, Math.min(st.progress, st.target)) + '/' + st.target + unit + '</span></div>' +
