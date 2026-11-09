@@ -1924,31 +1924,6 @@ body.mg-open { overflow: hidden; }
 .leaf-pile.caught { background: radial-gradient(circle, #fffbe8, #f1e4c4); animation: leaf-shake .35s ease-in-out; }
 @media (prefers-reduced-motion: reduce) { .leaf-pile.caught { animation: none; } }
 
-/* 獲得獎勵彈窗：一般版（奶油白、暖橘、金黃）／稀有版（深紫、淺紫、金黃）同版型，只換主題變數；不用動畫、backdrop-filter */
-.modal.confirm.rw-modal { background: transparent; box-shadow: none; overflow: visible; width: min(380px, calc(100vw - 24px)); }
-.rw { --rw-bg: #fff6e4; --rw-edge: #f3d9a6; --rw-card: #ffe9c2; --rw-card-line: #f2b45a; --rw-tag-bg: #f5c451; --rw-tag-fg: #6b3f0a;
-  --rw-title: #c25e12; --rw-text: #7a4a1c; --rw-extra-bg: #ffdca8; --rw-extra-fg: #8a4f12; --rw-btn: #ff9c3a; --rw-btn-fg: #fff; --rw-btn-edge: #d9741a; --rw-foot: #a9845a;
-  display: grid; justify-items: center; gap: 12px; padding: 18px 16px 12px; border-radius: 26px; background: var(--rw-bg); border: 3px solid var(--rw-edge);
-  color: var(--rw-text); text-align: center; box-shadow: 0 8px 0 rgba(0, 0, 0, .12); max-height: calc(100vh - 32px); overflow-y: auto; }
-.rw-rare { --rw-bg: #4a2f63; --rw-edge: #6e4c8e; --rw-card: #634379; --rw-card-line: #e9c46a; --rw-tag-bg: #f0c96a; --rw-tag-fg: #4a2f63;
-  --rw-title: #ffe39a; --rw-text: #f3e8ff; --rw-extra-bg: #6f5491; --rw-extra-fg: #ffe39a; --rw-btn: #efc46a; --rw-btn-fg: #4a2f63; --rw-btn-edge: #c79a3c; --rw-foot: #c9b5e6; }
-.rw-tag { padding: 5px 18px; border-radius: 99px; background: var(--rw-tag-bg); color: var(--rw-tag-fg); font-weight: 900; font-size: .95rem; box-shadow: 0 3px 0 rgba(0, 0, 0, .15); }
-.rw-title { margin: 0; color: var(--rw-title); font-size: 1.6rem; font-weight: 900; line-height: 1.2; }
-.rw-card { width: 100%; box-sizing: border-box; display: grid; justify-items: center; gap: 6px; padding: 16px 12px 14px; border-radius: 22px;
-  background: var(--rw-card); border: 3px solid var(--rw-card-line); }
-.rw-art { display: grid; place-items: center; width: min(52vw, 170px); aspect-ratio: 1; border-radius: 22px; background: #fff; padding: 8px; box-sizing: border-box; }   /* 白底圖放白色卡片、contain 不裁切 */
-.rw-art img { width: 100%; height: 100%; object-fit: contain; }
-.rw-name { color: var(--rw-title); font-size: 1.45rem; font-weight: 900; }
-.rw-desc { color: var(--rw-text); font-weight: 700; font-size: .95rem; }
-.rw-extra { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; gap: 8px; }
-.rw-extra li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 18px; background: var(--rw-extra-bg); color: var(--rw-text); font-weight: 800; text-align: left; }
-.rw-extra-ico { display: grid; place-items: center; width: 32px; height: 32px; font-size: 24px; }
-.rw-extra-ico img { width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; }
-.rw-extra b { color: var(--rw-extra-fg); font-size: 1.25rem; font-weight: 900; }
-.rw-btn { width: 100%; min-height: 56px; border: 0; border-radius: 20px; background: var(--rw-btn); color: var(--rw-btn-fg); font: inherit; font-size: 1.3rem; font-weight: 900;
-  box-shadow: 0 5px 0 var(--rw-btn-edge); cursor: pointer; touch-action: manipulation; }
-.rw-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--rw-btn-edge); }
-.rw-foot { margin: 0; color: var(--rw-foot); font-size: .85rem; font-weight: 700; }
 /* 劇情任務進行中：地圖上的按鈕暫停（商店、骰子、道具），看起來也變淡 */
 body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story-on .map-page .item-bar { opacity: .55; }
 /* 2026-11-08 金礦石正式圖（家長 Gemini 圖，Claude 只去除與外框相連的白底）取代程式畫的金球 */

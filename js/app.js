@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-129';
+  var APP_VERSION = '2026.11.09-130';
   var store;
   try {
     store = new CGP.Store();
@@ -1802,14 +1802,15 @@
     return cards;
   }
   /** cards：eventCards 的結果；sub：移動結果（例如「擲出 4・停在第 11 格」） */
-  function eventPopup(sub, cards) {
+  function eventPopup(sub, cards, opts) {
+    opts = opts || {};
     var has = function (t) { return cards.some(function (c) { return c.theme === t || c.kind === t; }); };
     var theme = has('reward') ? 'reward' : has('block') ? 'block' : has('fate') ? 'fate' : 'move';
-    var title = { reward: '冒險新發現！', block: '遇到小麻煩！', fate: '命運卡出現！', move: has('boundary') ? '抵達區域終點！' : '成功前進！' }[theme];
+    var title = opts.title || { reward: '冒險新發現！', block: '遇到小麻煩！', fate: '命運卡出現！', move: has('boundary') ? '抵達區域終點！' : '成功前進！' }[theme];
     var main = cards.filter(function (c) { return c.theme === (theme === 'move' ? 'info' : theme); })[0] || cards[0];   // 主圖：獎勵 → 命運／路障 → 其他
     confirmEl.classList.add('ev-modal');
     confirmEl.innerHTML = '<div class="ev ev-' + theme + '" data-testid="event">' +
-      '<div class="ev-body"><h2 class="ev-title">' + title + '</h2><p class="ev-sub">' + h(sub) + '</p>' +
+      '<div class="ev-body"><h2 class="ev-title">' + h(title) + '</h2>' + (sub ? '<p class="ev-sub">' + h(sub) + '</p>' : '') +
       '<span class="ev-art"><img src="' + main.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></span>' +
       cards.map(function (c) {
         return '<div class="ev-card ev-' + c.theme + '"><span class="ev-ico"><img src="' + c.img + '" alt="" aria-hidden="true" width="64" height="64" decoding="async"></span>' +
@@ -2666,9 +2667,8 @@
     confirmEl.oncancel = function (e) { e.preventDefault(); };
     if (typeof confirmEl.showModal === 'function') confirmEl.showModal(); else confirmEl.setAttribute('open', '');
   }
-  // ---------- 獲得獎勵彈窗（2026-11-08 家長指定版型：一般版／稀有版同版型，只換 CSS 主題變數） ----------
-  // 版面由上而下：獎勵標籤 → 主標題 → 主獎勵卡（圖、名稱 ×數量、說明）→ 額外獎勵（沒有就不顯示）→「收下戰利品！」→ 骰子與停留格數（沒有就不顯示）
-  // 獎勵在顯示前就已由 store 寫入存檔；按鈕只關閉視窗，不會重複發放
+  // ---------- 獎勵整理（給冒險事件視窗用） ----------
+  // 獎勵在顯示前就已由 store 寫入存檔；視窗按鈕只關閉，不會重複發放
   var RARE_ITEMS = ['magicDice', 'luckyMedal', 'shield', 'wings', 'door', 'airplane', 'mysteryChest', 'giftMysteryChest'];
   /**
    * 把 { stars, items, found } 整理成獎勵清單（第一個是主獎勵，其餘是額外獎勵）
@@ -2691,39 +2691,12 @@
     function rank(e) { return e.key === 'stars' ? 2 : RARE_ITEMS.indexOf(e.key) >= 0 ? 0 : 1; }
     return list;
   }
-  /**
-   * r：{ rare, title, entries（rewardEntries 的結果）, desc（主獎勵說明，可省略）, foot（骰子結果，可省略）, onClose }
-   */
-  function rewardPopup(r) {
-    var main = r.entries[0], extras = r.entries.slice(1);
-    confirmEl.classList.add('rw-modal');
-    confirmEl.innerHTML = '<div class="rw ' + (r.rare ? 'rw-rare' : 'rw-normal') + '" data-testid="reward">' +
-      '<span class="rw-tag">✦ ' + (r.rare ? '稀有獎勵' : '一般獎勵') + ' ✦</span>' +
-      '<h2 class="rw-title">' + h(r.title) + '</h2>' +
-      '<div class="rw-card"><span class="rw-art"><img src="' + main.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></span>' +
-      '<b class="rw-name">' + h(main.name) + ' ×' + main.qty + '</b><small class="rw-desc">' + h(r.desc || main.desc) + '</small></div>' +
-      (extras.length ? '<ul class="rw-extra">' + extras.map(function (e) {
-        return '<li><span class="rw-extra-ico" aria-hidden="true">' + (e.key === 'stars' ? '⭐' : '<img src="' + e.img + '" alt="" width="64" height="64" decoding="async">') + '</span>' +
-          '<span class="rw-extra-label">' + (e.key === 'stars' ? '額外收穫' : h(e.name)) + '</span><b>' + (e.key === 'stars' ? '+' + e.qty + ' 星' : '×' + e.qty) + '</b></li>';
-      }).join('') + '</ul>' : '') +
-      '<button type="button" class="rw-btn" data-yes>收下戰利品！</button>' +
-      (r.foot ? '<p class="rw-foot">' + h(r.foot) + '</p>' : '') + '</div>';
-    var btn = confirmEl.querySelector('[data-yes]');
-    btn.onclick = function () { btn.disabled = true; confirmEl.close(); };   // 獎勵已發放，這裡只關閉
-    confirmEl.addEventListener('close', function done() {
-      confirmEl.removeEventListener('close', done);
-      confirmEl.classList.remove('rw-modal');
-      if (r.onClose) r.onClose();
-    });
-    confirmEl.oncancel = null;
-    if (typeof confirmEl.showModal === 'function') confirmEl.showModal(); else confirmEl.setAttribute('open', '');
-  }
   /** 開箱、寶物磁鐵的結果：res＝store 回傳的 { stars, items }；rare＝神秘寶箱；note＝說明前綴 */
+  // 2026-11-09：背包開寶箱、寶物磁鐵也改用冒險事件的卡片式視窗（每樣獎勵一張奶油黃卡）；舊的獎勵彈窗已移除
   function showReward(title, res, rare, note) {
     var entries = rewardEntries(res.stars, res.items, 0);
     if (!entries.length) { showInfo(title, res.text); return; }
-    rare = rare || entries.some(function (e) { return RARE_ITEMS.indexOf(e.key) >= 0; });
-    rewardPopup({ rare: rare, title: title, entries: entries, desc: note ? note + '・' + entries[0].desc : '' });
+    eventPopup(note || '', entries.map(function (e) { return { theme: 'reward', img: e.img, title: e.name + ' ×' + e.qty, lines: [e.desc] }; }), { title: title });
   }
 
   /** 地圖上的特殊道具列（只顯示持有的道具） */

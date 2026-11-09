@@ -1370,8 +1370,8 @@ test('寶箱庫存：一般寶箱沿用地圖寶箱內容；神諭祝福的神�
   assert.deepEqual(r.items, { d6: 1 });
   assert.throws(() => store.openChest(a.id, 'chest'), /沒有這種寶箱/);
   assert.equal(store.openChest(a.id, 'giftMysteryChest').item, 'skates');    // 0.0 → 第一項
-  assert.equal(store.openChest(a.id, 'giftMysteryChest').item, 'airplane');  // 0.999 → 最後一項（稀有）
-  assert.equal(store.getPlayer(a.id).bag.airplane, 1);
+  assert.equal(store.openChest(a.id, 'giftMysteryChest').item, 'door');      // 0.999 → 最後一項；只有金島時不開出呼叫專機
+  assert.equal(store.getPlayer(a.id).bag.airplane, 0);
   assert.equal(store.getPlayer(a.id).bag.goldenKey, 0, '沒有用到鑰匙');
   assert.equal(store.data.adventure.itemLog.filter(x => x.action === 'open').length, 5);
   assert.deepEqual(G.MYSTERY_POOL.map(x => x.weight).reduce((s, w) => s + w, 0), 100);
@@ -2653,4 +2653,16 @@ test('能量星星兌換現實獎勵：扣星星不扣點數、星星不夠不�
   const d = migrate({ children: [{ id: 'c', name: 'B' }], rewards: [{ id: 'r1', name: '看卡通', cost: 30 }] });
   assert.deepEqual(d.rewards.map(r => [r.name, r.currency]), [['看卡通', 'points'], ['愛的飛高高', 'stars']]);
   assert.equal(migrate(d).rewards.length, 2, '再載入不會重複加');
+});
+
+test('神秘寶箱：其他島嶼開放後才會開出呼叫專機', () => {
+  const { store, a } = tsStore();
+  store.getPlayer(a.id).bag.giftMysteryChest = 2;
+  store.random = () => 0.999;
+  assert.equal(store.openChest(a.id, 'giftMysteryChest').item, 'door', '只有金島：最後一項是任意門');
+  G.registerBoard('wood', fakeWood());
+  try {
+    assert.equal(store.openChest(a.id, 'giftMysteryChest').item, 'airplane', '木島開放後 0.999 → 呼叫專機（稀有）');
+    assert.equal(store.getPlayer(a.id).bag.airplane, 1);
+  } finally { delete G.BOARDS.wood; }
 });

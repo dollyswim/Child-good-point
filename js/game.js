@@ -324,7 +324,9 @@
   ];
   Store.prototype._rollMysteryChest = function (childId) {
     this.getPlayer(childId).stats.mystery++;
-    var item = pickWeighted(this.random, MYSTERY_POOL);
+    // 2026-11-09 家長決定：其他島嶼還沒開放時不開出呼叫專機（用不到），其餘 6 種依原本權重比例分配
+    var otherOpen = Object.keys(BOARDS).some(function (k) { return k !== 'gold'; });
+    var item = pickWeighted(this.random, otherOpen ? MYSTERY_POOL : MYSTERY_POOL.filter(function (x) { return x.id !== 'airplane'; }));
     this.getPlayer(childId).bag[item.id]++;
     var items = {}; items[item.id] = 1;
     return { stars: 0, items: items, item: item.id, text: '得到 ' + item.icon + ' ' + item.name + '！' };

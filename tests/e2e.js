@@ -1094,10 +1094,11 @@ async function main() {
     assert.match(await q.locator('.chest-btn[data-kind=giftMysteryChest]').innerText(), /神秘寶箱[\s\S]*×2/);
     await q.evaluate(() => { window.__cgpStore.random = () => 0.5; });
     await q.click('.chest-btn[data-kind=giftMysteryChest]');
-    await q.waitForSelector('#confirm .rw.rw-rare');   // 神秘寶箱：稀有版獎勵彈窗
-    assert.match(await q.locator('#confirm .rw').innerText(), /稀有獎勵[\s\S]*打開神秘寶箱[\s\S]*×1[\s\S]*已收入冒險背包[\s\S]*收下戰利品/);
-    assert.equal(await q.locator('#confirm .rw-extra').count(), 0, '沒有額外獎勵就不顯示');
-    assert.equal(await q.locator('#confirm .rw-foot').count(), 0, '開背包寶箱沒有骰子資訊');
+    await q.waitForSelector('#confirm [data-testid=event]');   // 背包開寶箱：和擲骰事件同一種卡片式視窗
+    assert.match(await q.locator('#confirm .ev').innerText(), /^打開神秘寶箱！\n+[\s\S]*×1\n已收入冒險背包[\s\S]*繼續冒險！$/);
+    assert.equal(await q.locator('#confirm .ev-card.ev-reward').count(), 1);
+    assert.equal(await q.locator('#confirm .ev-sub').count(), 0, '開背包寶箱沒有骰子資訊');
+    if (SHOT_DIR) await q.locator('#confirm .ev').screenshot({ path: path.join(SHOT_DIR, 'event-bag-chest.png') });
     await q.click('#confirm [data-yes]');
     assert.match(await q.locator('.chest-btn[data-kind=giftMysteryChest]').innerText(), /×1/);
     const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -1230,8 +1231,8 @@ async function main() {
     await q.evaluate((cid) => { window.__cgpStore.getPlayer(cid).bag.goldenKey = 1; window.__cgpStore.save(); }, id);
     await q.reload(); await q.waitForSelector('.chest-btn[data-kind=mysteryChest]');
     await q.click('.chest-btn[data-kind=mysteryChest]');
-    await q.waitForSelector('#confirm .rw.rw-rare');
-    assert.match(await q.locator('#confirm .rw').innerText(), /用掉 1 把黃金鑰匙/);
+    await q.waitForSelector('#confirm [data-testid=event]');
+    assert.match(await q.locator('#confirm .ev').innerText(), /打開神秘寶箱！[\s\S]*用掉 1 把黃金鑰匙/);
     await q.click('#confirm [data-yes]');
     // 寶物磁鐵吸走第 5 格一般寶箱 → 地圖上那格的寶箱圖示消失（變普通石板）；新的一輪重新放滿
     await q.evaluate((cid) => { const s = window.__cgpStore; s.getPlayer(cid).bag.magnet = 1; s.random = () => 0.1; s.save(); }, id);
@@ -1242,6 +1243,8 @@ async function main() {
     await q.waitForFunction(() => !!document.querySelector('.mtile[data-n="5"].looted'), null, { timeout: 8000 });
     assert.equal(await q.locator('.mtile[data-n="5"].mt-chest').count(), 0, '吸走後寶箱圖示消失');
     assert.equal(await q.locator('.mtile[data-n="5"] .tile-art').count(), 0);
+    await q.waitForSelector('#confirm [data-testid=event]');   // 寶物磁鐵的結果也用卡片式視窗
+    assert.match(await q.locator('#confirm .ev').innerText(), /寶物磁鐵吸到了！[\s\S]*第 5 格[\s\S]*×\d[\s\S]*繼續冒險！/);
     if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
     await q.evaluate((cid) => { const s = window.__cgpStore; s._newLap(cid); s.save(); }, id);
     await q.reload(); await q.waitForSelector('#pawn');
