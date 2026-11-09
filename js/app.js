@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-121';
+  var APP_VERSION = '2026.11.09-122';
   var store;
   try {
     store = new CGP.Store();
@@ -15,7 +15,7 @@
     return;
   }
 
-  var BADGES = ['🏪', '🚜', '🎨', '⚽', '🎹', '🚀', '🦖', '🌸', '📚', '🧪', '🍳', '🏰'];
+  var BADGES = ['🐱', '🦊', '🐳', '🐰', '🏰', '🦄', '🌌', '🌈', '🚀', '🦋', '🌸', '⚽️', '🦖', '🐠'];   // 2026-11-09 家長指定
   var COLORS = ['#ffd166', '#ffadad', '#9bd5ff', '#b8f2a8', '#d7b8ff', '#ffc58f'];
   var WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
   var FREQ_LABELS = {
@@ -3257,7 +3257,7 @@
       '<small class="muted">會和等級一起顯示，例如「小小店長 Lv.5」。等級依「起始點數＋累計得分」自動換算，每 1000 分升 1 級（兌換獎勵不影響）。</small></label>' +
       '<fieldset class="field"><legend>代表圖示</legend><div class="pick">' +
       '<label class="pick-item"><input type="radio" name="badge" value=""' + (!c.badge ? ' checked' : '') + '><span class="none">無</span></label>' +
-      BADGES.map(function (b) {
+      (c.badge && BADGES.indexOf(c.badge) < 0 ? [c.badge] : []).concat(BADGES).map(function (b) {   // 舊的代表圖示不在新清單裡：放在最前面保留，不會被清掉
         return '<label class="pick-item"><input type="radio" name="badge" value="' + b + '"' + (b === c.badge ? ' checked' : '') + '><span>' + b + '</span></label>';
       }).join('') + '</div></fieldset>' +
       '<label class="field">每週目標點數<input type="number" name="weeklyGoal" min="0" step="10" inputmode="numeric" value="' + (c.weeklyGoal || 0) + '">' +

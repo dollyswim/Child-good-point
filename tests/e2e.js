@@ -411,7 +411,7 @@ async function main() {
   await passPin();
   await page.click('[data-action=edit-child] >> nth=0');
   await page.fill('input[name="title"]', '小小店長');
-  await page.check('input[name="badge"][value="🏪"]', { force: true });
+  await page.check('input[name="badge"][value="🦊"]', { force: true });
   await page.fill('input[name="weeklyGoal"]', '500');
   await page.click('#modal-form button[type="submit"]');
   await page.goto(url + '#home');
