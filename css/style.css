@@ -538,20 +538,32 @@ body {
 
 /* ---- 底部導覽列 ---- */
 .bottom-nav {
-  position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 640px;
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
-  padding: 8px max(10px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 8px) max(10px, env(safe-area-inset-left));
-  background: linear-gradient(180deg, var(--wood-1), var(--wood-2));
-  border-top: 3px solid var(--wood-3); border-radius: 22px 22px 0 0;
-  box-shadow: inset 0 2px 0 rgba(255,255,255,.3), 0 -4px 12px rgba(0,0,0,.12);
+  --bar-h: 84px; --bar-end: calc(var(--bar-h) * 125 / 206);   /* 木板圖 1080×206，左右兩端裝飾各 125px：兩端等比例縮放、中段只橫向延伸（九宮格） */
+  position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 640px; box-sizing: border-box;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; gap: 2px;
+  height: calc(var(--bar-h) + 6px + env(safe-area-inset-bottom));
+  padding: 0 calc(max(6px, env(safe-area-inset-right)) + 30px) calc(env(safe-area-inset-bottom) + 6px) calc(max(6px, env(safe-area-inset-left)) + 30px);
+}
+.bottom-nav::before {   /* 木製功能列背景 */
+  content: ""; position: absolute; z-index: -1; left: max(6px, env(safe-area-inset-left)); right: max(6px, env(safe-area-inset-right));
+  bottom: calc(env(safe-area-inset-bottom) + 6px); height: var(--bar-h); box-sizing: border-box;
+  border-style: solid; border-width: 0 var(--bar-end); border-image: url("../images/nav/nav_wood_bar.webp") 0 125 fill / 0 var(--bar-end) stretch;
+}
+.bottom-nav::after {   /* 手機底部安全區域：補一條木色，避免內容從木板下方露出 */
+  content: ""; position: absolute; z-index: -2; left: 0; right: 0; bottom: 0; height: env(safe-area-inset-bottom, 0px); background: #7a4a22;
 }
 .nav-item {
-  display: grid; justify-items: center; gap: 0; padding: 4px 0 2px; border-radius: 14px;
-  color: #fff; font-weight: 900; font-size: .78rem; text-shadow: 0 1px 0 var(--wood-3);
+  position: relative; display: grid; justify-items: center; align-content: center; gap: 1px; height: calc(var(--bar-h) - 30px); margin-top: 4px;
+  padding: 0 2px; border-radius: 14px; color: #fff; font-weight: 900; font-size: .78rem; line-height: 1.15; text-shadow: 0 1px 0 #6b3a14, 0 0 3px rgba(80, 40, 10, .6);
+  -webkit-tap-highlight-color: transparent; min-width: 0; width: 100%; max-width: 92px; justify-self: center;   /* 桌面版選取底板不拉太寬 */
 }
-.nav-icon { font-size: 1.45rem; line-height: 1.2; filter: drop-shadow(0 2px 0 rgba(0,0,0,.15)); }
-.nav-item.active { background: linear-gradient(#fff3a8, #ffd23f); color: var(--wood-3); text-shadow: none; box-shadow: 0 3px 0 #c99a12; }
-.undo-bar { bottom: calc(env(safe-area-inset-bottom) + 74px); z-index: 15; background: none; padding-bottom: 6px; }
+.nav-icon { position: relative; display: block; width: 34px; height: 34px; }
+.nav-icon img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.nav-label { white-space: nowrap; }
+.nav-item.active { background: linear-gradient(#fff6c4, #ffd75a); color: #6b3a14; text-shadow: none; box-shadow: 0 3px 0 #c99a12, inset 0 1px 0 rgba(255, 255, 255, .8); }
+.nav-num { position: absolute; top: -6px; right: -10px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 99px;
+  background: #e2473f; color: #fff; border: 2px solid #fff; font-size: .68rem; font-weight: 900; line-height: 14px; text-align: center; text-shadow: none; }
+.undo-bar { bottom: calc(env(safe-area-inset-bottom) + 88px); z-index: 15; background: none; padding-bottom: 6px; }
 .toast { bottom: calc(env(safe-area-inset-bottom) + 150px); }
 
 /* ---- 孩子頁 ---- */

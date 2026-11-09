@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-117';
+  var APP_VERSION = '2026.11.09-118';
   var store;
   try {
     store = new CGP.Store();
@@ -338,13 +338,19 @@
     return sky(mascotLink(false) + plaque(title) + gear() + row, true);   // 機器貓取代「‹」：回首頁
   }
 
-  var NAV = [['home', '🏠', '首頁'], ['child', '📋', '小孩'], ['challenge', '🏆', '挑戰'], ['shop', '🎁', '兌換'], ['report', '📊', '紀錄']];
+  // 2026-11-09：底部導覽列改用家長提供的木製功能列＋五張透明圖示（images/nav/）；文字、通知數字由 HTML 顯示
+  var NAV = [['home', 'images/nav/nav_home.webp', '首頁'], ['child', 'images/nav/nav_child.webp', '小孩'], ['challenge', 'images/nav/nav_challenge.webp', '挑戰'],
+    ['shop', 'images/nav/nav_rewards.webp', '兌換'], ['report', 'images/nav/nav_records.webp', '紀錄']];
   function bottomNav(active) {
     var c = currentChild();
+    // 通知數字：和首頁「小孩」磚塊同一份資料（所有孩子今天還能完成的任務數）
+    var left = store.getChildren().reduce(function (n, k) { return n + store.getTodayTasks(k.id).filter(function (t) { return t.status.canComplete; }).length; }, 0);
     return '<nav class="bottom-nav" aria-label="主要分頁">' + NAV.map(function (n) {
       var href = n[0] === 'home' ? '#home' : n[0] === 'report' ? '#report' : (c ? '#' + n[0] + '-' + c.id : '#home');
+      var num = n[0] === 'child' && left ? '<span class="nav-num" aria-label="' + left + ' 項任務">' + (left > 99 ? '99+' : left) + '</span>' : '';
       return '<a class="nav-item ' + (active === n[0] ? 'active' : '') + '" href="' + href + '"' + (active === n[0] ? ' aria-current="page"' : '') + '>' +
-        '<span class="nav-icon">' + n[1] + '</span><span>' + n[2] + '</span></a>';
+        '<span class="nav-icon"><img src="' + n[1] + '" alt="" aria-hidden="true" width="256" height="256" decoding="async" draggable="false">' + num + '</span>' +
+        '<span class="nav-label">' + n[2] + '</span></a>';
     }).join('') + '</nav>';
   }
 
