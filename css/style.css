@@ -1655,6 +1655,10 @@ body.mg-open { overflow: hidden; }
 .th-left { display: contents; }
 .th-kicker, .th-card h2, .th-who, .th-sound { order: 1; }
 .th-main { order: 2; } .th-name { order: 3; } .th-desc { order: 4; } .th-more { order: 5; } .th-actions { order: 6; }
+.th-date { order: 5; margin: 0 0 8px; color: #2f7a22; font-weight: 800; }
+/* 查看單一成就（從全部成就點進來）：徽章放大成主角 */
+.th-view .th-main { width: min(240px, 70vw); height: min(230px, 66vw); }
+.th-view .badge-lg { width: min(210px, 60vw); height: min(210px, 60vw); }
 /* 橫式（手機轉橫）：左欄主徽章＋按鈕，右欄文字與其他徽章，不用捲動就看得到按鈕 */
 @media (orientation: landscape) and (max-height: 520px) {
   .th-card { width: min(680px, 100%); display: grid; grid-template-columns: 190px minmax(0, 1fr); grid-auto-rows: min-content; align-content: start;
@@ -1664,6 +1668,7 @@ body.mg-open { overflow: hidden; }
   .th-kicker { display: none; }
   .th-main { width: 190px; height: 128px; }
   .badge-lg { width: 108px; height: 108px; } .badge-lg .badge-face { font-size: 2.9rem; }
+  .th-view .th-main { width: 190px; height: 160px; } .th-view .badge-lg { width: 150px; height: 150px; }
   .th-card h2 { font-size: 1.15rem; padding-right: 44px; }
   .th-who { margin-bottom: 2px; } .th-name { font-size: 1.2rem; margin: 2px 0 0; } .th-desc { margin-bottom: 4px; font-size: .9rem; }
   .th-more { padding-top: 4px; } .th-more-title { font-size: .78rem; margin-bottom: 2px; }

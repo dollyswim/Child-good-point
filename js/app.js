@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-114';
+  var APP_VERSION = '2026.11.09-115';
   var store;
   try {
     store = new CGP.Store();
@@ -1896,27 +1896,30 @@
     theaterBusy = true;
     openTheater(theaterQueue.shift());
   }
+  /** job.view：從「全部成就」點進來查看單一成就（同樣版面、徽章放大；不放煙火與音效，只有「知道了」） */
   function openTheater(job) {
     var child = job.child, list = job.list.slice().sort(function (x, y) { return achRank(y) - achRank(x); });
-    var main = list[0], others = list.slice(1), many = list.length > 1;
+    var main = list[0], others = list.slice(1), many = list.length > 1, view = !!job.view;
     var dlg = document.createElement('dialog');
-    dlg.className = 'ach-theater' + (thStill() ? ' still' : '');
+    dlg.className = 'ach-theater' + (view ? ' th-view still' : thStill() ? ' still' : '');
     dlg.id = 'ach-theater';
     dlg.setAttribute('aria-labelledby', 'ach-theater-title');
     var sparks = new Array(19).join('<i></i>'), hearts = '<b>♥</b><b>♥</b><b>♥</b>';
     dlg.innerHTML = '<div class="th-stage">' +
       '<div class="th-beam" aria-hidden="true"></div>' +
-      '<div class="th-burst" aria-hidden="true">' + sparks + hearts + '</div>' +
+      (view ? '' : '<div class="th-burst" aria-hidden="true">' + sparks + hearts + '</div>') +
       '<div class="th-card" tabindex="-1" autofocus>' +
-        '<button type="button" class="th-sound" data-th="sound" aria-pressed="' + soundOn() + '" aria-label="成就音效">' + (soundOn() ? '🔊' : '🔇') + '</button>' +
+        (view ? '' : '<button type="button" class="th-sound" data-th="sound" aria-pressed="' + soundOn() + '" aria-label="成就音效">' + (soundOn() ? '🔊' : '🔇') + '</button>') +
         '<p class="th-kicker" aria-hidden="true">✦ ✧ ✦</p>' +
-        '<h2 id="ach-theater-title">' + (many ? '🎉 哇！一次解鎖 ' + list.length + ' 個成就！' : '🎉 成就解鎖！') + '</h2>' +
+        '<h2 id="ach-theater-title">' + (view ? '🏆 我的成就' : many ? '🎉 哇！一次解鎖 ' + list.length + ' 個成就！' : '🎉 成就解鎖！') + '</h2>' +
         '<p class="th-who">' + h(child.name) + '</p>' +
         '<div class="th-left"><div class="th-main">' + badgeHtml(main, 'lg') + '</div>' +
-        '<div class="th-actions"><button type="button" class="btn primary block" data-th="collection">🏆 查看我的成就收藏</button>' +
-        '<button type="button" class="btn block th-go" data-th="close">繼續冒險</button></div></div>' +
+        '<div class="th-actions">' + (view ? '<button type="button" class="btn primary block" data-th="close">知道了</button>'
+          : '<button type="button" class="btn primary block" data-th="collection">🏆 查看我的成就收藏</button>' +
+          '<button type="button" class="btn block th-go" data-th="close">繼續冒險</button>') + '</div></div>' +
         '<h3 class="th-name" data-th-name>' + h(main.name) + '</h3>' +
         '<p class="th-desc" data-th-desc>' + h(main.desc) + '</p>' +
+        (view ? '<p class="th-date">' + (main.done ? '✅ ' + shortDate(main.date) + ' 達成' : '🔒 還沒達成，繼續加油！') + '</p>' : '') +
         (others.length ? '<div class="th-more"><p class="th-more-title">同時解鎖另外 ' + others.length + ' 個成就（點一下看看）</p>' +
           '<div class="th-strip" role="list">' + list.map(function (a, i) {
             return '<button type="button" class="th-mini' + (i === 0 ? ' on' : '') + '" role="listitem" data-th-pick="' + i + '" aria-label="' + h(a.name) + '">' + badgeHtml(a, 'sm') + '<small>' + h(a.name) + '</small></button>';
@@ -1964,7 +1967,7 @@
       close(false);
     });
     if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
-    playFanfare();
+    if (!view) playFanfare();
   }
   /** 金島通關：城堡門前慶祝空地（第四區 x 390～690、y 450～650）放煙火與彩帶約 2 秒，再顯示全螢幕慶祝 */
   function mapFireworks() {
@@ -3745,7 +3748,7 @@
         case 'open-achievements': ui.achOpen = id; ui.achScroll = true; go('#child-' + id); break;
         case 'ach-info': {
           var ach = store.getAchievements(childId).find(function (a) { return a.id === id; });
-          showInfo((ach.done ? ach.icon : '🔒') + ' ' + ach.name, ach.desc + '\n' + (ach.done ? '✅ ' + shortDate(ach.date) + ' 達成' : '還沒達成，繼續加油！'));
+          openTheater({ child: store.getChild(childId), list: [ach], view: true });   // 2026-11-09：比照得到成就的視窗，徽章放大
           break;
         }
         case 'resettle-day': {

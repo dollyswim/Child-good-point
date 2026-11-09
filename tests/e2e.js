@@ -1300,9 +1300,16 @@ async function main() {
     assert.equal(await q.locator('[data-testid=achievements] .ach').count(), 5, '展開只列已得到的 5 個成就');
     assert.equal(await q.locator('[data-testid=achievements] .ach:not(.done)').count(), 0, '不顯示未達成的成就');
     assert.equal(await q.locator('[data-testid=achievements] .ach-cat h3').count(), 2, '沒有成就的類別（收集）不顯示');
+    // 點成就卡：比照得到成就的視窗（我的成就、大徽章、名稱、條件、達成日期、知道了；沒有音效按鈕與煙火）
     await q.click('[data-action=ach-info][data-id=reachR2]');
-    assert.match(await q.locator('#confirm').innerText(), /抵達水晶礦谷[\s\S]*達成/);
-    await q.click('#confirm [data-yes]');
+    await q.waitForSelector('#ach-theater.th-view[open]');
+    assert.match(await q.locator('#ach-theater').innerText(), /我的成就[\s\S]*知道了[\s\S]*抵達水晶礦谷[\s\S]*走到第 31 格[\s\S]*達成/);
+    assert.match(await q.locator('#ach-theater .th-main img').getAttribute('src'), /badge_reachR2\.webp$/);
+    assert.ok((await q.locator('#ach-theater .th-main .badge').boundingBox()).width >= 190, '徽章放大');
+    assert.equal(await q.locator('#ach-theater .th-sound, #ach-theater .th-burst, #ach-theater [data-th=collection]').count(), 0);
+    if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'ach-view.png') });
+    await q.click('#ach-theater [data-th=close]');
+    await q.waitForSelector('#ach-theater', { state: 'detached' });
     // 從第 97 格擲 6：走到第 100 格（全島終點，多的步數捨棄）
     await q.goto(url + '#map-' + id);
     await q.evaluate(() => { window.__cgpStore.random = () => 0.99; });
