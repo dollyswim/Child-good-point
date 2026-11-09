@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-108';
+  var APP_VERSION = '2026.11.09-109';
   var store;
   try {
     store = new CGP.Store();
@@ -822,7 +822,7 @@
           title: '採花摘莓果！', sub: '點草地上的花和莓果，放進籃子裡', doneTitle: '🧺 籃子裝滿了！', doneSub: '派對要用的花和莓果都準備好了',
           hint: '派對需要漂亮的花和莓果…走到第 40 格幫我採！', intro: '森林派對要開始準備囉！幫我採 5 朵花和 5 顆莓果！', done: '好漂亮的花和莓果！派對一定很棒，謝謝你！' },
         invite: { type: 'invite', guide: [90, -20], cam: [30, -60],
-          title: '做派對邀請卡！', sub: '把花瓣和樹葉拖到卡片上，貼滿 6 個以上', doneTitle: '💌 送給森林朋友！', doneSub: '點兔子、刺蝟和貓頭鷹，把邀請卡送給牠們',
+          title: '做派對邀請卡！', sub: '貼 6～20 張花瓣和樹葉，也可以選顏色在白色地方畫圖', doneTitle: '💌 送給森林朋友！', doneSub: '點兔子、刺蝟和貓頭鷹，把邀請卡送給牠們',
           hint: '要邀請森林朋友來派對…走到第 65 格幫我做邀請卡！', intro: '我們來做派對邀請卡吧！用花瓣和樹葉把卡片布置得漂漂亮亮！', done: '大家都收到邀請卡了！派對見！' },
         party: { type: 'party', guide: [-90, -10], cam: [0, -120],
           title: '布置森林派對！', sub: '選一種裝飾，再點發光的位置放上去（共 10 個）', doneTitle: '🎉 森林派對開始囉！', doneSub: '精靈巨樹：謝謝大家一起來參加派對！',
@@ -1000,28 +1000,109 @@
    * 第 65 格：把花瓣、樹葉貼紙「拖曳」到邀請卡上（點一下也會貼在卡片上隨機位置），貼 6 個以上完成；
    * 接著出現兔子、刺蝟、貓頭鷹，點一隻送一張邀請卡
    */
+  /** 邀請卡可以畫圖的粉彩顏色 */
+  var INVITE_COLORS = [['#f7a1c4', '粉紅'], ['#fbe08a', '粉黃'], ['#9fd3f5', '粉藍'], ['#a8e2a8', '粉綠'], ['#c9adf0', '粉紫']];
   async function storyInvite(sp) {
     var P = partyPanel(sp, null, 'invite-panel');
-    var NEED = 6, placed = 0;
+    var NEED = 6, MAX = 20, AREA = 0.17;   // 至少 6 張才能完成、最多 20 張；AREA：白色內框離卡片邊緣的比例（和 CSS .invite-area 一致）
     P.art.classList.add('invite-art');
     P.art.innerHTML = '<div class="invite-card" id="invite-card"><img class="invite-card-img" src="' + PARTY_IMG + 'card.webp" alt="邀請卡" width="640" height="640" draggable="false">' +
-      '<div class="invite-area" id="invite-area"></div><span class="invite-count" id="invite-count">0 / ' + NEED + '</span></div>';
-    P.tools.innerHTML = '<div class="sticker-tray">' + [['petal', '花瓣'], ['leaf', '樹葉']].map(function (s) {
-      return '<button type="button" class="sticker-src" data-sticker="' + s[0] + '" aria-label="' + s[1] + '貼紙">' + partyImg(s[0], 'sticker-img') + '<small>' + s[1] + '</small></button>';
-    }).join('') + '</div><button type="button" class="btn primary charge-btn" id="invite-done" disabled>💌 卡片做好了！</button>';
+      '<div class="invite-area" id="invite-area"><canvas class="invite-draw" id="invite-draw" aria-label="在卡片上畫圖"></canvas></div><span class="invite-count" id="invite-count">0 / ' + MAX + '</span></div>';
+    P.tools.innerHTML = '<div class="pen-tray" role="radiogroup" aria-label="畫筆顏色">' + INVITE_COLORS.map(function (c, i) {
+      return '<button type="button" class="pen-color' + (i ? '' : ' on') + '" data-color="' + c[0] + '" role="radio" aria-checked="' + (i ? 'false' : 'true') + '" aria-label="' + c[1] + '畫筆" style="--pen:' + c[0] + '"></button>';
+    }).join('') + '<button type="button" class="pen-color pen-eraser" data-color="erase" role="radio" aria-checked="false" aria-label="橡皮擦">🧽</button></div>' +
+      '<div class="sticker-tray">' + [['petal', '花瓣'], ['leaf', '樹葉']].map(function (s) {
+        return '<button type="button" class="sticker-src" data-sticker="' + s[0] + '" aria-label="' + s[1] + '貼紙">' + partyImg(s[0], 'sticker-img') + '<small>' + s[1] + '</small></button>';
+      }).join('') + '<div class="pen-actions"><button type="button" class="pen-act" id="invite-undo" disabled>↩ 上一步</button><button type="button" class="pen-act" id="invite-clear" disabled>🗑 全部清除</button></div></div>' +
+      '<button type="button" class="btn primary charge-btn" id="invite-done" disabled>💌 卡片做好了！</button>';
     var area = P.art.querySelector('#invite-area'), cnt = P.art.querySelector('#invite-count'), doneBtn = P.tools.querySelector('#invite-done');
-    function stick(kind, px, py) {   // px、py：在貼紙區的比例（0～1）
-      var s = document.createElement('img');
-      s.className = 'card-sticker'; s.src = PARTY_IMG + kind + '.webp'; s.alt = ''; s.draggable = false;
-      s.style.left = (px * 100).toFixed(1) + '%'; s.style.top = (py * 100).toFixed(1) + '%';
-      s.style.transform = 'translate(-50%, -50%) rotate(' + Math.round(Math.random() * 60 - 30) + 'deg)';
-      area.appendChild(s);
-      placed++; cnt.textContent = placed + ' / ' + NEED;
-      if (placed >= NEED) { doneBtn.disabled = false; cnt.classList.add('ok'); }
+    var cv = P.art.querySelector('#invite-draw'), ctx = cv.getContext('2d');
+    var undoBtn = P.tools.querySelector('#invite-undo'), clearBtn = P.tools.querySelector('#invite-clear');
+    var strokes = [], stickers = [], history = [], pen = INVITE_COLORS[0][0];
+    function refresh() {
+      cnt.textContent = stickers.length + ' / ' + MAX;
+      cnt.classList.toggle('ok', stickers.length >= NEED);
+      doneBtn.disabled = stickers.length < NEED;
+      undoBtn.disabled = !history.length;
+      clearBtn.disabled = !strokes.length && !stickers.length;
+      P.tools.querySelectorAll('.sticker-src').forEach(function (b) { b.classList.toggle('full', stickers.length >= MAX); });
     }
+    // 畫圖：線條用比例座標記下來，上一步、橡皮擦、改變大小時整張重畫
+    function drawStroke(c, st, W, H) {
+      c.save();
+      c.globalCompositeOperation = st.erase ? 'destination-out' : 'source-over';
+      c.strokeStyle = c.fillStyle = st.erase ? '#000' : st.color;
+      c.lineWidth = (st.erase ? 0.08 : 0.025) * W; c.lineCap = c.lineJoin = 'round';
+      if (st.pts.length === 1) { c.beginPath(); c.arc(st.pts[0][0] * W, st.pts[0][1] * H, c.lineWidth / 2, 0, Math.PI * 2); c.fill(); }
+      else { c.beginPath(); c.moveTo(st.pts[0][0] * W, st.pts[0][1] * H); for (var i = 1; i < st.pts.length; i++) c.lineTo(st.pts[i][0] * W, st.pts[i][1] * H); c.stroke(); }
+      c.restore();
+    }
+    function redraw() {
+      var r = area.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+      var w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+      ctx.clearRect(0, 0, w, h);
+      strokes.forEach(function (st) { drawStroke(ctx, st, w, h); });
+    }
+    redraw();
+    if (window.ResizeObserver) new ResizeObserver(redraw).observe(area);
+    P.tools.querySelectorAll('.pen-color').forEach(function (b) {
+      b.addEventListener('click', function () {
+        pen = b.getAttribute('data-color');
+        P.tools.querySelectorAll('.pen-color').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b ? 'true' : 'false'); });
+      });
+    });
+    cv.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      try { cv.setPointerCapture(e.pointerId); } catch (err) { /* 舊瀏覽器 */ }
+      var r = cv.getBoundingClientRect();
+      function pt(ev) { return [Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (ev.clientY - r.top) / r.height))]; }
+      var st = { color: pen, erase: pen === 'erase', pts: [pt(e)] };
+      strokes.push(st); history.push({ t: 'stroke' });
+      drawStroke(ctx, st, cv.width, cv.height);
+      function move(ev) {
+        st.pts.push(pt(ev));
+        drawStroke(ctx, { color: st.color, erase: st.erase, pts: st.pts.slice(-2) }, cv.width, cv.height);
+      }
+      function up() {
+        cv.removeEventListener('pointermove', move); cv.removeEventListener('pointerup', up); cv.removeEventListener('pointercancel', up);
+        refresh();
+      }
+      cv.addEventListener('pointermove', move); cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    });
+    function stick(kind, px, py) {   // px、py：在貼紙區的比例（0～1）
+      if (stickers.length >= MAX) return;
+      var rot = Math.round(Math.random() * 60 - 30);
+      var el = document.createElement('img');
+      el.className = 'card-sticker'; el.src = PARTY_IMG + kind + '.webp'; el.alt = ''; el.draggable = false;
+      el.style.left = (px * 100).toFixed(1) + '%'; el.style.top = (py * 100).toFixed(1) + '%';
+      el.style.transform = 'translate(-50%, -50%) rotate(' + rot + 'deg)';
+      area.appendChild(el);
+      stickers.push({ el: el, px: px, py: py, rot: rot }); history.push({ t: 'sticker' });
+      refresh();
+    }
+    undoBtn.addEventListener('click', function () {
+      var h = history.pop();
+      if (!h) return;
+      if (h.t === 'stroke') { strokes.pop(); redraw(); }
+      else if (h.t === 'sticker') stickers.pop().el.remove();
+      else {   // 復原「全部清除」
+        strokes = h.strokes; stickers = h.stickers;
+        stickers.forEach(function (k) { area.appendChild(k.el); });
+        redraw();
+      }
+      refresh();
+    });
+    clearBtn.addEventListener('click', function () {
+      history.push({ t: 'clear', strokes: strokes, stickers: stickers });
+      stickers.forEach(function (k) { k.el.remove(); });
+      strokes = []; stickers = [];
+      redraw(); refresh();
+    });
     P.tools.querySelectorAll('.sticker-src').forEach(function (src) {
       src.addEventListener('pointerdown', function (e) {
         e.preventDefault();
+        if (stickers.length >= MAX) { src.classList.remove('shake'); void src.offsetWidth; src.classList.add('shake'); return; }
         var kind = src.getAttribute('data-sticker'), sx = e.clientX, sy = e.clientY, moved = false;
         var ghost = document.createElement('img');
         ghost.className = 'sticker-ghost'; ghost.src = PARTY_IMG + kind + '.webp'; ghost.alt = '';
@@ -1036,13 +1117,34 @@
           src.removeEventListener('pointermove', move); src.removeEventListener('pointerup', up); src.removeEventListener('pointercancel', up);
           ghost.remove();
           var r = area.getBoundingClientRect();
-          if (!moved) stick(kind, 0.15 + Math.random() * 0.7, 0.15 + Math.random() * 0.7);   // 點一下：貼在卡片上隨機位置
+          if (!moved) stick(kind, 0.1 + Math.random() * 0.8, 0.1 + Math.random() * 0.8);   // 點一下：貼在卡片上隨機位置
           else if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) stick(kind, (ev.clientX - r.left) / r.width, (ev.clientY - r.top) / r.height);
         }
         src.addEventListener('pointermove', move); src.addEventListener('pointerup', up); src.addEventListener('pointercancel', up);
       });
     });
+    refresh();
     await new Promise(function (resolve) { doneBtn.addEventListener('click', resolve); });
+    // 先把整張卡片（卡片圖＋畫的圖＋貼紙）合成一張 PNG，下載按鈕按下去就能直接存（手機分享選單需要在點擊當下呼叫）
+    var cardBlob = null;
+    (function () {
+      var card = P.art.querySelector('.invite-card-img'), S = card.naturalWidth || 640;
+      var out = document.createElement('canvas'); out.width = out.height = S;
+      var c = out.getContext('2d');
+      c.drawImage(card, 0, 0, S, S);
+      var x0 = S * AREA, aw = S * (1 - AREA * 2);
+      var layer = document.createElement('canvas'); layer.width = layer.height = Math.round(aw);
+      var lc = layer.getContext('2d');
+      strokes.forEach(function (st) { drawStroke(lc, st, layer.width, layer.height); });   // 用原始比例重畫，畫質不受螢幕大小影響
+      c.drawImage(layer, x0, x0, aw, aw);
+      stickers.forEach(function (k) {
+        var im = k.el, w = aw * 0.18, h = w * ((im.naturalHeight || 1) / (im.naturalWidth || 1));
+        c.save(); c.translate(x0 + k.px * aw, x0 + k.py * aw); c.rotate(k.rot * Math.PI / 180);
+        c.drawImage(im, -w / 2, -h / 2, w, h); c.restore();
+      });
+      try { out.toBlob(function (b) { cardBlob = b; }, 'image/png'); } catch (err) { /* 圖片跨來源時不能匯出 */ }
+    })();
+
     // 送卡片給三隻森林動物
     P.title.textContent = sp.doneTitle; P.sub.textContent = sp.doneSub;
     P.art.classList.add('invite-send');
@@ -1053,7 +1155,21 @@
       return '<button type="button" class="invite-friend" data-friend="' + a[0] + '" aria-label="送給' + a[1] + '">' + partyImg(a[0], 'friend-img') + '<span class="friend-thanks">謝謝！</span></button>';
     }).join('');
     P.art.appendChild(friends);
-    P.tools.innerHTML = '<span class="party-count" id="invite-sent">已送出 0 / 3</span>';
+    P.tools.innerHTML = '<span class="party-count" id="invite-sent">已送出 0 / 3</span>' +
+      '<button type="button" class="btn small invite-save" id="invite-save">⬇ 下載我的卡片</button>';
+    P.tools.querySelector('#invite-save').addEventListener('click', function () {
+      if (!cardBlob) { toast('卡片還在準備中，再按一次'); return; }
+      var name = 'forest-party-card.png';
+      var file = window.File ? new File([cardBlob], name, { type: 'image/png' }) : null;
+      // 手機、平板：跳出分享選單，可以選「儲存影像」；電腦：直接下載
+      if (file && !window.__cgpNoShare && navigator.canShare && navigator.canShare({ files: [file] }) && window.matchMedia('(pointer: coarse)').matches) {
+        navigator.share({ files: [file], title: '森林派對邀請卡' }).catch(function () { /* 取消分享 */ });
+        return;
+      }
+      var url = URL.createObjectURL(cardBlob), link = document.createElement('a');
+      link.href = url; link.download = name; document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    });
     var sent = 0;
     await new Promise(function (resolve) {
       friends.querySelectorAll('.invite-friend').forEach(function (f) {

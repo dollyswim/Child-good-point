@@ -2093,3 +2093,20 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .scene-art .card-sticker { width: 13%; }
 .invite-art { padding: 4px 0; }
 .invite-area { left: 17%; right: 17%; top: 17%; bottom: 17%; }   /* 對齊卡片白色內框，可貼的範圍更大 */
+/* 2026-11-09 邀請卡：貼紙 18%、最多 20 張、白色內框可以用粉彩畫圖、做好後可下載 */
+.scene-art .card-sticker { width: 18%; }
+.invite-draw { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; border-radius: 6px; }
+.scene-art .invite-draw { width: 100%; height: 100%; }
+.invite-card.small .invite-draw { pointer-events: none; }
+.pen-tray { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 6px; }
+.pen-color { width: 32px; height: 32px; border-radius: 50%; border: 3px solid #fff; background: var(--pen); box-shadow: 0 0 0 2px #e6cf9a; padding: 0; cursor: pointer; font-size: 1rem; line-height: 1; }
+.pen-color.on { box-shadow: 0 0 0 3px #e08a2c; transform: scale(1.12); }
+.pen-eraser { background: #fff; }
+.sticker-tray { align-items: center; }
+.pen-actions { display: grid; gap: 6px; }
+.pen-act { padding: 6px 10px; border-radius: 12px; border: 2px solid #f1d58f; background: #fffdf6; color: #8a6a3a; font-weight: 800; font-size: .8rem; cursor: pointer; }
+.pen-act:disabled { opacity: .4; cursor: default; }
+.sticker-src.full { opacity: .45; }
+.sticker-src.shake { animation: sticker-shake .35s; }
+@keyframes sticker-shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.invite-save { margin-left: 8px; }

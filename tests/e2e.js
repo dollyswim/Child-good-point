@@ -1845,9 +1845,42 @@ async function main() {
     assert.equal(await q.locator('.card-sticker').count(), 4, '拖到卡片外面不算');
     await q.click('.sticker-src[data-sticker=petal]'); await q.click('.sticker-src[data-sticker=leaf]');   // 點一下也會貼上
     assert.equal(await q.locator('.card-sticker').count(), 6);
+    // 在白色內框畫圖：預設粉紅；換粉藍再畫一筆；上一步收回最後一筆；橡皮擦
+    const inked = () => q.evaluate(() => { const c = document.getElementById('invite-draw'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++; return n; });
+    const stroke = async (y0, y1) => { const b = await q.locator('#invite-draw').boundingBox(); await q.mouse.move(b.x + b.width * 0.2, b.y + b.height * y0); await q.mouse.down(); await q.mouse.move(b.x + b.width * 0.8, b.y + b.height * y1, { steps: 8 }); await q.mouse.up(); };
+    assert.equal(await q.locator('.pen-color').count(), 6, '5 種粉彩顏色＋橡皮擦');
+    await stroke(0.2, 0.25);
+    const ink1 = await inked(); assert.ok(ink1 > 50, '畫得出線條');
+    await q.click('.pen-color[data-color="#9fd3f5"]');
+    await stroke(0.8, 0.85);
+    const ink2 = await inked(); assert.ok(ink2 > ink1);
+    await q.click('#invite-undo'); assert.ok(Math.abs(await inked() - ink1) < ink1 * 0.1, '上一步收回最後一筆');
+    await q.click('.pen-eraser'); await stroke(0.22, 0.23);
+    assert.ok(await inked() < ink1, '橡皮擦擦掉線條'); assert.equal(await q.locator('.card-sticker').count(), 6, '橡皮擦不影響貼紙');
+    await q.click('#invite-undo'); assert.ok(Math.abs(await inked() - ink1) < ink1 * 0.1, '橡皮擦也能上一步');
+    await q.click('.pen-color[data-color="#c9adf0"]'); await stroke(0.6, 0.5);
+    // 最多 20 張貼紙
+    for (let k = 0; k < 16; k++) await q.click('.sticker-src[data-sticker=' + (k % 2 ? 'leaf' : 'petal') + ']');
+    assert.equal(await q.locator('.card-sticker').count(), 20);
+    assert.equal(await q.locator('#invite-count').innerText(), '20 / 20');
+    // 全部清除後還能用上一步復原
+    await q.click('#invite-clear');
+    assert.equal(await q.locator('.card-sticker').count(), 0); assert.equal(await inked(), 0);
+    assert.ok(await q.locator('#invite-done').isDisabled());
+    await q.click('#invite-undo');
+    assert.equal(await q.locator('.card-sticker').count(), 20); assert.ok(await inked() > ink1);
     if (SD) await q.locator('#story-panel').screenshot({ path: path.join(SD, 'party-65-card.png') });
     await q.click('#invite-done');
     await q.waitForSelector('.invite-friend');
+    // 做好後可以下載整張卡片（PNG）
+    await q.evaluate(() => { window.__cgpNoShare = true; });
+    await q.waitForTimeout(300);
+    const [dl] = await Promise.all([q.waitForEvent('download'), q.click('#invite-save')]);
+    assert.equal(dl.suggestedFilename(), 'forest-party-card.png');
+    const dlPath = await dl.path();
+    const png = fs.readFileSync(dlPath);
+    assert.equal(png.slice(1, 4).toString(), 'PNG');
+    if (SD) fs.copyFileSync(dlPath, path.join(SD, 'party-65-download.png'));
     for (const f of await q.$$('.invite-friend')) await f.click({ force: true });   // 動物有浮動動畫
     if (SD) await q.locator('#story-panel').screenshot({ path: path.join(SD, 'party-65-send.png') });
     await q.waitForSelector('#scene-ok', { timeout: 5000 });
