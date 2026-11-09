@@ -684,6 +684,7 @@ body {
 .adv-banner.is-locked .btn { background: #d9cfc4; color: #8d7f70; border-color: #d0c4b7; }
 .adv-banner.is-settled { background: linear-gradient(135deg, #e6f6ff, #c5e6ff); }
 .adv-icon { font-size: 2.2rem; }
+.adv-icon-img { display: block; width: 56px; height: 56px; object-fit: contain; }   /* 今日冒險已出發：用「冒險開始」徽章裡的藏寶地圖（去掉綠框） */
 .adv-text { display: grid; min-width: 0; }
 .adv-text b { font-size: 1.1rem; font-weight: 900; }
 .adv-text small { color: var(--muted); font-weight: 700; }

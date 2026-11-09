@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-122';
+  var APP_VERSION = '2026.11.09-123';
   var store;
   try {
     store = new CGP.Store();
@@ -516,7 +516,7 @@
       var x = st.settlement;
       var endedToday = store.isAdventureEnded(child.id);
       return '<section class="adv-banner is-settled" data-testid="adventure">' +
-        '<span class="adv-icon">' + (endedToday ? '🏁' : '🗺️') + '</span><div class="adv-text"><b>' + (endedToday ? '今日冒險已結束' : '今日冒險已出發') + '</b>' +
+        '<span class="adv-icon">' + (endedToday ? '🏁' : '<img class="adv-icon-img" src="images/adv_map.webp" alt="" aria-hidden="true" width="256" height="256" decoding="async">') + '</span><div class="adv-text"><b>' + (endedToday ? '今日冒險已結束' : '今日冒險已出發') + '</b>' +
         '<small>今天得到 ⭐' + x.stars + ' 能量星星' + (x.bonusStars ? '（含額外 ⭐' + x.bonusStars + '）' : '') + '</small></div>' +
         '<a class="btn primary" href="#adventure-' + h(child.id) + '">進入冒險大廳</a></section>';
     }
