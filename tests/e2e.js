@@ -2051,18 +2051,12 @@ async function main() {
     q.on('pageerror', (e) => errors.push(e.message));
     await q.goto(url);
     const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '端端' }); s.save(); return a.id; });
-    // 1. 加分時另外給能量星星：先選 +3 再點加分項目 → 馬上入帳，選擇回到「不給」
+    // 1. 2026-11-09 家長決定：拿掉「記錄時另外給能量星星」，加分清單上方只剩點數篩選
     await q.goto(url + '#child-' + id);
-    await q.waitForSelector('[data-testid=extra-stars]');
-    await q.click('[data-action=extra-stars][data-n="3"]');
-    assert.equal(await q.locator('.star-chip.active').innerText(), '+3');
-    if (SHOT_DIR) await q.locator('[data-testid=extra-stars]').screenshot({ path: path.join(SHOT_DIR, 'extra-stars.png') });
+    await q.waitForSelector('.score-btn.bonus');
+    assert.equal(await q.locator('[data-testid=extra-stars], .star-chip').count(), 0, '不再有另外給星星的選擇列');
     await q.locator('.score-btn.bonus').first().click();
-    await q.waitForFunction(() => /⭐3/.test(document.getElementById('toast').textContent));
-    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), 3, '馬上入帳');
-    assert.equal(await q.locator('.star-chip.active').innerText(), '不給', '記錄後回到不給');
-    await q.locator('.score-btn.bonus').first().click();
-    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), 3, '下一筆沒有另外給');
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), 0, '一般加分不給星星');
     // 2. 設定 → 冒險上限：要家長密碼；＋／－調整；恢復預設
     await q.goto(url + '#rules-limits');
     await passPin(q);
@@ -2076,7 +2070,7 @@ async function main() {
     await q.click('[data-action=limits-reset]'); await q.click('#confirm [data-yes]');
     await q.waitForFunction(() => window.__cgpStore.getLimits().dice === 3);
     // 3. 兌換頁：用能量星星兌換「愛的飛高高／5 顆」（新安裝預設就有）
-    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.ledger.push({ id: 'gift', childId: cid, date: s.today(), delta: 5, reason: '測試', ts: 1 }); s.save(); }, id);
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.ledger.push({ id: 'gift', childId: cid, date: s.today(), delta: 8, reason: '測試', ts: 1 }); s.save(); }, id);
     await q.goto(url + '#shop-' + id);
     await q.waitForSelector('[data-testid=star-rewards]');
     assert.match(await q.locator('[data-testid=star-rewards]').innerText(), /用能量星星兌換[\s\S]*能量星星：\s*8[\s\S]*愛的飛高高[\s\S]*5 顆/);
@@ -2088,7 +2082,7 @@ async function main() {
     await q.waitForFunction((cid) => window.__cgpStore.getStarBalance(cid) === 3, id);
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), total0, '生活點數不變');
     assert.match(await q.locator('.records').last().innerText(), /愛的飛高高[\s\S]*−⭐5/);
-    console.log('✔ 能量星星：加分另外給星星馬上入帳、冒險每日上限設定（家長密碼、＋－、恢復預設）、用星星兌換愛的飛高高');
+    console.log('✔ 能量星星：加分清單不再有另外給星星、冒險每日上限設定（家長密碼、＋－、恢復預設）、用星星兌換愛的飛高高');
     await cz.close();
   }
 

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-113';
+  var APP_VERSION = '2026.11.09-114';
   var store;
   try {
     store = new CGP.Store();
@@ -39,7 +39,6 @@
     showAllRecords: false,
     pulse: false,
     scoreKind: 'bonus',   // 孩子頁目前顯示加分或扣分
-    extraStars: 0,        // 2026-11-09：加分時另外給的能量星星（記錄一筆後回到 0）
     scorePoints: null,    // 分數篩選（null = 全部）
     query: '',            // 孩子頁搜尋文字
     settingsQuery: '',    // 設定頁搜尋文字
@@ -2830,12 +2829,7 @@
 
     var list = items.length ? grouped(shown)
       : '<p class="muted small">尚未設定' + (kind === 'bonus' ? '加分' : '扣分') + '項目，可到設定頁新增</p>';
-    // 2026-11-09：加分時可以另外給能量星星（先選星星數再點加分項目，馬上入帳；記錄後回到「不給」）
-    var starRow = kind === 'bonus' && items.length ? '<div class="extra-stars" data-testid="extra-stars"><span class="extra-label">' + STAR_IMG + ' 另外給能量星星</span>' +
-      [0, 1, 2, 3, 5, 10].map(function (n) {
-        return '<button type="button" class="pts-chip star-chip ' + (ui.extraStars === n ? 'active' : '') + '" data-action="extra-stars" data-n="' + n + '">' + (n ? '+' + n : '不給') + '</button>';
-      }).join('') + '</div>' : '';
-    return seg + chips + starRow + list;
+    return seg + chips + list;
   }
 
   function updateScoreList() {
@@ -3346,11 +3340,9 @@
   function openCustomPoints(childId, item) {
     var fields = '<p class="muted small">' + h(store.getChild(childId).name) + '・' + (item.kind === 'penalty' ? '扣分' : '加分') + '</p>' +
       '<label class="field">' + (item.kind === 'penalty' ? '要扣幾點？' : '要加幾點？') +
-      '<input type="number" name="points" id="custom-points" min="0" step="1" inputmode="numeric" required value="' + Math.abs(item.points) + '"></label>' +
-      (item.kind === 'bonus' ? '<label class="field">另外給能量星星（0～' + window.CGP.EXTRA_STARS_MAX + '，馬上入帳）<input type="number" name="stars" min="0" max="' + window.CGP.EXTRA_STARS_MAX + '" step="1" inputmode="numeric" value="' + (ui.extraStars || 0) + '"></label>' : '');
+      '<input type="number" name="points" id="custom-points" min="0" step="1" inputmode="numeric" required value="' + Math.abs(item.points) + '"></label>';
     openModal(item.name, fields, function (fd) {
-      var rec = store.recordItem(childId, item.id, fd.get('points'), fd.get('stars'));
-      ui.extraStars = 0;
+      var rec = store.recordItem(childId, item.id, fd.get('points'));
       ui.query = '';
       ui.pulse = true;
       toast(recText(rec), rec.points < 0 ? 'neg' : 'pos');
@@ -3576,7 +3568,6 @@
           break;
         }
         case 'add-child': openChildForm(); break;
-        case 'extra-stars': ui.extraStars = Number(el.getAttribute('data-n')) || 0; updateScoreList(); break;
         case 'limit-step': {
           var lk = el.getAttribute('data-key'), lv = store.getLimits()[lk] + Number(el.getAttribute('data-d'));
           store.setLimits((function () { var o = {}; o[lk] = lv; return o; })());
@@ -3589,8 +3580,7 @@
         case 'record': {
           var recItem = store.getItem(id);
           if (recItem && recItem.custom) { openCustomPoints(childId, recItem); break; }
-          var rec = store.recordItem(childId, id, undefined, ui.extraStars);
-          ui.extraStars = 0;   // 另外給的星星只用在這一筆
+          var rec = store.recordItem(childId, id);
           ui.query = ''; // 記錄後清除搜尋，方便下一筆
           ui.pulse = true;
           toast(recText(rec), rec.points < 0 ? 'neg' : 'pos');
