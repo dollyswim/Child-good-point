@@ -45,6 +45,11 @@
   var FREQUENCY_TYPES = ['daily', 'weekdays', 'weekends', 'days', 'weeklyN', 'once'];
   var ITEM_KINDS = ['bonus', 'penalty', 'task'];
   var SCORE_TYPES = ['bonus', 'penalty', 'task']; // 計入今日淨得分的紀錄類型
+  // 2026-11-09 家長決定：冒險世界每日使用上限的預設值（設定裡可調 0～LIMIT_MAX）
+  var DEFAULT_LIMITS = { dice: 3, minigame: 1, move: 5, door: 1, magic: 1, starCall: 1, pineHide: 1 };
+  var LIMIT_MAX = 10;
+  var EXTRA_STARS_MAX = 20;   // 加分時另外給的能量星星上限
+  var STAR_REWARD_DEFAULT = { name: '愛的飛高高', cost: 5 };   // 能量星星兌換的預設獎勵
   /** Phase 4 命運卡特殊任務：抽到當天就出現在任務頁、含當天 3 天內有效、完成 +20 點（生活點數） */
   var SPECIAL_TASKS = {
     chore: { name: '完成指定家務', icon: '🧹' },
@@ -90,6 +95,7 @@
   // ---------- 預設資料 ----------
   function emptyData() {
     return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null, achievements: {}, carry: {}, backup: { lastExportAt: 0, since: 0, snoozeUntil: '' },
+      settings: { limits: {} }, flags: {},
       milestones: {}, adventure: { settlements: [], ledger: [], rolls: [], minigames: [], bonusQuota: [], mapChests: [], dayEnds: [], blessings: [], itemLog: [], limitResets: [], players: {} } };
   }
 
@@ -115,9 +121,11 @@
       { id: uid(), name: '本週淨得分 100 點', childIds: 'all', metric: 'net', itemId: null, target: 100, rewardPoints: 30, rewardStars: 0, createdAt: t }
     );
     d.rewards.push(
-      { id: uid(), name: '看卡通 30 分鐘', cost: 30, createdAt: t },
-      { id: uid(), name: '小點心', cost: 50, createdAt: t }
+      { id: uid(), name: '看卡通 30 分鐘', cost: 30, currency: 'points', createdAt: t },
+      { id: uid(), name: '小點心', cost: 50, currency: 'points', createdAt: t },
+      { id: uid(), name: STAR_REWARD_DEFAULT.name, cost: STAR_REWARD_DEFAULT.cost, currency: 'stars', createdAt: t }
     );
+    d.flags.starRewardSeeded = true;
     return d;
   }
 
@@ -199,9 +207,22 @@
         id: String(r.id),
         name: String(r.name || '未命名'),
         cost: Math.abs(toInt(r.cost, 0)),
+        currency: r.currency === 'stars' ? 'stars' : 'points',   // 2026-11-09：用生活點數或能量星星兌換
         createdAt: toInt(r.createdAt, Date.now())
       };
     });
+    // 2026-11-09：能量星星兌換的預設獎勵（舊存檔只自動加一次，家長刪掉後不再加回來）
+    d.flags = d.flags && typeof d.flags === 'object' ? { starRewardSeeded: !!d.flags.starRewardSeeded } : { starRewardSeeded: false };
+    if (!d.flags.starRewardSeeded) {
+      d.rewards.push({ id: uid(), name: STAR_REWARD_DEFAULT.name, cost: STAR_REWARD_DEFAULT.cost, currency: 'stars', createdAt: Date.now() });
+      d.flags.starRewardSeeded = true;
+    }
+    // 2026-11-09：冒險世界每日使用上限（全部孩子共用，0～10；沒設定的項目用預設）
+    d.settings = (function () {
+      var src = d.settings && typeof d.settings === 'object' && d.settings.limits && typeof d.settings.limits === 'object' ? d.settings.limits : {}, lim = {};
+      Object.keys(DEFAULT_LIMITS).forEach(function (k) { if (src[k] != null && src[k] !== '') lim[k] = Math.max(0, Math.min(LIMIT_MAX, toInt(src[k], DEFAULT_LIMITS[k]))); });
+      return { limits: lim };
+    })();
 
     var records = Array.isArray(d.records) ? d.records : [];
     d.records = records.filter(function (r) {
@@ -216,6 +237,8 @@
         points: toInt(r.points, 0),
         date: r.date,
         stars: Math.max(0, toInt(r.stars, 0)),
+        starsPaid: !!r.starsPaid || undefined,                            // 2026-11-09：額外能量星星記錄當下就入帳（星星帳 recordId 對應這筆）
+        starCost: r.starCost ? Math.max(0, toInt(r.starCost, 0)) : undefined,   // 用能量星星兌換的獎勵：花了幾顆
         backfill: !!r.backfill,
         ts: toInt(r.ts, Date.now())
       };
@@ -297,7 +320,7 @@
         return x && x.id && childIdSet.has(String(x.childId));
       }).map(function (x) {
         return { id: String(x.id), childId: String(x.childId), date: String(x.date || ''), delta: toInt(x.delta, 0),
-          reason: String(x.reason || ''), ts: toInt(x.ts, Date.now()) };
+          reason: String(x.reason || ''), recordId: x.recordId ? String(x.recordId) : undefined, ts: toInt(x.ts, Date.now()) };
       }),
       // Phase 3：擲骰紀錄（每日上限依此計算）
       rolls: (Array.isArray(adv.rolls) ? adv.rolls : []).filter(function (x) {
@@ -823,7 +846,7 @@
   Store.prototype.addReward = function (input) {
     var name = String(input.name || '').trim();
     if (!name) throw new Error('請輸入獎勵名稱');
-    var r = { id: uid(), name: name, cost: Math.abs(toInt(input.cost, 0)), createdAt: this.now().getTime() };
+    var r = { id: uid(), name: name, cost: Math.abs(toInt(input.cost, 0)), currency: input.currency === 'stars' ? 'stars' : 'points', createdAt: this.now().getTime() };
     this.data.rewards.push(r);
     this.save();
     return r;
@@ -837,6 +860,7 @@
       r.name = name;
     }
     if (patch.cost != null) r.cost = Math.abs(toInt(patch.cost, 0));
+    if (patch.currency != null) r.currency = patch.currency === 'stars' ? 'stars' : 'points';
     this.save();
     return r;
   };
@@ -962,16 +986,39 @@
       ts: Math.max(now.getTime(), last + 1) // 保證順序嚴格遞增
     };
     this.data.records.push(rec);
+    this._payRecordStars(rec);
     if (this._checkMilestones) rec.milestone = this._checkMilestones(childId);   // 累計得分里程碑（黃金鑰匙、神秘寶箱）
     this.save();
     return rec;
+  };
+  /** 星星帳加一筆（recordId：對應的生活紀錄，撤銷或刪除那筆紀錄時一併拿掉） */
+  Store.prototype._starLedger = function (childId, delta, reason, recordId) {
+    this.data.adventure.ledger.push({ id: uid(), childId: childId, date: this.today(), delta: delta, reason: reason, recordId: recordId, ts: this.now().getTime() });
+  };
+  /** 2026-11-09 家長決定：紀錄上的額外能量星星（規則、挑戰、加分時另外給）記錄當下就入帳，不用等進入冒險 */
+  Store.prototype._payRecordStars = function (rec) {
+    if (!(rec.stars > 0) || rec.starsPaid) return;
+    rec.starsPaid = true;
+    this._starLedger(rec.childId, rec.stars, '額外星星：' + rec.name, rec.id);
+  };
+  /**
+   * 撤銷或刪除紀錄前：拿掉這筆紀錄的星星帳（給的星星收回、兌換花的星星退回）。
+   * 給的星星已經花掉、餘額不夠收回時不能撤銷。
+   */
+  Store.prototype._takeBackStars = function (rec, check) {
+    var ledger = this.data.adventure.ledger, mine = ledger.filter(function (x) { return x.recordId === rec.id; });
+    if (!mine.length) return;
+    var delta = mine.reduce(function (s, x) { return s + x.delta; }, 0);
+    if (check && delta > 0 && this.getStarBalance(rec.childId) < delta) throw new Error('「' + rec.name + '」給的 ⭐' + delta + ' 已經用掉了，不能撤銷這筆紀錄');
+    if (check) return;
+    this.data.adventure.ledger = ledger.filter(function (x) { return x.recordId !== rec.id; });
   };
 
   /**
    * 點一下記錄加分或扣分項目
    * @param {number} [customPoints] 自填點數（item.custom 時必填，輸入正數即可，扣分自動轉負數）
    */
-  Store.prototype.recordItem = function (childId, itemId, customPoints) {
+  Store.prototype.recordItem = function (childId, itemId, customPoints, extraStars) {   // extraStars：加分時另外給的能量星星（0～20，馬上入帳）
     var item = this.getItem(itemId);
     if (!item || item.kind === 'task') throw new Error('找不到項目');
     if (!this.appliesTo(item, childId)) throw new Error('此項目不適用這位孩子');
@@ -981,7 +1028,8 @@
       if (customPoints === '' || customPoints == null || !Number.isFinite(n)) throw new Error('請輸入點數');
       points = normalizeItemPoints(item.kind, n);
     }
-    return this._addRecord(childId, item.kind, item.id, item.name, points, item.stars);
+    var extra = item.kind === 'bonus' ? Math.max(0, Math.min(EXTRA_STARS_MAX, toInt(extraStars, 0))) : 0;
+    return this._addRecord(childId, item.kind, item.id, item.name, points, (item.stars || 0) + extra);
   };
 
   /** 判斷任務在某日是否排程（不含每週 N 次 / 單次的完成次數判斷） */
@@ -1069,6 +1117,15 @@
   Store.prototype.redeemReward = function (childId, rewardId) {
     var reward = this.getReward(rewardId);
     if (!reward) throw new Error('找不到獎勵');
+    if (reward.currency === 'stars') {
+      // 用能量星星兌換：扣星星帳（撤銷這筆紀錄會退回），生活點數不變
+      if (this.getStarBalance(childId) < reward.cost) throw new Error('能量星星不足');
+      var rec = this._addRecord(childId, 'reward', reward.id, reward.name, 0);
+      rec.starCost = reward.cost;
+      this._starLedger(childId, -reward.cost, '兌換：' + reward.name, rec.id);
+      this.save();
+      return rec;
+    }
     if (this.getTotal(childId) < reward.cost) throw new Error('點數不足');
     return this._addRecord(childId, 'reward', reward.id, reward.name, -reward.cost);
   };
@@ -1092,7 +1149,9 @@
   Store.prototype.undoLast = function (childId) {
     var last = this.getLastRecord(childId);
     if (!last) return null;
+    this._takeBackStars(last, true);
     this._takeBackTreasure(last);
+    this._takeBackStars(last);
     this.data.records = this.data.records.filter(function (r) { return r.id !== last.id; });
     this.save();
     this._afterRecordChange([last.childId]);
@@ -1151,11 +1210,13 @@
     if (childId !== r.childId && /^treasure:/.test(r.refId || '')) throw new Error('寶物兌換紀錄不能改成其他孩子（道具在原本孩子的背包裡）');
     this._checkDate(date);
     if (r.type === 'task') this._checkTaskDup(childId, r.refId, date, r.id);
-    if (patch.points != null) {
+    if (patch.points != null && !r.starCost) {   // 用能量星星兌換的紀錄沒有點數可改
       if (patch.points === '' || !Number.isFinite(Number(patch.points))) throw new Error('請輸入點數');
       r.points = signedFor(r.type, patch.points);
     }
     var oldChild = r.childId;
+    if (childId !== oldChild && r.starCost) throw new Error('用能量星星兌換的紀錄不能改成其他孩子');
+    if (childId !== oldChild) this.data.adventure.ledger.forEach(function (x) { if (x.recordId === r.id) x.childId = childId; });   // 給的星星跟著改到新的孩子
     r.childId = childId;
     if (date !== r.date) {
       r.date = date;
@@ -1178,7 +1239,9 @@
   Store.prototype.deleteRecord = function (id) {
     var r = this.getRecord(id);
     if (!r) return null;
+    this._takeBackStars(r, true);
     this._takeBackTreasure(r);
+    this._takeBackStars(r);
     this.data.records = this.data.records.filter(function (x) { return x.id !== id; });
     this.save();
     this._afterRecordChange([r.childId]);
@@ -1205,6 +1268,7 @@
     };
     this.data.records.push(rec);
     this._sortRecords();
+    this._payRecordStars(rec);
     if (this._checkMilestones) rec.milestone = this._checkMilestones(childId);
     this.save();
     return rec;
@@ -1384,6 +1448,29 @@
     return data;
   };
 
+  // ----- 冒險世界每日使用上限（2026-11-09 家長決定：設定裡可調 0～10，全部孩子共用） -----
+  /** @returns {{ dice, minigame, move, door, magic, starCall, pineHide }} 目前的上限（沒設定的用預設） */
+  Store.prototype.getLimits = function () {
+    var set = (this.data.settings && this.data.settings.limits) || {}, out = {};
+    Object.keys(DEFAULT_LIMITS).forEach(function (k) { out[k] = set[k] != null ? set[k] : DEFAULT_LIMITS[k]; });
+    return out;
+  };
+  /** 家長修改每日上限（需家長密碼解鎖）；patch 裡沒有的項目不變；reset：全部恢復預設 */
+  Store.prototype.setLimits = function (patch, reset) {
+    if (this._requireParent) this._requireParent();
+    if (!this.data.settings) this.data.settings = { limits: {} };
+    if (reset) this.data.settings.limits = {};
+    var lim = this.data.settings.limits;
+    Object.keys(patch || {}).forEach(function (k) {
+      if (!(k in DEFAULT_LIMITS)) return;
+      var n = Number(patch[k]);
+      if (!Number.isFinite(n)) throw new Error('請輸入 0～' + LIMIT_MAX + ' 的數字');
+      lim[k] = Math.max(0, Math.min(LIMIT_MAX, Math.round(n)));
+    });
+    this.save();
+    return this.getLimits();
+  };
+
   // ----- 冒險解鎖與能量星星（Phase 2） -----
   /** 能量星星 = ceil(今日淨得分 / 5)；淨得分 ≤ 0 時為 0 */
   function starsForNet(net) { return net > 0 ? Math.ceil(net / 5) : 0; }
@@ -1399,7 +1486,7 @@
     this.data.adventure.settlements.forEach(function (x) {
       if (x.childId === childId) x.paidRecordIds.forEach(function (id) { paid.add(id); });
     });
-    return this.data.records.filter(function (r) { return r.childId === childId && r.stars > 0 && !paid.has(r.id); });
+    return this.data.records.filter(function (r) { return r.childId === childId && r.stars > 0 && !r.starsPaid && !paid.has(r.id); });
   };
 
   /** 星星餘額（Phase 3 起扣除商店花費） */
@@ -1654,7 +1741,7 @@
     if (!parsed || typeof parsed !== 'object' || (!Array.isArray(parsed.items) && !Array.isArray(parsed.rewards))) {
       throw new Error('檔案裡沒有規則（items）或獎勵（rewards）');
     }
-    var src = migrate(Object.assign({ children: [] }, parsed));
+    var src = migrate(Object.assign({ children: [], flags: { starRewardSeeded: true } }, parsed));   // 匯入規則檔不自動補預設的星星獎勵
     var next = clone(this.data);
     var t = this.now().getTime();
     var result = {
@@ -1728,10 +1815,10 @@
     src.rewards.forEach(function (r) {
       var found = next.rewards.find(function (x) { return x.name === r.name; });
       if (!found) {
-        next.rewards.push({ id: uid(), name: r.name, cost: r.cost, createdAt: t });
+        next.rewards.push({ id: uid(), name: r.name, cost: r.cost, currency: r.currency, createdAt: t });
         result.rewardsAdded++;
-      } else if (found.cost !== r.cost) {
-        found.cost = r.cost;
+      } else if (found.cost !== r.cost || found.currency !== r.currency) {
+        found.cost = r.cost; found.currency = r.currency;
         result.rewardsUpdated++;
       } else result.rewardsUnchanged++;
     });
@@ -1763,6 +1850,7 @@
     STORAGE_WARN_CHARS: STORAGE_WARN_CHARS,
     BAG_KEYS: BAG_KEYS,
     emptyBag: emptyBag,
+    DEFAULT_LIMITS: DEFAULT_LIMITS, LIMIT_MAX: LIMIT_MAX, EXTRA_STARS_MAX: EXTRA_STARS_MAX, STAR_REWARD_DEFAULT: STAR_REWARD_DEFAULT,
     SPECIAL_TASK_POINTS: SPECIAL_TASK_POINTS,
     CHARACTER_IDS: CHARACTER_IDS,
     starsForNet: starsForNet,

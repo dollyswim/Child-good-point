@@ -696,7 +696,8 @@
       function pickGame() { return minigameOf(island, self.random) === 'leaf'; }   // 開新的一場時才決定玩哪一種
       var leaf = false;
       ev.title = '🎮 小遊戲';
-      var mg = this.getMinigameToday(childId);
+      var todays = this.getMinigamesToday(childId), lim = this.getLimits().minigame;   // 2026-11-09：每日小遊戲次數依家長設定
+      var mg = todays.filter(function (m) { return m.status === 'pending'; })[0] || (todays.length >= lim ? todays[0] || { status: 'done' } : null);
       if (!mg) {
         leaf = pickGame();
         mg = { id: uid(), childId: childId, date: this.today(), tile: tile.n, status: 'pending', caught: 0, stars: 0, ts: this.now().getTime() };
@@ -717,12 +718,12 @@
         ev.minigame = { id: mg.id, bonus: true };
         ev.text = '🎮 再來 3 次：額外的小遊戲！' + (leaf ? '記住松果的位置再翻出來。' : '點星星收集能量星星。');
       } else {
-        // 今天已玩過：每天最多 1 次 → 這次機會轉成神秘寶箱（下次冒險時出現在前方還沒走到的格子；還沒撿走的最多 2 個）
+        // 今天的小遊戲次數用完 → 這次機會轉成神秘寶箱（下次冒險時出現在前方還沒走到的格子；還沒撿走的最多 2 個）
         ev.minigameOverflow = true;
         if (this._addMapChest(childId, 'overflow')) {
           ev.overflowChest = true;
-          ev.text = '今天已經玩過小遊戲了（每天 1 次）。\n這次的機會變成了一個 🎁 神秘寶箱，下次冒險時會藏在你前方還沒走到的地方！';
-        } else ev.text = '今天已經玩過小遊戲了（每天 1 次），明天再來挑戰！\n（還有 2 個 🎁 神秘寶箱等你去撿，撿到後才會再變出新的）';
+          ev.text = '今天的小遊戲已經玩完了（每天 ' + lim + ' 次）。\n這次的機會變成了一個 🎁 神秘寶箱，下次冒險時會藏在你前方還沒走到的地方！';
+        } else ev.text = '今天的小遊戲已經玩完了（每天 ' + lim + ' 次），明天再來挑戰！\n（還有 2 個 🎁 神秘寶箱等你去撿，撿到後才會再變出新的）';
       }
       if (ev.minigame) ev.title = leaf ? '🎮 小遊戲：落葉找松果' : '🎮 小遊戲：抓住星星';
     } else if (tile.type === 'boundary') {
@@ -914,8 +915,12 @@
   // ---------- 小遊戲「抓住星星」 ----------
   /** 今天的小遊戲紀錄（pending＝已停在小遊戲格但還沒玩完；done＝已領取） */
   Store.prototype.getMinigameToday = function (childId) {
+    return this.getMinigamesToday(childId)[0] || null;
+  };
+  /** 今天停在小遊戲格的基本場次（不含再來 3 次、星星呼喚等額外場次；重置過的不算） */
+  Store.prototype.getMinigamesToday = function (childId) {
     var today = this.today();
-    return this.data.adventure.minigames.find(function (m) { return m.childId === childId && m.date === today && !m.bonus && !m.limitReset; }) || null;
+    return this.data.adventure.minigames.filter(function (m) { return m.childId === childId && m.date === today && !m.bonus && !m.limitReset; });
   };
   /**
    * 家長重置今天的次數上限（需家長密碼）：骰子 3 次、小遊戲 1 次、前進道具 5 次、任意門 1 次、神奇骰子 1 顆、星星呼喚 1 個都重新計算。
@@ -980,12 +985,12 @@
   };
   /** 今天還能擲幾次（基本 3 次剩餘＋額外次數；不含神奇骰子） */
   Store.prototype.getRollsLeft = function (childId) {
-    return Math.max(0, DAILY_DICE_LIMIT - this.getRollsToday(childId)) + this.getBonusQuota(childId).rolls;
+    return Math.max(0, this.getLimits().dice - this.getRollsToday(childId)) + this.getBonusQuota(childId).rolls;
   };
-  /** 今天是否已用過神奇骰子（每天最多 1 顆） */
+  /** 今天的神奇骰子是否已經用到上限（預設每天 1 顆，家長可調） */
   Store.prototype.magicUsedToday = function (childId) {
     var today = this.today();
-    return this.data.adventure.rolls.some(function (r) { return r.childId === childId && r.date === today && r.kind === 'magic' && !r.limitReset; });
+    return this.data.adventure.rolls.filter(function (r) { return r.childId === childId && r.date === today && r.kind === 'magic' && !r.limitReset; }).length >= this.getLimits().magic;
   };
   /**
    * 第一步：擲出點數（計入次數、消耗骰子），還沒前進。
@@ -1001,12 +1006,13 @@
     var kind = 'base';
     if (die === 'magic') {
       if (!(p.bag.magicDice > 0)) throw new Error('背包裡沒有神奇骰子');
-      if (this.magicUsedToday(childId)) throw new Error('神奇骰子每天最多用 1 顆，明天再來！');
+      if (this.magicUsedToday(childId)) throw new Error('神奇骰子每天最多用 ' + this.getLimits().magic + ' 顆，明天再來！');
       kind = 'magic';
     } else {
-      if (this.getRollsToday(childId) >= DAILY_DICE_LIMIT) {
+      var diceLim = this.getLimits().dice;
+      if (this.getRollsToday(childId) >= diceLim) {
         if (this.getBonusQuota(childId).rolls > 0) kind = 'bonus';
-        else throw new Error('今天已經擲了 ' + DAILY_DICE_LIMIT + ' 次骰子，明天再來！');
+        else throw new Error(diceLim ? '今天已經擲了 ' + diceLim + ' 次骰子，明天再來！' : '家長設定今天不能擲骰子');
       }
       if (p.bag[die] <= 0) throw new Error('背包裡沒有' + (die === 'd6' ? ' 6 面骰' : ' 12 面骰'));
     }
@@ -1097,8 +1103,9 @@
   };
   /** 今天前進類道具與任意門還能用幾次 */
   Store.prototype.getItemLimitsToday = function (childId) {
-    return { move: Math.max(0, MOVE_DAILY_LIMIT - this._usesToday(childId, ['skates', 'wings'])),
-      door: Math.max(0, DOOR_DAILY_LIMIT - this._usesToday(childId, ['door'])) };
+    var L = this.getLimits();
+    return { move: Math.max(0, L.move - this._usesToday(childId, ['skates', 'wings'])),
+      door: Math.max(0, L.door - this._usesToday(childId, ['door'])) };
   };
   Store.prototype._useMoveItem = function (childId, item) {
     this._requirePlay(childId);
@@ -1107,7 +1114,7 @@
     var end = this.getBoard(childId).tiles.length - 1;
     var needLap = p.pos >= end;
     if (!(p.bag[item] > 0)) throw new Error('背包裡沒有' + MOVE_ITEMS[item].name);
-    if (!this.getItemLimitsToday(childId).move) throw new Error('今天的前進道具（溜冰鞋、飛行翼）已經用了 ' + MOVE_DAILY_LIMIT + ' 次，明天再用！');
+    if (!this.getItemLimitsToday(childId).move) throw new Error('今天的前進道具（溜冰鞋、飛行翼）已經用了 ' + this.getLimits().move + ' 次，明天再用！');
     this._markDayStart(childId);
     var travel = needLap ? this._startNext(childId) : null;
     var from = p.pos;
@@ -1133,7 +1140,7 @@
     if (!(n >= 1 && n < end)) throw new Error('任意門不能傳送到這一格');
     if (n === p.pos) throw new Error('你已經在這一格了');
     if (!(p.bag.door > 0)) throw new Error('背包裡沒有任意門');
-    if (!this.getItemLimitsToday(childId).door) throw new Error('任意門每天只能用 ' + DOOR_DAILY_LIMIT + ' 次，明天再用！');
+    if (!this.getItemLimitsToday(childId).door) throw new Error('任意門每天只能用 ' + this.getLimits().door + ' 次，明天再用！');
     this._markDayStart(childId);
     var from = p.pos;
     p.bag.door--;
@@ -1151,7 +1158,7 @@
     var p = this.getPlayer(childId);
     if (!(p.bag.starCall > 0)) throw new Error('背包裡沒有星星呼喚');
     if (this.getPendingMinigame(childId)) throw new Error('先把還沒玩完的小遊戲玩完');
-    if (this._usesToday(childId, ['starCall'])) throw new Error('星星呼喚每天只能用 1 個，明天再用！');
+    if (this._usesToday(childId, ['starCall']) >= this.getLimits().starCall) throw new Error('星星呼喚每天只能用 ' + this.getLimits().starCall + ' 個，明天再用！');
     p.bag.starCall--;
     var mg = { id: uid(), childId: childId, date: this.today(), tile: p.pos, status: 'pending', bonus: true, starCall: true, caught: 0, stars: 0, ts: this.now().getTime() };
     this.data.adventure.minigames.push(mg);
@@ -1165,7 +1172,7 @@
     var p = this.getPlayer(childId);
     if (!(p.bag.pineHide > 0)) throw new Error('背包裡沒有松果躲躲');
     if (this.getPendingMinigame(childId)) throw new Error('先把還沒玩完的小遊戲玩完');
-    if (this._usesToday(childId, ['pineHide'])) throw new Error('松果躲躲每天只能用 1 個，明天再用！');
+    if (this._usesToday(childId, ['pineHide']) >= this.getLimits().pineHide) throw new Error('松果躲躲每天只能用 ' + this.getLimits().pineHide + ' 個，明天再用！');
     p.bag.pineHide--;
     var mg = { id: uid(), childId: childId, date: this.today(), tile: p.pos, status: 'pending', bonus: true, starCall: true, game: 'leaf', caught: 0, stars: 0, ts: this.now().getTime() };
     this.data.adventure.minigames.push(mg);

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-105';
+  var APP_VERSION = '2026.11.09-106';
   var store;
   try {
     store = new CGP.Store();
@@ -26,7 +26,7 @@
   var KIND_LABELS = { bonus: '加分項目', penalty: '扣分項目', task: '加分項目' };
   var SETTINGS_TABS = [
     ['children', '孩子'], ['bonus', '加分'],
-    ['penalty', '扣分'], ['challenge', '挑戰'], ['reward', '獎勵'], ['blessing', '神諭祝福'], ['backup', '備份']
+    ['penalty', '扣分'], ['challenge', '挑戰'], ['reward', '獎勵'], ['limits', '冒險上限'], ['blessing', '神諭祝福'], ['backup', '備份']
   ];
 
   var app = document.getElementById('app');
@@ -39,6 +39,7 @@
     showAllRecords: false,
     pulse: false,
     scoreKind: 'bonus',   // 孩子頁目前顯示加分或扣分
+    extraStars: 0,        // 2026-11-09：加分時另外給的能量星星（記錄一筆後回到 0）
     scorePoints: null,    // 分數篩選（null = 全部）
     query: '',            // 孩子頁搜尋文字
     settingsQuery: '',    // 設定頁搜尋文字
@@ -1050,7 +1051,7 @@
     var bag = player.bag;
     var canPlay = store.canPlayToday(child.id);
     var used = store.getRollsToday(child.id);
-    var limit = GAME.DAILY_DICE_LIMIT;
+    var limit = store.getLimits().dice;   // 2026-11-09：每日上限依家長設定
     var end = board.tiles.length - 1;
     var atEnd = player.pos >= end;
     var quota = store.getBonusQuota(child.id);
@@ -1066,7 +1067,7 @@
     var reason = ended ? '🏁 今天的冒險已經結束了，明天見！' : !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
       : picking ? '🚪 任意門：點地圖上的格子選擇要去的地方'
       : atEnd ? (board.tiles[player.pos].type === 'end' ? '🏁 已抵達' + (board.goalName || '終點') + '、通關' + board.name + '！' + (GAME.nextIsland(player.island) ? '下次出發前往「' + GAME.BOARDS[GAME.nextIsland(player.island)].name + '」' : '下次出發從起點開始新的一輪') : '🚪 已抵達目前開放區域的終點！下次出發從起點開始新的一輪')
-        : noRolls ? '今天的 3 次骰子用完了，明天再來！' + (lim.move && (bag.skates || bag.wings) ? '（前進道具今天還可以用 ' + lim.move + ' 次）' : '')
+        : noRolls ? '今天的 ' + limit + ' 次骰子用完了，明天再來！' + (lim.move && (bag.skates || bag.wings) ? '（前進道具今天還可以用 ' + lim.move + ' 次）' : '')
           : (!bag.d6 && !bag.d12 && !bag.skates ? '背包是空的，點左下角的商店用能量星星購買骰子' : '選一個道具出發吧！');
     var tiles = board.tiles.map(function (t) {   // 長地圖：所有已開放區域的格子都顯示
       var p = worldXY(region, t);
@@ -2059,7 +2060,7 @@
             '<span class="shop-row-main"><b>' + h(it.name) + '</b><small>' + h(it.desc) + '・背包 ×' + bag[it.id] + '</small></span>' +
             '<button class="btn ' + (ok ? 'primary' : '') + ' small" data-buy="' + it.id + '"' + (ok ? '' : ' disabled') + '>⭐' + it.price + '</button></div>';
         }).join('') +
-        '<p class="muted small">買來的道具放進背包，沒用完隔天仍然保留。每天最多擲 3 次骰子。</p>' +
+        '<p class="muted small">買來的道具放進背包，沒用完隔天仍然保留。每天最多擲 ' + store.getLimits().dice + ' 次骰子。</p>' +
         '<div class="modal-actions"><button type="button" class="btn" data-no>完成</button></div></div>';
       confirmEl.querySelectorAll('[data-buy]').forEach(function (b) {
         b.onclick = function () {
@@ -2168,8 +2169,18 @@
   }
 
   function renderShop(child) {
-    var total = store.getTotal(child.id);
-    var rewards = store.getRewards().slice().sort(function (a, b) { return a.cost - b.cost; });
+    var total = store.getTotal(child.id), starBal = store.getStarBalance(child.id);
+    var all = store.getRewards().slice().sort(function (a, b) { return a.cost - b.cost; });
+    var rewards = all.filter(function (r) { return r.currency !== 'stars'; });
+    var starRewards = all.filter(function (r) { return r.currency === 'stars'; });
+    // 2026-11-09：用能量星星兌換的現實獎勵
+    var starCards = starRewards.length ? '<div class="shop-grid">' + starRewards.map(function (r) {
+      var ok = starBal >= r.cost;
+      return '<div class="shop-item star-reward ' + (ok ? 'can' : '') + '"><span class="shop-icon">⭐</span><b class="shop-name">' + h(r.name) + '</b>' +
+        '<span class="shop-cost">' + STAR_IMG + ' ' + num(r.cost) + ' 顆</span>' +
+        (ok ? '<button class="btn primary small" data-action="redeem" data-id="' + h(r.id) + '">兌換</button>'
+          : progressBar(starBal, r.cost) + '<small class="muted">還差 ' + num(r.cost - starBal) + ' 顆</small>') + '</div>';
+    }).join('') + '</div>' : '<p class="muted small">還沒有用能量星星兌換的獎勵，可以到設定 → 獎勵新增。</p>';
     var cards = rewards.length ? '<div class="shop-grid">' + rewards.map(function (r) {
       var ok = total >= r.cost;
       return '<div class="shop-item ' + (ok ? 'can' : '') + '"><span class="shop-icon">🎁</span><b class="shop-name">' + h(r.name) + '</b>' +
@@ -2180,15 +2191,18 @@
     var history = store.getRecords(child.id).filter(function (r) { return r.type === 'reward'; }).slice(0, 20);
     var histHtml = history.length ? '<ul class="records">' + history.map(function (r) {
       return '<li class="rec" data-action="edit-record" data-id="' + h(r.id) + '" role="button" tabindex="0"><span class="rec-time">' + h(dateLabel(r.date)) + '</span>' +
-        '<span class="rec-name">🎁 ' + h(r.name) + '</span><span class="pts neg">' + signed(r.points) + '</span></li>';
+        '<span class="rec-name">' + (r.starCost ? '⭐ ' : '🎁 ') + h(r.name) + '</span><span class="pts neg">' + (r.starCost ? '−⭐' + r.starCost : signed(r.points)) + '</span></li>';
     }).join('') + '</ul>' : '<p class="muted small">還沒有兌換紀錄</p>';
     return pageHeader('獎勵兌換', child, 'shop') +
       '<main class="page">' +
       '<section class="wallet" style="--c:' + h(child.color) + '">' + avatar(child, 'md') +
       '<div><div class="label">' + h(child.name) + ' 可以用的點數</div><div class="wallet-value" data-testid="total"><i class="coin" aria-hidden="true">點</i>' + num(total) + '</div></div></section>' +
       treasurePanel(child) +
-      '<section class="panel"><h2>🎁 可兌換的獎勵</h2>' + cards +
+      '<section class="panel"><h2>🎁 用點數兌換</h2>' + cards +
       '<p class="muted small">兌換會扣除總點數，不影響今日淨得分與等級。</p></section>' +
+      '<section class="panel star-shop" data-testid="star-rewards"><h2>⭐ 用能量星星兌換</h2>' +
+      '<p class="star-wallet">' + STAR_IMG + ' ' + h(child.name) + ' 的能量星星：<b>' + num(starBal) + '</b> 顆</p>' + starCards +
+      '<p class="muted small">兌換會扣除能量星星（冒險世界賺到的星星），生活點數不變；撤銷這筆兌換會退回星星。</p></section>' +
       '<section class="panel"><h2>🧾 兌換紀錄</h2>' + histHtml + '</section></main>';
   }
 
@@ -2410,10 +2424,11 @@
     if (bag.magicDice) btn('magicDice', 'roll', '神奇骰子', magicUsed ? '今天已用・×' + bag.magicDice : '×' + bag.magicDice + '・不占次數', busy || magicUsed);
     var lim = store.getItemLimitsToday(child.id);   // 前進類合計每天 5 次、任意門每天 1 次
     if (bag.wings) btn('wings', 'use-item', '飛行翼 +20', '×' + bag.wings + (lim.move ? '・今天剩 ' + lim.move + ' 次' : '・今天已用完'), busy || !lim.move);
-    if (bag.door) btn('door', 'pick-door', '任意門', '×' + bag.door + (lim.door ? '・每天 1 次' : '・今天已用'), busy || !lim.door);
+    if (bag.door) btn('door', 'pick-door', '任意門', '×' + bag.door + (lim.door ? '・今天剩 ' + lim.door + ' 次' : '・今天已用完'), busy || !lim.door);
     if (bag.luckyMedal) btn('luckyMedal', 'activate-medal', '好運金牌', player.medalArmed ? '已啟用・×' + bag.luckyMedal : '×' + bag.luckyMedal + '・點我啟用', !!player.medalArmed);
-    if (bag.pineHide) { var phUsed = store._usesToday(child.id, ['pineHide']) > 0; btn('pineHide', 'use-pinehide', '松果躲躲', phUsed ? '今天已用・×' + bag.pineHide : '×' + bag.pineHide + '・玩一局', busy || phUsed || !!store.getPendingMinigame(child.id)); }
-    if (bag.starCall) { var scUsed = store._usesToday(child.id, ['starCall']) > 0; btn('starCall', 'use-starcall', '星星呼喚', scUsed ? '今天已用・×' + bag.starCall : '×' + bag.starCall + '・玩一局', busy || scUsed || !!store.getPendingMinigame(child.id)); }
+    var L = store.getLimits();
+    if (bag.pineHide) { var phUsed = store._usesToday(child.id, ['pineHide']) >= L.pineHide; btn('pineHide', 'use-pinehide', '松果躲躲', phUsed ? '今天已用・×' + bag.pineHide : '×' + bag.pineHide + '・玩一局', busy || phUsed || !!store.getPendingMinigame(child.id)); }
+    if (bag.starCall) { var scUsed = store._usesToday(child.id, ['starCall']) >= L.starCall; btn('starCall', 'use-starcall', '星星呼喚', scUsed ? '今天已用・×' + bag.starCall : '×' + bag.starCall + '・玩一局', busy || scUsed || !!store.getPendingMinigame(child.id)); }
     if (bag.bonusPlay) btn('bonusPlay', 'activate-bonus', '再來 3 次', '×' + bag.bonusPlay + '・點我啟用', busy);
     if (bag.magnet) btn('magnet', 'use-magnet', '寶物磁鐵', '×' + bag.magnet + '・前後 ' + GAME.MAGNET_RANGE + ' 格', busy);
     if (bag.shield) btn('shield', 'item-info', '防護罩', '×' + bag.shield + '・自動抵擋', false);
@@ -2528,7 +2543,12 @@
 
     var list = items.length ? grouped(shown)
       : '<p class="muted small">尚未設定' + (kind === 'bonus' ? '加分' : '扣分') + '項目，可到設定頁新增</p>';
-    return seg + chips + list;
+    // 2026-11-09：加分時可以另外給能量星星（先選星星數再點加分項目，馬上入帳；記錄後回到「不給」）
+    var starRow = kind === 'bonus' && items.length ? '<div class="extra-stars" data-testid="extra-stars"><span class="extra-label">' + STAR_IMG + ' 另外給能量星星</span>' +
+      [0, 1, 2, 3, 5, 10].map(function (n) {
+        return '<button type="button" class="pts-chip star-chip ' + (ui.extraStars === n ? 'active' : '') + '" data-action="extra-stars" data-n="' + n + '">' + (n ? '+' + n : '不給') + '</button>';
+      }).join('') + '</div>' : '';
+    return seg + chips + starRow + list;
   }
 
   function updateScoreList() {
@@ -2557,7 +2577,7 @@
       '<span class="rec-name">' + (r.type === 'reward' ? '🎁 ' : '') + h(r.name) +
       ' <small class="tag tag-' + r.type + '">' + tag + '</small>' +
       (r.stars ? ' <small class="tag tag-star">⭐' + r.stars + '</small>' : '') + '</span>' +
-      '<span class="pts ' + signClass(r.points) + '">' + signed(r.points) + '</span></li>';
+      (r.starCost ? '<span class="pts neg">−⭐' + r.starCost + '</span></li>' : '<span class="pts ' + signClass(r.points) + '">' + signed(r.points) + '</span></li>');
   }
 
   // ---------- 記分總覽 ----------
@@ -2656,6 +2676,7 @@
     else if (tab === 'challenge') body = settingsChallenges();
     else if (tab === 'backup') body = settingsBackup();
     else if (tab === 'blessing') body = settingsBlessing();
+    else if (tab === 'limits') body = settingsLimits();
     else if (tab === 'task') { tab = 'bonus'; body = settingsItems('bonus'); } // 舊網址相容
     else if (KIND_LABELS[tab]) body = settingsItems(tab);
     else body = settingsChildren();
@@ -2793,12 +2814,38 @@
 
   function settingsRewards() {
     var list = store.getRewards().map(function (r) {
-      return '<li class="row"><span class="row-main"><b>🎁 ' + h(r.name) + '</b><small>需要 ' + r.cost + ' 點</small></span>' +
+      return '<li class="row"><span class="row-main"><b>' + (r.currency === 'stars' ? '⭐ ' : '🎁 ') + h(r.name) + '</b><small>需要 ' + r.cost + (r.currency === 'stars' ? ' 顆能量星星' : ' 點') + '</small></span>' +
         '<button class="btn small" data-action="edit-reward" data-id="' + h(r.id) + '">編輯</button>' +
         '<button class="btn small danger" data-action="delete-reward" data-id="' + h(r.id) + '">刪除</button></li>';
     }).join('');
-    return '<ul class="rows">' + (list || '<li class="muted">尚未建立</li>') + '</ul>' +
+    return '<p class="muted small">每個獎勵可以選用「生活點數」或「能量星星」兌換。能量星星是孩子在冒險世界賺到的星星，換現實獎勵後會從星星餘額扣除。</p>' +
+      '<ul class="rows">' + (list || '<li class="muted">尚未建立</li>') + '</ul>' +
       '<button class="btn primary block" data-action="add-reward">＋ 新增獎勵</button>';
+  }
+
+  /** 設定 → 冒險上限：冒險世界各項每日使用上限（0～10，全部孩子共用；2026-11-09 家長決定） */
+  var LIMIT_ROWS = [
+    ['dice', '🎲 每日擲骰次數', '設 0：今天不能擲骰（只能用道具前進）'],
+    ['minigame', '🎮 小遊戲次數（停在小遊戲格）', '用完後再停到小遊戲格，會轉成神秘寶箱'],
+    ['move', '🛼 前進道具（溜冰鞋＋飛行翼合計）', ''],
+    ['door', '🚪 任意門', ''],
+    ['magic', '✨ 神奇骰子', ''],
+    ['starCall', '🌠 星星呼喚', ''],
+    ['pineHide', '🌰 松果躲躲', '']
+  ];
+  function settingsLimits() {
+    var L = store.getLimits(), D = window.CGP.DEFAULT_LIMITS, max = window.CGP.LIMIT_MAX;
+    return '<section class="panel limits-panel" data-testid="limits"><h2>⏱️ 冒險世界每日上限</h2>' +
+      '<p class="limits-tip">冒險世界是好表現的獎勵，不是主角。建議替每一項設定合理的每日上限，讓孩子玩得開心又不會過度沉迷；想調高之前，先和孩子約定好每天玩多久。</p>' +
+      '<ul class="rows limits-rows">' + LIMIT_ROWS.map(function (r) {
+        var v = L[r[0]];
+        return '<li class="row limit-row" data-key="' + r[0] + '"><span class="row-main"><b>' + r[1] + '</b><small>預設 ' + D[r[0]] + (r[2] ? '・' + r[2] : '') + '</small></span>' +
+          '<span class="stepper"><button type="button" class="btn small" data-action="limit-step" data-key="' + r[0] + '" data-d="-1" aria-label="減少"' + (v <= 0 ? ' disabled' : '') + '>－</button>' +
+          '<b class="limit-val' + (v !== D[r[0]] ? ' changed' : '') + '" data-testid="limit-' + r[0] + '">' + v + '</b>' +
+          '<button type="button" class="btn small" data-action="limit-step" data-key="' + r[0] + '" data-d="1" aria-label="增加"' + (v >= max ? ' disabled' : '') + '>＋</button></span></li>';
+      }).join('') + '</ul>' +
+      '<p class="muted small">每天 0～' + max + ' 次，全部孩子共用；改完當天就生效，已經用掉的次數照算。「再來 3 次」的額外次數另外計算。</p>' +
+      '<button class="btn block" data-action="limits-reset">↩️ 全部恢復預設</button></section>';
   }
 
   function settingsBackup() {
@@ -3012,9 +3059,11 @@
   function openCustomPoints(childId, item) {
     var fields = '<p class="muted small">' + h(store.getChild(childId).name) + '・' + (item.kind === 'penalty' ? '扣分' : '加分') + '</p>' +
       '<label class="field">' + (item.kind === 'penalty' ? '要扣幾點？' : '要加幾點？') +
-      '<input type="number" name="points" id="custom-points" min="0" step="1" inputmode="numeric" required value="' + Math.abs(item.points) + '"></label>';
+      '<input type="number" name="points" id="custom-points" min="0" step="1" inputmode="numeric" required value="' + Math.abs(item.points) + '"></label>' +
+      (item.kind === 'bonus' ? '<label class="field">另外給能量星星（0～' + window.CGP.EXTRA_STARS_MAX + '，馬上入帳）<input type="number" name="stars" min="0" max="' + window.CGP.EXTRA_STARS_MAX + '" step="1" inputmode="numeric" value="' + (ui.extraStars || 0) + '"></label>' : '');
     openModal(item.name, fields, function (fd) {
-      var rec = store.recordItem(childId, item.id, fd.get('points'));
+      var rec = store.recordItem(childId, item.id, fd.get('points'), fd.get('stars'));
+      ui.extraStars = 0;
       ui.query = '';
       ui.pulse = true;
       toast(recText(rec), rec.points < 0 ? 'neg' : 'pos');
@@ -3034,8 +3083,9 @@
         return '<option value="' + h(c.id) + '"' + (c.id === rec.childId ? ' selected' : '') + '>' + h(c.name) + '</option>';
       }).join('') + '</select></label>' +
       '<label class="field">日期<input type="date" name="date" id="rec-date" max="' + store.today() + '" required value="' + rec.date + '"></label>' +
+      (rec.starCost ? '<p class="muted small">用 ⭐' + rec.starCost + ' 顆能量星星兌換（刪除這筆會退回星星）</p><input type="hidden" name="points" id="rec-points" value="0">' :
       '<label class="field">' + (neg ? (rec.type === 'reward' ? '扣除點數' : '扣除點數') : '點數') +
-      '<input type="number" name="points" id="rec-points" min="0" step="1" inputmode="numeric" required value="' + Math.abs(rec.points) + '"></label>' +
+      '<input type="number" name="points" id="rec-points" min="0" step="1" inputmode="numeric" required value="' + Math.abs(rec.points) + '"></label>') +
       '<p class="muted small ach-warn" id="rec-ach-warn" hidden></p>' +
       '<button type="button" class="btn danger block" id="rec-delete">🗑 刪除這筆紀錄</button>';
     openModal(rec.name, fields, function (fd) {
@@ -3105,15 +3155,22 @@
   }
 
   function openRewardForm(reward) {
-    var r = reward || { name: '', cost: 30 };
+    var r = reward || { name: '', cost: 30, currency: 'points' };
+    var stars = r.currency === 'stars';
     var fields =
       '<label class="field">獎勵名稱<input type="text" name="name" maxlength="30" required value="' + h(r.name) + '"></label>' +
-      '<label class="field">所需生活點數<input type="number" name="cost" min="0" step="1" inputmode="numeric" required value="' + r.cost + '"></label>';
+      '<fieldset class="field currency-pick"><legend>用什麼兌換</legend>' +
+      '<label><input type="radio" name="currency" value="points"' + (stars ? '' : ' checked') + '> 🎁 生活點數</label>' +
+      '<label><input type="radio" name="currency" value="stars"' + (stars ? ' checked' : '') + '> ⭐ 能量星星</label></fieldset>' +
+      '<label class="field"><span id="cost-label">' + (stars ? '需要幾顆能量星星' : '所需生活點數') + '</span><input type="number" name="cost" min="0" step="1" inputmode="numeric" required value="' + r.cost + '"></label>';
     openModal(reward ? '編輯獎勵' : '新增獎勵', fields, function (fd) {
-      var data = { name: fd.get('name'), cost: fd.get('cost') };
+      var data = { name: fd.get('name'), cost: fd.get('cost'), currency: fd.get('currency') };
       if (reward) store.updateReward(reward.id, data);
       else store.addReward(data);
       toast('已儲存');
+    });
+    document.querySelectorAll('.currency-pick input').forEach(function (inp) {
+      inp.onchange = function () { document.getElementById('cost-label').textContent = inp.value === 'stars' ? '需要幾顆能量星星' : '所需生活點數'; };
     });
   }
 
@@ -3232,10 +3289,21 @@
           break;
         }
         case 'add-child': openChildForm(); break;
+        case 'extra-stars': ui.extraStars = Number(el.getAttribute('data-n')) || 0; updateScoreList(); break;
+        case 'limit-step': {
+          var lk = el.getAttribute('data-key'), lv = store.getLimits()[lk] + Number(el.getAttribute('data-d'));
+          store.setLimits((function () { var o = {}; o[lk] = lv; return o; })());
+          render();
+          break;
+        }
+        case 'limits-reset':
+          confirmThen('把冒險世界的每日上限全部恢復預設？', '恢復預設', false, function () { store.setLimits({}, true); toast('已恢復預設上限'); });
+          break;
         case 'record': {
           var recItem = store.getItem(id);
           if (recItem && recItem.custom) { openCustomPoints(childId, recItem); break; }
-          var rec = store.recordItem(childId, id);
+          var rec = store.recordItem(childId, id, undefined, ui.extraStars);
+          ui.extraStars = 0;   // 另外給的星星只用在這一筆
           ui.query = ''; // 記錄後清除搜尋，方便下一筆
           ui.pulse = true;
           toast(recText(rec), rec.points < 0 ? 'neg' : 'pos');
@@ -3347,9 +3415,9 @@
         case 'redeem': {
           var reward = store.getReward(id);
           var child = store.getChild(childId);
-          confirmThen('讓 ' + child.name + ' 用 ' + reward.cost + ' 點兌換「' + reward.name + '」？', '兌換', false, function () {
+          confirmThen('讓 ' + child.name + ' 用 ' + (reward.currency === 'stars' ? '⭐' + reward.cost + ' 顆能量星星' : reward.cost + ' 點') + '兌換「' + reward.name + '」？', '兌換', false, function () {
             store.redeemReward(childId, id);
-            toast('已兌換 ' + reward.name, 'pos');
+            toast('已兌換 ' + reward.name + (reward.currency === 'stars' ? '（−⭐' + reward.cost + '）' : ''), 'pos');
             ui.pulse = true;
           });
           break;

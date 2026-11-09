@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-09｜App 版本 `2026.11.09-105`｜Service Worker 快取 `cgp-shell-v115`｜`main` 最新：神秘寶箱只留 2 個、放在前方還沒走到的格子
+> 最後更新：2026-11-09｜App 版本 `2026.11.09-106`｜Service Worker 快取 `cgp-shell-v116`｜`main` 最新：加分給星星、冒險每日上限設定、用星星兌換獎勵
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -14,8 +14,8 @@
 - 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v115`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.09-105`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
-2. 測試：`npm test`（單元，約 1 秒，目前 136 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v116`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.09-106`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+2. 測試：`npm test`（單元，約 1 秒，目前 139 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
 
@@ -26,7 +26,8 @@
 - 截圖用 `SHOT_DIR=… npm run test:e2e`；小遊戲星星有浮動動畫，點擊要用 `{ force: true }`。
 
 ### 家長的固定規則（不要自行更改）
-- 每日 3 次擲骰；小遊戲每天 1 次（＋星星呼喚每天最多 1 次）；前進道具（溜冰鞋＋飛行翼）合計每天 5 次；任意門每天 1 次；神奇骰子每天 1 顆。
+- 冒險每日上限（2026-11-09 起家長可在 設定 →「冒險上限」調整 0～10）預設：每日 3 次擲骰；小遊戲每天 1 次（＋星星呼喚、松果躲躲各每天最多 1 次）；前進道具（溜冰鞋＋飛行翼）合計每天 5 次；任意門每天 1 次；神奇骰子每天 1 顆。程式請用 `store.getLimits()`，不要再寫死數字。
+- 能量星星在現實生活的用途（2026-11-09）：加分另外給星星、規則額外星星都馬上入帳；獎勵可用能量星星兌換。細節見 `docs/TREASURE_SHOP_PLAN.md`「2026-11-09 家長決定」。
 - 保留既有存檔：新欄位在 `migrate()` 或 `getPlayer()` 補預設值。
 - 家長提供的圖多為白底：放白色卡片（contain、不裁切）；需要去背先回報，只去除與外框相連的白底。
 - 價格、機率等數值只在家長明確要求時才改（改了要同步更新 `docs/TREASURE_SHOP_PLAN.md`／`docs/PHASE4_PLAN.md` 與測試）。

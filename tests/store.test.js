@@ -732,22 +732,25 @@ test('Phase 2：每個孩子獨立；結算後淨得分變 0 仍維持今日解�
   assert.equal(store.getStarBalance(a.id), 4);
 });
 
-test('Phase 2：額外星星結算時一併發放；結算後才記的留到下次結算', () => {
+test('額外星星（2026-11-09 起記錄當下就入帳）：規則附帶的星星馬上進餘額、結算不重複發；舊存檔還沒發的照舊結算時發', () => {
   const { store, setDate, a, b20 } = p2Store();
   const help = store.addItem({ kind: 'bonus', name: '幫忙', points: 5, stars: 5 });
   const feel = store.addItem({ kind: 'bonus', name: '表達心情', points: 0, stars: 10 });
-  store.recordItem(a.id, help.id);       // +5 點、⭐5
+  store.recordItem(a.id, help.id);       // +5 點、⭐5（馬上入帳）
+  assert.equal(store.getStarBalance(a.id), 5, '記錄當下就入帳');
   const st = store.getAdventureStatus(a.id);
-  assert.deepEqual([st.previewBase, st.previewBonus, st.previewStars], [1, 5, 6]);
+  assert.deepEqual([st.previewBase, st.previewBonus, st.previewStars], [1, 0, 1], '結算不會再發一次');
   const x = store.settleToday(a.id);
-  assert.deepEqual([x.baseStars, x.bonusStars, x.stars], [1, 5, 6]);
-  store.recordItem(a.id, feel.id);       // 結算後才記：⭐10 留到明天
-  assert.equal(store.getAdventureStatus(a.id).previewBonus, 10);
+  assert.deepEqual([x.baseStars, x.bonusStars, x.stars], [1, 0, 1]);
+  store.recordItem(a.id, feel.id);       // 結算後才記：⭐10 也馬上入帳
+  assert.equal(store.getStarBalance(a.id), 16);
+  // 舊存檔：還沒發的額外星星（沒有 starsPaid）照舊在結算時發
+  store.data.records.push({ id: 'old', childId: a.id, type: 'bonus', refId: help.id, name: '舊的幫忙', points: 0, stars: 3, date: '2026-11-06', ts: 1 });
   setDate('2026-11-07T09:00:00');
   store.recordItem(a.id, b20.id);
   const y = store.settleToday(a.id);
-  assert.deepEqual([y.baseStars, y.bonusStars], [4, 10]);
-  assert.equal(store.getStarBalance(a.id), 20);
+  assert.deepEqual([y.baseStars, y.bonusStars], [4, 3]);
+  assert.equal(store.getStarBalance(a.id), 23);
   assert.equal(store.getTotal(a.id), 25, '星星不影響生活點數');
 });
 
@@ -2575,4 +2578,79 @@ test('神秘寶箱（次數用完轉換）：跨天也最多留 2 個沒撿的�
   const one = store.data.adventure.mapChests.find(c => c.source === 'overflow');
   store._collectAt(a.id, [one.n]);
   assert.ok(store._addMapChest(a.id, 'overflow'), '撿走一個後可以再轉');
+});
+
+// ---------- 2026-11-09：能量星星在現實生活的用途 ----------
+test('加分時另外給能量星星：馬上入帳、只限加分、上限 20；撤銷收回；已經花掉就不能撤銷', () => {
+  const { store, a } = p3Store();
+  const bal0 = store.getStarBalance(a.id);
+  const it = store.addItem({ kind: 'bonus', name: '主動整理', points: 5 });
+  const pen = store.addItem({ kind: 'penalty', name: '亂丟', points: -3 });
+  const rec = store.recordItem(a.id, it.id, undefined, 3);
+  assert.deepEqual([rec.stars, rec.starsPaid], [3, true]);
+  assert.equal(store.getStarBalance(a.id), bal0 + 3, '馬上入帳');
+  assert.equal(store.recordItem(a.id, pen.id, undefined, 5).stars, 0, '扣分不能給星星');
+  store.undoLast(a.id);                                        // 撤銷扣分
+  store.undoLast(a.id);                                        // 撤銷加分 → 收回 3 顆
+  assert.equal(store.getStarBalance(a.id), bal0);
+  assert.equal(store.recordItem(a.id, it.id, undefined, 99).stars, 20, '最多 20 顆');
+  store.data.adventure.ledger.push({ id: 'spend', childId: a.id, date: store.today(), delta: -(bal0 + 15), reason: '花掉', ts: 1 });   // 測試用：星星花到剩 5
+  assert.throws(() => store.undoLast(a.id), /已經用掉了，不能撤銷/);
+  assert.equal(store.getRecords(a.id)[0].stars, 20, '不能撤銷時紀錄保留');
+  const r2 = store.recordItem(a.id, it.id, undefined, 2);
+  store.deleteRecord(r2.id);
+  assert.equal(store.getStarBalance(a.id), 5, '刪除紀錄也收回');
+});
+
+test('冒險每日上限：全部孩子共用、0～10、要家長密碼；擲骰、小遊戲、前進道具、任意門、神奇骰子、星星呼喚、松果躲躲都照設定', () => {
+  const { store, a, push } = p3Store();
+  assert.deepEqual(store.getLimits(), { dice: 3, minigame: 1, move: 5, door: 1, magic: 1, starCall: 1, pineHide: 1 }, '預設＝原本的規則');
+  assert.throws(() => store.setLimits({ dice: 5 }), /家長密碼/);
+  store.allowPinReset();
+  assert.equal(store.setLimits({ dice: 99, minigame: -3 }).dice, 10, '最多 10');
+  assert.equal(store.getLimits().minigame, 0, '最少 0');
+  store.setLimits({ dice: 1, minigame: 2, magic: 2, starCall: 0 });
+  const bag = store.getPlayer(a.id).bag;
+  bag.d6 = 5; bag.magicDice = 3; bag.starCall = 1;
+  assert.equal(store.getRollsLeft(a.id), 1);
+  push(face(1)); store.rollDice(a.id, 'd6');
+  assert.throws(() => store.rollDice(a.id, 'd6'), /今天已經擲了 1 次/);
+  push(face(1)); store.rollDice(a.id, 'magic'); push(face(1)); store.rollDice(a.id, 'magic');
+  assert.throws(() => store.rollDice(a.id, 'magic'), /每天最多用 2 顆/);
+  store.data.adventure.minigames = [];                         // 測試用：清掉擲骰途中停到的小遊戲
+  assert.throws(() => store.useStarCall(a.id), /每天只能用 0 個/);
+  // 小遊戲每天 2 次：第 2 次停到小遊戲格還能玩，第 3 次才轉成神秘寶箱
+  store.data.adventure.rolls = []; store.setLimits({ dice: 10 });
+  for (const [from, n] of [[4, 0], [14, 1], [21, 2]]) {
+    store.setPlayerTile(a.id, from); push(face(3), 0.9);
+    const ev = store.rollDice(a.id, 'd6').event;
+    if (n < 2) { assert.ok(ev.minigame, '第 ' + (n + 1) + ' 次可以玩'); store.finishMinigame(a.id, 3); }
+    else assert.ok(ev.minigameOverflow && /每天 2 次/.test(ev.text), '第 3 次轉成神秘寶箱');
+  }
+  store.setLimits({}, true);
+  assert.equal(store.getLimits().dice, 3, '恢復預設');
+});
+
+test('能量星星兌換現實獎勵：扣星星不扣點數、星星不夠不能換、撤銷退回、預設「愛的飛高高／5 顆」只自動加一次', () => {
+  const { store, a, storage } = p3Store();
+  store.data = migrate(store.data); store.save();                // 舊存檔載入：自動補上預設的星星獎勵
+  const fly = store.getRewards().find(r => r.currency === 'stars');
+  assert.deepEqual([fly.name, fly.cost], ['愛的飛高高', 5], '預設星星獎勵');
+  const total = store.getTotal(a.id), bal = store.getStarBalance(a.id);
+  const rec = store.redeemReward(a.id, fly.id);
+  assert.deepEqual([rec.points, rec.starCost], [0, 5]);
+  assert.equal(store.getStarBalance(a.id), bal - 5);
+  assert.equal(store.getTotal(a.id), total, '生活點數不變');
+  store.undoLast(a.id);
+  assert.equal(store.getStarBalance(a.id), bal, '撤銷退回星星');
+  const big = store.addReward({ name: '去遊樂園', cost: 999, currency: 'stars' });
+  assert.throws(() => store.redeemReward(a.id, big.id), /能量星星不足/);
+  // 刪掉預設獎勵後重新開啟：不會再自動加回來
+  store.deleteReward(fly.id);
+  const s2 = new Store({ storage, seed: false, now: () => store.now() });
+  assert.ok(!s2.getRewards().some(r => r.name === '愛的飛高高'));
+  // 舊存檔（沒有 flags）：自動加一次
+  const d = migrate({ children: [{ id: 'c', name: 'B' }], rewards: [{ id: 'r1', name: '看卡通', cost: 30 }] });
+  assert.deepEqual(d.rewards.map(r => [r.name, r.currency]), [['看卡通', 'points'], ['愛的飛高高', 'stars']]);
+  assert.equal(migrate(d).rewards.length, 2, '再載入不會重複加');
 });

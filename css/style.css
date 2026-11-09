@@ -2016,3 +2016,21 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .leaf-group .mg-fly:nth-child(2) { right: 0; top: 10px; --tx: -13px; --ty: 3px; }
 @media (prefers-reduced-motion: reduce) { .leaf-pine-grid .leaf-pine { animation: none; } }
 .leaf-step1 p strong { color: #8a4f12; }   /* 找到的松果數用松果棕色（抓住星星是銀色） */
+
+/* 2026-11-09：加分時另外給能量星星、冒險上限設定、能量星星兌換 */
+.extra-stars { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 10px; padding: 8px 10px; border-radius: 14px; background: #fff7dc; border: 1px dashed #f1c75b; }
+.extra-label { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; color: #8a5a00; margin-right: 4px; font-size: .9rem; }
+.extra-label .star-ico { width: 1.3em; height: 1.3em; }
+.extra-stars .pts-chip.star-chip.active { background: #ffb21f; color: #fff; border-color: #e69500; }
+.limits-tip { margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: #eef8e6; color: #3f6b2a; font-weight: 700; font-size: .9rem; line-height: 1.5; }
+.limit-row { align-items: center; }
+.stepper { display: inline-flex; align-items: center; gap: 8px; }
+.stepper .btn { min-width: 40px; }
+.limit-val { min-width: 1.6em; text-align: center; font-size: 1.2rem; }
+.limit-val.changed { color: #e67700; }
+.currency-pick { border: 0; padding: 0; margin: 0; display: flex; gap: 14px; flex-wrap: wrap; }
+.currency-pick legend { font-weight: 700; margin-bottom: 4px; }
+.currency-pick label { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; }
+.star-wallet { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-weight: 800; }
+.star-wallet .star-ico { width: 1.4em; height: 1.4em; }
+.star-reward .shop-cost .star-ico { width: 1.2em; height: 1.2em; vertical-align: -3px; }
