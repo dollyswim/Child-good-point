@@ -2088,3 +2088,8 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .deco-src { padding: 4px 5px; border-radius: 12px; min-width: 0; flex: 1 1 0; max-width: 64px; }
 .deco-src img { width: 36px; height: 36px; }
 .deco-src small { font-size: .68rem; white-space: nowrap; }
+/* 2026-11-09 家長調整：邀請卡大一點、貼紙小一點，貼得下更多花瓣和樹葉 */
+.invite-card { width: min(84vw, 320px); }
+.scene-art .card-sticker { width: 13%; }
+.invite-art { padding: 4px 0; }
+.invite-area { left: 17%; right: 17%; top: 17%; bottom: 17%; }   /* 對齊卡片白色內框，可貼的範圍更大 */
