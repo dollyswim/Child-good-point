@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-106';
+  var APP_VERSION = '2026.11.09-107';
   var store;
   try {
     store = new CGP.Store();
@@ -812,21 +812,21 @@
     },
     wood: {
       rel: true,
-      guide: { cls: 'wood-elf', label: '森林小精靈', emoji: '🧚', w: 54 },   // 正式圖到貨前先用 🧚 佔位（提示詞見 docs/art-prompts.md）；道具位置避開左下角商店按鈕
+      guide: { cls: 'wood-elf', label: '森林小精靈', img: 'images/wood/elf.webp', iw: 203, ih: 300, w: 58 },   // 2026-11-09 正式圖（家長 Gemini 圖，去白底、保留淡綠光暈）
       spots: {
         pinecone: { type: 'leaf', guide: [90, -20], cam: [40, -60],   // 2026-11-08 家長決定：改成「落葉找松果」記憶遊戲（劇情版：看 3 秒、找齊 5 顆、不會失敗）
           title: '幫小精靈找回松果！', sub: '松果被吹進 25 堆落葉裡了',
           hint: '我的松果被風吹進落葉堆裡了…走到第 8 格幫我找回來！', intro: '一陣風把我的松果吹進落葉堆裡了！看清楚它們藏在哪裡，再幫我翻出來！', done: '松果都找回來了！森林的小動物冬天有糧食了，謝謝你！' },
-        bridge: { type: 'press', effect: 'bridge', guide: [-90, -10], cam: [0, -80], path: [[-150, -150], [150, -150]],
-          title: '🌿 拉緊藤蔓吊橋！', sub: '吊橋鬆掉了，拉緊藤蔓才能走過去', btn: '💪 用力拉！',
-          hint: '吊橋的藤蔓鬆掉了…走到第 40 格幫我拉緊！', intro: '藤蔓吊橋鬆垮垮的，好危險！幫我把藤蔓拉緊！', done: '吊橋變得又穩又牢！可以安心走過去了！' },
-        fruit: { type: 'collect', guide: [90, -20], cam: [30, -60], top: true,
-          items: [[-130, -60], [-40, -140], [80, -120], [140, 30], [170, -50]], itemCls: 'story-pick', itemIcon: '🍎', itemLabel: '果實',
-          title: '🍎 幫樹屋村撿回果實！', sub: '點地圖上發光的果實',
-          hint: '樹屋村的果實籃翻倒了…走到第 65 格幫忙撿！', intro: '小松鼠的果實籃翻倒了！幫牠撿回 5 顆發光的果實！', done: '果實都撿回來了！樹屋村今晚可以開派對了！' },
-        elftree: { type: 'charge', effect: 'glow', guide: [-90, -10], cam: [0, -120], glow: [60, -170],
-          title: '✨ 喚醒精靈巨樹！', sub: '連續點下面的按鈕，把精靈之光灌滿', btn: '✨ 灌注光芒！', full: '✨ 巨樹醒來了！',
-          hint: '精靈巨樹睡著了…走到第 92 格幫我把它喚醒！', intro: '精靈巨樹的光快熄滅了！和我一起把精靈之光灌滿！', done: '精靈巨樹亮起來了！螢火蟲都飛出來跳舞了！' }
+        // 2026-11-09 家長決定：木島劇情改成「森林派對」——第 40、65、92 格都在跳出的視窗裡進行（不依賴木島地圖位置）
+        flowers: { type: 'meadow', guide: [-90, -10], cam: [0, -80],
+          title: '採花摘莓果！', sub: '點草地上的花和莓果，放進籃子裡', doneTitle: '🧺 籃子裝滿了！', doneSub: '派對要用的花和莓果都準備好了',
+          hint: '派對需要漂亮的花和莓果…走到第 40 格幫我採！', intro: '森林派對要開始準備囉！幫我採 5 朵花和 5 顆莓果！', done: '好漂亮的花和莓果！派對一定很棒，謝謝你！' },
+        invite: { type: 'invite', guide: [90, -20], cam: [30, -60],
+          title: '做派對邀請卡！', sub: '把花瓣和樹葉拖到卡片上，貼滿 6 個以上', doneTitle: '💌 送給森林朋友！', doneSub: '點兔子、刺蝟和貓頭鷹，把邀請卡送給牠們',
+          hint: '要邀請森林朋友來派對…走到第 65 格幫我做邀請卡！', intro: '我們來做派對邀請卡吧！用花瓣和樹葉把卡片布置得漂漂亮亮！', done: '大家都收到邀請卡了！派對見！' },
+        party: { type: 'party', guide: [-90, -10], cam: [0, -120],
+          title: '布置森林派對！', sub: '選一種裝飾，再點發光的位置放上去（共 10 個）', doneTitle: '🎉 森林派對開始囉！', doneSub: '精靈巨樹：謝謝大家一起來參加派對！',
+          hint: '派對場地還空空的…走到第 92 格幫我布置！', intro: '派對場地就在精靈巨樹下！幫我放上花、松果、莓果汁、莓果籃和汽球！', done: '大家玩得好開心！謝謝你幫忙準備森林派對！' }
       }
     }
   };
@@ -941,6 +941,171 @@
     await new Promise(function (resolve) { ok.addEventListener('click', resolve); });
     panel.remove();
   }
+  // ---------- 木島「森林派對」視窗互動（2026-11-09；圖片在 images/wood/party/） ----------
+  var PARTY_IMG = 'images/wood/party/';
+  /** 共用：開一個劇情視窗（上方場景圖、標題、說明），回傳 { panel, art, title, sub } */
+  function partyPanel(sp, bg, extraCls) {
+    var panel = document.createElement('div');
+    panel.className = 'scene-panel story-panel party-panel ' + (extraCls || ''); panel.id = 'story-panel';
+    panel.innerHTML = '<div class="scene-art party-art" id="party-art">' + (bg ? '<img class="party-bg" id="party-bg" src="' + PARTY_IMG + bg + '" alt="" width="1200" height="900" draggable="false">' : '') + '</div>' +
+      '<b id="scene-title">' + h(sp.title) + '</b><small id="scene-sub">' + h(sp.sub) + '</small><div class="party-tools" id="party-tools"></div>';
+    document.body.appendChild(panel);
+    return { panel: panel, art: panel.querySelector('#party-art'), title: panel.querySelector('#scene-title'), sub: panel.querySelector('#scene-sub'), tools: panel.querySelector('#party-tools') };
+  }
+  /** 共用：完成後換標題、出現「太好了」按鈕，按下關閉 */
+  function partyDone(P, sp) {
+    P.title.textContent = sp.doneTitle; P.sub.textContent = sp.doneSub;
+    P.tools.innerHTML = '<button type="button" class="btn primary charge-btn" id="scene-ok">🎉 太好了！</button>';
+    return new Promise(function (resolve) { P.tools.querySelector('#scene-ok').addEventListener('click', function () { P.panel.remove(); resolve(); }); });
+  }
+  function partyImg(name, cls, label) {
+    return '<img class="' + cls + '" src="' + PARTY_IMG + name + '.webp" alt="' + (label || '') + '" width="256" height="256" draggable="false">';
+  }
+  /** 第 40 格：草地上散著 5 朵花＋5 顆莓果，點一下飛進下方的籃子 */
+  async function storyMeadow(sp) {
+    var P = partyPanel(sp, 'meadow.webp');
+    var need = { flower: 5, berries: 5 }, got = { flower: 0, berries: 0 }, spots = [];
+    function count() { P.tools.innerHTML = '<span class="party-count" id="meadow-count">🌸 ' + got.flower + ' / 5　🍓 ' + got.berries + ' / 5</span>'; }
+    count();
+    function freeSpot() {   // 草地中間隨機，彼此不要太近、避開下方籃子
+      for (var t = 0; t < 40; t++) {
+        var x = 12 + Math.random() * 76, y = 14 + Math.random() * 56;
+        if (spots.every(function (q) { return Math.hypot(q[0] - x, (q[1] - y) * 0.75) > 13; })) { spots.push([x, y]); return [x, y]; }
+      }
+      var q = [12 + Math.random() * 76, 14 + Math.random() * 56]; spots.push(q); return q;
+    }
+    await new Promise(function (resolve) {
+      ['flower', 'berries'].forEach(function (kind) {
+        for (var i = 0; i < need[kind]; i++) {
+          var q = freeSpot(), b = document.createElement('button');
+          b.type = 'button'; b.className = 'meadow-item meadow-' + kind; b.setAttribute('data-kind', kind); b.setAttribute('aria-label', kind === 'flower' ? '花' : '莓果');
+          b.style.left = q[0] + '%'; b.style.top = q[1] + '%';
+          b.innerHTML = partyImg(kind, 'meadow-img');
+          b.addEventListener('click', function () {
+            var me = this;
+            if (me.classList.contains('got')) return;
+            me.classList.add('got');
+            me.style.left = '50.5%'; me.style.top = '84%';   // 飛進籃子
+            got[me.getAttribute('data-kind')]++; count();
+            setTimeout(function () { me.remove(); }, reduceMotion ? 50 : 600);
+            if (got.flower >= need.flower && got.berries >= need.berries) setTimeout(resolve, reduceMotion ? 100 : 650);
+          });
+          P.art.appendChild(b);
+        }
+      });
+    });
+    await partyDone(P, sp);
+  }
+  /**
+   * 第 65 格：把花瓣、樹葉貼紙「拖曳」到邀請卡上（點一下也會貼在卡片上隨機位置），貼 6 個以上完成；
+   * 接著出現兔子、刺蝟、貓頭鷹，點一隻送一張邀請卡
+   */
+  async function storyInvite(sp) {
+    var P = partyPanel(sp, null, 'invite-panel');
+    var NEED = 6, placed = 0;
+    P.art.classList.add('invite-art');
+    P.art.innerHTML = '<div class="invite-card" id="invite-card"><img class="invite-card-img" src="' + PARTY_IMG + 'card.webp" alt="邀請卡" width="640" height="640" draggable="false">' +
+      '<div class="invite-area" id="invite-area"></div><span class="invite-count" id="invite-count">0 / ' + NEED + '</span></div>';
+    P.tools.innerHTML = '<div class="sticker-tray">' + [['petal', '花瓣'], ['leaf', '樹葉']].map(function (s) {
+      return '<button type="button" class="sticker-src" data-sticker="' + s[0] + '" aria-label="' + s[1] + '貼紙">' + partyImg(s[0], 'sticker-img') + '<small>' + s[1] + '</small></button>';
+    }).join('') + '</div><button type="button" class="btn primary charge-btn" id="invite-done" disabled>💌 卡片做好了！</button>';
+    var area = P.art.querySelector('#invite-area'), cnt = P.art.querySelector('#invite-count'), doneBtn = P.tools.querySelector('#invite-done');
+    function stick(kind, px, py) {   // px、py：在貼紙區的比例（0～1）
+      var s = document.createElement('img');
+      s.className = 'card-sticker'; s.src = PARTY_IMG + kind + '.webp'; s.alt = ''; s.draggable = false;
+      s.style.left = (px * 100).toFixed(1) + '%'; s.style.top = (py * 100).toFixed(1) + '%';
+      s.style.transform = 'translate(-50%, -50%) rotate(' + Math.round(Math.random() * 60 - 30) + 'deg)';
+      area.appendChild(s);
+      placed++; cnt.textContent = placed + ' / ' + NEED;
+      if (placed >= NEED) { doneBtn.disabled = false; cnt.classList.add('ok'); }
+    }
+    P.tools.querySelectorAll('.sticker-src').forEach(function (src) {
+      src.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        var kind = src.getAttribute('data-sticker'), sx = e.clientX, sy = e.clientY, moved = false;
+        var ghost = document.createElement('img');
+        ghost.className = 'sticker-ghost'; ghost.src = PARTY_IMG + kind + '.webp'; ghost.alt = '';
+        ghost.style.left = sx + 'px'; ghost.style.top = sy + 'px';
+        document.body.appendChild(ghost);
+        try { src.setPointerCapture(e.pointerId); } catch (err) { /* 舊瀏覽器 */ }
+        function move(ev) {
+          if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 6) moved = true;
+          ghost.style.left = ev.clientX + 'px'; ghost.style.top = ev.clientY + 'px';
+        }
+        function up(ev) {
+          src.removeEventListener('pointermove', move); src.removeEventListener('pointerup', up); src.removeEventListener('pointercancel', up);
+          ghost.remove();
+          var r = area.getBoundingClientRect();
+          if (!moved) stick(kind, 0.15 + Math.random() * 0.7, 0.15 + Math.random() * 0.7);   // 點一下：貼在卡片上隨機位置
+          else if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) stick(kind, (ev.clientX - r.left) / r.width, (ev.clientY - r.top) / r.height);
+        }
+        src.addEventListener('pointermove', move); src.addEventListener('pointerup', up); src.addEventListener('pointercancel', up);
+      });
+    });
+    await new Promise(function (resolve) { doneBtn.addEventListener('click', resolve); });
+    // 送卡片給三隻森林動物
+    P.title.textContent = sp.doneTitle; P.sub.textContent = sp.doneSub;
+    P.art.classList.add('invite-send');
+    P.art.querySelector('#invite-card').classList.add('small');
+    var friends = document.createElement('div');
+    friends.className = 'invite-friends';
+    friends.innerHTML = [['bunny', '兔子'], ['hedgehog', '刺蝟'], ['owl', '貓頭鷹']].map(function (a) {
+      return '<button type="button" class="invite-friend" data-friend="' + a[0] + '" aria-label="送給' + a[1] + '">' + partyImg(a[0], 'friend-img') + '<span class="friend-thanks">謝謝！</span></button>';
+    }).join('');
+    P.art.appendChild(friends);
+    P.tools.innerHTML = '<span class="party-count" id="invite-sent">已送出 0 / 3</span>';
+    var sent = 0;
+    await new Promise(function (resolve) {
+      friends.querySelectorAll('.invite-friend').forEach(function (f) {
+        f.addEventListener('click', function () {
+          if (f.classList.contains('got')) return;
+          f.classList.add('got'); sent++;
+          P.tools.querySelector('#invite-sent').textContent = '已送出 ' + sent + ' / 3';
+          if (sent >= 3) setTimeout(resolve, reduceMotion ? 100 : 900);
+        });
+      });
+    });
+    await partyDone(P, sp);
+  }
+  /** 第 92 格：空的派對場地有 10 個發光空位；選一種裝飾、再點空位放上去；放滿換成派對完成的畫面 */
+  var PARTY_SLOTS = [[23.3, 72], [30.4, 69], [37.5, 66], [45, 64.2],   // 長桌上（場景圖 1200×900 的百分比，裝飾底部中央）
+    [70.8, 62.8], [77.5, 61.1], [83.3, 63.9],                              // 圓形舞台上
+    [9.2, 76.7], [54.2, 81.1], [68.3, 86.7]];                              // 草地上
+  var PARTY_DECOS = [['vase', '花瓶'], ['pinecone', '松果'], ['juice', '莓果汁'], ['basket', '一籃莓果'], ['balloons', '汽球']];
+  async function storyParty(sp) {
+    var P = partyPanel(sp, 'party_empty.webp');
+    var pick = PARTY_DECOS[0][0], filled = 0;
+    P.tools.innerHTML = '<div class="deco-tray" role="radiogroup" aria-label="選擇裝飾">' + PARTY_DECOS.map(function (d, i) {
+      var src = d[0] === 'pinecone' ? 'images/wood/leaf_pinecone.webp' : PARTY_IMG + d[0] + '.webp';
+      return '<button type="button" class="deco-src' + (i ? '' : ' on') + '" data-deco="' + d[0] + '" role="radio" aria-checked="' + (i ? 'false' : 'true') + '" aria-label="' + d[1] + '"><img src="' + src + '" alt="" width="256" height="256" draggable="false"><small>' + d[1] + '</small></button>';
+    }).join('') + '</div><span class="party-count" id="party-count">0 / ' + PARTY_SLOTS.length + '</span>';
+    P.tools.querySelectorAll('.deco-src').forEach(function (b) {
+      b.addEventListener('click', function () {
+        pick = b.getAttribute('data-deco');
+        P.tools.querySelectorAll('.deco-src').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b ? 'true' : 'false'); });
+      });
+    });
+    await new Promise(function (resolve) {
+      PARTY_SLOTS.forEach(function (q, i) {
+        var s = document.createElement('button');
+        s.type = 'button'; s.className = 'party-slot'; s.setAttribute('data-slot', i); s.setAttribute('aria-label', '放裝飾的位置 ' + (i + 1));
+        s.style.left = q[0] + '%'; s.style.top = q[1] + '%';
+        s.addEventListener('click', function () {
+          if (s.classList.contains('filled')) return;
+          s.classList.add('filled', 'deco-' + pick);
+          s.innerHTML = '<img src="' + (pick === 'pinecone' ? 'images/wood/leaf_pinecone.webp' : PARTY_IMG + pick + '.webp') + '" alt="" width="256" height="256" draggable="false">';
+          filled++; P.tools.querySelector('#party-count').textContent = filled + ' / ' + PARTY_SLOTS.length;
+          if (filled >= PARTY_SLOTS.length) setTimeout(resolve, reduceMotion ? 100 : 700);
+        });
+        P.art.appendChild(s);
+      });
+    });
+    // 放滿了：換成派對完成的畫面（動物們跳舞、串燈亮起）
+    P.art.querySelectorAll('.party-slot').forEach(function (s) { s.remove(); });
+    var bg = P.art.querySelector('#party-bg');
+    bg.src = PARTY_IMG + 'party_done.webp'; P.art.classList.add('party-done');
+    await partyDone(P, sp);
+  }
   /** 可以拖曳的拉桿：直立的軌道＋紅色把手，往下拖到底才算拉下（放開沒到底會彈回去） */
   function pullLeverHtml() {
     return '<div class="pull-lever" id="pull-lever" role="slider" tabindex="0" aria-label="拉桿：往下拉到底" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">' +
@@ -1017,6 +1182,9 @@
       techTalk(child, 3000, sp.intro, guide);
       await sleep(reduceMotion ? 800 : 2600);
       if (sp.type === 'scene') await storyScene(sp);
+      else if (sp.type === 'meadow') await storyMeadow(sp);
+      else if (sp.type === 'invite') await storyInvite(sp);
+      else if (sp.type === 'party') await storyParty(sp);
       else if (sp.type === 'leaf') {   // 全螢幕記憶遊戲（劇情版不限翻錯次數）
         var lr = await leafGame({ rounds: [GAME.LEAF_GAME.story], misses: 0, title: sp.title, subtitle: sp.sub, desc: '先記住松果藏在哪幾堆落葉下，落葉蓋回去後把它們翻出來！' });
         await sleep(reduceMotion ? 100 : 600);

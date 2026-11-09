@@ -232,7 +232,7 @@
     if (!(p.maxReached >= p.pos)) p.maxReached = p.pos || 0;
     if (!p.islands || typeof p.islands !== 'object') p.islands = {};           // 其他島的保存進度 { 島: { laps, maxReached } }
     if (!p.islandClears || typeof p.islandClears !== 'object') p.islandClears = {};   // 金島以外的通關次數（金島沿用 goldClears）
-    if (!p.story || typeof p.story !== 'object') p.story = {};   // 劇情完成日期 { ore, rail, tower, pinecone, bridge, fruit, elftree }
+    if (!p.story || typeof p.story !== 'object') p.story = {};   // 劇情完成日期 { ore, rail, tower, pinecone, flowers, invite, party }
     // 位置以穩定格子 ID 為準；舊存檔只有整數格號時對應到同號的格子（第 n 格 → gold-01-00n）
     var board = BOARDS[p.island] || GOLD;
     var idx = p.tileId ? board.tiles.findIndex(function (t) { return t.id === p.tileId; }) : -1;
@@ -835,7 +835,7 @@
       var p = s.getPlayer(c);
       return !!(p.story.ore && p.story.rail && (p.story.tower || goldMax(p) >= 80)); } },   // 更新前就點亮能源塔的也算
     { id: 'reachR4', cat: 'adventure', icon: '👑', name: '抵達金冠城堡', desc: '走到第 81 格以後', check: function (s, c) { return goldMax(s.getPlayer(c)) >= 81; } },
-    { id: 'woodHero', cat: 'adventure', icon: '🧚', name: '木島小英雄', desc: '幫森林小精靈完成木島的 4 個任務：撿回松果、拉緊吊橋、撿回果實、點亮精靈巨樹', check: function (s, c) {
+    { id: 'woodHero', cat: 'adventure', icon: '🧚', name: '木島小英雄', desc: '幫森林小精靈準備森林派對：撿回松果、採花摘莓果、做邀請卡、布置派對', check: function (s, c) {
       var p = s.getPlayer(c);
       return storiesOf('wood').every(function (k) { return !!p.story[k]; }); } },
     { id: 'chest1', cat: 'collect', icon: '🧰', name: '第一個寶箱', desc: '開過第一個一般寶箱', check: function (s, c) { return s.getPlayer(c).stats.chests >= 1; } },
@@ -1185,13 +1185,14 @@
    * tower＝第 80 格能源主塔（連點充電）。每個第一次完成給 ⭐STORY_STARS；三個都完成解鎖成就「金島小英雄」
    */
   var STORY_STARS = 3;
-  // 木島劇情（2026-11-08 家長決定，森林小精靈當導遊，每區 1 個）：pinecone＝第 8 格撿回松果、bridge＝第 40 格拉緊藤蔓吊橋、
-  // fruit＝第 65 格幫樹屋村撿果實、elftree＝第 92 格連點點亮精靈巨樹；四個都完成解鎖成就「木島小英雄」
+  // 木島劇情「森林派對」（2026-11-09 家長決定，森林小精靈當導遊，每區 1 個）：pinecone＝第 8 格落葉找松果、flowers＝第 40 格採花摘莓果、
+  // invite＝第 65 格做邀請卡送給森林動物、party＝第 92 格布置派對；四個都完成解鎖成就「木島小英雄」
   // 格號先沿用 WOOD_ISLAND_PLAN 的一般格，木島草圖到貨後可再調；完成紀錄存在 players[id].story（代號各島不重複）
   var STORIES = {
     ore: { island: 'gold', tile: 5, name: '礦工求助' }, rail: { island: 'gold', tile: 30, name: '礦車轉轍' }, tower: { island: 'gold', tile: 80, name: '能源主塔' },
-    pinecone: { island: 'wood', tile: 8, name: '撿回松果' }, bridge: { island: 'wood', tile: 40, name: '藤蔓吊橋' },
-    fruit: { island: 'wood', tile: 65, name: '樹屋果實' }, elftree: { island: 'wood', tile: 92, name: '精靈巨樹' }
+    // 2026-11-09 家長決定：木島劇情改成「森林派對」（木島尚未上線，沒有既有存檔，代號直接換新）
+    pinecone: { island: 'wood', tile: 8, name: '撿回松果' }, flowers: { island: 'wood', tile: 40, name: '採花摘莓果' },
+    invite: { island: 'wood', tile: 65, name: '派對邀請卡' }, party: { island: 'wood', tile: 92, name: '森林派對' }
   };
   /** 某座島的劇情代號（依 STORIES 的順序） */
   function storiesOf(island) { return Object.keys(STORIES).filter(function (k) { return STORIES[k].island === island; }); }

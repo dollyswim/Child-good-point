@@ -1761,7 +1761,7 @@ async function main() {
     await cs.close();
   }
 
-  // ---------- 木島劇情（用測試假地圖：複製金島格子當木島）：小精靈導遊、第 8 格撿松果、第 40 格拉吊橋、第 92 格喚醒巨樹 ----------
+  // ---------- 木島劇情「森林派對」（用測試假地圖：複製金島格子當木島）：小精靈導遊、第 8 格找松果、第 40 格採花摘莓果、第 65 格邀請卡、第 92 格布置派對 ----------
   {
     const cw = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', story: true });
     const q = await cw.newPage();
@@ -1808,30 +1808,72 @@ async function main() {
     if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
     assert.ok(await q.evaluate(([cid, s0]) => window.__cgpStore.getStarBalance(cid) >= s0 + 3 && !!window.__cgpStore.getPlayer(cid).story.pinecone, [id, stars0]), '完成松果任務 ⭐3');
     assert.equal(await q.locator('.story-guide[data-story=pinecone]').count(), 0, '完成後小精靈離開');
-    // 第 40 格：拉緊藤蔓吊橋
+    // 第 40 格：採花摘莓果（視窗：點 5 朵花＋5 顆莓果，飛進籃子）
+    const SD = process.env.SHOT_DIR;
     await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 38); s.random = () => 1.5 / 6; s.save(); }, id);
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);
-    await q.waitForSelector('.story-guide[data-story=bridge]');
+    await q.waitForSelector('.story-guide.wood-elf[data-story=flowers] img');
     await q.click('.dice-btn.d6');
-    await q.waitForSelector('#story-btn', { timeout: 15000 });
-    assert.match(await q.locator('#story-panel').innerText(), /拉緊藤蔓吊橋/);
-    await q.click('#story-btn');
-    await q.waitForSelector('#story-bridge.go', { state: 'attached' });
-    await q.waitForFunction(() => /吊橋變得又穩又牢/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
+    await q.waitForSelector('.party-panel .meadow-item', { timeout: 15000 });
+    assert.match(await q.locator('#story-panel').innerText(), /採花摘莓果[\s\S]*🌸 0 \/ 5[\s\S]*🍓 0 \/ 5/);
+    assert.equal(await q.locator('.meadow-flower').count(), 5); assert.equal(await q.locator('.meadow-berries').count(), 5);
+    if (SD) await q.locator('#story-panel').screenshot({ path: path.join(SD, 'party-40.png') });
+    for (const it of await q.$$('.meadow-item')) await it.click({ force: true });
+    await q.waitForSelector('#scene-ok', { timeout: 5000 });
+    assert.match(await q.locator('#story-panel').innerText(), /籃子裝滿了/);
+    await q.click('#scene-ok');
+    await q.waitForFunction(() => /好漂亮的花和莓果/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
     await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 15000 });
     if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
-    assert.ok(await q.evaluate((cid) => !!window.__cgpStore.getPlayer(cid).story.bridge, id));
-    // 第 92 格：連點喚醒精靈巨樹（果實任務和松果同一種互動，這裡直接標記完成）→ 四個都完成解鎖「木島小英雄」
-    await q.evaluate((cid) => { const s = window.__cgpStore; s.completeStory(cid, 'fruit'); s.data.adventure.rolls = []; s.setPlayerTile(cid, 90); s.random = () => 1.5 / 6; s.save(); }, id);
+    assert.ok(await q.evaluate((cid) => !!window.__cgpStore.getPlayer(cid).story.flowers, id));
+    // 第 65 格：做邀請卡（拖曳花瓣、樹葉到卡片上，6 個以上）→ 送給兔子、刺蝟、貓頭鷹
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 63); s.random = () => 1.5 / 6; s.save(); }, id);
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);
-    await q.waitForSelector('.story-guide[data-story=elftree]');
+    await q.waitForSelector('.story-guide[data-story=invite]');
     await q.click('.dice-btn.d6');
-    await q.waitForSelector('#charge-panel', { timeout: 15000 });
-    assert.match(await q.locator('#charge-panel').innerText(), /喚醒精靈巨樹/);
-    assert.equal(await q.locator('#story-glow').count(), 1, '地圖上出現精靈之光');
-    for (let k = 0; k < 10; k++) await q.click('#charge-btn');
-    await q.waitForSelector('#story-glow.full', { state: 'attached', timeout: 5000 });
-    await q.waitForFunction(() => /精靈巨樹亮起來了/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
+    await q.waitForSelector('#invite-area', { timeout: 15000 });
+    assert.ok(await q.locator('#invite-done').isDisabled(), '還沒貼滿 6 個不能完成');
+    const area = await q.locator('#invite-area').boundingBox();
+    for (let k = 0; k < 4; k++) {   // 拖曳 4 個貼紙到卡片上
+      const src = await q.locator(k % 2 ? '.sticker-src[data-sticker=leaf]' : '.sticker-src[data-sticker=petal]').boundingBox();
+      await q.mouse.move(src.x + src.width / 2, src.y + src.height / 2); await q.mouse.down();
+      await q.mouse.move(area.x + area.width * (0.25 + k * 0.15), area.y + area.height * 0.5, { steps: 6 }); await q.mouse.up();
+    }
+    // 拖到卡片外面：不會貼上
+    const src0 = await q.locator('.sticker-src[data-sticker=petal]').boundingBox();
+    await q.mouse.move(src0.x + 20, src0.y + 20); await q.mouse.down(); await q.mouse.move(src0.x + 20, src0.y - 5, { steps: 4 }); await q.mouse.move(5, 5, { steps: 4 }); await q.mouse.up();
+    assert.equal(await q.locator('.card-sticker').count(), 4, '拖到卡片外面不算');
+    await q.click('.sticker-src[data-sticker=petal]'); await q.click('.sticker-src[data-sticker=leaf]');   // 點一下也會貼上
+    assert.equal(await q.locator('.card-sticker').count(), 6);
+    if (SD) await q.locator('#story-panel').screenshot({ path: path.join(SD, 'party-65-card.png') });
+    await q.click('#invite-done');
+    await q.waitForSelector('.invite-friend');
+    for (const f of await q.$$('.invite-friend')) await f.click({ force: true });   // 動物有浮動動畫
+    if (SD) await q.locator('#story-panel').screenshot({ path: path.join(SD, 'party-65-send.png') });
+    await q.waitForSelector('#scene-ok', { timeout: 5000 });
+    await q.click('#scene-ok');
+    await q.waitForFunction(() => /大家都收到邀請卡了/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
+    await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 15000 });
+    if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
+    // 第 92 格：布置森林派對（選裝飾再點 10 個空位）→ 換成派對完成的畫面 → 四個都完成解鎖「木島小英雄」
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 90); s.random = () => 1.5 / 6; s.save(); }, id);
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);
+    await q.waitForSelector('.story-guide[data-story=party]');
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('.party-slot', { timeout: 15000 });
+    assert.equal(await q.locator('.party-slot').count(), 10);
+    const decos = ['vase', 'pinecone', 'juice', 'basket', 'balloons'];
+    for (let k = 0; k < 10; k++) {
+      await q.click('.deco-src[data-deco=' + decos[k % 5] + ']');
+      await q.locator('.party-slot:not(.filled)').first().click({ force: true });   // 空位有浮動動畫
+      if (k === 6 && SD) await q.locator('#story-panel').screenshot({ path: path.join(SD, 'party-92.png') });
+    }
+    await q.waitForSelector('.party-art.party-done', { timeout: 5000 });
+    assert.match(await q.locator('#party-bg').getAttribute('src'), /party_done/);
+    assert.match(await q.locator('#story-panel').innerText(), /森林派對開始囉[\s\S]*謝謝大家/);
+    if (SD) { await q.waitForTimeout(500); await q.locator('#story-panel').screenshot({ path: path.join(SD, 'party-92-done.png') }); }
+    await q.click('#scene-ok');
+    await q.waitForFunction(() => /謝謝你幫忙準備森林派對/.test((document.getElementById('tech-bubble') || {}).textContent || ''), null, { timeout: 8000 });
     await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 15000 });
     assert.ok(await q.evaluate((cid) => window.__cgpStore.getAchievements(cid).find((a) => a.id === 'woodHero').done, id), '解鎖木島小英雄');
     if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
@@ -1893,7 +1935,7 @@ async function main() {
     await q.click('#cart-btn');
     await q.waitForFunction(() => document.getElementById('pawn').dataset.pos === '5', null, { timeout: 8000 });
     console.log('✔ 木島機會卡：藤蔓「抓住！」才前進 2 格');
-    console.log('✔ 木島劇情（假地圖）：小精靈導遊提示、第 8 格落葉找松果、第 40 格拉吊橋、第 92 格連點喚醒巨樹、各 ⭐3、木島小英雄');
+    console.log('✔ 木島劇情森林派對（假地圖）：小精靈導遊、第 8 格找松果、第 40 格採花摘莓果、第 65 格拖曳貼紙做邀請卡並送給 3 隻動物、第 92 格布置派對、各 ⭐3、木島小英雄');
     await cw.close();
   }
 

@@ -2034,3 +2034,57 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .star-wallet { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-weight: 800; }
 .star-wallet .star-ico { width: 1.4em; height: 1.4em; }
 .star-reward .shop-cost .star-ico { width: 1.2em; height: 1.2em; vertical-align: -3px; }
+
+/* 2026-11-09 木島「森林派對」視窗互動（第 40、65、92 格） */
+.wood-elf .guide-emoji { display: none; }
+.wood-elf img { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 3px rgba(40, 60, 20, .3)); animation: elf-float 2.4s ease-in-out infinite; }
+.party-panel .party-art { position: relative; background: #cfe9b4; }
+.party-art .party-bg { display: block; width: 100%; height: 100%; object-fit: cover; }
+.party-tools { display: grid; justify-items: center; gap: 8px; width: 100%; }
+.party-count { font-weight: 900; color: #8a4f12; font-size: 1.05rem; }
+/* 第 40 格：花和莓果 */
+.meadow-item { position: absolute; width: 15%; aspect-ratio: 1; padding: 0; border: 0; background: none; transform: translate(-50%, -50%); cursor: pointer;
+  transition: left .55s ease-in, top .55s ease-in, transform .55s ease-in, opacity .55s; -webkit-tap-highlight-color: transparent; }
+.meadow-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 6px rgba(255, 255, 220, .95)); animation: ore-bob 1.3s ease-in-out infinite; }
+.meadow-item.got { transform: translate(-50%, -50%) scale(.35); opacity: .2; pointer-events: none; }
+/* 第 65 格：邀請卡與貼紙 */
+.invite-art { aspect-ratio: auto; background: #fff8ec; padding: 6px 0; }
+.invite-card { position: relative; width: min(62vw, 230px); margin: 0 auto; transition: width .4s; }
+.invite-card.small { width: min(30vw, 110px); }
+.invite-card-img { display: block; width: 100%; height: auto; }
+.invite-area { position: absolute; left: 22%; right: 22%; top: 22%; bottom: 20%; }
+.card-sticker { position: absolute; width: 26%; height: auto; pointer-events: none; }
+.invite-count { position: absolute; right: 4%; bottom: 4%; padding: 2px 8px; border-radius: 99px; background: rgba(255, 255, 255, .85); font-weight: 900; color: #8a4f12; font-size: .85rem; }
+.invite-count.ok { background: #ffe27a; }
+.invite-card.small .invite-count { display: none; }
+.sticker-tray, .deco-tray { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.sticker-src, .deco-src { display: grid; justify-items: center; gap: 2px; padding: 6px 8px; border-radius: 16px; border: 2px solid #f1d58f; background: #fffdf6; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.sticker-src img { width: 56px; height: 56px; object-fit: contain; pointer-events: none; }
+.sticker-src small, .deco-src small { font-weight: 800; color: #8a6a3a; font-size: .75rem; }
+.sticker-ghost { position: fixed; z-index: 1300; width: 56px; height: 56px; object-fit: contain; transform: translate(-50%, -50%) scale(1.15); pointer-events: none; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, .3)); }
+.invite-friends { display: flex; justify-content: center; gap: 6px; margin-top: 6px; }
+.invite-friend { position: relative; width: 31%; padding: 0; border: 0; background: none; cursor: pointer; }
+.friend-img { width: 100%; height: auto; transition: transform .25s; }
+.invite-friend.got .friend-img { transform: scale(1.1) rotate(-4deg); }
+.friend-thanks { position: absolute; left: 50%; top: -6px; transform: translateX(-50%); padding: 2px 8px; border-radius: 10px; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .2); font-weight: 900; font-size: .8rem; color: #e2473f; opacity: 0; transition: opacity .25s; white-space: nowrap; }
+.invite-friend.got .friend-thanks { opacity: 1; }
+.invite-friend:not(.got) { animation: ore-bob 1.6s ease-in-out infinite; }
+/* 第 92 格：派對布置 */
+.party-slot { position: absolute; width: 10%; aspect-ratio: 1; padding: 0; border: 0; border-radius: 50%; transform: translate(-50%, -88%); cursor: pointer;
+  background: radial-gradient(circle, rgba(255, 250, 200, .95) 0, rgba(255, 230, 120, .55) 45%, rgba(255, 230, 120, 0) 70%); animation: ore-bob 1.2s ease-in-out infinite; }
+.party-slot.filled { background: none; animation: none; width: 11%; }
+.party-slot img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(40, 30, 10, .35)); }
+.party-slot.deco-balloons { width: 12%; }
+.deco-src { cursor: pointer; }
+.deco-src img { width: 44px; height: 44px; object-fit: contain; }
+.deco-src.on { border-color: #ff9c3a; background: #fff1d6; box-shadow: 0 0 0 3px rgba(255, 156, 58, .35); }
+@media (prefers-reduced-motion: reduce) { .meadow-img, .invite-friend, .party-slot, .wood-elf img { animation: none; } .meadow-item { transition: none; } }
+/* 修正：.scene-art img 會把卡片裡的圖撐滿，貼紙、卡片、動物要維持自己的大小 */
+.scene-art .card-sticker { width: 22%; height: auto; object-fit: contain; }
+.scene-art .invite-card-img, .scene-art .friend-img { height: auto; object-fit: contain; }
+.scene-art .meadow-img, .scene-art .party-slot img { object-fit: contain; }
+/* 派對裝飾 5 個排成一排 */
+.deco-tray { flex-wrap: nowrap; gap: 6px; }
+.deco-src { padding: 4px 5px; border-radius: 12px; min-width: 0; flex: 1 1 0; max-width: 64px; }
+.deco-src img { width: 36px; height: 36px; }
+.deco-src small { font-size: .68rem; white-space: nowrap; }

@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-09｜App 版本 `2026.11.09-106`｜Service Worker 快取 `cgp-shell-v116`｜`main` 最新：加分給星星、冒險每日上限設定、用星星兌換獎勵
+> 最後更新：2026-11-09｜App 版本 `2026.11.09-107`｜Service Worker 快取 `cgp-shell-v117`｜`main` 最新：木島劇情森林派對上線（假地圖驗證）
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -14,7 +14,7 @@
 - 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v116`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.09-106`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v117`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.09-107`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 139 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -53,8 +53,7 @@
 - 第 30 格轉轍器改成真的拖曳拉桿：`pullLever()`，紅色把手往下拉到 85% 以上放開（或拉到底）才觸發，沒到底會彈回；地圖上的拉桿跟著扳下（`--pull`）；鍵盤 ↓／Enter 也可以。木島吊橋仍是按鈕。
 - 金島發光金礦石正式圖已上線（`images/gold/ore.webp`，家長 Gemini 圖，只去除與外框相連的白底）。
 - 修正：撿礦石任務進行中點商店，關掉後地圖重畫、礦石消失而卡住 → 劇情任務中地圖按鈕暫停（`body.story-on`），重畫後把沒撿的東西放回地圖。
-- 木島劇情改成「森林派對」（2026-11-09 家長決定）：第 8 格撿松果（已有）、第 40 格撿花朵莓果、第 65 格做邀請卡送動物（拖曳貼紙）、第 92 格布置派對（10 個空位）。**等 Gemini 15 張圖（P-1～P-15）到貨再寫程式**；設計見 `docs/art/WOOD_ISLAND_PLAN.md`「新版劇情：森林派對」，提示詞見 `docs/art-prompts.md`。
-- 森林小精靈正式圖：提示詞在 `docs/art-prompts.md`，目前 🧚 佔位。
+- 木島劇情「森林派對」已完成（2026-11-09）：第 8 格落葉找松果、第 40 格採花摘莓果、第 65 格拖曳貼紙做邀請卡並送給兔子刺蝟貓頭鷹、第 92 格布置派對（10 個空位）；小精靈導遊正式圖上線。圖片在 `images/wood/party/`，設計見 `docs/art/WOOD_ISLAND_PLAN.md` 第 6 節。正式木島地圖到貨才會在 App 出現。
 - 落葉找松果畫面定案（家長）：25 格置中在背景中間空草地；提示框在上方、中線對準兩側蘑菇，逗號後換行；先看時 25 堆全部掀開；松果、松鼠不加淡色卡（只用去背圖）；回合數、剩餘機會加半透明白底。
 - 落葉找松果正式圖已上線（家長 Gemini 圖，`images/wood/leaf_*.webp`：森林背景、落葉堆、松果、松鼠、翻開的空地；4 張只去除與外框相連的白底，保留奶油色貼紙邊框）。
 - 木島草圖到貨後：核對木島劇情的導遊／道具位置（`ISLAND_STORY.wood` 的相對位移）。

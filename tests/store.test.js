@@ -2369,22 +2369,22 @@ test('金島劇情：第一次完成各給 ⭐3、不重複給；三個都完成
   assert.throws(() => store.completeStory(a.id, 'nope'), /沒有這個劇情/);
 });
 
-test('木島劇情：四個任務（每區 1 個、都在一般格）各給 ⭐3、不重複；四個都完成解鎖「木島小英雄」；不影響金島小英雄；存檔重開保留', () => {
+test('木島劇情（森林派對）：四個任務（每區 1 個、都在一般格）各給 ⭐3、不重複；四個都完成解鎖「木島小英雄」；不影響金島小英雄；存檔重開保留', () => {
   const { store, a, storage } = p3Store();
-  assert.deepEqual(G.storiesOf('wood'), ['pinecone', 'bridge', 'fruit', 'elftree']);
+  assert.deepEqual(G.storiesOf('wood'), ['pinecone', 'flowers', 'invite', 'party']);
   // 每區 1 個：第一區 1～30、第二區 31～55、第三區 56～80、第四區 81～100
   assert.deepEqual(G.storiesOf('wood').map(k => G.STORIES[k].tile), [8, 40, 65, 92]);
   const bal = store.getStarBalance(a.id);
-  ['pinecone', 'bridge', 'fruit'].forEach(k => assert.equal(store.completeStory(a.id, k), true));
-  assert.equal(store.completeStory(a.id, 'bridge'), false, '不重複給');
+  ['pinecone', 'flowers', 'invite'].forEach(k => assert.equal(store.completeStory(a.id, k), true));
+  assert.equal(store.completeStory(a.id, 'flowers'), false, '不重複給');
   assert.ok(!store.checkAchievements(a.id).some(x => x.id === 'woodHero'), '還差精靈巨樹');
-  store.completeStory(a.id, 'elftree');
+  store.completeStory(a.id, 'party');
   const got = store.checkAchievements(a.id).map(x => x.id);
   assert.ok(got.includes('woodHero'));
   assert.ok(!got.includes('goldHero'), '木島任務不算金島');
   assert.equal(store.getStarBalance(a.id), bal + 12);
   const s2 = new Store({ storage, seed: false, now: () => store.now() });
-  assert.deepEqual(Object.keys(s2.getPlayer(a.id).story).sort(), ['bridge', 'elftree', 'fruit', 'pinecone']);
+  assert.deepEqual(Object.keys(s2.getPlayer(a.id).story).sort(), ['flowers', 'invite', 'party', 'pinecone']);
 });
 
 test('木島小遊戲「落葉找松果」：木島小遊戲格產生 leaf 小遊戲、每 2 顆松果換 1 星（最多 15 顆 → 8 星）、不算星星捕手、存檔保留', () => {
