@@ -35,10 +35,11 @@ async function main() {
   // 其他流程測試：成就改用文字提示（不跳星光成就劇場，避免擋住後續點擊）；劇場另有專門測試（theater: true）
   const _newContext = browser.newContext.bind(browser);
   browser.newContext = async (opts = {}) => {
-    const { theater, story, goldGame, ...rest } = opts;
+    const { theater, story, goldGame, onboard, ...rest } = opts;
     const c = await _newContext(rest);
     if (!theater) await c.addInitScript(() => { window.__cgpNoTheater = true; });
     if (!story) await c.addInitScript(() => { window.__cgpNoStory = true; });   // 金島劇情另有專門測試（story: true）
+    if (!onboard) await c.addInitScript(() => { window.__cgpNoOnboard = true; });   // 新手導覽、新手任務另有專門測試（onboard: true）
     // 金島小遊戲（木島上線前各 1/2 機率）：其他流程固定抓住星星；落葉找松果另有專門測試（goldGame: 'leaf'）
     await c.addInitScript((g) => { window.__cgpGoldGame = g; }, goldGame || 'stars');
     return c;
@@ -761,6 +762,52 @@ async function main() {
     console.log('✔ Phase 4：命運格 4 格、命運卡後退動畫、特殊任務當天可勾選 +20、再點取消、撤銷恢復、首頁提醒、取消任務');
     await c7.close();
   }
+
+  // ---------- 新手上手：第一次打開跳新手導覽（含加到主畫面教學）→ 新增孩子 → 首頁新手任務依進度打勾 ----------
+  for (const [dev, kind] of [['iPhone 13', 'iPhone'], ['Pixel 5', 'Android']]) {
+    const c = await browser.newContext({ ...devices[dev], serviceWorkers: 'block', onboard: true });
+    const q = await c.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    await q.waitForSelector('#tour[open] [data-testid=tour]', { timeout: 5000 });
+    assert.match(await q.locator('#tour').innerText(), /歡迎來到親子集點冒險/);
+    const pages = [];
+    for (let k = 0; k < 6; k++) {
+      pages.push(await q.locator('#tour h2').innerText());
+      if (await q.locator('#tour [data-tour=done]').count()) break;
+      await q.click('#tour [data-tour=next]');
+    }
+    assert.deepEqual(pages.slice(1, 4), ['① 記錄生活點數', '② 出發今日冒險', '③ 家長設定']);
+    assert.match(pages[4], new RegExp(kind + '.*加到主畫面'), dev + '：依手機顯示加到主畫面教學');
+    assert.match(await q.locator('#tour').innerText(), kind === 'iPhone' ? /分享[\s\S]*加入主畫面/ : /⋮[\s\S]*安裝應用程式/);
+    if (SHOT_DIR) await q.locator('#tour .tour-box').screenshot({ path: path.join(SHOT_DIR, 'tour-install-' + kind + '.png') });
+    assert.equal(await q.locator('#tour [data-tour=done]').innerText(), '開始：新增孩子');
+    await q.click('#tour [data-tour=done]');
+    await q.waitForSelector('#modal[open] input[name=name]');   // 直接帶到新增孩子
+    await q.fill('#modal input[name=name]', '小新');
+    await q.click('#modal-form button[type=submit]');
+    await q.waitForSelector('[data-testid=onboard]');
+    assert.equal(await q.locator('#tour').count(), 0);
+    assert.match(await q.locator('[data-testid=onboard]').innerText(), /新手任務[\s\S]*1 \/ 4[\s\S]*記錄第一筆加分[\s\S]*去做/);
+    if (SHOT_DIR && kind === 'Android') await q.locator('[data-testid=onboard]').screenshot({ path: path.join(SHOT_DIR, 'onboard-steps.png') });
+    await q.reload(); await q.waitForSelector('[data-testid=onboard]');
+    assert.equal(await q.locator('#tour').count(), 0, '看過導覽後不再自動出現');
+    // 記一筆加分 → 2 / 4
+    await q.click('[data-testid=onboard] a.btn');
+    await q.waitForSelector('.score-btn.bonus');
+    await q.locator('.score-btn.bonus').first().click();
+    await q.goto(url + '#home'); await q.waitForSelector('[data-testid=onboard]');
+    assert.match(await q.locator('[data-testid=onboard]').innerText(), /2 \/ 4[\s\S]*進入今日冒險/);
+    // 再看一次玩法介紹；不用提示 → 收起
+    await q.click('[data-action=tour-replay]');
+    await q.waitForSelector('#tour[open]');
+    assert.equal(await q.locator('#tour [data-tour=done]').count(), 0);
+    await q.click('#tour [data-tour=skip]');
+    await q.click('[data-action=tips-done]');
+    await q.waitForFunction(() => !document.querySelector('[data-testid=onboard]'));
+    await c.close();
+  }
+  console.log('✔ 新手上手：第一次打開跳導覽（iPhone／Android 各自的加到主畫面教學）、帶到新增孩子、首頁新手任務依進度打勾、可重看、可收起');
 
   // ---------- 一般冒險事件視窗（2026-11-09）：卡片式、單一視窗整合多個事件；內容沿用事件原文 ----------
   for (const vp of [{ width: 360, height: 800 }, { width: 360, height: 560 }, { width: 1280, height: 800 }]) {

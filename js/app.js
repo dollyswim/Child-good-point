@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-130';
+  var APP_VERSION = '2026.11.09-131';
   var store;
   try {
     store = new CGP.Store();
@@ -252,6 +252,7 @@
       if (!ui.busy) { var mc = store.getChild(r.arg); setTimeout(function () { if (!ui.busy && route().name === 'map') towerIntro(mc); }, 600); }
       if (store.takeChestHint(r.arg)) notes.push('✨ 附近似乎藏著神秘寶物……');
     }
+    if (r.name === 'home' && !store.data.flags.tourSeen && !onboardOff()) setTimeout(openTour, 300);   // 第一次打開：新手導覽
     if (r.name === 'minigame-test') openMinigame(null, null, { practice: true });
     if (r.name === 'leaf-test') openMinigame(null, null, { practice: true, leaf: true });
     if (r.name === 'adventure') showBlessings(r.arg);
@@ -400,9 +401,91 @@
       (children.length
         ? '<div class="child-list">' + cards + '</div>'
         : '<div class="empty card"><p class="big-emoji">👋</p><p><b>還沒有孩子資料</b></p><p class="muted">先新增孩子，就可以開始記錄生活積分。</p></div>') +
-      storageWarning() + homeAchievements(children) + week + backupReminder() +
+      storageWarning() + onboardSteps(children) + homeAchievements(children) + week + backupReminder() +
       (children.length ? '' : '<button class="btn add-child" data-action="add-child">＋ 新增孩子</button>') +   // 有孩子後改在小孩頁面右上角新增
       '</main>';
+  }
+
+  // ---------- 新手上手（2026-11-09 家長要求：分享給朋友時第一次用就上手） ----------
+  function onboardOff() { return !!window.__cgpNoOnboard; }   // E2E 其他流程關掉，避免擋住點擊
+  /** 首頁「新手任務」：新增孩子 → 記一筆加分 → 進入今日冒險 → 擲一次骰子；全部完成或按「不用提示」就收起 */
+  function onboardSteps(children) {
+    if (!children.length || store.data.flags.tipsDone || onboardOff()) return '';
+    var c = currentChild(), ad = store.data.adventure;
+    var steps = [
+      { done: true, text: '新增孩子', how: '' },
+      { done: store.data.records.some(function (r) { return r.type === 'bonus' || r.type === 'task'; }), text: '記錄第一筆加分',
+        how: '到「小孩」頁，點一個加分項目（例如「主動幫忙」）', href: '#child-' + c.id },
+      { done: ad.settlements.length > 0, text: '進入今日冒險', how: '今天得分大於 0 後，在「小孩」頁按「進入今日冒險」，點數會換成能量星星', href: '#child-' + c.id },
+      { done: children.some(function (k) { return store.getPlayer(k.id).maxReached > 0; }), text: '在金島地圖擲一次骰子', how: '冒險大廳點孩子進入地圖，按骰子前進', href: '#adventure-' + c.id }
+    ];
+    var left = steps.filter(function (x) { return !x.done; }).length;
+    return '<section class="panel onboard" data-testid="onboard"><div class="onboard-head"><h2>🧭 新手任務 <small>' + (steps.length - left) + ' / ' + steps.length + '</small></h2>' +
+      '<button type="button" class="btn small" data-action="tips-done">' + (left ? '不用提示' : '收起') + '</button></div>' +
+      (left ? '' : '<p class="onboard-all">🎉 全部完成了！之後每天記錄、出發冒險就可以囉。</p>') +
+      '<ol class="onboard-list">' + steps.map(function (x) {
+        var next = !x.done && x === steps.filter(function (y) { return !y.done; })[0];
+        return '<li class="' + (x.done ? 'done' : next ? 'next' : '') + '"><span class="onboard-mark" aria-hidden="true">' + (x.done ? '✓' : '') + '</span>' +
+          '<span class="onboard-text"><b>' + x.text + '</b>' + (next && x.how ? '<small>' + x.how + '</small>' : '') + '</span>' +
+          (next && x.href ? '<a class="btn small primary" href="' + x.href + '">去做</a>' : '') + '</li>';
+      }).join('') + '</ol>' +
+      '<button type="button" class="onboard-replay" data-action="tour-replay">📖 再看一次玩法介紹</button></section>';
+  }
+  /** 手機種類：決定「加到主畫面」的教學步驟；已經從主畫面打開就不顯示 */
+  function installGuide() {
+    var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    if (standalone) return null;
+    var ua = navigator.userAgent || '';
+    var ios = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (ios) return { title: 'iPhone／iPad：加到主畫面', steps: ['用 Safari 打開這個網址', '點下方的「分享」按鈕（方框加向上箭頭）', '往下找「加入主畫面」，按「新增」'] };
+    if (/android/i.test(ua)) return { title: 'Android：加到主畫面', steps: ['用 Chrome 打開這個網址', '點右上角「⋮」選單', '選「安裝應用程式」或「加到主畫面」'] };
+    return { title: '電腦：安裝成 App', steps: ['用 Chrome 或 Edge 打開這個網址', '點網址列右邊的「安裝」圖示', '之後就能像 App 一樣打開'] };
+  }
+  /** 新手導覽：機器貓用幾張卡片介紹玩法；第一次打開自動出現，首頁新手任務與設定可以再看 */
+  function openTour() {
+    if (document.getElementById('tour')) return;
+    var ig = installGuide();
+    var cards = [
+      { img: 'images/mascot.webp', title: '歡迎來到親子集點冒險！', lines: ['全家一起把好習慣變成冒險。', '資料只存在這支手機（或電腦）裡，不需要註冊帳號。'] },
+      { img: 'images/nav/nav_child2.webp', title: '① 記錄生活點數', lines: ['在「小孩」頁點加分、扣分或每日任務，點數就會累積。', '點數可以到「兌換」換現實獎勵，例如看卡通、小點心。'] },
+      { img: 'images/adv_map.webp', title: '② 出發今日冒險', lines: ['今天得分大於 0，就能「進入今日冒險」，點數會換成能量星星。', '在金島地圖擲骰子前進，有寶箱、機會、命運卡和小遊戲。'] },
+      { img: 'images/float-castle.webp', title: '③ 家長設定', lines: ['右上角的城堡是「設定」：規則、獎勵、挑戰都可以自己改。', '建議先設家長密碼，並定期到「備份」下載備份檔。'] }
+    ];
+    if (ig) cards.push({ img: 'images/mascot.webp', emoji: '📲', title: ig.title, lines: ig.steps, ol: true, foot: '加到主畫面後，就能像 App 一樣全螢幕打開，也能離線使用。' });
+    var noKids = !store.getChildren().length, i = 0;
+    var dlg = document.createElement('dialog');
+    dlg.id = 'tour'; dlg.className = 'tour';
+    dlg.setAttribute('aria-labelledby', 'tour-title');
+    function draw() {
+      var c = cards[i], last = i === cards.length - 1;
+      dlg.innerHTML = '<div class="tour-box" data-testid="tour">' +
+        '<button type="button" class="tour-skip" data-tour="skip">略過</button>' +
+        '<span class="tour-art">' + (c.emoji ? '<i aria-hidden="true">' + c.emoji + '</i>' : '<img src="' + c.img + '" alt="" aria-hidden="true" decoding="async">') + '</span>' +
+        '<h2 id="tour-title">' + h(c.title) + '</h2>' +
+        (c.ol ? '<ol class="tour-steps">' + c.lines.map(function (l) { return '<li>' + h(l) + '</li>'; }).join('') + '</ol>'
+          : c.lines.map(function (l) { return '<p>' + h(l) + '</p>'; }).join('')) +
+        (c.foot ? '<p class="tour-foot">' + h(c.foot) + '</p>' : '') +
+        '<div class="tour-dots" aria-hidden="true">' + cards.map(function (x, k) { return '<i class="' + (k === i ? 'on' : '') + '"></i>'; }).join('') + '</div>' +
+        '<div class="tour-actions">' + (i ? '<button type="button" class="btn" data-tour="prev">上一步</button>' : '<span></span>') +
+        '<button type="button" class="btn primary" data-tour="' + (last ? 'done' : 'next') + '">' + (last ? (noKids ? '開始：新增孩子' : '開始使用') : '下一步') + '</button></div></div>';
+    }
+    function finish(addKid) {
+      store.setFlag('tourSeen', true);
+      try { dlg.close(); } catch (e) { /* 已關閉 */ }
+      dlg.remove();
+      if (addKid) openChildForm();
+    }
+    dlg.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-tour]');
+      if (!t) return;
+      var a = t.getAttribute('data-tour');
+      if (a === 'next') { i++; draw(); } else if (a === 'prev') { i--; draw(); }
+      else finish(a === 'done' && noKids);
+    });
+    dlg.addEventListener('cancel', function (e) { e.preventDefault(); finish(false); });
+    draw();
+    document.body.appendChild(dlg);
+    if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
   }
 
   /** 首頁：手機儲存空間不足（存不進去）或接近上限時警告 */
@@ -2982,6 +3065,8 @@
   }
 
   function settingsChildren() {
+    var replay = '<p class="tour-replay-row"><button type="button" class="btn small" data-action="tour-replay">📖 再看一次新手導覽</button>' +
+      (store.data.flags.tipsDone ? ' <button type="button" class="btn small" data-action="tips-show">🧭 首頁重新顯示新手任務</button>' : '') + '</p>';
     var list = store.getChildren().map(function (c) {
       return '<li class="row">' + avatar(c, 'sm') +
         '<span class="row-main"><b>' + h(c.name) + ' ' + (c.badge ? h(c.badge) : '') + '</b><small>' + h((c.title ? c.title + ' ' : '') + 'Lv.' + store.getLevel(c.id).level) +
@@ -2992,7 +3077,7 @@
         '<button class="btn small" data-action="edit-child" data-id="' + h(c.id) + '">編輯</button>' +
         '<button class="btn small danger" data-action="delete-child" data-id="' + h(c.id) + '">刪除</button></li>';
     }).join('');
-    return '<ul class="rows">' + (list || '<li class="muted">還沒有孩子</li>') + '</ul>' +
+    return replay + '<ul class="rows">' + (list || '<li class="muted">還沒有孩子</li>') + '</ul>' +
       '<button class="btn primary block" data-action="add-child">＋ 新增孩子</button>';
   }
 
@@ -3567,6 +3652,9 @@
           break;
         }
         case 'add-child': openChildForm(); break;
+        case 'tips-done': store.setFlag('tipsDone', true); render(); break;
+        case 'tips-show': store.setFlag('tipsDone', false); toast('首頁會重新顯示新手任務'); render(); break;
+        case 'tour-replay': openTour(); break;
         case 'limit-step': {
           var lk = el.getAttribute('data-key'), lv = store.getLimits()[lk] + Number(el.getAttribute('data-d'));
           store.setLimits((function () { var o = {}; o[lk] = lv; return o; })());

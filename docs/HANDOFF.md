@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-09｜App 版本 `2026.11.09-130`｜Service Worker 快取 `cgp-shell-v140`｜`main` 最新：今日冒險已出發改用藏寶地圖圖示（2026-11-09 工作段落結束，已整理交接）
+> 最後更新：2026-11-09｜App 版本 `2026.11.09-131`｜Service Worker 快取 `cgp-shell-v141`｜`main` 最新：今日冒險已出發改用藏寶地圖圖示（2026-11-09 工作段落結束，已整理交接）
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -14,8 +14,8 @@
 - 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v140`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.09-130`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
-2. 測試：`npm test`（單元，約 1 秒，目前 139 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v141`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.09-131`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+2. 測試：`npm test`（單元，約 1 秒，目前 140 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
 
@@ -54,6 +54,10 @@
 - 實機確認：第 5 格撿礦石面板、第 30 格拉轉轍器、能源塔連點充電在手機上的手感與位置。
 
 ### 2026-11-09 完成的重點（新的在上面）
+- 新手上手（2026-11-09，分享給朋友用）：
+  - 第一次打開首頁自動跳「新手導覽」（`openTour()`，機器貓 4～5 張卡：歡迎、記錄生活點數、出發今日冒險、家長設定、加到主畫面）；加到主畫面依手機顯示 iPhone（Safari 分享）／Android（Chrome ⋮）／電腦步驟，已從主畫面打開就不顯示；最後一張「開始：新增孩子」直接開新增孩子視窗。
+  - 首頁「新手任務」（`onboardSteps()`）：新增孩子 → 記錄第一筆加分 → 進入今日冒險 → 擲一次骰子，下一步有「去做」；「不用提示」可收起。設定 → 孩子可重看導覽、重新顯示新手任務。
+  - 旗標 `flags.tourSeen`、`flags.tipsDone`（`store.setFlag()`）；新安裝為 false，舊存檔（已有孩子）migrate 時設為 true，所以現有使用者不受影響。E2E 預設注入 `__cgpNoOnboard`，專門測試傳 `onboard: true`。
 - 金島收尾（2026-11-09）：
   - 第一次安裝少下載約 1.3MB：木島／水島／火島／土島大廳插圖、木島森林派對與小精靈圖移出 `SHELL`（第一次用到才下載）；落葉找松果圖金島也用，保留。
   - 其他島還沒開放時，神秘寶箱不開出呼叫專機（`_rollMysteryChest` 排除 airplane，其餘 6 種依原權重比例分配；已拿到的保留）。

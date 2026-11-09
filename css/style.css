@@ -2131,3 +2131,30 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 @media (max-height: 560px) { .ev { padding: 12px 12px 12px; gap: 8px; } .ev-art { width: min(26vh, 110px); } .ev-title { font-size: 1.35rem; } .ev-btn { min-height: 48px; } }
 /* 2026-11-09：首頁拿掉四個磚塊後，孩子卡片和下方區塊之間保留原本的間距 */
 .ach-home, .week-card { margin-top: 16px; }
+/* 新手上手（2026-11-09）：首頁新手任務、第一次打開的新手導覽 */
+.onboard { margin-top: 16px; display: grid; gap: 8px; background: linear-gradient(#fffdf4, #fff6dc); border: 2px solid #f6dc95; }
+.onboard-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.onboard-head h2 { margin: 0; } .onboard-head h2 small { color: var(--muted); font-size: .8rem; }
+.onboard-all { margin: 0; font-weight: 800; color: #2f7a22; }
+.onboard-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.onboard-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: #fff; }
+.onboard-mark { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #e6d3a8; color: #fff; font-weight: 900; font-size: .9rem; }
+.onboard-list li.done { opacity: .7; } .onboard-list li.done .onboard-mark { background: #5cbf4a; border-color: #5cbf4a; }
+.onboard-list li.done b { text-decoration: line-through; color: var(--muted); }
+.onboard-list li.next { box-shadow: 0 0 0 2px #ffb04d; } .onboard-list li.next .onboard-mark { border-color: #ff9c3a; }
+.onboard-text { display: grid; gap: 2px; } .onboard-text small { color: var(--muted); font-weight: 700; line-height: 1.4; }
+.onboard-replay { justify-self: start; border: 0; background: none; color: #a0662a; font: inherit; font-weight: 800; font-size: .85rem; padding: 2px 0; cursor: pointer; }
+.tour-replay-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+.tour { border: 0; padding: 0; background: transparent; width: min(400px, calc(100vw - 28px)); max-height: calc(100dvh - 32px); overflow: visible; }
+.tour::backdrop { background: rgba(40, 25, 10, .55); }
+.tour-box { position: relative; display: grid; justify-items: center; gap: 8px; padding: 22px 18px 16px; border-radius: 30px; background: #fffdf8; color: #6b4a2b; text-align: center;
+  box-shadow: 0 10px 30px rgba(60, 35, 10, .3); max-height: calc(100dvh - 32px); overflow-y: auto; box-sizing: border-box; }
+.tour-skip { position: absolute; top: 12px; right: 14px; border: 0; background: none; color: var(--muted); font: inherit; font-weight: 800; cursor: pointer; }
+.tour-art { display: grid; place-items: center; width: 120px; height: 120px; border-radius: 28px; background: #fff3d6; }
+.tour-art img { width: 100px; height: 100px; object-fit: contain; } .tour-art i { font-style: normal; font-size: 4rem; }
+.tour-box h2 { margin: 4px 0 0; color: #e0761c; font-size: 1.35rem; }
+.tour-box p { margin: 0; font-weight: 700; line-height: 1.55; }
+.tour-steps { margin: 0; padding-left: 1.4em; text-align: left; font-weight: 800; line-height: 1.7; }
+.tour-foot { color: var(--muted); font-size: .88rem; }
+.tour-dots { display: flex; gap: 6px; margin-top: 4px; } .tour-dots i { width: 8px; height: 8px; border-radius: 50%; background: #ecdcc0; } .tour-dots i.on { background: #ff9c3a; width: 20px; border-radius: 4px; }
+.tour-actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; width: 100%; margin-top: 4px; }

@@ -95,7 +95,7 @@
   // ---------- 預設資料 ----------
   function emptyData() {
     return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null, achievements: {}, carry: {}, backup: { lastExportAt: 0, since: 0, snoozeUntil: '' },
-      settings: { limits: {} }, flags: {},
+      settings: { limits: {} }, flags: { tourSeen: false, tipsDone: false },   // 新安裝：要看新手導覽與新手任務
       milestones: {}, adventure: { settlements: [], ledger: [], rolls: [], minigames: [], bonusQuota: [], mapChests: [], dayEnds: [], blessings: [], itemLog: [], limitResets: [], players: {} } };
   }
 
@@ -212,7 +212,11 @@
       };
     });
     // 2026-11-09：能量星星兌換的預設獎勵（舊存檔只自動加一次，家長刪掉後不再加回來）
-    d.flags = d.flags && typeof d.flags === 'object' ? { starRewardSeeded: !!d.flags.starRewardSeeded } : { starRewardSeeded: false };
+    var oldFlags = d.flags && typeof d.flags === 'object' ? d.flags : {};
+    d.flags = { starRewardSeeded: !!oldFlags.starRewardSeeded };
+    // 2026-11-09：新手導覽、首頁新手步驟。舊存檔（已經有孩子）視為已經會用，不再顯示
+    d.flags.tourSeen = 'tourSeen' in oldFlags ? !!oldFlags.tourSeen : d.children.length > 0;
+    d.flags.tipsDone = 'tipsDone' in oldFlags ? !!oldFlags.tipsDone : d.children.length > 0;
     if (!d.flags.starRewardSeeded) {
       d.rewards.push({ id: uid(), name: STAR_REWARD_DEFAULT.name, cost: STAR_REWARD_DEFAULT.cost, currency: 'stars', createdAt: Date.now() });
       d.flags.starRewardSeeded = true;
@@ -661,6 +665,12 @@
 
   /** 主資料接近 localStorage 上限（約 5MB）的警示門檻（字元數） */
   var STORAGE_WARN_CHARS = 3500000;
+  /** 介面用的旗標（新手導覽看過了、新手步驟收起來）；只接受 true／false */
+  Store.prototype.setFlag = function (name, value) {
+    if (['tourSeen', 'tipsDone'].indexOf(name) < 0) throw new Error('不明的旗標');
+    this.data.flags[name] = !!value;
+    this.save();
+  };
   Store.prototype.save = function () {
     try {
       var text = JSON.stringify(this.data);

@@ -2666,3 +2666,16 @@ test('神秘寶箱：其他島嶼開放後才會開出呼叫專機', () => {
     assert.equal(store.getPlayer(a.id).bag.airplane, 1);
   } finally { delete G.BOARDS.wood; }
 });
+
+test('新手上手旗標：新安裝要看導覽；舊存檔（已有孩子）視為看過；setFlag 只接受已知旗標', () => {
+  const fresh = migrate({ children: [] });
+  assert.equal(fresh.flags.tourSeen, false); assert.equal(fresh.flags.tipsDone, false);
+  const old = migrate({ children: [{ id: 'c1', name: 'A' }], flags: { starRewardSeeded: true } });
+  assert.equal(old.flags.tourSeen, true, '舊存檔不跳導覽'); assert.equal(old.flags.tipsDone, true, '舊存檔不顯示新手任務');
+  const kept = migrate({ children: [{ id: 'c1', name: 'A' }], flags: { starRewardSeeded: true, tourSeen: false, tipsDone: false } });
+  assert.equal(kept.flags.tourSeen, false, '已存的旗標照舊保留');
+  const { store } = tsStore();
+  store.setFlag('tipsDone', true);
+  assert.equal(store.data.flags.tipsDone, true);
+  assert.throws(() => store.setFlag('parentPin', true), /不明的旗標/);
+});
