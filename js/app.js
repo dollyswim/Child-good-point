@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-116';
+  var APP_VERSION = '2026.11.09-117';
   var store;
   try {
     store = new CGP.Store();
@@ -1757,9 +1757,6 @@
     if (clearEv) { await mapFireworks(); showClear(child, clearEv); return; }
     var mgEv = ev && ev.minigame ? ev : (ev && ev.then && ev.then.minigame ? ev.then : null);
     if (mgEv) { openMinigame(childId, head + '・停在第 ' + store.getPlayer(childId).pos + ' 格'); return; }
-    var foot = head + '・停在第 ' + store.getPlayer(childId).pos + ' 格';
-    var rw = rollReward(res);   // 拿到星星／道具：獲得獎勵彈窗
-    if (rw) { rw.foot = foot; rewardPopup(rw); return; }
     var cards = eventCards(res.event, res.found);   // 2026-11-09：一般冒險事件改用卡片式視窗（內容與原本文字相同）
     if (cards.length) eventPopup(head.replace(/^\S+\s/, '') + '・停在第 ' + store.getPlayer(childId).pos + ' 格', cards);
     else toast(head + '，停在第 ' + store.getPlayer(childId).pos + ' 格');   // 一般移動：維持小提示，不另外跳視窗
@@ -1781,9 +1778,16 @@
         var sub = e.card === 'roadblock' ? (e.shielded ? '推開路障' : '路障') : e.card === 'back' ? (e.shielded ? '防護罩擋住了' : '往回退') : '特殊任務';
         c = { theme: block ? 'block' : 'fate', img: e.shielded ? 'images/items/shield.webp' : 'images/tiles/fate.webp', title: '命運卡｜' + sub, lines: lines };
       } else {
-        var got = (e.type === 'chest' || e.type === 'chance') && (e.stars > 0 || Object.keys(e.items || {}).some(function (k) { return e.items[k] > 0; }));
-        var art = got ? rewardEntries(e.stars, e.items, 0)[0] : null;
-        c = { theme: got ? 'reward' : 'info', img: art ? art.img : (TILE_ART[e.type] || 'images/items/dice_6.webp'), title: evStrip(e.title) || '冒險事件', lines: lines };
+        var got = (e.type === 'chest' || e.type === 'chance') ? rewardEntries(e.stars, e.items, 0) : [];
+        if (got.length) {   // 寶箱／機會拿到東西：每樣獎勵一張奶油黃卡（主獎勵排第一）；機會卡的情境文字、好運金牌放在第一張
+          got.forEach(function (g, i) {
+            cards.push({ theme: 'reward', kind: e.type, img: g.img, title: g.name + ' ×' + g.qty,
+              lines: [g.desc].concat(i ? [] : (e.medal ? ['🥇 好運金牌：這次效果發生 2 次'] : []).concat(e.type === 'chance' ? lines : [])) });
+          });
+          add(e.then);
+          return;
+        }
+        c = { theme: 'info', kind: e.type, img: TILE_ART[e.type] || 'images/items/dice_6.webp', title: evStrip(e.title) || '冒險事件', lines: lines };
       }
       cards.push(c);
       add(e.then);
@@ -1792,9 +1796,9 @@
   }
   /** cards：eventCards 的結果；sub：移動結果（例如「擲出 4・停在第 11 格」） */
   function eventPopup(sub, cards) {
-    var has = function (t) { return cards.some(function (c) { return c.theme === t; }); };
+    var has = function (t) { return cards.some(function (c) { return c.theme === t || c.kind === t; }); };
     var theme = has('reward') ? 'reward' : has('block') ? 'block' : has('fate') ? 'fate' : 'move';
-    var title = { reward: '冒險新發現！', block: '遇到小麻煩！', fate: '命運卡出現！', move: '成功前進！' }[theme];
+    var title = { reward: '冒險新發現！', block: '遇到小麻煩！', fate: '命運卡出現！', move: has('boundary') ? '抵達區域終點！' : '成功前進！' }[theme];
     var main = cards.filter(function (c) { return c.theme === (theme === 'move' ? 'info' : theme); })[0] || cards[0];   // 主圖：獎勵 → 命運／路障 → 其他
     confirmEl.classList.add('ev-modal');
     confirmEl.innerHTML = '<div class="ev ev-' + theme + '" data-testid="event">' +
@@ -2713,21 +2717,6 @@
     if (!entries.length) { showInfo(title, res.text); return; }
     rare = rare || entries.some(function (e) { return RARE_ITEMS.indexOf(e.key) >= 0; });
     rewardPopup({ rare: rare, title: title, entries: entries, desc: note ? note + '・' + entries[0].desc : '' });
-  }
-  /**
-   * 擲骰後停在寶箱／機會格（或沿路撿到神秘寶箱）有拿到東西：回傳獎勵彈窗資料；
-   * 其他事件（命運卡、特殊任務、礦車接著觸發下一格…）回傳 null，照舊用文字說明
-   */
-  function rollReward(res) {
-    var ev = res.event, found = res.found || 0;
-    var plain = !ev || ev.type === 'normal' || ev.type === 'start';
-    if (!plain && (ev.type !== 'chest' && ev.type !== 'chance' || ev.then || ev.special)) return null;
-    var entries = rewardEntries(plain ? 0 : ev.stars, plain ? {} : ev.items, found);
-    if (!entries.length) return null;
-    var rare = !!found || !!(ev && ev.medal) || entries.some(function (e) { return RARE_ITEMS.indexOf(e.key) >= 0; });
-    var title = ev && ev.medal ? '好運加倍！' : entries.length > 1 ? '寶物大豐收！'
-      : plain ? '撿到神秘寶箱！' : ev.type === 'chest' ? '打開寶箱！' : '好運降臨！';
-    return { rare: rare, title: title, entries: entries, desc: !plain && ev.type === 'chance' && !found ? ev.text.replace(/\n/g, '・') : '' };
   }
 
   /** 地圖上的特殊道具列（只顯示持有的道具） */

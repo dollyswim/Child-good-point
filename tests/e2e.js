@@ -815,9 +815,32 @@ async function main() {
     t = await roll(12, [1.5 / 6, 0.3]);
     assert.match(t, /命運卡出現！[\s\S]*命運卡｜特殊任務[\s\S]*已加到任務頁/);
     await shot('special'); await close();
+    if (vp.height === 800 && vp.width === 360) {
+      const types = await q.evaluate((cid) => window.__cgpStore.getBoard(cid).tiles.map((t) => t.type), id);
+      // （區域終點木門只在後面區域還沒開放時才存在；金島四區都已開放，這個事件目前不會發生，不另外測）
+      // 5. 今天的小遊戲已經玩完：停在小遊戲格 → 機會轉成神秘寶箱（不開始小遊戲）
+      const mgTile = types.indexOf('minigame');
+      await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.minigames.push({ id: 'done1', childId: cid, date: s.today(), tile: 7, status: 'done', caught: 0, stars: 0, ts: 1 }); s.save(); }, id);
+      t = await roll(mgTile - 1, [0.5 / 6]);
+      assert.match(t, /成功前進！[\s\S]*停在第 \d+ 格[\s\S]*小遊戲[\s\S]*今天的小遊戲已經玩完了[\s\S]*神秘寶箱/);
+      assert.equal(await q.locator('#mg').count(), 0, '不會開始小遊戲');
+      await shot('minigame-over'); await close();
+      // 6. 機會卡礦車前進 2 格，接著停在命運格（路障）：按「上車！」→ 同一個視窗兩張卡
+      const ch = types.findIndex((x, i) => x === 'chance' && types[i + 2] === 'fate');
+      assert.ok(ch > 0, '找得到礦車會停到命運格的機會格');
+      await q.evaluate(([cid, from]) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, from); const seq = [0.5 / 6, 0, 0.95, 0.1]; s.random = () => (seq.length ? seq.shift() : 0); s.save(); }, [id, ch - 1]);
+      await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);
+      await q.click('.dice-btn.d6');
+      await q.waitForSelector('#cart-btn', { timeout: 10000 }); await q.click('#cart-btn');
+      await q.waitForSelector('#confirm[open] [data-testid=event]', { timeout: 15000 });
+      t = await q.locator('#confirm .ev').innerText();
+      assert.match(t, new RegExp('遇到小麻煩！[\\s\\S]*停在第 ' + (ch + 2) + ' 格[\\s\\S]*機會[\\s\\S]*礦車[\\s\\S]*命運卡｜路障'));
+      assert.equal(await q.locator('#confirm .ev-card').count(), 2, '機會卡和接著的命運卡在同一個視窗');
+      await shot('cart-chain'); await close();
+    }
     await c.close();
   }
-  console.log('✔ 一般冒險事件視窗：命運卡後退、路障、撿到神秘寶箱＋命運卡合併一個視窗、特殊任務；手機、矮螢幕、桌面都不超出畫面');
+  console.log('✔ 一般冒險事件視窗：命運卡後退、路障、撿到神秘寶箱＋命運卡合併一個視窗、特殊任務、小遊戲次數用完、礦車接著停在命運格；手機、矮螢幕、桌面都不超出畫面');
 
   // ---------- Phase 4 第 2 步：小遊戲「抓住星星」 ----------
   {
@@ -1197,7 +1220,7 @@ async function main() {
     await q.evaluate(() => { window.__cgpStore.random = () => 0.3; });
     await q.click('.dice-btn.skates');
     await q.waitForSelector('#confirm[open]', { timeout: 10000 });
-    assert.match(await q.locator('#confirm .rw.rw-rare').innerText(), /稀有獎勵[\s\S]*撿到神秘寶箱[\s\S]*神秘寶箱 ×1[\s\S]*黃金鑰匙開啟[\s\S]*收下戰利品[\s\S]*前進 3 格・停在第 4 格/);
+    assert.match(await q.locator('#confirm .ev').innerText(), /冒險新發現！[\s\S]*前進 3 格・停在第 4 格[\s\S]*神秘寶箱 ×1[\s\S]*黃金鑰匙打開[\s\S]*繼續冒險！/);
     await q.click('#confirm [data-yes]');
     assert.equal(await q.locator('.map-chest').count(), 0);
     // 背包：沒有鑰匙打不開；有鑰匙就能開
@@ -2039,7 +2062,7 @@ async function main() {
     await cw.close();
   }
 
-  // ---------- 獲得獎勵彈窗：一般版／稀有版同版型（只換配色），獎勵依實際結果、按鈕不重複發放 ----------
+  // ---------- 擲骰後只拿到獎勵：也用一般冒險事件視窗（2026-11-09），獎勵依實際結果、按鈕不重複發放 ----------
   {
     const cr = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block' });
     const q = await cr.newPage();
@@ -2048,34 +2071,33 @@ async function main() {
     const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '波妞' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
       const p = s.getPlayer(a.id); p.bag.d6 = 3; s.setPlayerTile(a.id, 3); s.save(); return a.id; });
     await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
-    const layout = () => q.evaluate(() => { const box = document.querySelector('#confirm .rw'), r = (s) => Math.round(document.querySelector(s).getBoundingClientRect().width);
-      return { kids: [...box.children].map((e) => e.className), w: r('#confirm .rw'), card: r('.rw-card'), art: r('.rw-art'), btn: r('.rw-btn'), bg: getComputedStyle(box).backgroundColor }; });
-    // 一般版：第 5 格寶箱得到 ⭐3（沒有額外獎勵 → 不顯示額外區）
+    // 第 5 格寶箱得到 ⭐3：一張奶油黃卡，主圖是能量星星
     await q.evaluate(() => { const seq = [1.5 / 6, 0.1, 0.9]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0); });
     const s0 = await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id);
     await q.click('.dice-btn.d6');
-    await q.waitForSelector('#confirm .rw.rw-normal', { timeout: 15000 });
-    assert.match(await q.locator('#confirm .rw').innerText(), /^✦ 一般獎勵 ✦\n打開寶箱！\n能量星星 ×3\n已存入能量星星\n收下戰利品！[\s\S]*擲出 2・停在第 5 格$/);
-    const normal = await layout();
-    assert.deepEqual(normal.kids, ['rw-tag', 'rw-title', 'rw-card', 'rw-btn', 'rw-foot'], '沒有額外獎勵：不保留空白區塊');
+    await q.waitForSelector('#confirm [data-testid=event]', { timeout: 15000 });
+    assert.match(await q.locator('#confirm .ev').innerText(), /^冒險新發現！\n+擲出 2・停在第 5 格[\s\S]*能量星星 ×3\n已存入能量星星[\s\S]*繼續冒險！$/);
+    assert.equal(await q.locator('#confirm .ev-card.ev-reward').count(), 1);
+    assert.match(await q.locator('#confirm .ev-art img').getAttribute('src'), /star\.webp/);
     const s1 = await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id);
     assert.equal(s1, s0 + 3, '顯示前就已發放');
+    if (SHOT_DIR) await q.locator('#confirm .ev').screenshot({ path: path.join(SHOT_DIR, 'event-reward.png') });
     await q.click('#confirm [data-yes]');
-    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), s1, '按「收下戰利品！」不會重複發放');
-    // 稀有版：好運金牌＋寶箱 → 主獎勵溜冰鞋、額外收穫 +3 星
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), s1, '按「繼續冒險！」不會重複發放');
+    // 好運金牌＋寶箱：主獎勵溜冰鞋、另一張 ⭐3；第一張註明好運金牌
     await q.evaluate((cid) => { const s = window.__cgpStore; const p = s.getPlayer(cid); p.bag.luckyMedal = 1; p.medalArmed = true; s.setPlayerTile(cid, 10); s.save(); const seq = [1.5 / 6, 0.1, 0.9, 0.6]; s.random = () => (seq.length ? seq.shift() : 0); }, id);
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    const sk0 = await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.skates, id);
     await q.click('.dice-btn.d6');
-    await q.waitForSelector('#confirm .rw.rw-rare', { timeout: 15000 });
-    assert.match(await q.locator('#confirm .rw').innerText(), /稀有獎勵[\s\S]*好運加倍！[\s\S]*溜冰鞋 ×1[\s\S]*額外收穫[\s\S]*\+3 星[\s\S]*收下戰利品！[\s\S]*停在第 12 格/);
-    const rare = await layout();
-    assert.deepEqual(rare.kids, ['rw-tag', 'rw-title', 'rw-card', 'rw-extra', 'rw-btn', 'rw-foot']);
-    assert.deepEqual([rare.w, rare.card, rare.art, rare.btn], [normal.w, normal.card, normal.art, normal.btn], '兩版尺寸完全相同');
-    assert.notEqual(rare.bg, normal.bg, '只換配色');
-    assert.ok(await q.evaluate(() => { const b = document.querySelector('.rw-btn').getBoundingClientRect(); return b.bottom <= innerHeight && b.top >= 0; }), '按鈕在畫面內');
+    await q.waitForSelector('#confirm [data-testid=event]', { timeout: 15000 });
+    assert.match(await q.locator('#confirm .ev').innerText(), /冒險新發現！[\s\S]*停在第 12 格[\s\S]*溜冰鞋 ×1[\s\S]*好運金牌[\s\S]*能量星星 ×3/);
+    assert.equal(await q.locator('#confirm .ev-card.ev-reward').count(), 2);
+    assert.ok(await q.evaluate(() => { const b = document.querySelector('.ev-btn').getBoundingClientRect(); return b.bottom <= innerHeight && b.top >= 0; }), '按鈕在畫面內');
+    if (SHOT_DIR) await q.locator('#confirm .ev').screenshot({ path: path.join(SHOT_DIR, 'event-medal.png') });
     await q.click('#confirm [data-yes]');
     assert.equal(await q.locator('#confirm[open]').count(), 0);
-    console.log('✔ 獲得獎勵彈窗：一般版／稀有版同版型只換配色、依實際結果顯示、沒有額外獎勵就隱藏、收下不重複發放');
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.skates, id), sk0 + 1, '溜冰鞋只收 1 雙');
+    console.log('✔ 擲骰只拿到獎勵：改用冒險事件視窗（每樣獎勵一張卡、好運金牌註明）、依實際結果顯示、按鈕不重複發放');
     await cr.close();
   }
 
