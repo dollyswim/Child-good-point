@@ -415,7 +415,8 @@ body {
 .hero .plaque h1 { font-size: 1.5rem; }
 /* 標題木牌圖：取代 CSS 木牌（透明背景、等比例，不拉伸） */
 .plaque h1.plaque-img { padding: 0; background: none; border: 0; box-shadow: none; text-shadow: none; overflow: visible; width: 100%; max-width: 200px; line-height: 0; }
-.hero .plaque h1.plaque-img, .adv-hero .plaque h1.plaque-img { max-width: 270px; }
+.hero .plaque h1.plaque-img { max-width: 270px; }
+.adv-hero .plaque h1.plaque-img { max-width: 220px; }   /* 冒險大廳右邊有浮島，木牌小一點 */
 .plaque-img img { display: block; width: 100%; height: auto; }
 .plaque.has-img .ribbon { margin-top: -8px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
