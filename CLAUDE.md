@@ -10,5 +10,6 @@
 - 先讀 `PROJECT_SPEC.md`、`docs/HANDOFF.md`，Phase 4 進度見 `docs/PHASE4_PLAN.md`、寶物商店與神諭祝福見 `docs/TREASURE_SHOP_PLAN.md`，木島規劃見 `docs/art/WOOD_ISLAND_PLAN.md`，美術提示詞見 `docs/art-prompts.md`。
 - 純 HTML／CSS／JS 的 PWA，不需建置。測試：`npm test`（單元）、`npm run test:e2e`（Playwright 手機尺寸）。
 - 改圖片或 JS 時：新檔加入 `sw.js` 的 `SHELL`，並升 `CACHE` 版本與 `js/app.js` 的 `APP_VERSION`。
+- 圖片在 `sw.js` 的獨立快取 `cgp-img-v1`（不跟版本走）：升版不重抓圖；同檔名換新圖時，孩子要開第二次才看到（需要立刻生效就換檔名）。其他島（木島以後）的大地圖背景**不要**加入 `SHELL`，第一次用到才下載並快取。
 - 保留既有存檔：新欄位在 `migrate()` 補預設值，不改既有規則（每日 3 骰、小遊戲 1 次、道具價格）。
 - 家長提供的圖多為白底：預設放白色卡片顯示（contain、不裁切）；需要去背時先回報，且只去除與外框相連的白底，不可全域刪白。

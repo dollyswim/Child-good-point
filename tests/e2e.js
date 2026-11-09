@@ -10,12 +10,16 @@ const ROOT = path.join(__dirname, '..');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const SHOT_DIR = process.env.SHOT_DIR || null;
+const REQ_LOG = [];          // 伺服器收到的路徑（離線快取測試用）
+let SW_OVERRIDE = null;      // 模擬升版：改由這段內容回應 sw.js
 
 function serve() {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
       let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
       if (p.endsWith('/')) p += 'index.html';
+      REQ_LOG.push(p);
+      if (p === '/sw.js' && SW_OVERRIDE) { res.writeHead(200, { 'Content-Type': 'text/javascript' }); return res.end(SW_OVERRIDE); }
       const file = path.join(ROOT, p);
       if (!file.startsWith(ROOT) || !fs.existsSync(file)) { res.writeHead(404); return res.end(); }
       res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream' });
@@ -2268,6 +2272,42 @@ async function main() {
       await c.close();
     }
     console.log('✔ 星光成就劇場：單一／2／5／10 個成就、主徽章最高階、小徽章點選、橫向捲動、直式橫式、音效開關、返回鍵、查看收藏、減少動態、重新整理不重複');
+  }
+
+  // ---------- 離線快取：圖片放在不跟版本走的快取，升版不重抓；離線時從快取開 ----------
+  {
+    const c = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'allow' });
+    const q = await c.newPage();
+    await q.goto(url);
+    await q.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 20000 });
+    const swSrc = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+    const ver = swSrc.match(/var CACHE = '([^']+)'/)[1];
+    const imgCount = (swSrc.split('];')[0].match(/'images\/[^']+'/g) || []).length;
+    const cached = () => q.evaluate(async () => { const keys = await caches.keys(); const out = {}; for (const k of keys) out[k] = (await (await caches.open(k)).keys()).map((r) => new URL(r.url).pathname); return out; });
+    await q.waitForFunction(async () => (await caches.keys()).includes('cgp-img-v1'), null, { timeout: 20000 });
+    let cs = await cached();
+    assert.ok(cs['cgp-img-v1'].includes('/images/gold/region01.webp'), '圖片放在圖片快取');
+    assert.ok(cs['cgp-img-v1'].length >= imgCount, '安裝時所有 SHELL 圖片都進快取');
+    assert.ok(!cs[ver].some((u) => /\.webp$/.test(u)), '版本快取只放程式與頁面');
+    // 模擬升版：只換 CACHE 名稱 → 程式重抓、圖片不重抓
+    REQ_LOG.length = 0;
+    SW_OVERRIDE = swSrc.replace(ver, 'cgp-shell-test-next');
+    await q.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); await r.update(); });
+    await q.waitForFunction(async () => { const k = await caches.keys(); return k.length === 2 && k.includes('cgp-shell-test-next') && !!(await (await caches.open('cgp-shell-test-next')).match('js/app.js')); }, null, { timeout: 20000 });   // 新版安裝完成、舊版快取已刪
+    await q.waitForTimeout(1500);   // 等伺服器把請求記完
+    const imgReq = REQ_LOG.filter((p) => p.startsWith('/images/')).length;
+    assert.ok(REQ_LOG.includes('/js/app.js'), '升版會重抓程式：' + REQ_LOG.join(' '));
+    assert.ok(imgReq < imgCount / 3, '升版不重抓全部圖片（實際 ' + imgReq + ' / ' + imgCount + '）');
+    SW_OVERRIDE = null;
+    // 離線：重新整理仍能開，地圖背景從快取載入
+    await q.waitForTimeout(500);
+    await c.setOffline(true);
+    await q.reload();
+    await q.waitForFunction(() => document.getElementById('app').children.length > 0, null, { timeout: 10000 });
+    const ok = await q.evaluate(() => new Promise((res) => { const im = new Image(); im.onload = () => res(im.naturalWidth); im.onerror = () => res(0); im.src = 'images/gold/region01.webp'; }));
+    assert.equal(ok, 1080, '離線時圖片從快取載入');
+    await c.close();
+    console.log('✔ 離線快取：圖片獨立快取、升版只重抓程式（圖片請求 ' + imgReq + ' / ' + imgCount + '）、離線可開啟並顯示圖片');
   }
 
   assert.deepEqual(errors, [], '頁面不得出現 JS 錯誤或原生對話框');

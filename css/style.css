@@ -2047,21 +2047,35 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
   transition: left .55s ease-in, top .55s ease-in, transform .55s ease-in, opacity .55s; -webkit-tap-highlight-color: transparent; }
 .meadow-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 6px rgba(255, 255, 220, .95)); animation: ore-bob 1.3s ease-in-out infinite; }
 .meadow-item.got { transform: translate(-50%, -50%) scale(.35); opacity: .2; pointer-events: none; }
-/* 第 65 格：邀請卡與貼紙 */
-.invite-art { aspect-ratio: auto; background: #fff8ec; padding: 6px 0; }
-.invite-card { position: relative; width: min(62vw, 230px); margin: 0 auto; transition: width .4s; }
+/* 第 65 格：邀請卡（白色內框可貼 6～20 張貼紙、用粉彩畫圖） */
+.invite-art { aspect-ratio: auto; background: #fff8ec; padding: 4px 0; }
+.invite-card { position: relative; width: min(84vw, 320px); margin: 0 auto; transition: width .4s; }
 .invite-card.small { width: min(30vw, 110px); }
 .invite-card-img { display: block; width: 100%; height: auto; }
-.invite-area { position: absolute; left: 22%; right: 22%; top: 22%; bottom: 20%; }
-.card-sticker { position: absolute; width: 26%; height: auto; pointer-events: none; }
+.invite-area { position: absolute; left: 17%; right: 17%; top: 17%; bottom: 17%; }   /* 對齊卡片白色內框（和 js 的 AREA 一致） */
+.invite-draw { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; border-radius: 6px; }
+.invite-card.small .invite-draw { pointer-events: none; }
+.card-sticker { position: absolute; width: 18%; height: auto; pointer-events: none; }
 .invite-count { position: absolute; right: 4%; bottom: 4%; padding: 2px 8px; border-radius: 99px; background: rgba(255, 255, 255, .85); font-weight: 900; color: #8a4f12; font-size: .85rem; }
 .invite-count.ok { background: #ffe27a; }
 .invite-card.small .invite-count { display: none; }
+.pen-tray { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 6px; }
+.pen-color { width: 32px; height: 32px; border-radius: 50%; border: 3px solid #fff; background: var(--pen); box-shadow: 0 0 0 2px #e6cf9a; padding: 0; cursor: pointer; font-size: 1rem; line-height: 1; }
+.pen-color.on { box-shadow: 0 0 0 3px #e08a2c; transform: scale(1.12); }
+.pen-eraser { background: #fff; }
+.pen-actions { display: grid; gap: 6px; }
+.pen-act { padding: 6px 10px; border-radius: 12px; border: 2px solid #f1d58f; background: #fffdf6; color: #8a6a3a; font-weight: 800; font-size: .8rem; cursor: pointer; }
+.pen-act:disabled { opacity: .4; cursor: default; }
 .sticker-tray, .deco-tray { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.sticker-tray { align-items: center; }
 .sticker-src, .deco-src { display: grid; justify-items: center; gap: 2px; padding: 6px 8px; border-radius: 16px; border: 2px solid #f1d58f; background: #fffdf6; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .sticker-src img { width: 56px; height: 56px; object-fit: contain; pointer-events: none; }
 .sticker-src small, .deco-src small { font-weight: 800; color: #8a6a3a; font-size: .75rem; }
+.sticker-src.full { opacity: .45; }
+.sticker-src.shake { animation: sticker-shake .35s; }
+@keyframes sticker-shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 .sticker-ghost { position: fixed; z-index: 1300; width: 56px; height: 56px; object-fit: contain; transform: translate(-50%, -50%) scale(1.15); pointer-events: none; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, .3)); }
+.invite-save { margin-left: 8px; }
 .invite-friends { display: flex; justify-content: center; gap: 6px; margin-top: 6px; }
 .invite-friend { position: relative; width: 31%; padding: 0; border: 0; background: none; cursor: pointer; }
 .friend-img { width: 100%; height: auto; transition: transform .25s; }
@@ -2069,44 +2083,20 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .friend-thanks { position: absolute; left: 50%; top: -6px; transform: translateX(-50%); padding: 2px 8px; border-radius: 10px; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .2); font-weight: 900; font-size: .8rem; color: #e2473f; opacity: 0; transition: opacity .25s; white-space: nowrap; }
 .invite-friend.got .friend-thanks { opacity: 1; }
 .invite-friend:not(.got) { animation: ore-bob 1.6s ease-in-out infinite; }
-/* 第 92 格：派對布置 */
+/* 第 92 格：派對布置（裝飾 5 個排成一排） */
 .party-slot { position: absolute; width: 10%; aspect-ratio: 1; padding: 0; border: 0; border-radius: 50%; transform: translate(-50%, -88%); cursor: pointer;
   background: radial-gradient(circle, rgba(255, 250, 200, .95) 0, rgba(255, 230, 120, .55) 45%, rgba(255, 230, 120, 0) 70%); animation: ore-bob 1.2s ease-in-out infinite; }
 .party-slot.filled { background: none; animation: none; width: 11%; }
 .party-slot img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(40, 30, 10, .35)); }
 .party-slot.deco-balloons { width: 12%; }
-.deco-src { cursor: pointer; }
-.deco-src img { width: 44px; height: 44px; object-fit: contain; }
+.deco-tray { flex-wrap: nowrap; gap: 6px; }
+.deco-src { cursor: pointer; padding: 4px 5px; border-radius: 12px; min-width: 0; flex: 1 1 0; max-width: 64px; }
+.deco-src img { width: 36px; height: 36px; object-fit: contain; }
+.deco-src small { font-size: .68rem; white-space: nowrap; }
 .deco-src.on { border-color: #ff9c3a; background: #fff1d6; box-shadow: 0 0 0 3px rgba(255, 156, 58, .35); }
 @media (prefers-reduced-motion: reduce) { .meadow-img, .invite-friend, .party-slot, .wood-elf img { animation: none; } .meadow-item { transition: none; } }
-/* 修正：.scene-art img 會把卡片裡的圖撐滿，貼紙、卡片、動物要維持自己的大小 */
-.scene-art .card-sticker { width: 22%; height: auto; object-fit: contain; }
+/* .scene-art img 預設撐滿畫面；視窗裡的貼紙、卡片、動物、畫布維持自己的大小 */
+.scene-art .card-sticker { width: 18%; height: auto; object-fit: contain; }
 .scene-art .invite-card-img, .scene-art .friend-img { height: auto; object-fit: contain; }
-.scene-art .meadow-img, .scene-art .party-slot img { object-fit: contain; }
-/* 派對裝飾 5 個排成一排 */
-.deco-tray { flex-wrap: nowrap; gap: 6px; }
-.deco-src { padding: 4px 5px; border-radius: 12px; min-width: 0; flex: 1 1 0; max-width: 64px; }
-.deco-src img { width: 36px; height: 36px; }
-.deco-src small { font-size: .68rem; white-space: nowrap; }
-/* 2026-11-09 家長調整：邀請卡大一點、貼紙小一點，貼得下更多花瓣和樹葉 */
-.invite-card { width: min(84vw, 320px); }
-.scene-art .card-sticker { width: 13%; }
-.invite-art { padding: 4px 0; }
-.invite-area { left: 17%; right: 17%; top: 17%; bottom: 17%; }   /* 對齊卡片白色內框，可貼的範圍更大 */
-/* 2026-11-09 邀請卡：貼紙 18%、最多 20 張、白色內框可以用粉彩畫圖、做好後可下載 */
-.scene-art .card-sticker { width: 18%; }
-.invite-draw { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; border-radius: 6px; }
 .scene-art .invite-draw { width: 100%; height: 100%; }
-.invite-card.small .invite-draw { pointer-events: none; }
-.pen-tray { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 6px; }
-.pen-color { width: 32px; height: 32px; border-radius: 50%; border: 3px solid #fff; background: var(--pen); box-shadow: 0 0 0 2px #e6cf9a; padding: 0; cursor: pointer; font-size: 1rem; line-height: 1; }
-.pen-color.on { box-shadow: 0 0 0 3px #e08a2c; transform: scale(1.12); }
-.pen-eraser { background: #fff; }
-.sticker-tray { align-items: center; }
-.pen-actions { display: grid; gap: 6px; }
-.pen-act { padding: 6px 10px; border-radius: 12px; border: 2px solid #f1d58f; background: #fffdf6; color: #8a6a3a; font-weight: 800; font-size: .8rem; cursor: pointer; }
-.pen-act:disabled { opacity: .4; cursor: default; }
-.sticker-src.full { opacity: .45; }
-.sticker-src.shake { animation: sticker-shake .35s; }
-@keyframes sticker-shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-.invite-save { margin-left: 8px; }
+.scene-art .meadow-img, .scene-art .party-slot img { object-fit: contain; }
