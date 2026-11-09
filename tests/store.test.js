@@ -1670,19 +1670,19 @@ test('機會卡擴充：小寶箱 +1～3 星、撿到溜冰鞋', () => {
   assert.deepEqual(r.event.items, { skates: 1 });
 });
 
-test('神秘寶箱（次數用完轉換）：每天最多 2 個、隔天才出現在前方 2～8 格、經過就撿到、要黃金鑰匙才能開', () => {
+test('神秘寶箱（次數用完轉換）：還沒撿走的最多 2 個、隔天才出現在前方還沒走到的格子（不同格）、經過就撿到、要黃金鑰匙才能開', () => {
   const { store, a, push, setDate } = p3Store();
   const p = store.getPlayer(a.id);
   store.data.adventure.minigames.push({ id: 'm0', childId: a.id, date: store.today(), status: 'done', caught: 0, stars: 0, ts: 1 });
   p.bag.d12 = 3;
   for (const from of [4, 14, 21]) { store.setPlayerTile(a.id, from); push(face(3, 12)); store.rollDice(a.id, 'd12'); }   // 第 7、17、24 格小遊戲
-  assert.equal(store.data.adventure.mapChests.length, 2, '每天最多 2 個');
+  assert.equal(store.data.adventure.mapChests.length, 2, '還沒撿走的最多 2 個');
   assert.equal(store.placeMapChests(a.id), 0, '當天不出現');
   setDate('2026-11-07T10:00:00');
   store.setPlayerTile(a.id, 3);
-  store.random = () => 0;                                     // 前方 2 格
+  store.random = () => 0;                                     // 還沒走到的格子中最前面的空格
   assert.equal(store.placeMapChests(a.id), 2);
-  assert.deepEqual(store.getMapChests(a.id).map(c => c.n), [5, 5]);
+  assert.deepEqual(store.getMapChests(a.id).map(c => c.n), [5, 6], '兩個寶箱不放同一格');
   assert.equal(store.takeChestHint(a.id), 2, '進地圖提示一次');
   assert.equal(store.takeChestHint(a.id), 0);
   const it = store.addItem({ kind: 'bonus', name: 'x', points: 10 }); store.recordItem(a.id, it.id); store.settleToday(a.id);
@@ -1750,8 +1750,8 @@ test('寶物磁鐵：吸前後 5 格內的神秘寶箱或一般寶箱格；吸�
   p.bag.magnet = 3; p.bag.d6 = 1;
   store._addMapChest(a.id, 'milestone');
   store.setPlayerTile(a.id, 8);
-  store.random = () => 0.2;                                   // 前方 3 格 → 第 11 格
   store.placeMapChests(a.id);
+  Object.assign(store.data.adventure.mapChests[0], { n: 11, tileId: 'gold-01-011' });   // 測試用：放在第 11 格（磁鐵範圍內）
   const targets = store.getMagnetTargets(a.id);
   assert.deepEqual(targets.map(t => [t.type, t.n]), [['tile', 5], ['mystery', 11], ['tile', 12]]);
   const r1 = store.useMagnet(a.id, 'mystery', targets[1].id);
@@ -2555,4 +2555,24 @@ test('成就「松果躲貓貓」「怎麼都是松鼠」：落葉找松果單�
   assert.ok(got.includes('pine10') && got.includes('squirrel5'), '單局 10 顆、5 隻：兩個成就');
   const ach = G.ACHIEVEMENTS.filter(x => x.id === 'pine10' || x.id === 'squirrel5').map(x => [x.cat, x.name]);
   assert.deepEqual(ach, [['collect', '松果躲貓貓'], ['collect', '怎麼都是松鼠']]);
+});
+
+test('神秘寶箱（次數用完轉換）：跨天也最多留 2 個沒撿的，撿走才能再轉；位置在這座島前方還沒走到的格子隨機（不限 2～8 格）', () => {
+  const { store, a, setDate } = p3Store();
+  for (let i = 0; i < 2; i++) assert.ok(store._addMapChest(a.id, 'overflow'));
+  setDate('2026-11-07T10:00:00');
+  assert.equal(store._addMapChest(a.id, 'overflow'), null, '隔天：還有 2 個沒撿，不再轉');
+  assert.ok(store._addMapChest(a.id, 'milestone'), '里程碑寶箱不受這個限制');
+  store.setPlayerTile(a.id, 10);
+  store.random = () => 0.999;                                  // 最遠：終點前一格
+  store.placeMapChests(a.id);
+  const ns = store.getMapChests(a.id).map(c => c.n);
+  const last = store.getBoard(a.id).tiles.length - 2;
+  assert.ok(ns.every(n => n >= 12 && n <= last), '都在前方還沒走到的格子、不放終點');
+  assert.equal(new Set(ns).size, ns.length, '不同格');
+  assert.ok(ns.includes(last) && ns.some(n => n > 18), '可能放得很遠（不限前方 2～8 格）');
+  // 撿走一個 overflow 寶箱後才能再轉
+  const one = store.data.adventure.mapChests.find(c => c.source === 'overflow');
+  store._collectAt(a.id, [one.n]);
+  assert.ok(store._addMapChest(a.id, 'overflow'), '撿走一個後可以再轉');
 });

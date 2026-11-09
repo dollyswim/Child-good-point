@@ -356,12 +356,13 @@
   };
 
   // ---------- 地圖上的神秘寶箱 ----------
+  // 2026-11-09 家長調整：次數用完轉換的神秘寶箱「總共只留 2 個」（還沒撿走的，含等待出現與已在地圖上），撿走一個才能再轉
   var OVERFLOW_CHEST_DAILY = 2, MILESTONE_KEY = 500, MILESTONE_CHEST = 1000, MAGNET_RANGE = 5;
-  /** 新增一個還沒出現的神秘寶箱；source：overflow（次數用完轉換，每天最多 2 個）、milestone、island */
+  /** 新增一個還沒出現的神秘寶箱；source：overflow（次數用完轉換，還沒撿走的最多 2 個）、milestone、island */
   Store.prototype._addMapChest = function (childId, source) {
     var today = this.today();
     if (source === 'overflow' && this.data.adventure.mapChests.filter(function (x) {
-      return x.childId === childId && x.source === 'overflow' && x.createdDate === today;
+      return x.childId === childId && x.source === 'overflow';
     }).length >= OVERFLOW_CHEST_DAILY) return null;
     var c = { id: uid(), childId: childId, island: this.getPlayer(childId).island, source: source, createdDate: today, tileId: '', n: 0, hinted: false, ts: this.now().getTime() };
     this.data.adventure.mapChests.push(c);
@@ -369,7 +370,8 @@
     return c;
   };
   /**
-   * 讓等待中的神秘寶箱出現在角色前方 2～8 格（最遠第 29 格）。
+   * 讓等待中的神秘寶箱出現在這座島上、角色還沒走到的格子：前方第 2 格到終點前一格之間隨機一格（2026-11-09 家長調整，原本前方 2～8 格），
+   * 兩個寶箱不放同一格。
    * 次數用完轉換的寶箱要等到之後的日子才出現；里程碑的下次進入地圖就出現。
    * @returns 這次新出現的寶箱數
    */
@@ -381,7 +383,11 @@
       if (c.childId !== childId || c.tileId || c.island !== p.island) return;
       if (c.source === 'overflow' && !(today > c.createdDate)) return;
       if (p.pos + 2 > last) return;                          // 前方沒有位置：等下一區開放
-      var n = Math.min(last, p.pos + rint(self.random, 2, 8));
+      var used = self.data.adventure.mapChests.filter(function (x) { return x.childId === childId && x.tileId && x.island === p.island; }).map(function (x) { return x.n; });
+      var free = [];
+      for (var t = p.pos + 2; t <= last; t++) if (used.indexOf(t) < 0) free.push(t);
+      if (!free.length) return;
+      var n = free[rint(self.random, 0, free.length - 1)];
       c.n = n; c.tileId = tiles[n].id; c.hinted = false;
       placed++;
     });
@@ -711,12 +717,12 @@
         ev.minigame = { id: mg.id, bonus: true };
         ev.text = '🎮 再來 3 次：額外的小遊戲！' + (leaf ? '記住松果的位置再翻出來。' : '點星星收集能量星星。');
       } else {
-        // 今天已玩過：每天最多 1 次 → 這次機會轉成神秘寶箱（下次冒險時出現在前方；每天最多 2 個）
+        // 今天已玩過：每天最多 1 次 → 這次機會轉成神秘寶箱（下次冒險時出現在前方還沒走到的格子；還沒撿走的最多 2 個）
         ev.minigameOverflow = true;
         if (this._addMapChest(childId, 'overflow')) {
           ev.overflowChest = true;
-          ev.text = '今天已經玩過小遊戲了（每天 1 次）。\n這次的機會變成了一個 🎁 神秘寶箱，下次冒險時會出現在你前方！';
-        } else ev.text = '今天已經玩過小遊戲了（每天 1 次），明天再來挑戰！';
+          ev.text = '今天已經玩過小遊戲了（每天 1 次）。\n這次的機會變成了一個 🎁 神秘寶箱，下次冒險時會藏在你前方還沒走到的地方！';
+        } else ev.text = '今天已經玩過小遊戲了（每天 1 次），明天再來挑戰！\n（還有 2 個 🎁 神秘寶箱等你去撿，撿到後才會再變出新的）';
       }
       if (ev.minigame) ev.title = leaf ? '🎮 小遊戲：落葉找松果' : '🎮 小遊戲：抓住星星';
     } else if (tile.type === 'boundary') {

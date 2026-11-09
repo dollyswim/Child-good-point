@@ -331,7 +331,7 @@
       dayEnds: (Array.isArray(adv.dayEnds) ? adv.dayEnds : []).filter(function (x) {
         return x && x.id && childIdSet.has(String(x.childId)) && /^\d{4}-\d{2}-\d{2}$/.test(x.date);
       }).map(function (x) { return { id: String(x.id), childId: String(x.childId), date: x.date, ts: toInt(x.ts, Date.now()) }; }),
-      // 地圖上的神秘寶箱：tileId 為空＝還沒出現（下次冒險時出現在角色前方 2～8 格）
+      // 地圖上的神秘寶箱：tileId 為空＝還沒出現（下次冒險時出現在角色前方還沒走到的格子）
       mapChests: (Array.isArray(adv.mapChests) ? adv.mapChests : []).filter(function (x) {
         return x && x.id && childIdSet.has(String(x.childId));
       }).map(function (x) {
