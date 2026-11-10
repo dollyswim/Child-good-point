@@ -1,5 +1,6 @@
 /* 全站字體：jf open 粉圓 2.0（SIL OFL 1.1，授權見 fonts/LICENSE-jf-openhuninn.txt）；只有一個字重，粗體由瀏覽器加粗 */
-@font-face { font-family: "jf-openhuninn"; src: url("../fonts/jf-openhuninn-2.0.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "jf-openhuninn"; src: url("../fonts/jf-openhuninn-app.woff2") format("woff2"); font-display: swap; }   /* App 常用字小包（約 230KB，tools/font_subset.py 產生） */
+@font-face { font-family: "jf-openhuninn-full"; src: url("../fonts/jf-openhuninn-2.0.woff2") format("woff2"); font-display: swap; unicode-range: U+2E80-9FFF, U+F900-FAFF, U+FE30-FE4F, U+20000-2FA1F; }   /* 完整版：只負責中文字，遇到小包沒有的字（例如罕用字名字）才會下載；表情符號不會觸發 */
 button, input, select, textarea { font-family: inherit; }
 :root {
   --bg: #fff8ef;
@@ -2159,4 +2160,4 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .tour-dots { display: flex; gap: 6px; margin-top: 4px; } .tour-dots i { width: 8px; height: 8px; border-radius: 50%; background: #ecdcc0; } .tour-dots i.on { background: #ff9c3a; width: 20px; border-radius: 4px; }
 .tour-actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; width: 100%; margin-top: 4px; }
 /* 2026-11-10 第一次開啟加速：粉圓體（2MB）等頁面載完才下載；下載過的裝置一開始就套用（js/app.js 加 html.font-on） */
-html.font-on body { font-family: "jf-openhuninn", "Arial Rounded MT Bold", "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+html.font-on body { font-family: "jf-openhuninn", "jf-openhuninn-full", "Arial Rounded MT Bold", "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }

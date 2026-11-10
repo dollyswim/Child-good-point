@@ -786,18 +786,33 @@ async function main() {
     await q.waitForSelector('#modal[open] input[name=name]');   // 直接帶到新增孩子
     await q.fill('#modal input[name=name]', '小新');
     await q.click('#modal-form button[type=submit]');
-    await q.waitForSelector('[data-testid=onboard]');
-    assert.equal(await q.locator('#tour').count(), 0);
-    assert.match(await q.locator('[data-testid=onboard]').innerText(), /新手任務[\s\S]*1 \/ 4[\s\S]*記錄第一筆加分[\s\S]*去做/);
+    // 新增孩子後：引導設定加扣分（列出預設規則）
+    await q.waitForSelector('#confirm[open] [data-testid=rules-guide]');
+    assert.match(await q.locator('[data-testid=rules-guide]').innerText(), /下一步：設定加分扣分[\s\S]*加分 \d+ 條、每日任務 \d+ 條、扣分 \d+ 條[\s\S]*去設定加扣分/);
+    if (SHOT_DIR && kind === 'Android') await q.locator('[data-testid=rules-guide]').screenshot({ path: path.join(SHOT_DIR, 'rules-guide.png') });
+    if (kind === 'iPhone') {
+      await q.click('[data-testid=rules-guide] [data-no]');   // 先用預設的 → 首頁新手任務第 2 步是設定加扣分
+      await q.waitForSelector('[data-testid=onboard]');
+      assert.equal(await q.locator('#tour').count(), 0);
+      assert.match(await q.locator('[data-testid=onboard]').innerText(), /新手任務[\s\S]*1 \/ 5[\s\S]*設定加分扣分規則[\s\S]*去做/);
+      await q.click('[data-testid=onboard] a.btn');
+    } else {
+      await q.click('[data-testid=rules-guide] [data-yes]');
+    }
+    await passPin(q);   // 第一次進設定：設家長密碼
+    await q.waitForSelector('.tabs .tab.active >> text=加分');
+    await q.goto(url + '#home'); await q.waitForSelector('[data-testid=onboard]');
+    assert.match(await q.locator('[data-testid=onboard]').innerText(), /2 \/ 5[\s\S]*記錄第一筆加分[\s\S]*去做/);
     if (SHOT_DIR && kind === 'Android') await q.locator('[data-testid=onboard]').screenshot({ path: path.join(SHOT_DIR, 'onboard-steps.png') });
     await q.reload(); await q.waitForSelector('[data-testid=onboard]');
     assert.equal(await q.locator('#tour').count(), 0, '看過導覽後不再自動出現');
-    // 記一筆加分 → 2 / 4
+    assert.equal(await q.locator('#confirm[open]').count(), 0, '看過加扣分設定後不再跳引導');
+    // 記一筆加分 → 3 / 5
     await q.click('[data-testid=onboard] a.btn');
     await q.waitForSelector('.score-btn.bonus');
     await q.locator('.score-btn.bonus').first().click();
     await q.goto(url + '#home'); await q.waitForSelector('[data-testid=onboard]');
-    assert.match(await q.locator('[data-testid=onboard]').innerText(), /2 \/ 4[\s\S]*進入今日冒險/);
+    assert.match(await q.locator('[data-testid=onboard]').innerText(), /3 \/ 5[\s\S]*進入今日冒險/);
     // 再看一次玩法介紹；不用提示 → 收起
     await q.click('[data-action=tour-replay]');
     await q.waitForSelector('#tour[open]');
@@ -807,7 +822,7 @@ async function main() {
     await q.waitForFunction(() => !document.querySelector('[data-testid=onboard]'));
     await c.close();
   }
-  console.log('✔ 新手上手：第一次打開跳導覽（iPhone／Android 各自的加到主畫面教學）、帶到新增孩子、首頁新手任務依進度打勾、可重看、可收起');
+  console.log('✔ 新手上手：第一次打開跳導覽（iPhone／Android 各自的加到主畫面教學）、帶到新增孩子、新增後引導設定加扣分（設家長密碼）、首頁新手任務 5 步依進度打勾、可重看、可收起');
 
   // ---------- 一般冒險事件視窗（2026-11-09）：卡片式、單一視窗整合多個事件；內容沿用事件原文 ----------
   for (const vp of [{ width: 360, height: 800 }, { width: 360, height: 560 }, { width: 1280, height: 800 }]) {

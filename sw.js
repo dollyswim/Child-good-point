@@ -1,12 +1,12 @@
 /* 親子集點 Service Worker：離線可用。資料存在 localStorage，不受快取影響。 */
-var CACHE = 'cgp-shell-v143';
+var CACHE = 'cgp-shell-v145';
 // 2026-11-09：其他島（木島以後）的大廳插圖、木島劇情圖不預先下載，第一次用到才下載並存進圖片快取（金島小遊戲用的落葉找松果圖保留）
 var SHELL = [
   'images/challenge_scroll.webp', 'images/challenge_medal.webp', 'images/challenge_done.webp',
   'images/plaque/home2.webp', 'images/plaque/child.webp', 'images/plaque/challenge.webp', 'images/plaque/shop.webp', 'images/plaque/report.webp', 'images/plaque/lobby.webp',
   'images/adv_map.webp',
   'images/nav/nav_wood_bar.webp', 'images/nav/nav_home2.webp', 'images/nav/nav_child2.webp', 'images/nav/nav_challenge2.webp', 'images/nav/nav_rewards2.webp', 'images/nav/nav_records2.webp',
-  'fonts/jf-openhuninn-2.0.woff2',
+  'fonts/jf-openhuninn-app.woff2', 'fonts/jf-openhuninn-2.0.woff2',
   'images/badges/badge_advStart.webp', 'images/badges/badge_catch10.webp', 'images/badges/badge_catch5.webp', 'images/badges/badge_chest1.webp', 'images/badges/badge_chests10.webp', 'images/badges/badge_earn1000.webp', 'images/badges/badge_earn10000.webp', 'images/badges/badge_earn2000.webp', 'images/badges/badge_earn3000.webp', 'images/badges/badge_earn4000.webp', 'images/badges/badge_earn5000.webp', 'images/badges/badge_earn6000.webp', 'images/badges/badge_earn7000.webp', 'images/badges/badge_earn8000.webp', 'images/badges/badge_earn9000.webp', 'images/badges/badge_goldClear1.webp', 'images/badges/badge_goldHero.webp', 'images/badges/badge_locked.webp', 'images/badges/badge_mystery1.webp', 'images/badges/badge_pine10.webp', 'images/badges/badge_reachR2.webp', 'images/badges/badge_reachR3.webp', 'images/badges/badge_reachR4.webp', 'images/badges/badge_special1.webp', 'images/badges/badge_special5.webp', 'images/badges/badge_squirrel5.webp', 'images/badges/badge_streak7.webp', 'images/badges/badge_woodHero.webp',
   './', 'index.html', 'css/style.css', 'js/store.js', 'js/rules-csv.js', 'js/report.js', 'js/board-gold.js', 'js/board-gold-02.js', 'js/board-gold-03.js', 'js/board-gold-04.js', 'js/game.js', 'js/art.js', 'js/app.js',
   'manifest.webmanifest', 'images/gold-island.webp', 'images/gold/region01.webp', 'images/gold/region02.webp', 'images/gold/region03.webp', 'images/gold/region04.webp', 'images/gold/tower_off.webp', 'images/gold/tower_on.webp', 'images/gold/technician.webp', 'images/gold/stone.webp', 'images/gold/ore.webp', 'images/gold/minecart.webp', 'images/gold/rail_before.webp', 'images/gold/rail_after.webp', 'images/wood/leaf_bg.webp', 'images/wood/leaf_pile.webp', 'images/wood/leaf_pinecone.webp', 'images/wood/leaf_squirrel.webp', 'images/wood/leaf_empty.webp', 'images/mascot.webp', 'images/float-castle.webp', 'images/chest.webp',
@@ -28,7 +28,9 @@ self.addEventListener('install', function (e) {
 
 /** 背景下載離線用的圖片與字型：已經有的跳過，一次一個，不搶網路 */
 function precacheImages() {
-  var imgs = SHELL.filter(isImage);
+  // 先下載畫面常用的小圖（角色、功能列、標題、道具…），金島大地圖與完整字型最後
+  function rank(u) { return /fonts\/jf-openhuninn-2\.0/.test(u) ? 3 : /gold\/region|gold-island|minigame\/bg/.test(u) ? 2 : /characters|nav\/|plaque|items|badges|tiles|mascot|float-castle|jf-openhuninn-app/.test(u) ? 0 : 1; }
+  var imgs = SHELL.filter(isImage).sort(function (a, b) { return rank(a) - rank(b); });
   return caches.open(IMG_CACHE).then(function (ic) {
     return imgs.reduce(function (p, u) {
       return p.then(function () {

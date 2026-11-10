@@ -97,7 +97,7 @@
   function safeColor(v) { return /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(String(v || '')) ? String(v) : '#ffd166'; }
   function emptyData() {
     return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null, achievements: {}, carry: {}, backup: { lastExportAt: 0, since: 0, snoozeUntil: '' },
-      settings: { limits: {} }, flags: { tourSeen: false, tipsDone: false },   // 新安裝：要看新手導覽與新手任務
+      settings: { limits: {} }, flags: { tourSeen: false, tipsDone: false, rulesSeen: false },   // 新安裝：要看新手導覽與新手任務
       milestones: {}, adventure: { settlements: [], ledger: [], rolls: [], minigames: [], bonusQuota: [], mapChests: [], dayEnds: [], blessings: [], itemLog: [], limitResets: [], players: {} } };
   }
 
@@ -219,6 +219,7 @@
     // 2026-11-09：新手導覽、首頁新手步驟。舊存檔（已經有孩子）視為已經會用，不再顯示
     d.flags.tourSeen = 'tourSeen' in oldFlags ? !!oldFlags.tourSeen : d.children.length > 0;
     d.flags.tipsDone = 'tipsDone' in oldFlags ? !!oldFlags.tipsDone : d.children.length > 0;
+    d.flags.rulesSeen = 'rulesSeen' in oldFlags ? !!oldFlags.rulesSeen : d.children.length > 0;   // 看過加扣分設定
     if (!d.flags.starRewardSeeded) {
       d.rewards.push({ id: uid(), name: STAR_REWARD_DEFAULT.name, cost: STAR_REWARD_DEFAULT.cost, currency: 'stars', createdAt: Date.now() });
       d.flags.starRewardSeeded = true;
@@ -669,7 +670,7 @@
   var STORAGE_WARN_CHARS = 3500000;
   /** 介面用的旗標（新手導覽看過了、新手步驟收起來）；只接受 true／false */
   Store.prototype.setFlag = function (name, value) {
-    if (['tourSeen', 'tipsDone'].indexOf(name) < 0) throw new Error('不明的旗標');
+    if (['tourSeen', 'tipsDone', 'rulesSeen'].indexOf(name) < 0) throw new Error('不明的旗標');
     this.data.flags[name] = !!value;
     this.save();
   };

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.10-133';
+  var APP_VERSION = '2026.11.10-135';
   var store;
   try {
     store = new CGP.Store();
@@ -230,6 +230,7 @@
         : r.name === 'shop' ? renderShop(child) : r.name === 'map' ? renderMap(child) : renderAdventure(child);
     } else if (r.name === 'settings') {
       html = store.isParentUnlocked() && ui.pinMode !== 'reset' ? renderSettings(r.arg || 'children') : renderPinGate();
+      if (store.isParentUnlocked() && /^(bonus|penalty|task)$/.test(r.arg || '') && !store.data.flags.rulesSeen) store.setFlag('rulesSeen', true);
     } else if (r.name === 'report') {
       html = renderReport();
     } else {
@@ -414,6 +415,7 @@
     var c = currentChild(), ad = store.data.adventure;
     var steps = [
       { done: true, text: '新增孩子', how: '' },
+      { done: !!store.data.flags.rulesSeen, text: '設定加分扣分規則', how: '已先準備好常用規則，照你家的習慣改一改（第一次會請你設家長密碼）', href: '#rules-bonus' },
       { done: store.data.records.some(function (r) { return r.type === 'bonus' || r.type === 'task'; }), text: '記錄第一筆加分',
         how: '到「小孩」頁，點一個加分項目（例如「主動幫忙」）', href: '#child-' + c.id },
       { done: ad.settlements.length > 0, text: '進入今日冒險', how: '今天得分大於 0 後，在「小孩」頁按「進入今日冒險」，點數會換成能量星星', href: '#child-' + c.id },
@@ -430,6 +432,20 @@
           (next && x.href ? '<a class="btn small primary" href="' + x.href + '">去做</a>' : '') + '</li>';
       }).join('') + '</ol>' +
       '<button type="button" class="onboard-replay" data-action="tour-replay">📖 再看一次玩法介紹</button></section>';
+  }
+  /** 新增孩子後：引導家長把預設規則改成自己家的（先列出目前有哪些規則） */
+  function rulesGuide() {
+    if (confirmEl.open || modal.open) return;
+    var items = store.data.items, cnt = function (k) { return items.filter(function (i) { return i.kind === k; }).length; };
+    var sample = items.filter(function (i) { return i.kind !== 'penalty'; }).slice(0, 3).map(function (i) { return i.name; }).join('、');
+    confirmEl.innerHTML = '<div class="confirm-box rules-guide" data-testid="rules-guide"><h2>📋 下一步：設定加分扣分</h2>' +
+      '<p class="confirm-msg">已經先幫你準備了常用規則：<br><b>加分 ' + cnt('bonus') + ' 條、每日任務 ' + cnt('task') + ' 條、扣分 ' + cnt('penalty') + ' 條</b>' + (sample ? '<br><small>例如：' + h(sample) + '</small>' : '') +
+      '<br><br>照你家的習慣改一改（名稱、點數都能改），孩子會更有感！<br><small>第一次進設定會請你設 4 位數家長密碼。</small></p>' +
+      '<div class="modal-actions"><button type="button" class="btn" data-no>先用預設的</button><button type="button" class="btn primary" data-yes>去設定加扣分</button></div></div>';
+    confirmEl.querySelector('[data-no]').onclick = function () { confirmEl.close(); };
+    confirmEl.querySelector('[data-yes]').onclick = function () { confirmEl.close(); go('#rules-bonus'); };
+    confirmEl.oncancel = null;
+    if (typeof confirmEl.showModal === 'function') confirmEl.showModal(); else confirmEl.setAttribute('open', '');
   }
   /** 手機種類：決定「加到主畫面」的教學步驟；已經從主畫面打開就不顯示 */
   function installGuide() {
@@ -3336,6 +3352,7 @@
       if (child) store.updateChild(child.id, data);
       else store.addChild(data);
       toast(child ? '已更新' : '已新增 ' + String(data.name).trim());
+      if (!child && !store.data.flags.rulesSeen && !onboardOff()) setTimeout(rulesGuide, 350);   // 2026-11-10：新增孩子後引導設定加扣分
     });
   }
 

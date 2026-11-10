@@ -2671,7 +2671,8 @@ test('新手上手旗標：新安裝要看導覽；舊存檔（已有孩子）�
   const fresh = migrate({ children: [] });
   assert.equal(fresh.flags.tourSeen, false); assert.equal(fresh.flags.tipsDone, false);
   const old = migrate({ children: [{ id: 'c1', name: 'A' }], flags: { starRewardSeeded: true } });
-  assert.equal(old.flags.tourSeen, true, '舊存檔不跳導覽'); assert.equal(old.flags.tipsDone, true, '舊存檔不顯示新手任務');
+  assert.equal(old.flags.tourSeen, true, '舊存檔不跳導覽'); assert.equal(old.flags.tipsDone, true, '舊存檔不顯示新手任務'); assert.equal(old.flags.rulesSeen, true);
+  assert.equal(fresh.flags.rulesSeen, false);
   const kept = migrate({ children: [{ id: 'c1', name: 'A' }], flags: { starRewardSeeded: true, tourSeen: false, tipsDone: false } });
   assert.equal(kept.flags.tourSeen, false, '已存的旗標照舊保留');
   const { store } = tsStore();
