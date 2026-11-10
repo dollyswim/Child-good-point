@@ -24,7 +24,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: "jf-openhuninn", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
   font-size: 16px;
   line-height: 1.45;
   overflow-x: hidden;
@@ -378,7 +378,7 @@ h2 { font-size: 1.05rem; margin: 0 0 8px; }
 }
 body {
   background: var(--bg);
-  font-family: "jf-openhuninn", "Arial Rounded MT Bold", "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  font-family: "Arial Rounded MT Bold", "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
 }
 .app { background: linear-gradient(var(--sky-2) 0, var(--bg) 340px) no-repeat; }
 .app[data-view="settings"] { background: var(--bg); }
@@ -2158,3 +2158,5 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .tour-foot { color: var(--muted); font-size: .88rem; }
 .tour-dots { display: flex; gap: 6px; margin-top: 4px; } .tour-dots i { width: 8px; height: 8px; border-radius: 50%; background: #ecdcc0; } .tour-dots i.on { background: #ff9c3a; width: 20px; border-radius: 4px; }
 .tour-actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; width: 100%; margin-top: 4px; }
+/* 2026-11-10 第一次開啟加速：粉圓體（2MB）等頁面載完才下載；下載過的裝置一開始就套用（js/app.js 加 html.font-on） */
+html.font-on body { font-family: "jf-openhuninn", "Arial Rounded MT Bold", "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }

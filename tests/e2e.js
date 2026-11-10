@@ -2408,23 +2408,37 @@ async function main() {
   // ---------- 離線快取：圖片放在不跟版本走的快取，升版不重抓；離線時從快取開 ----------
   {
     const c = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'allow' });
+    await c.addInitScript(() => { window.__cgpPrecacheDelay = 300; });
     const q = await c.newPage();
-    await q.goto(url);
+    REQ_LOG.length = 0;
+    await q.goto(url, { waitUntil: 'domcontentloaded' });
+    await q.waitForSelector('#app .page');
+    assert.ok(!REQ_LOG.includes('/fonts/jf-openhuninn-2.0.woff2'), '第一次開啟：畫面出來前不下載 2MB 字型');
     await q.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 20000 });
+    await q.waitForFunction(() => document.documentElement.classList.contains('font-on'), null, { timeout: 20000 });   // 頁面載完後才套用粉圓體
     const swSrc = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
     const ver = swSrc.match(/var CACHE = '([^']+)'/)[1];
     const imgCount = (swSrc.split('];')[0].match(/'images\/[^']+'/g) || []).length;
     const cached = () => q.evaluate(async () => { const keys = await caches.keys(); const out = {}; for (const k of keys) out[k] = (await (await caches.open(k)).keys()).map((r) => new URL(r.url).pathname); return out; });
-    await q.waitForFunction(async () => (await caches.keys()).includes('cgp-img-v1'), null, { timeout: 20000 });
+    const shellImgs = (swSrc.split('];')[0].match(/'(images\/[^']+|fonts\/[^']+)'/g) || []).map((x) => '/' + x.slice(1, -1));
+    for (let t = 0; ; t++) {   // 頁面載完後背景下載完清單裡的圖與字型（waitForFunction 不會等 async 判斷，改用輪詢）
+      const missing = await q.evaluate(async (list) => { if (!(await caches.keys()).includes('cgp-img-v1')) return list.length; const have = new Set((await (await caches.open('cgp-img-v1')).keys()).map((r) => new URL(r.url).pathname)); return list.filter((u) => !have.has(u)).length; }, shellImgs);
+      if (!missing) break;
+      assert.ok(t < 180, '背景下載逾時，還差 ' + missing + ' 個');
+      await q.waitForTimeout(500);
+    }
     let cs = await cached();
     assert.ok(cs['cgp-img-v1'].includes('/images/gold/region01.webp'), '圖片放在圖片快取');
-    assert.ok(cs['cgp-img-v1'].length >= imgCount, '安裝時所有 SHELL 圖片都進快取');
+    assert.ok(cs['cgp-img-v1'].length >= imgCount, '背景下載後所有 SHELL 圖片都進快取');
     assert.ok(!cs[ver].some((u) => /\.webp$/.test(u)), '版本快取只放程式與頁面');
     // 模擬升版：只換 CACHE 名稱 → 程式重抓、圖片不重抓
     REQ_LOG.length = 0;
     SW_OVERRIDE = swSrc.replace(ver, 'cgp-shell-test-next');
     await q.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); await r.update(); });
-    await q.waitForFunction(async () => { const k = await caches.keys(); return k.length === 2 && k.includes('cgp-shell-test-next') && !!(await (await caches.open('cgp-shell-test-next')).match('js/app.js')); }, null, { timeout: 20000 });   // 新版安裝完成、舊版快取已刪
+    for (let t = 0; ; t++) {   // 新版安裝完成、舊版快取已刪
+      if (await q.evaluate(async () => { const k = await caches.keys(); return k.length === 2 && k.includes('cgp-shell-test-next') && !!(await (await caches.open('cgp-shell-test-next')).match('js/app.js')); })) break;
+      assert.ok(t < 60, '新版安裝逾時'); await q.waitForTimeout(500);
+    }
     await q.waitForTimeout(1500);   // 等伺服器把請求記完
     const imgReq = REQ_LOG.filter((p) => p.startsWith('/images/')).length;
     assert.ok(REQ_LOG.includes('/js/app.js'), '升版會重抓程式：' + REQ_LOG.join(' '));

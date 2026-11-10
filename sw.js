@@ -1,5 +1,5 @@
 /* 親子集點 Service Worker：離線可用。資料存在 localStorage，不受快取影響。 */
-var CACHE = 'cgp-shell-v142';
+var CACHE = 'cgp-shell-v143';
 // 2026-11-09：其他島（木島以後）的大廳插圖、木島劇情圖不預先下載，第一次用到才下載並存進圖片快取（金島小遊戲用的落葉找松果圖保留）
 var SHELL = [
   'images/challenge_scroll.webp', 'images/challenge_medal.webp', 'images/challenge_done.webp',
@@ -20,22 +20,25 @@ function isImage(url) { return /\.(webp|png|jpe?g|svg|gif|woff2)$/i.test(new URL
 
 self.addEventListener('install', function (e) {
   var core = SHELL.filter(function (u) { return !isImage(u); });
+  // 程式、樣式、頁面：每次升版都重新抓（很小）；cache: 'reload' 略過瀏覽器暫存，避免把舊版程式存進新快取
+  // 圖片與字型不在安裝時下載（2026-11-10：第一次開啟加速），改由頁面載完後送 'precache' 訊息在背景下載
+  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(core.map(function (u) { return new Request(u, { cache: 'reload' }); })); })
+    .then(function () { return self.skipWaiting(); }));
+});
+
+/** 背景下載離線用的圖片與字型：已經有的跳過，一次一個，不搶網路 */
+function precacheImages() {
   var imgs = SHELL.filter(isImage);
-  e.waitUntil(Promise.all([
-    // 程式、樣式、頁面：每次升版都重新抓（很小）；cache: 'reload' 略過瀏覽器暫存，避免把舊版程式存進新快取
-    caches.open(CACHE).then(function (c) { return c.addAll(core.map(function (u) { return new Request(u, { cache: 'reload' }); })); }),
-    // 圖片：圖片快取或舊版快取裡已有就沿用，沒有才下載
-    caches.open(IMG_CACHE).then(function (ic) {
-      return Promise.all(imgs.map(function (u) {
-        return ic.match(u, { ignoreSearch: true }).then(function (hit) {
-          if (hit) return null;
-          return caches.match(u, { ignoreSearch: true }).then(function (old) {
-            return old ? ic.put(u, old) : ic.add(u);
-          });
-        });
-      }));
-    })
-  ]).then(function () { return self.skipWaiting(); }));
+  return caches.open(IMG_CACHE).then(function (ic) {
+    return imgs.reduce(function (p, u) {
+      return p.then(function () {
+        return ic.match(u, { ignoreSearch: true }).then(function (hit) { return hit ? null : ic.add(u).catch(function () { /* 下次再試 */ }); });
+      });
+    }, Promise.resolve());
+  });
+}
+self.addEventListener('message', function (e) {
+  if (e.data === 'precache') e.waitUntil(precacheImages());
 });
 
 self.addEventListener('activate', function (e) {

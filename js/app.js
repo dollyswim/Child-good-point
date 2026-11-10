@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.09-132';
+  var APP_VERSION = '2026.11.10-133';
   var store;
   try {
     store = new CGP.Store();
@@ -3988,8 +3988,28 @@
       navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
         document.addEventListener('visibilitychange', function () { if (!document.hidden) reg.update().catch(function () {}); });
       }).catch(function () { /* 離線功能非必要 */ });
+      // 2026-11-10：離線用的圖片等頁面能用之後才在背景慢慢下載（第一次開啟不搶網路）
+      setTimeout(function () {
+        navigator.serviceWorker.ready.then(function (reg) { if (reg.active) reg.active.postMessage('precache'); }).catch(function () {});
+      }, window.__cgpPrecacheDelay != null ? window.__cgpPrecacheDelay : 6000);
     });
   }
+
+  // 2026-11-10 字型：下載過的裝置一開始就用粉圓體；第一次開啟等頁面載完才下載，不擋畫面
+  (function () {
+    var KEY = 'cgp-font-ok', root = document.documentElement;
+    function on() { root.classList.add('font-on'); }
+    var ok = false;
+    try { ok = localStorage.getItem(KEY) === '1'; } catch (e) { /* 不能存就每次載完再套用 */ }
+    if (ok) { on(); return; }
+    function load() {
+      if (!document.fonts || !document.fonts.load) { on(); return; }
+      document.fonts.load('1em "jf-openhuninn"', '親子集點').then(function (f) {
+        if (f && f.length) { on(); try { localStorage.setItem(KEY, '1'); } catch (e) { /* 忽略 */ } }
+      }).catch(function () { /* 字型下載失敗：維持系統字體 */ });
+    }
+    if (document.readyState === 'complete') setTimeout(load, 0); else window.addEventListener('load', function () { setTimeout(load, 300); });
+  })();
 
   // 測試與除錯用
   window.__cgpStore = store;
