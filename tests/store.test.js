@@ -1589,6 +1589,7 @@ test('飛行翼：前進 20 格、到第 30 格就停、落點觸發事件、不
 
 test('傳送門：傳送到本島指定格子（可跨第一、二區）、落點觸發事件；不能到終點、目前位置、起點', () => {
   const { store, a } = p3Store();
+  Object.keys(G.STORIES).forEach(k => { store.getPlayer(a.id).story[k] = true; });   // 劇情任務都完成（傳送門不能跳過未完成的任務格，另有專門測試）
   const bag = store.getPlayer(a.id).bag;
   bag.door = 2;
   store.setPlayerTile(a.id, 3);
@@ -2324,6 +2325,7 @@ test('家長重置今天的次數上限：骰子、小遊戲、前進道具、�
   const { store, a, setDate, storage } = p3Store();
   const p = store.getPlayer(a.id);
   Object.assign(p.bag, { d6: 10, skates: 8, door: 2, magicDice: 2, starCall: 2 });
+  Object.keys(G.STORIES).forEach(k => { store.getPlayer(a.id).story[k] = true; });   // 劇情任務都完成（傳送門不能跳過未完成的任務格，另有專門測試）
   store.random = () => 0;
   for (let i = 0; i < 3; i++) store.rollDice(a.id, 'd6');
   for (let i = 0; i < 5; i++) store.useSkates(a.id);
@@ -2717,4 +2719,22 @@ test('木島正式地圖：101 格、格子類型沿用金島、先不開放；�
     assert.ok(store.checkAchievements(a.id).some(x => x.id === 'woodClear1'), '解鎖成就「木島通關」');
     assert.ok(!store.getAchievements(a.id).find(x => x.id === 'goldClear1').done);
   } finally { delete G.BOARDS.wood; }
+});
+
+test('傳送門不能跳過還沒完成的任務格：最遠到前方第一個未完成的任務格；傳到那一格可以；任務完成後就能往前', () => {
+  const { store, a } = p3Store();
+  const p = store.getPlayer(a.id);
+  p.bag.door = 5; store.data.settings.limits.door = 5;
+  store.setPlayerTile(a.id, 2);
+  assert.deepEqual([store.doorLimit(a.id).tile, store.doorLimit(a.id).id], [5, 'ore'], '金島前方第一個未完成的任務在第 5 格');
+  assert.throws(() => store.useDoor(a.id, 20), /第 5 格的任務「礦工求助」還沒完成，傳送門最遠只能到第 5 格/);
+  assert.equal(p.bag.door, 5, '被擋下時不扣道具');
+  assert.equal(store.useDoor(a.id, 5).path[0], 5, '剛好傳到任務格可以（會觸發任務）');
+  store.completeStory(a.id, 'ore');
+  assert.throws(() => store.useDoor(a.id, 40), /第 30 格的任務「礦車轉轍」還沒完成/, '下一個限制是第 30 格');
+  assert.equal(store.useDoor(a.id, 20).path[0], 20, '任務格之前的格子都可以');
+  store.completeStory(a.id, 'rail'); store.completeStory(a.id, 'tower');
+  assert.equal(store.doorLimit(a.id), null, '任務都完成：沒有限制');
+  assert.equal(store.useDoor(a.id, 95).path[0], 95);
+  assert.equal(store.useDoor(a.id, 10).path[0], 10, '往回傳送不受限制');
 });

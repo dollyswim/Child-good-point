@@ -1155,6 +1155,18 @@
   /** 飛行翼：前進 20 格（第一區到第 30 格就停） */
   Store.prototype.useWings = function (childId) { return this._useMoveItem(childId, 'wings'); };
   /** 傳送門：傳送到本島已開放的指定格子（不含起點、目前位置與最後一格），落點觸發事件 */
+  /**
+   * 傳送門不能跳過還沒完成的任務格（2026-11-12 家長決定）：
+   * @returns 前方第一個還沒完成的劇情任務 { tile, name }（傳送門最遠只能到這一格；剛好傳到這格會觸發任務），沒有就回傳 null
+   */
+  Store.prototype.doorLimit = function (childId) {
+    var p = this.getPlayer(childId), end = this.getBoard(childId).tiles.length - 1, best = null;
+    storiesOf(p.island).forEach(function (id) {
+      var st = STORIES[id];
+      if (!p.story[id] && st.tile > p.pos && st.tile < end && (!best || st.tile < best.tile)) best = { id: id, tile: st.tile, name: st.name };
+    });
+    return best;
+  };
   Store.prototype.useDoor = function (childId, n) {
     this._requirePlay(childId);
     var p = this.getPlayer(childId);
@@ -1165,6 +1177,8 @@
     if (n === p.pos) throw new Error('你已經在這一格了');
     if (!(p.bag.door > 0)) throw new Error('背包裡沒有傳送門');
     if (!this.getItemLimitsToday(childId).door) throw new Error('傳送門每天只能用 ' + this.getLimits().door + ' 次，明天再用！');
+    var lim = this.doorLimit(childId);
+    if (lim && n > lim.tile) throw new Error('第 ' + lim.tile + ' 格的任務「' + lim.name + '」還沒完成，傳送門最遠只能到第 ' + lim.tile + ' 格');
     this._markDayStart(childId);
     var from = p.pos;
     p.bag.door--;

@@ -1,5 +1,5 @@
 /* 親子集點 Service Worker：離線可用。資料存在 localStorage，不受快取影響。 */
-var CACHE = 'cgp-shell-v149';
+var CACHE = 'cgp-shell-v150';
 // 2026-11-09：其他島（木島以後）的大廳插圖、木島劇情圖不預先下載，第一次用到才下載並存進圖片快取（金島小遊戲用的落葉找松果圖保留）
 var SHELL = [
   'images/challenge_scroll.webp', 'images/challenge_medal.webp', 'images/challenge_done.webp',

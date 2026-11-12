@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.12-139';
+  var APP_VERSION = '2026.11.12-140';
   var store;
   try {
     store = new CGP.Store();
@@ -1752,6 +1752,8 @@
     var n = Number(hit.dataset.n), p = store.getPlayer(child.id), end = store.getBoard(child.id).tiles.length - 1;
     if (n === p.pos) { toast('你已經在這一格了'); return; }
     if (n >= end) { toast('傳送門不能傳送到終點木門', 'neg'); return; }
+    var dl = store.doorLimit(child.id);   // 不能跳過還沒完成的任務格
+    if (dl && n > dl.tile) { toast('第 ' + dl.tile + ' 格的任務「' + dl.name + '」還沒完成，\n傳送門最遠只能到第 ' + dl.tile + ' 格', 'neg'); return; }
     var label = TILE_LABEL[hit.className.match(/mt-(\w+)/)[1]];
     confirmThen('用 🚪 傳送門傳送到第 ' + n + ' 格' + (label ? '（' + label + '）' : '') + '？', '傳送', false, function () {
       ui.doorPick = null;
