@@ -858,6 +858,7 @@
       var p = s.getPlayer(c);
       return !!(p.story.ore && p.story.rail && (p.story.tower || goldMax(p) >= 80)); } },   // 更新前就點亮能源塔的也算
     { id: 'reachR4', cat: 'adventure', icon: '👑', name: '抵達金冠城堡', desc: '走到第 81 格以後', check: function (s, c) { return goldMax(s.getPlayer(c)) >= 81; } },
+    { id: 'woodClear1', cat: 'adventure', icon: '🌳', name: '木島通關', desc: '走完木島 100 格，滑進精靈巨樹的神祕樹洞', check: function (s, c) { return (s.getPlayer(c).islandClears.wood || 0) >= 1; } },   // 2026-11-12 新增
     { id: 'woodHero', cat: 'adventure', icon: '🧚', name: '木島小英雄', desc: '幫森林小精靈準備森林派對：撿回松果、採花摘莓果、做邀請卡、布置派對', check: function (s, c) {
       var p = s.getPlayer(c);
       return storiesOf('wood').every(function (k) { return !!p.story[k]; }); } },

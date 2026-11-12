@@ -544,3 +544,10 @@ English (shared): First-person POV sliding down a wooden root slide inside a gia
 3. A sharp right turn, roots sweeping overhead, a few fireflies, a sense of speed without blur.
 4. Deeper and darker wood, small blue and cyan light motes appear on the walls, a faint blue glow far ahead.
 5. A bright soft blue-white light straight ahead fills the tunnel and tints the wood teal; nothing beyond the light is visible (no sea, beach or exit scenery).
+
+## 成就徽章：木島通關（2026-11-12，選做）
+
+成就「木島通關」（`woodClear1`）目前暫用木島第 4 區地圖的巨樹樹洞套上綠色外框（`images/badges/badge_woodClear1.webp`）。想換成專屬圖時用下面的提示詞，到貨後換新檔名並改 `js/app.js` 的 `BADGE_IMG` 與 `woodEnding()`。
+
+- 中文：圓形成就徽章，翡翠綠色圓潤粗外框（和「金島通關」徽章同一系列），圓框內是巨大古樹的樹洞入口，樹根纏繞成拱門，洞口上方掛著一串暖黃色小燈，洞裡透出淡淡的藍色神祕光芒，旁邊插一面紅色小旗；黏土玩具般的柔和質感、溫暖粉彩；純白背景，徽章置中，四周留約 8% 邊距；不要文字、不要數字。1024×1024。
+- English: Round achievement badge with a thick glossy emerald-green rim (same series as the existing "gold island clear" badge). Inside: the hollow entrance of a giant fairy-tale tree, roots forming an arch, a string of warm yellow lights above the opening, a soft mysterious blue glow from inside, a small red flag beside it. Soft clay-toy texture, warm pastels. Pure white background, centered, about 8% margin, no text, no numbers. 1024×1024.

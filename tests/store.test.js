@@ -1952,13 +1952,13 @@ test('金島通關：第一次＝神秘寶箱 ×1（免鑰匙）＋成就；之�
   });
 });
 
-test('成就：27 項三類（冒險 7、收集 7、生活 13）；達成後記錄日期、不重複、不會消失；兩位孩子各自計算', () => {
+test('成就：28 項三類（冒險 8、收集 7、生活 13）；達成後記錄日期、不重複、不會消失；兩位孩子各自計算', () => {
   const { store, a } = p3Store();
   const b2 = store.addChild({ name: 'B', startPoints: 6000 });
-  assert.equal(G.ACHIEVEMENTS.length, 27);
-  assert.deepEqual(['adventure', 'collect', 'life'].map(c => G.ACHIEVEMENTS.filter(x => x.cat === c).length), [7, 7, 13]);
-  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.id)).size, 27, '代號不重複');
-  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.name)).size, 27, '名稱不重複');
+  assert.equal(G.ACHIEVEMENTS.length, 28);
+  assert.deepEqual(['adventure', 'collect', 'life'].map(c => G.ACHIEVEMENTS.filter(x => x.cat === c).length), [8, 7, 13]);
+  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.id)).size, 28, '代號不重複');
+  assert.equal(new Set(G.ACHIEVEMENTS.map(x => x.name)).size, 28, '名稱不重複');
   assert.deepEqual([...new Set(G.ACHIEVEMENTS.map(x => x.cat))], ['adventure', 'collect', 'life']);
   assert.deepEqual(store.checkAchievements(b2.id).map(x => x.id), ['earn1000', 'earn2000', 'earn3000', 'earn4000', 'earn5000', 'earn6000'], '起始點數也算累計得分；每 1000 分一個；還沒進入冒險：沒有「冒險開始」');
   assert.deepEqual(store.checkAchievements(b2.id), [], '不重複');
@@ -2714,5 +2714,7 @@ test('木島正式地圖：101 格、格子類型沿用金島、先不開放；�
     assert.equal(store.getPlayer(a.id).islandClears.wood, 1, '水島用這個欄位判斷木島已通關');
     assert.equal(store.getPlayer(a.id).bag.giftMysteryChest, 1);
     assert.equal(store.getPlayer(a.id).goldClears, 0, '不影響金島通關次數');
+    assert.ok(store.checkAchievements(a.id).some(x => x.id === 'woodClear1'), '解鎖成就「木島通關」');
+    assert.ok(!store.getAchievements(a.id).find(x => x.id === 'goldClear1').done);
   } finally { delete G.BOARDS.wood; }
 });

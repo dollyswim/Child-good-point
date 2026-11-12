@@ -863,12 +863,14 @@ async function main() {
     assert.equal(await q.locator('#wood-ending img[src*=characters]').count(), 0, '第一人稱：不顯示角色');
     await q.waitForSelector('[data-testid=wood-end-card]', { timeout: 10000 });
     const card = await q.locator('[data-testid=wood-end-card]').innerText();
-    assert.match(card, /木島冒險完成！[\s\S]*究竟會通往什麼地方呢[\s\S]*神秘寶箱 ×1[\s\S]*敬請期待下一場冒險！/);
+    assert.match(card, /木島冒險完成！[\s\S]*究竟會通往什麼地方呢[\s\S]*神秘寶箱 ×1[\s\S]*成就「木島通關」[\s\S]*敬請期待下一場冒險！/);
+    assert.ok(await q.evaluate((cid) => window.__cgpStore.getAchievements(cid).find((a) => a.id === 'woodClear1').done, id), '解鎖成就「木島通關」');
     assert.doesNotMatch(card, /水島|珊瑚/, '不提前揭露水島');
-    assert.ok(await q.locator('[data-testid=wood-end-card] .we-crown img').evaluate((i) => /badge_woodHero\.webp$/.test(i.src) && i.complete && i.naturalWidth === 256), '完成畫面用木島小英雄徽章圖');
+    assert.ok(await q.locator('[data-testid=wood-end-card] .we-crown img').evaluate((i) => /badge_woodClear1\.webp$/.test(i.src) && i.complete && i.naturalWidth === 256), '完成畫面用木島通關徽章圖');
     if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'wood-end-card.png') });
     await q.click('[data-we-ok]');
     await q.waitForSelector('#wood-ending', { state: 'detached' });
+    assert.equal(await q.locator('#ach-theater').count(), 0, '木島通關已在卡片上顯示，不再跳成就劇場');
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.giftMysteryChest, id), 1, '神秘寶箱只發 1 個');
     // 第二次通關：可以略過，獎勵改成能量星星；通關次數 2
     await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 97); s.random = () => 0.99; s.save(); }, id);
@@ -1481,7 +1483,7 @@ async function main() {
     assert.equal(await q.locator('h1, .plaque').first().innerText().then((t) => /小孩/.test(t)), true, '頁面標題改為「小孩」');
     assert.match(await q.locator('.bottom-nav, nav').last().innerText(), /小孩/);
     assert.equal(await q.locator('[data-testid=achievements]').getAttribute('open'), null, '小孩頁面：全部成就預設收起');
-    assert.match(await q.locator('[data-testid=achievements] summary').innerText(), /全部成就[\s\S]*已解鎖 5 \/ 27/);   // 冒險開始、獲得 1000 分、抵達水晶礦谷、抵達齒輪工坊、抵達金冠城堡
+    assert.match(await q.locator('[data-testid=achievements] summary').innerText(), /全部成就[\s\S]*已解鎖 5 \/ 28/);   // 冒險開始、獲得 1000 分、抵達水晶礦谷、抵達齒輪工坊、抵達金冠城堡
     assert.match(await q.locator('[data-testid=achievements] summary').innerText(), /最近：/, '摺疊時顯示最近得到的一個成就');
     assert.ok(await q.evaluate(() => { const d = document.querySelector('[data-testid=achievements]').getBoundingClientRect(), n = document.querySelector('[data-testid=achievements]').nextElementSibling.getBoundingClientRect(); return n.top - d.bottom >= 12; }), '和最近紀錄之間留間距，不疊在一起');
     assert.ok(await q.evaluate(() => { const d = document.querySelector('[data-testid=achievements]'), r = [...document.querySelectorAll('.panel h2')].find((x) => /最近紀錄/.test(x.textContent)); return d.compareDocumentPosition(r) & Node.DOCUMENT_POSITION_FOLLOWING; }), '在最近紀錄上方');
@@ -1492,7 +1494,7 @@ async function main() {
     // 首頁：最近得到的成就（最近 3 個），點一列進到小孩頁面並展開
     await q.goto(url + '#home');
     await q.waitForSelector('[data-testid=home-achievements]');
-    assert.match(await q.locator('[data-testid=home-achievements]').innerText(), /最近得到的成就[\s\S]*小安[\s\S]*5 \/ 27/);
+    assert.match(await q.locator('[data-testid=home-achievements]').innerText(), /最近得到的成就[\s\S]*小安[\s\S]*5 \/ 28/);
     assert.equal(await q.locator('[data-testid=home-achievements] .ach-mini').count(), 3);
     assert.ok(await q.evaluate(() => { const a = document.querySelector('[data-testid=home-achievements]'), w = document.querySelector('.week-card'); return a.compareDocumentPosition(w) & Node.DOCUMENT_POSITION_FOLLOWING; }), '在本週進度上方');
     await q.screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'home-achievements.png') : path.join(require('os').tmpdir(), 'ha.png'), fullPage: true });
