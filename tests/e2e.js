@@ -865,6 +865,7 @@ async function main() {
     const card = await q.locator('[data-testid=wood-end-card]').innerText();
     assert.match(card, /木島冒險完成！[\s\S]*究竟會通往什麼地方呢[\s\S]*神秘寶箱 ×1[\s\S]*敬請期待下一場冒險！/);
     assert.doesNotMatch(card, /水島|珊瑚/, '不提前揭露水島');
+    assert.ok(await q.locator('[data-testid=wood-end-card] .we-crown img').evaluate((i) => /badge_woodHero\.webp$/.test(i.src) && i.complete && i.naturalWidth === 256), '完成畫面用木島小英雄徽章圖');
     if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'wood-end-card.png') });
     await q.click('[data-we-ok]');
     await q.waitForSelector('#wood-ending', { state: 'detached' });

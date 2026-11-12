@@ -2187,5 +2187,5 @@ html.font-on body { font-family: "jf-openhuninn", "jf-openhuninn-full", "Arial R
 .we-skip { position: absolute; top: calc(env(safe-area-inset-top) + 12px); right: 12px; padding: 8px 14px; border: 0; border-radius: 99px; background: rgba(255, 255, 255, .85); color: #5a3a1a; font: inherit; font-weight: 800; cursor: pointer; }
 .wood-end.done { background: radial-gradient(circle at 50% 45%, #f4fdff, #9fe3f5 55%, #3d9fc0 100%); padding: 16px; }
 .we-card { width: min(92vw, 360px); display: grid; justify-items: center; gap: 8px; padding: 22px 18px; border-radius: 28px; background: #fff; box-shadow: 0 14px 40px rgba(20, 80, 110, .35); text-align: center; }
-.we-crown { font-size: 3rem; line-height: 1; } .we-card h2 { margin: 0; color: #2f7a22; font-size: 1.5rem; }
+.we-crown { line-height: 0; } .we-crown img { display: block; width: 132px; height: 132px; object-fit: contain; }   /* 2026-11-12 家長決定：用「木島小英雄」徽章圖 */ .we-card h2 { margin: 0; color: #2f7a22; font-size: 1.5rem; }
 .we-q { margin: 0; font-weight: 800; color: #3d6680; line-height: 1.6; } .we-soon { margin: 0; font-weight: 900; color: #e0761c; }

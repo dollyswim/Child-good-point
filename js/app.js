@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.12-137';
+  var APP_VERSION = '2026.11.12-138';
   var store;
   try {
     store = new CGP.Store();
@@ -2181,7 +2181,7 @@
       var skipped = false, stepWait = null;
       function finish() {
         var first = ev.clear.first;
-        el.innerHTML = '<div class="we-card" data-testid="wood-end-card"><div class="we-crown" aria-hidden="true">🌳</div><h2>木島冒險完成！</h2>' +
+        el.innerHTML = '<div class="we-card" data-testid="wood-end-card"><div class="we-crown"><img src="images/badges/badge_woodHero.webp" alt="" aria-hidden="true" width="256" height="256" decoding="async"></div><h2>木島冒險完成！</h2>' +
           '<p class="we-q">「神祕的樹洞隧道，<br>究竟會通往什麼地方呢？」</p>' +
           '<ul class="clear-rewards">' + (first
             ? '<li><img src="images/items/mystery_chest.webp" alt="" width="48" height="48"> 神秘寶箱 ×1（不用鑰匙）</li>'
