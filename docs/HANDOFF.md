@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-09｜App 版本 `2026.11.12-136`｜Service Worker 快取 `cgp-shell-v146`｜`main` 最新：今日冒險已出發改用藏寶地圖圖示（2026-11-09 工作段落結束，已整理交接）
+> 最後更新：2026-11-09｜App 版本 `2026.11.12-137`｜Service Worker 快取 `cgp-shell-v147`｜`main` 最新：今日冒險已出發改用藏寶地圖圖示（2026-11-09 工作段落結束，已整理交接）
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -14,8 +14,8 @@
 - 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v146`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.12-136`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
-2. 測試：`npm test`（單元，約 1 秒，目前 141 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v147`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.12-137`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+2. 測試：`npm test`（單元，約 1 秒，目前 142 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
 
@@ -43,7 +43,7 @@
 | 木島全島配置草圖 → 正式背景 | `docs/art/CODEX_WOOD_ISLAND_BRIEF.md`、規劃 `docs/art/WOOD_ISLAND_PLAN.md` | 換島機制已完成；資料到貨用 `GAME.registerBoard('wood', board)` 開放（同金島：4 區、1080×5400、data → `tools/gen_board_region.py`） |
 
 ### 待辦（家長尚未指定先後）
-- **木島地圖**：家長決定週五請 Codex 重畫（Gemini 第 1 版退件，缺失清單 `docs/art/WOOD_MAP_REVIEW_2026-11-09.md` 可一起交給 Codex）。到貨後：疊圖驗收 → 依 `docs/art/WOOD_ISLAND_PLAN.md` 第 3 節設格子類型 → `GAME.registerBoard('wood', …)` 開放；木島大地圖背景**不要**加入 `SHELL`（用到才下載）。
+- ✅ 木島地圖已驗收並接入（見下方 2026-11-12）；**待辦：5 張滑梯正式圖到貨後換上，家長說開放再把 `WOOD_OPEN` 改 true**。（舊紀錄）木島地圖：家長決定週五請 Codex 重畫（Gemini 第 1 版退件，缺失清單 `docs/art/WOOD_MAP_REVIEW_2026-11-09.md` 可一起交給 Codex）。到貨後：疊圖驗收 → 依 `docs/art/WOOD_ISLAND_PLAN.md` 第 3 節設格子類型 → `GAME.registerBoard('wood', …)` 開放；木島大地圖背景**不要**加入 `SHELL`（用到才下載）。
 - 實機試「第 65 格邀請卡 → 下載我的卡片」在 iPad／手機能否存到相簿（只在桌面瀏覽器測過）。
 - 家長照 `docs/ACCEPTANCE_CHECKLIST.md` 在手機實機走一遍（最近改動很多，實機尚未全面驗收）。
 - 其他頁面（挑戰、兌換、紀錄）改成和「加分・扣分」一樣的清爽條列風格。
@@ -54,6 +54,12 @@
 - 實機確認：第 5 格撿礦石面板、第 30 格拉轉轍器、能源塔連點充電在手機上的手感與位置。
 
 ### 2026-11-09 完成的重點（新的在上面）
+- 木島正式地圖接入＋樹洞結局（2026-11-12，**木島還沒開放**）：
+  - 地圖：Codex 第 2 版驗收通過（101 格、格距 65.5～74.5、接縫無疊影、站位與派對草地淨空）。背景 `images/wood/region01～04.webp`（各約 300KB，不進 `SHELL`）；座標 `data/wood_island_coordinates_0_100.json` → `tools/gen_board_wood.py` → `js/board-wood.js`。
+  - `js/game.js`：`buildWood()`（格子類型沿用金島同格號，家長決定）、`WOOD_OPEN = false`。**開放木島＝把 `WOOD_OPEN` 改成 true**（並拿掉 E2E 裡「木島未開放」的假設、金島小遊戲 `GOLD_LEAF_CHANCE` 會自動回到只抓星星）。預覽用 `window.__cgpWoodOpen = true`。
+  - 小精靈站位改用地圖預留的空地（`board.guideSpots`，`storyXY()`）；測試假地圖沒有 guideSpots 時照舊用相對位移。
+  - 結局 `woodEnding()`：第 100 格 → 對話 3 句 → 5 張第一人稱滑梯（`images/wood/ending/slide1～5.webp`，**目前是佔位圖**，提示詞在 `docs/art-prompts.md`）→ 藍光 → 「木島冒險完成！」。第二次起可略過；減少動態時只淡入淡出；獎勵在演出前已寫入（`islandClears.wood`）。正式圖到貨：同檔名覆蓋或換新檔名改 `WOOD_SLIDES`。
+  - 水島銜接文件：`docs/WOOD_TO_WATER_HANDOFF.md`。
 - 成就劇場（2026-11-12 家長決定）：拿掉「查看我的成就收藏」按鈕（在地圖上跳出時按了會離開冒險畫面），只留「繼續冒險」，下方加一行說明「之後可以在「小孩」頁的「🏆 全部成就」看到」。
 - 第一次開啟再加速＋新增孩子後的引導（2026-11-10）：
   - 字型拆成兩包：`fonts/jf-openhuninn-app.woff2`（App 用到的約 1,460 字，226KB，`tools/font_subset.py` 產生）優先；完整版 `jf-openhuninn-full` 只負責中文字（unicode-range），遇到小包沒有的字（例如罕用字名字）才下載。**改了畫面文字後要重跑 `tools/font_subset.py`**，沒重跑也能正常顯示（缺字會自動用完整版）。

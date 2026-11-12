@@ -824,6 +824,65 @@ async function main() {
   }
   console.log('✔ 新手上手：第一次打開跳導覽（iPhone／Android 各自的加到主畫面教學）、帶到新增孩子、新增後引導設定加扣分（設家長密碼）、首頁新手任務 5 步依進度打勾、可重看、可收起');
 
+  // ---------- 木島正式地圖＋樹洞結局（2026-11-12；木島還沒開放，用 __cgpWoodOpen 預覽） ----------
+  {
+    const c = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', story: true });
+    await c.addInitScript(() => { window.__cgpWoodOpen = true; window.__cgpFastEnding = true; });
+    const q = await c.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '小安' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+      const p = s.getPlayer(a.id); p.island = 'wood'; p.bag.d6 = 4; s.setPlayerTile(a.id, 6); s.save(); return a.id; });
+    await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    assert.match(await q.locator('.plaque h1').innerText(), /木島/);
+    assert.equal(await q.locator('.mtile').count(), 100, '木島 100 格');
+    await q.waitForFunction(() => { const i = document.querySelector('.map-bg[data-region=wood-01]'); return i && i.complete && i.naturalWidth === 1080; }, null, { timeout: 10000 });
+    assert.match(await q.locator('.map-bg[data-region=wood-04]').evaluate((i) => i.currentSrc || i.src), /images\/wood\/region04\.webp/);
+    // 小精靈站在地圖預留的空地（第 8 格右上的草地）
+    const elf = await q.locator('.story-guide[data-story=pinecone]').evaluate((e) => [parseFloat(e.style.left), parseFloat(e.style.top)]);
+    assert.deepEqual(elf, [670, 4905]);
+    assert.equal(await q.locator('.story-guide.wood-elf').count(), 4);
+    if (SHOT_DIR) await q.locator('#map-view').screenshot({ path: path.join(SHOT_DIR, 'wood-map.png') });
+    // 第 97 格擲 6 → 第 100 格樹洞口：不放金島的通關畫面，改演樹洞結局
+    await q.evaluate((cid) => { const s = window.__cgpStore; const p = s.getPlayer(cid); Object.keys(window.CGPGame.STORIES).forEach((k) => { p.story[k] = true; }); s.data.adventure.rolls = []; s.setPlayerTile(cid, 97); s.random = () => 0.99; s.save(); }, id);
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#wood-ending .we-talk', { timeout: 15000 });
+    assert.equal(await q.locator('#clear-screen').count(), 0);
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).islandClears.wood, id), 1, '通關紀錄在演出前就寫入');
+    assert.equal(await q.locator('#wood-ending [data-we-skip]').count(), 0, '第一次不能略過');
+    assert.match(await q.locator('#wood-ending .we-talk').innerText(), /小安[\s\S]*樹洞裡怎麼會有海浪聲/);
+    if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'wood-end-talk.png') });
+    await q.click('[data-we-next]');
+    assert.match(await q.locator('#wood-ending .we-talk').innerText(), /森林小精靈[\s\S]*祕密隧道/);
+    await q.click('[data-we-next]');
+    assert.match(await q.locator('#wood-ending .we-talk').innerText(), /那我們進去冒險吧/);
+    await q.click('[data-we-next]');
+    await q.waitForSelector('#wood-ending .we-frame.on', { timeout: 5000 });
+    assert.equal(await q.locator('#wood-ending .we-frame').count(), 5, '5 張滑梯畫面');
+    assert.equal(await q.locator('#wood-ending img[src*=characters]').count(), 0, '第一人稱：不顯示角色');
+    await q.waitForSelector('[data-testid=wood-end-card]', { timeout: 10000 });
+    const card = await q.locator('[data-testid=wood-end-card]').innerText();
+    assert.match(card, /木島冒險完成！[\s\S]*究竟會通往什麼地方呢[\s\S]*神秘寶箱 ×1[\s\S]*敬請期待下一場冒險！/);
+    assert.doesNotMatch(card, /水島|珊瑚/, '不提前揭露水島');
+    if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'wood-end-card.png') });
+    await q.click('[data-we-ok]');
+    await q.waitForSelector('#wood-ending', { state: 'detached' });
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.giftMysteryChest, id), 1, '神秘寶箱只發 1 個');
+    // 第二次通關：可以略過，獎勵改成能量星星；通關次數 2
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 97); s.random = () => 0.99; s.save(); }, id);
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#wood-ending [data-we-skip]', { timeout: 15000 });
+    await q.click('[data-we-skip]');
+    await q.waitForSelector('[data-testid=wood-end-card]');
+    assert.match(await q.locator('[data-testid=wood-end-card]').innerText(), /能量星星 \+10/);
+    assert.deepEqual(await q.evaluate((cid) => { const p = window.__cgpStore.getPlayer(cid); return [p.islandClears.wood, p.bag.giftMysteryChest]; }, id), [2, 1]);
+    await q.click('[data-we-ok]');
+    await c.close();
+    console.log('✔ 木島正式地圖與樹洞結局：100 格與背景、小精靈站位、第 100 格對話 → 5 張第一人稱滑梯 → 木島冒險完成、獎勵不重複、第二次可略過');
+  }
+
   // ---------- 一般冒險事件視窗（2026-11-09）：卡片式、單一視窗整合多個事件；內容沿用事件原文 ----------
   for (const vp of [{ width: 360, height: 800 }, { width: 360, height: 560 }, { width: 1280, height: 800 }]) {
     const c = await browser.newContext({ viewport: vp, deviceScaleFactor: 2, hasTouch: vp.width < 600, serviceWorkers: 'block' });

@@ -101,6 +101,7 @@
   var REGION02 = (typeof module !== 'undefined' && module.exports) ? require('./board-gold-02.js') : root.CGP_GOLD_REGION02;
   var REGION03 = (typeof module !== 'undefined' && module.exports) ? require('./board-gold-03.js') : root.CGP_GOLD_REGION03;
   var REGION04 = (typeof module !== 'undefined' && module.exports) ? require('./board-gold-04.js') : root.CGP_GOLD_REGION04;
+  var WOOD_DATA = (typeof module !== 'undefined' && module.exports) ? require('./board-wood.js') : root.CGP_WOOD_BOARD;
   /**
    * 金島長地圖（總覽座標 1080×5400，左上為原點，由下往上走）：四張 1080×1350 背景由上到下為
    * 第四區（y 0）、第三區（1350）、第二區（2700）、第一區（4050）。格子的 gx、gy 為總覽座標；x、y 為所在背景圖內 0～1。
@@ -201,6 +202,26 @@
    * 島嶼地圖資料到貨後用 registerBoard() 加入 BOARDS 就會開放；還沒開放的島會被跳過。
    */
   var ISLAND_ORDER = ['gold', 'wood', 'water', 'fire', 'earth'];
+  /**
+   * 木島（2026-11-12 接入，Codex 第 2 版地圖）。格子類型沿用金島同格號（家長決定）；第 0 格起點、第 100 格全島終點（精靈巨樹樹洞）。
+   * WOOD_OPEN＝false：資料與畫面都準備好，但孩子還不能前往（等滑梯正式圖與家長說開放）。開放時改成 true 即可。
+   */
+  var WOOD_OPEN = false;
+  var woodOn = WOOD_OPEN || !!root.__cgpWoodOpen;   // __cgpWoodOpen：自動測試與家長預覽用（網址不會帶這個值，孩子進不去）
+  var WOOD_REGIONS = [['wood-01', '森林入口', 1, 30, 4050], ['wood-02', '藤蔓吊橋', 31, 55, 2700], ['wood-03', '樹屋村', 56, 80, 1350], ['wood-04', '精靈巨樹', 81, 100, 0]].map(function (r, i) {
+    var img = 'images/wood/region0' + (i + 1) + '.webp';
+    return { id: r[0], name: r[1], from: r[2], to: r[3], stripY: r[4], available: true, background: { webp: img, jpg: img }, size: { width: 1080, height: 1350 } };
+  });
+  function buildWood() {
+    var tiles = WOOD_DATA.tiles.map(function (t) {
+      var r = WOOD_REGIONS.filter(function (x) { return x.id === t.regionId; })[0];
+      return { n: t.n, id: t.id, regionId: t.regionId, gx: t.gx, gy: t.gy, x: t.gx / WORLD.width, y: (t.gy - r.stripY) / r.size.height,
+        type: t.n === 0 ? 'start' : GOLD.tiles[t.n].type };
+    });
+    return { id: 'wood', name: '木島', goalName: '精靈巨樹', totalTiles: 100, world: WORLD, regions: WOOD_REGIONS, tiles: tiles,
+      guideSpots: WOOD_DATA.guideSpots, partyLawn: WOOD_DATA.partyLawn };
+  }
+  if (woodOn) BOARDS.wood = buildWood();
   function registerBoard(id, board) { board.id = id; BOARDS[id] = board; return board; }
   /** 下一座已開放的島（沒有其他已開放的島時回傳 null＝留在原島繞下一輪） */
   function nextIsland(id) {
@@ -1238,7 +1259,7 @@
     return this.getBonusQuota(childId);
   };
 
-  var api = { CARD_TEXT: CARD_TEXT, LEAF_GAME: LEAF_GAME, LEAF_MAX_FOUND: LEAF_MAX_FOUND, leafStars: leafStars, minigameOf: minigameOf, STORIES: STORIES, storiesOf: storiesOf, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { CARD_TEXT: CARD_TEXT, LEAF_GAME: LEAF_GAME, LEAF_MAX_FOUND: LEAF_MAX_FOUND, leafStars: leafStars, minigameOf: minigameOf, STORIES: STORIES, storiesOf: storiesOf, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, buildWood: buildWood, WOOD_OPEN: WOOD_OPEN, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

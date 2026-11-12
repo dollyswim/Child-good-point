@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.12-136';
+  var APP_VERSION = '2026.11.12-137';
   var store;
   try {
     store = new CGP.Store();
@@ -252,6 +252,7 @@
       pawnIdle();
       if (!ui.busy) { var mc = store.getChild(r.arg); setTimeout(function () { if (!ui.busy && route().name === 'map') towerIntro(mc); }, 600); }
       if (store.takeChestHint(r.arg)) notes.push('✨ 附近似乎藏著神秘寶物……');
+      var wp = store.getPlayer(r.arg); if (wp.island === 'wood' && wp.pos >= 85) preloadImages(WOOD_SLIDES);   // 快到樹洞了：先在背景載入滑梯圖
     }
     if (r.name === 'home' && !store.data.flags.tourSeen && !onboardOff()) setTimeout(openTour, 300);   // 第一次打開：新手導覽
     if (r.name === 'minigame-test') openMinigame(null, null, { practice: true });
@@ -938,6 +939,8 @@
   /** 劇情座標換算成長地圖座標 */
   function storyXY(board, id, v) {
     var cfg = ISLAND_STORY[board.id], t = board.tiles[GAME.STORIES[id].tile];
+    var spot = v === cfg.spots[id].guide && board.guideSpots && board.guideSpots[t.n];   // 正式地圖：導遊站在地圖預留的空地（木島 guideSpots）
+    if (spot) return { x: spot[0], y: spot[1] };
     return cfg.rel ? { x: t.gx + v[0], y: t.gy + v[1] } : { x: v[0], y: v[1] };
   }
   /** 現在這座島還沒完成、而且格子已開放的劇情代號 */
@@ -1860,6 +1863,7 @@
       : (kind === 'magic' || (pr && pr.die === 'magic') ? '✨ 神奇骰子擲出 ' : '🎲 擲出 ') + res.value;
     // 停在小遊戲格（或礦車載到小遊戲格）：直接開始「抓住星星」
     var clearEv = ev && ev.clear ? ev : (ev && ev.then && ev.then.clear ? ev.then : null);
+    if (clearEv && clearEv.clear.island === 'wood') { await woodEnding(child, clearEv); return; }   // 木島：樹洞溜滑梯結局
     if (clearEv) { await mapFireworks(); showClear(child, clearEv); return; }
     var mgEv = ev && ev.minigame ? ev : (ev && ev.then && ev.then.minigame ? ev.then : null);
     if (mgEv) { openMinigame(childId, head + '・停在第 ' + store.getPlayer(childId).pos + ' 格'); return; }
@@ -2142,6 +2146,89 @@
     document.body.appendChild(el);
     toastEl.hidden = true;   // 通關畫面已列出成就，不另外跳提示
     el.querySelector('[data-clear-ok]').onclick = function () { el.remove(); render(); announceAchievements(child.id, ['goldClear1']); };   // 通關畫面已列出「金島通關」，劇場不重複演出
+  }
+
+  // ---------- 木島結局（2026-11-12 家長設計）：樹洞對話 → 第一人稱溜滑梯（5 張圖）→ 神祕藍光 → 木島冒險完成 ----------
+  // 通關獎勵與通關次數在走到第 100 格時就已由 store 寫入（islandClears.wood）；這裡只負責演出，中途離開不會重複或漏發。
+  // 不顯示角色（每個孩子的夥伴不同），也不顯示水島的任何畫面（水島開場由水島負責，見 docs/WOOD_TO_WATER_HANDOFF.md）。
+  var WOOD_SLIDES = [1, 2, 3, 4, 5].map(function (n) { return 'images/wood/ending/slide' + n + '.webp'; });
+  var WOOD_END_LINES = [
+    ['me', '咦？樹洞裡怎麼會有海浪聲？'],
+    ['elf', '傳說這裡藏著一條通往水島的祕密隧道喔！'],
+    ['me', '真的嗎？那我們進去冒險吧！'],
+    ['me', '哇啊啊！原來是溜滑梯！']
+  ];
+  function preloadImages(list, ms) {
+    return Promise.race([Promise.all(list.map(function (u) {
+      return new Promise(function (res) { var im = new Image(); im.onload = im.onerror = function () { res(); }; im.src = u; });
+    })), sleep(ms || 4000)]);
+  }
+  function woodEnding(child, ev) {
+    return new Promise(function (resolve) {
+      var fast = window.__cgpFastEnding ? 0.08 : 1;   // 自動測試：縮短時間
+      var still = reduceMotion, FRAME = (still ? 900 : 1700) * fast, repeat = ev.clear.count > 1;
+      var ready = preloadImages(WOOD_SLIDES.concat(['images/wood/region04.webp', 'images/wood/elf.webp']));
+      var el = document.createElement('div');
+      el.className = 'wood-end' + (still ? ' still' : ''); el.id = 'wood-ending';
+      el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '木島結局');
+      el.innerHTML = '<div class="we-scene we-tree" data-we="tree"></div>' +
+        '<div class="we-slide" data-we="slide" hidden>' + WOOD_SLIDES.map(function (u, i) { return '<i class="we-frame we-f' + (i + 1) + '" style="background-image:url(' + u + ')"></i>'; }).join('') + '<b class="we-glow"></b></div>' +
+        '<div class="we-talk" data-we="talk"><span class="we-who"></span><p class="we-line"></p><button type="button" class="btn primary we-next" data-we-next>繼續</button></div>' +
+        (repeat ? '<button type="button" class="we-skip" data-we-skip>略過 ›</button>' : '');
+      document.body.appendChild(el);
+      document.body.classList.add('pawn-acting');
+      toastEl.hidden = true;
+      var skipped = false, stepWait = null;
+      function finish() {
+        var first = ev.clear.first;
+        el.innerHTML = '<div class="we-card" data-testid="wood-end-card"><div class="we-crown" aria-hidden="true">🌳</div><h2>木島冒險完成！</h2>' +
+          '<p class="we-q">「神祕的樹洞隧道，<br>究竟會通往什麼地方呢？」</p>' +
+          '<ul class="clear-rewards">' + (first
+            ? '<li><img src="images/items/mystery_chest.webp" alt="" width="48" height="48"> 神秘寶箱 ×1（不用鑰匙）</li>'
+            : '<li>' + STAR_IMG + ' 能量星星 +' + GAME.GOLD_CLEAR_STARS + '</li>') + '</ul>' +
+          '<p class="we-soon">敬請期待下一場冒險！</p>' +
+          '<p class="muted small">' + (ev.clear.next ? '下次出發會前往「' + h(ev.clear.next) + '」！' : '下一座島還在準備中，下次出發會從木島起點開始新的一輪。') + '</p>' +
+          '<button type="button" class="btn primary block" data-we-ok>太棒了！</button></div>';
+        el.classList.add('done');
+        el.querySelector('[data-we-ok]').onclick = function () {
+          el.remove(); document.body.classList.remove('pawn-acting'); render(); announceAchievements(child.id, []); resolve();
+        };
+      }
+      function talk(i) {
+        return new Promise(function (res) {
+          var L = WOOD_END_LINES[i];
+          el.querySelector('.we-who').innerHTML = L[0] === 'elf' ? '<img src="images/wood/elf.webp" alt="" width="203" height="300">森林小精靈' : h(child.name);
+          el.querySelector('.we-talk').className = 'we-talk we-' + L[0];
+          el.querySelector('.we-line').textContent = L[1];
+          stepWait = res;
+        });
+      }
+      el.addEventListener('click', function (e) {
+        if (e.target.closest('[data-we-skip]')) { skipped = true; if (stepWait) { var r0 = stepWait; stepWait = null; r0(); } return; }
+        if (e.target.closest('[data-we-next]') && stepWait) { var r = stepWait; stepWait = null; r(); }
+      });
+      (async function () {
+        for (var i = 0; i < 3 && !skipped; i++) await talk(i);
+        if (!skipped) {
+          await ready;   // 圖片先載好再開始滑，避免破圖（最多等 4 秒，失敗時用漸層底色）
+          el.querySelector('[data-we=tree]').classList.add('enter');   // 鏡頭推進樹洞
+          el.querySelector('.we-next').hidden = true;
+          await sleep(900 * fast);
+          var slide = el.querySelector('[data-we=slide]');
+          slide.hidden = false; el.querySelector('[data-we=tree]').hidden = true;
+          talk(3); stepWait = null;   // 「哇啊啊！原來是溜滑梯！」停在畫面上一下
+          var frames = slide.querySelectorAll('.we-frame');
+          for (var k = 0; k < frames.length && !skipped; k++) {
+            frames[k].classList.add('on');
+            if (k) frames[k - 1].classList.add('out');
+            if (k === 1) el.querySelector('.we-talk').hidden = true;
+            await sleep(FRAME);
+          }
+          if (!skipped) { slide.classList.add('glow'); await sleep((still ? 600 : 1300) * fast); }   // 神祕藍光放大、淡出
+        }
+        finish();
+      })();
+    });
   }
 
   /** 今日小結（結束今日冒險時、或之後在冒險大廳查看） */

@@ -518,3 +518,29 @@ centered with margin, no text, no watermark. Vertical image, about 150 x 230 pro
 - 直接把圖片傳給我即可，PNG 或 JPG 都可以。
 - 一張一張傳或拼成一張大圖都可以；拼圖時物件之間要留空白。
 - 我會負責去背、統一尺寸、壓縮，再換進 App 並重新測試。
+
+## 木島結局：樹洞溜滑梯（5 張，2026-11-12）
+
+用途：木島第 100 格結局的第一人稱滑梯動畫。放 `images/wood/ending/slide1.webp`～`slide5.webp`（目前是佔位圖）。
+
+**共同規格（每張都要貼）**
+- 直式 3:4，至少 1080×1440；不要文字、不要邊框、不要任何角色、手、腳。
+- 第一人稱視角：玩家坐在木頭滑梯上往前滑，畫面下方中央看得到滑梯面往前延伸到消失點。
+- 同一條連續的樹根隧道：圓形木質隧道、樹根纏繞的牆面、同樣的木紋與滑梯寬度；消失點在畫面中央略偏上。
+- 風格：童話遊戲、黏土玩具般的柔和質感、溫暖粉彩、柔和光影，和木島地圖一致。
+- 請用同一個對話連續產生 5 張，並要求「和上一張是同一條隧道的下一段」。
+
+| 張 | 中文提示詞 |
+|---|---|
+| 1 | 巨大古樹的內部，暖黃色燈光，前方地面出現一條由樹根編成、向下延伸的木頭滑梯，視角稍微往下看，隧道入口圓形，遠處微暗 |
+| 2 | 同一條隧道往前：彎曲的木質隧道，兩側長著發光的小蘑菇（暖黃與淡綠），滑梯往左前方緩緩彎過去 |
+| 3 | 同一條隧道的急彎：滑梯往右急轉，樹根從頭頂掠過，幾隻螢火蟲在旁邊飛，畫面略帶速度感但不模糊 |
+| 4 | 同一條隧道更深處：木頭顏色變深，牆上開始出現藍色、青色的小光點，暖色蘑菇變少，遠處透出一點藍光 |
+| 5 | 同一條隧道的盡頭方向：正前方一團明亮柔和的藍白色光照亮整條隧道，木紋被染成藍綠色，看不到光後面的景色（不要出現海、沙灘或出口外的風景） |
+
+English (shared): First-person POV sliding down a wooden root slide inside a giant fairy-tale tree tunnel, the slide surface visible at bottom center leading to a vanishing point slightly above center, round root-woven tunnel walls, soft clay-toy texture, warm pastel storybook game art, portrait 3:4, no characters, no hands or feet, no text, no border. Same continuous tunnel in all five images.
+1. Inside the hollow of the great tree, warm golden light, a root slide begins and tilts downward.
+2. Curving wooden tunnel bending gently left, glowing mushrooms (warm yellow and pale green) along both sides.
+3. A sharp right turn, roots sweeping overhead, a few fireflies, a sense of speed without blur.
+4. Deeper and darker wood, small blue and cyan light motes appear on the walls, a faint blue glow far ahead.
+5. A bright soft blue-white light straight ahead fills the tunnel and tints the wood teal; nothing beyond the light is visible (no sea, beach or exit scenery).

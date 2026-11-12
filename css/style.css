@@ -2161,3 +2161,31 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .tour-actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; width: 100%; margin-top: 4px; }
 /* 2026-11-10 第一次開啟加速：粉圓體（2MB）等頁面載完才下載；下載過的裝置一開始就套用（js/app.js 加 html.font-on） */
 html.font-on body { font-family: "jf-openhuninn", "jf-openhuninn-full", "Arial Rounded MT Bold", "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+/* 木島結局（2026-11-12）：樹洞對話 → 第一人稱溜滑梯 → 神祕藍光 → 木島冒險完成；只用 transform／opacity，減少動態時改成單純淡入 */
+.wood-end { position: fixed; inset: 0; z-index: 80; overflow: hidden; background: #2a1a0c; display: grid; place-items: center; }
+.we-scene, .we-slide, .we-frame, .we-glow { position: absolute; inset: 0; }
+.we-tree { background: #3b6a2a url("../images/wood/region04.webp") no-repeat 50% 0 / cover; transform-origin: 48% 22%; transition: transform .9s ease-in, opacity .9s ease-in; }
+.we-tree.enter { transform: scale(3.2); opacity: 0; }
+.we-frame { display: block; opacity: 0; background: radial-gradient(circle at 50% 52%, #ffd68a 0, #a5672f 30%, #3a2210 75%) no-repeat 50% 50% / cover; transform-origin: 50% 52%; will-change: transform, opacity; }
+.we-f4, .we-f5 { background-color: #1f6f80; }
+.we-frame.on { opacity: 1; animation: we-rush 1.75s linear both; }
+.we-frame.out { opacity: 0; transition: opacity .45s linear; }
+.we-f2.on { animation-name: we-rush-l; } .we-f3.on { animation-name: we-rush-r; } .we-f4.on { animation-duration: 1.5s; }
+@keyframes we-rush { from { transform: scale(1); } to { transform: scale(1.32); } }
+@keyframes we-rush-l { from { transform: scale(1.02) rotate(0) translateX(0); } to { transform: scale(1.34) rotate(-2.5deg) translateX(2%); } }
+@keyframes we-rush-r { from { transform: scale(1.02) rotate(0) translateX(0); } to { transform: scale(1.36) rotate(2.5deg) translateX(-2%); } }
+.we-glow { display: block; opacity: 0; background: radial-gradient(circle at 50% 50%, #fff 0, #c9f4ff 22%, #6fd6f2 48%, rgba(60, 170, 210, .0) 75%); transform: scale(.3); transition: transform 1.2s ease-in, opacity 1.2s ease-in; }
+.we-slide.glow .we-glow { opacity: 1; transform: scale(3.4); }
+.wood-end.still .we-tree { transition: opacity .5s; } .wood-end.still .we-tree.enter { transform: none; }
+.wood-end.still .we-frame.on { animation: none; } .wood-end.still .we-glow { transform: scale(3); transition: opacity .5s; }
+.we-talk { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 20px); transform: translateX(-50%); width: min(92vw, 420px); box-sizing: border-box; display: grid; gap: 6px;
+  padding: 14px 16px; border-radius: 22px; background: rgba(255, 253, 246, .96); box-shadow: 0 8px 24px rgba(0, 0, 0, .35); color: #5a3a1a; }
+.we-who { display: flex; align-items: center; gap: 6px; font-weight: 900; font-size: .9rem; color: #c25e12; }
+.we-who img { width: 28px; height: auto; } .we-elf .we-who { color: #2f7a22; }
+.we-line { margin: 0; font-weight: 800; font-size: 1.1rem; line-height: 1.5; }
+.we-next { justify-self: end; }
+.we-skip { position: absolute; top: calc(env(safe-area-inset-top) + 12px); right: 12px; padding: 8px 14px; border: 0; border-radius: 99px; background: rgba(255, 255, 255, .85); color: #5a3a1a; font: inherit; font-weight: 800; cursor: pointer; }
+.wood-end.done { background: radial-gradient(circle at 50% 45%, #f4fdff, #9fe3f5 55%, #3d9fc0 100%); padding: 16px; }
+.we-card { width: min(92vw, 360px); display: grid; justify-items: center; gap: 8px; padding: 22px 18px; border-radius: 28px; background: #fff; box-shadow: 0 14px 40px rgba(20, 80, 110, .35); text-align: center; }
+.we-crown { font-size: 3rem; line-height: 1; } .we-card h2 { margin: 0; color: #2f7a22; font-size: 1.5rem; }
+.we-q { margin: 0; font-weight: 800; color: #3d6680; line-height: 1.6; } .we-soon { margin: 0; font-weight: 900; color: #e0761c; }

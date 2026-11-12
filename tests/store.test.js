@@ -2688,3 +2688,31 @@ test('資安：孩子代表色只接受 #色碼（備份檔不能在樣式裡塞
   const { store } = tsStore();
   assert.equal(store.addChild({ name: 'C', color: 'url(x)' }).color, '#ffd166');
 });
+
+test('木島正式地圖：101 格、格子類型沿用金島、先不開放；開放後通關記在 islandClears.wood', () => {
+  assert.equal(G.WOOD_OPEN, false, '家長說開放前不能前往木島');
+  assert.equal(G.BOARDS.wood, undefined);
+  assert.equal(G.nextIsland('gold'), null);
+  const w = G.buildWood(), g = G.buildGold();
+  assert.equal(w.tiles.length, 101);
+  assert.deepEqual(w.tiles.map(t => t.n), Array.from({ length: 101 }, (_, i) => i));
+  assert.equal(w.tiles[0].type, 'start'); assert.equal(w.tiles[100].type, 'end');
+  for (let n = 1; n <= 100; n++) assert.equal(w.tiles[n].type, g.tiles[n].type, '第 ' + n + ' 格類型和金島相同');
+  assert.equal(new Set(w.tiles.map(t => t.id)).size, 101);
+  for (const t of w.tiles) { const r = w.regions.find(x => x.id === t.regionId); assert.ok(t.gy >= r.stripY && t.gy < r.stripY + 1350, '第 ' + t.n + ' 格在所屬區域內'); if (t.n) assert.ok(t.n >= r.from && t.n <= r.to); }
+  assert.deepEqual(Object.keys(w.guideSpots), ['8', '40', '65', '92'], '四個劇情格都有小精靈站位');
+  G.registerBoard('wood', w);
+  try {
+    const { store, a } = tsStore();
+    const p = store.getPlayer(a.id);
+    store.recordItem(a.id, store.addItem({ kind: 'bonus', name: 'x', points: 50 }).id); store.settleToday(a.id);
+    p.island = 'wood'; p.bag.d6 = 2; store.setPlayerTile(a.id, 97);
+    store.random = () => 0.99;
+    const r = store.rollDice(a.id, 'd6');
+    assert.equal(r.event.type, 'end');
+    assert.deepEqual([r.event.clear.island, r.event.clear.first, r.event.clear.count], ['wood', true, 1]);
+    assert.equal(store.getPlayer(a.id).islandClears.wood, 1, '水島用這個欄位判斷木島已通關');
+    assert.equal(store.getPlayer(a.id).bag.giftMysteryChest, 1);
+    assert.equal(store.getPlayer(a.id).goldClears, 0, '不影響金島通關次數');
+  } finally { delete G.BOARDS.wood; }
+});
