@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-09｜App 版本 `2026.11.10-135`｜Service Worker 快取 `cgp-shell-v145`｜`main` 最新：今日冒險已出發改用藏寶地圖圖示（2026-11-09 工作段落結束，已整理交接）
+> 最後更新：2026-11-09｜App 版本 `2026.11.12-136`｜Service Worker 快取 `cgp-shell-v146`｜`main` 最新：今日冒險已出發改用藏寶地圖圖示（2026-11-09 工作段落結束，已整理交接）
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -14,7 +14,7 @@
 - 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v145`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.10-135`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v146`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.12-136`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 141 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -54,6 +54,7 @@
 - 實機確認：第 5 格撿礦石面板、第 30 格拉轉轍器、能源塔連點充電在手機上的手感與位置。
 
 ### 2026-11-09 完成的重點（新的在上面）
+- 成就劇場（2026-11-12 家長決定）：拿掉「查看我的成就收藏」按鈕（在地圖上跳出時按了會離開冒險畫面），只留「繼續冒險」，下方加一行說明「之後可以在「小孩」頁的「🏆 全部成就」看到」。
 - 第一次開啟再加速＋新增孩子後的引導（2026-11-10）：
   - 字型拆成兩包：`fonts/jf-openhuninn-app.woff2`（App 用到的約 1,460 字，226KB，`tools/font_subset.py` 產生）優先；完整版 `jf-openhuninn-full` 只負責中文字（unicode-range），遇到小包沒有的字（例如罕用字名字）才下載。**改了畫面文字後要重跑 `tools/font_subset.py`**，沒重跑也能正常顯示（缺字會自動用完整版）。
   - 背景下載順序：先角色、功能列、標題、道具、徽章等小圖，金島大地圖與完整字型最後。

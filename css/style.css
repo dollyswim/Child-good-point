@@ -1630,7 +1630,7 @@ body.mg-open { overflow: hidden; }
 .th-mini small { font-size: .62rem; font-weight: 800; line-height: 1.2; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .th-actions { display: grid; gap: 8px; margin-top: 8px; }
 .th-actions .btn.primary { background: linear-gradient(#ffd96a, #f2b632); color: #5a3400; border: none; box-shadow: 0 4px 0 #c98a14; font-weight: 900; }
-.th-go { background: transparent; border: none; box-shadow: none; color: #8a6a3a; font-weight: 800; }
+.th-where { margin: 0; color: #8a6a3a; font-weight: 700; font-size: .82rem; line-height: 1.4; text-align: center; }
 .th-sound { position: absolute; top: 10px; right: 10px; width: 38px; height: 38px; border-radius: 50%; border: 2px solid #f1e0bd; background: #fff; font-size: 1.1rem; cursor: pointer; }
 /* 星星、彩帶、愛心爆開 */
 .th-burst { position: absolute; left: 50%; top: 38%; width: 0; height: 0; z-index: 3; pointer-events: none; }

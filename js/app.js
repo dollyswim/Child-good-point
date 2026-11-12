@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.10-135';
+  var APP_VERSION = '2026.11.12-136';
   var store;
   try {
     store = new CGP.Store();
@@ -2066,8 +2066,8 @@
         '<p class="th-who">' + h(child.name) + '</p>' +
         '<div class="th-left"><div class="th-main">' + badgeHtml(main, 'lg') + '</div>' +
         '<div class="th-actions">' + (view ? '<button type="button" class="btn primary block" data-th="close">知道了</button>'
-          : '<button type="button" class="btn primary block" data-th="collection">🏆 查看我的成就收藏</button>' +
-          '<button type="button" class="btn block th-go" data-th="close">繼續冒險</button>') + '</div></div>' +
+          : '<button type="button" class="btn primary block" data-th="close">繼續冒險</button>' +   // 2026-11-12：拿掉「查看我的成就收藏」（會跳離冒險畫面），改用文字說明去哪裡看
+          '<p class="th-where">之後可以在「小孩」頁的「🏆 全部成就」看到</p>') + '</div></div>' +
         '<h3 class="th-name" data-th-name>' + h(main.name) + '</h3>' +
         '<p class="th-desc" data-th-desc>' + h(main.desc) + '</p>' +
         (view ? '<p class="th-date">' + (main.done ? '✅ ' + shortDate(main.date) + ' 達成' : '🔒 還沒達成，繼續加油！') + '</p>' : '') +
@@ -2104,15 +2104,6 @@
         var on = !soundOn(); setSound(on);
         t.textContent = on ? '🔊' : '🔇'; t.setAttribute('aria-pressed', String(on));
         if (on) playFanfare();
-        return;
-      }
-      if (t.dataset.th === 'collection') {
-        ui.achOpen = child.id; ui.achScroll = true; ui.achNew = list.map(function (a) { return a.id; });
-        close(false);
-        setTimeout(function () {
-          if (location.hash === '#child-' + child.id) { render(); var ad = document.getElementById('ach-details'); if (ad) ad.scrollIntoView({ block: 'start' }); ui.achScroll = false; }
-          else go('#child-' + child.id);
-        }, 60);
         return;
       }
       close(false);

@@ -2383,16 +2383,19 @@ async function main() {
       assert.equal(new URL(q.url()).hash, '#home', '返回鍵只關閉劇場');
       await c.close();
     }
-    // 同時 5 個、10 個：主徽章 5000／10000，其他橫向排列；直式與橫式都不超出畫面；查看收藏導向小孩頁面並展開
+    // 同時 5 個、10 個：主徽章 5000／10000，其他橫向排列；直式與橫式都不超出畫面；只有「繼續冒險」，關閉後留在原頁
     {
       const { c, q, id } = await unlockOn({}, 5000);
       assert.match(await q.locator('#ach-theater h2').innerText(), /一次解鎖 5 個成就/);
       assert.match(await q.locator('#ach-theater .th-more-title').innerText(), /另外 4 個成就/);
       assert.ok(await fitsScreen(q));
-      await q.click('[data-th=collection]');
-      await q.waitForFunction((cid) => location.hash === '#child-' + cid, id);
-      await q.waitForSelector('[data-testid=achievements][open]');
-      assert.equal(await q.locator('[data-testid=achievements] .ach.is-new').count(), 5, '收藏頁標出這次的新成就');
+      // 2026-11-12：不再有「查看我的成就收藏」；只有「繼續冒險」＋說明去哪裡看，按了留在原本的頁面
+      assert.equal(await q.locator('#ach-theater [data-th=collection]').count(), 0);
+      assert.match(await q.locator('#ach-theater .th-where').innerText(), /「小孩」頁的「🏆 全部成就」/);
+      const hash0 = await q.evaluate(() => location.hash);
+      await q.click('#ach-theater [data-th=close]');
+      await q.waitForSelector('#ach-theater', { state: 'detached' });
+      assert.equal(await q.evaluate(() => location.hash), hash0, '關閉後留在原本的頁面');
       await c.close();
     }
     for (const dev of ['Pixel 5', 'Pixel 5 landscape']) {
