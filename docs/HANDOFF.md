@@ -49,6 +49,11 @@
 - 家長照 `docs/ACCEPTANCE_CHECKLIST.md` 在手機實機走一遍（金島的撿礦石、轉轍器、能源塔手感也還沒實機確認）。
 - git 歷史裡還查得到孩子的舊暱稱與提交者 Email（公開 repo）；家長未要求改寫歷史。
 
+### repo 整理（2026-11-13）
+- 刪除和 WebP 重複的 9 張 JPG（金島四區、金島總覽、四座島的大廳插圖）；`<picture>` 的備用圖改指向同一張 WebP（木島本來就只有 WebP）。
+- 用不到的美術交件說明（`CODEX_*`）、草稿座標、審查圖共 32 個檔案，壓縮成 `docs/archive/2026-11-art-archive.zip`（8.6MB → 1.3MB，清單見 `docs/archive/README.md`）。**下面各節提到 `docs/art/CODEX_*`、`*_preview.png`、`*_seam_reference.png`、`gold_island_coordinates_1_100.json` 等檔案時，請到這個壓縮檔找。**
+- `.git` 歷史約 110MB 沒有動（要縮小得改寫歷史，家長未要求）。
+
 ### 改動時容易踩到的地方
 - 改了畫面文字要重跑 `tools/font_subset.py`（字型小包；沒重跑也能顯示，只是新字會去抓 2MB 完整版）。
 - 其他島的地圖、插圖、劇情圖不要放進 `sw.js` 的 `SHELL`；同檔名換圖要換新檔名才會立刻生效。

@@ -644,11 +644,11 @@
 
   /** 五座島：冒險大廳的地圖關卡卡依孩子所在島嶼（players[id].island）顯示對應插圖 */
   var ISLANDS = [
-    { id: 'gold', name: '金島', color: '#ffd23f', webp: 'images/gold-island.webp', jpg: 'images/gold-island.jpg', alt: '金島：齒輪、礦坑、礦車、金屬橋與發光礦石' },
-    { id: 'wood', name: '木島', color: '#5cbf4a', webp: 'images/islands/wood.webp', jpg: 'images/islands/wood.jpg', alt: '木島：巨樹、樹屋、藤蔓、森林動物與精靈' },
-    { id: 'water', name: '水島', color: '#3fb6e8', webp: 'images/islands/water.webp', jpg: 'images/islands/water.jpg', alt: '水島：海洋、瀑布、珊瑚、小船與泡泡' },
-    { id: 'fire', name: '火島', color: '#ff6a3d', webp: 'images/islands/fire.webp', jpg: 'images/islands/fire.jpg', alt: '火島：火山、熔岩、火焰精靈與礦坑' },
-    { id: 'earth', name: '土島', color: '#b07a4a', webp: 'images/islands/earth.webp', jpg: 'images/islands/earth.jpg', alt: '土島：岩石、洞穴、化石、遺跡與礦石' }
+    { id: 'gold', name: '金島', color: '#ffd23f', webp: 'images/gold-island.webp', jpg: 'images/gold-island.webp', alt: '金島：齒輪、礦坑、礦車、金屬橋與發光礦石' },
+    { id: 'wood', name: '木島', color: '#5cbf4a', webp: 'images/islands/wood.webp', jpg: 'images/islands/wood.webp', alt: '木島：巨樹、樹屋、藤蔓、森林動物與精靈' },
+    { id: 'water', name: '水島', color: '#3fb6e8', webp: 'images/islands/water.webp', jpg: 'images/islands/water.webp', alt: '水島：海洋、瀑布、珊瑚、小船與泡泡' },
+    { id: 'fire', name: '火島', color: '#ff6a3d', webp: 'images/islands/fire.webp', jpg: 'images/islands/fire.webp', alt: '火島：火山、熔岩、火焰精靈與礦坑' },
+    { id: 'earth', name: '土島', color: '#b07a4a', webp: 'images/islands/earth.webp', jpg: 'images/islands/earth.webp', alt: '土島：岩石、洞穴、化石、遺跡與礦石' }
   ];
   function islandOf(childId) {
     var id = store.getPlayer(childId).island;

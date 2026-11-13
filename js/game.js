@@ -157,13 +157,13 @@
   }
   var REGIONS = [
     { id: 'gold-01', name: '黃金沙灘與初級礦場', from: 1, to: 30, stripY: 4050,
-      background: { webp: 'images/gold/region01.webp', jpg: 'images/gold/region01.jpg' }, size: REGION01.referenceSize },
+      background: { webp: 'images/gold/region01.webp', jpg: 'images/gold/region01.webp' }, size: REGION01.referenceSize },
     { id: 'gold-02', name: '水晶礦谷', from: 31, to: 55, stripY: 2700, data: REGION02,
-      background: { webp: 'images/gold/region02.webp', jpg: 'images/gold/region02.jpg' }, size: { width: 1080, height: 1350 } },
+      background: { webp: 'images/gold/region02.webp', jpg: 'images/gold/region02.webp' }, size: { width: 1080, height: 1350 } },
     { id: 'gold-03', name: '齒輪工坊', from: 56, to: 80, stripY: 1350, data: REGION03,
-      background: { webp: 'images/gold/region03.webp', jpg: 'images/gold/region03.jpg' }, size: { width: 1080, height: 1350 } },
+      background: { webp: 'images/gold/region03.webp', jpg: 'images/gold/region03.webp' }, size: { width: 1080, height: 1350 } },
     { id: 'gold-04', name: '金冠城堡', from: 81, to: 100, stripY: 0, data: REGION04,
-      background: { webp: 'images/gold/region04.webp', jpg: 'images/gold/region04.jpg' }, size: { width: 1080, height: 1350 } }
+      background: { webp: 'images/gold/region04.webp', jpg: 'images/gold/region04.webp' }, size: { width: 1080, height: 1350 } }
   ];
   REGIONS.forEach(function (r, i) { r.available = i < OPEN_REGIONS; });
   /**
