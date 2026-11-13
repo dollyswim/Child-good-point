@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-13｜App 版本 `2026.11.13-144`｜Service Worker 快取 `cgp-shell-v154`｜`main` 最新：木島開放（2026-11-13）
+> 最後更新：2026-11-13｜App 版本 `2026.11.13-145`｜Service Worker 快取 `cgp-shell-v155`｜`main` 最新：木島開放（2026-11-13）
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -14,7 +14,7 @@
 - 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v154`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.13-144`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v155`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.13-145`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 142 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -40,6 +40,7 @@
 金島、木島都已開放（金 → 木 → 回金島；水島未做）。成就 28 項、單元測試 143 項、E2E 全部通過。沒有在等的外部美術。
 
 ### 待辦（家長尚未指定先後）
+- **未解決：木島「落葉找松果」小遊戲點落葉沒反應**（2026-11-13 家長在 Android 手機回報：擲骰停在小遊戲格、第 8 格找松果任務還沒做、畫面停在第 1 回合「翻開落葉」、落葉都蓋著、怎麼點都翻不開）。模擬手機試過「停在第 7 格小遊戲」「經過第 8 格任務後停在第 17 格小遊戲」，用實際觸控事件都能玩完，落葉上方沒有東西擋住，**沒有重現**。已加保險：落葉同時聽 `pointerdown` 與 `click`（-145）。再發生時請家長提供：手機瀏覽器（Chrome／Samsung Internet／LINE 內建）、是否從主畫面開啟、設定頁的版本號、發生前做了什麼。
 - **實機驗收木島**（只跑過自動測試）：地圖捲動與格子位置、四個任務視窗（找松果、採花、邀請卡、布置派對）、樹洞滑梯動畫的速度與是否頭暈、「下載我的卡片」能否存進相簿。
 - 呼叫專機「飛到其他島」功能還沒做（`AIRPLANE_READY = false`，神秘寶箱暫不開出）。
 - 水島：由另一個 AI 製作，銜接規格見 `docs/WOOD_TO_WATER_HANDOFF.md`。

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.13-144';
+  var APP_VERSION = '2026.11.13-145';
   var store;
   try {
     store = new CGP.Store();
@@ -2470,6 +2470,7 @@
           b.innerHTML = '<span class="leaf-under" aria-hidden="true"><img src="images/wood/' + under + '.webp" alt="" width="256" height="256" draggable="false"></span>' +
             '<span class="leaf-cover" aria-hidden="true"><img src="images/wood/leaf_pile.webp" alt="" width="256" height="256" draggable="false"></span>';
           b.addEventListener('pointerdown', tap);
+          b.addEventListener('click', tap);   // 2026-11-13 保險：有些手機瀏覽器收不到 pointerdown 時，改由 click 翻開（已翻開的不會重複計算）
           grid.appendChild(b);
         }
         // 先亮出松果，倒數結束後落葉蓋回去
