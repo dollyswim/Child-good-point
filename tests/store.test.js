@@ -756,6 +756,8 @@ test('額外星星（2026-11-09 起記錄當下就入帳）：規則附帶的星
 
 // ---------- Phase 3：最小可玩金島 ----------
 const G = require('../js/game.js');
+const WOOD_AT_LOAD = !!G.BOARDS.wood;   // 2026-11-13 木島已開放
+delete G.BOARDS.wood;                    // 下面的舊測試都以「只有金島」為前提；需要木島的測試自己 registerBoard，用完再刪
 
 /** 可控制骰子結果的 Store：rolls 依序給 random() 的值 */
 function p3Store(randoms, dateStr = '2026-11-06T10:00:00') {
@@ -2657,15 +2659,15 @@ test('能量星星兌換現實獎勵：扣星星不扣點數、星星不夠不�
   assert.equal(migrate(d).rewards.length, 2, '再載入不會重複加');
 });
 
-test('神秘寶箱：其他島嶼開放後才會開出呼叫專機', () => {
+test('神秘寶箱：呼叫專機的功能還沒做，木島開放後也先不開出', () => {
   const { store, a } = tsStore();
   store.getPlayer(a.id).bag.giftMysteryChest = 2;
   store.random = () => 0.999;
   assert.equal(store.openChest(a.id, 'giftMysteryChest').item, 'door', '只有金島：最後一項是傳送門');
   G.registerBoard('wood', fakeWood());
   try {
-    assert.equal(store.openChest(a.id, 'giftMysteryChest').item, 'airplane', '木島開放後 0.999 → 呼叫專機（稀有）');
-    assert.equal(store.getPlayer(a.id).bag.airplane, 1);
+    assert.equal(store.openChest(a.id, 'giftMysteryChest').item, 'door', '木島開放後仍不開出呼叫專機');
+    assert.equal(store.getPlayer(a.id).bag.airplane, 0);
   } finally { delete G.BOARDS.wood; }
 });
 
@@ -2691,10 +2693,9 @@ test('資安：孩子代表色只接受 #色碼（備份檔不能在樣式裡塞
   assert.equal(store.addChild({ name: 'C', color: 'url(x)' }).color, '#ffd166');
 });
 
-test('木島正式地圖：101 格、格子類型沿用金島、先不開放；開放後通關記在 islandClears.wood', () => {
-  assert.equal(G.WOOD_OPEN, false, '家長說開放前不能前往木島');
-  assert.equal(G.BOARDS.wood, undefined);
-  assert.equal(G.nextIsland('gold'), null);
+test('木島正式地圖：已開放（2026-11-13）、101 格、格子類型沿用金島；通關記在 islandClears.wood', () => {
+  assert.equal(G.WOOD_OPEN, true, '家長決定開放木島');
+  assert.equal(WOOD_AT_LOAD, true, '載入時木島就在島嶼清單裡');
   const w = G.buildWood(), g = G.buildGold();
   assert.equal(w.tiles.length, 101);
   assert.deepEqual(w.tiles.map(t => t.n), Array.from({ length: 101 }, (_, i) => i));
@@ -2705,6 +2706,9 @@ test('木島正式地圖：101 格、格子類型沿用金島、先不開放；�
   assert.deepEqual(Object.keys(w.guideSpots), ['8', '40', '65', '92'], '四個劇情格都有小精靈站位');
   G.registerBoard('wood', w);
   try {
+    assert.equal(G.nextIsland('gold'), 'wood', '金島通關後下一座是木島');
+    assert.equal(G.nextIsland('wood'), 'gold', '水島還沒做：木島通關後回到金島');
+    assert.equal(G.minigameOf('gold', () => 0), 'stars', '木島開放後金島小遊戲只有抓住星星');
     const { store, a } = tsStore();
     const p = store.getPlayer(a.id);
     store.recordItem(a.id, store.addItem({ kind: 'bonus', name: 'x', points: 50 }).id); store.settleToday(a.id);

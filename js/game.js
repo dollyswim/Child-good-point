@@ -206,8 +206,8 @@
    * 木島（2026-11-12 接入，Codex 第 2 版地圖）。格子類型沿用金島同格號（家長決定）；第 0 格起點、第 100 格全島終點（精靈巨樹樹洞）。
    * WOOD_OPEN＝false：資料與畫面都準備好，但孩子還不能前往（等滑梯正式圖與家長說開放）。開放時改成 true 即可。
    */
-  var WOOD_OPEN = false;
-  var woodOn = WOOD_OPEN || !!root.__cgpWoodOpen;   // __cgpWoodOpen：自動測試與家長預覽用（網址不會帶這個值，孩子進不去）
+  var WOOD_OPEN = true;   // 2026-11-13 家長決定開放木島
+  var woodOn = (WOOD_OPEN || !!root.__cgpWoodOpen) && !root.__cgpWoodClosed;   // __cgpWoodClosed：自動測試模擬「只有金島」的舊流程
   var WOOD_REGIONS = [['wood-01', '森林入口', 1, 30, 4050], ['wood-02', '藤蔓吊橋', 31, 55, 2700], ['wood-03', '樹屋村', 56, 80, 1350], ['wood-04', '精靈巨樹', 81, 100, 0]].map(function (r, i) {
     var img = 'images/wood/region0' + (i + 1) + '.webp';
     return { id: r[0], name: r[1], from: r[2], to: r[3], stripY: r[4], available: true, background: { webp: img, jpg: img }, size: { width: 1080, height: 1350 } };
@@ -343,11 +343,11 @@
     { id: 'wings', name: '飛行翼', icon: '🪽', weight: 12 }, { id: 'door', name: '傳送門', icon: '🚪', weight: 12 },
     { id: 'airplane', name: '呼叫專機', icon: '✈️', weight: 4 }
   ];
+  var AIRPLANE_READY = false;
   Store.prototype._rollMysteryChest = function (childId) {
     this.getPlayer(childId).stats.mystery++;
-    // 2026-11-09 家長決定：其他島嶼還沒開放時不開出呼叫專機（用不到），其餘 6 種依原本權重比例分配
-    var otherOpen = Object.keys(BOARDS).some(function (k) { return k !== 'gold'; });
-    var item = pickWeighted(this.random, otherOpen ? MYSTERY_POOL : MYSTERY_POOL.filter(function (x) { return x.id !== 'airplane'; }));
+    // 呼叫專機「飛到其他島」的功能還沒做（AIRPLANE_READY），做好之前不開出（2026-11-09 家長決定：用不到的不給）；其餘 6 種依原本權重比例分配
+    var item = pickWeighted(this.random, AIRPLANE_READY ? MYSTERY_POOL : MYSTERY_POOL.filter(function (x) { return x.id !== 'airplane'; }));
     this.getPlayer(childId).bag[item.id]++;
     var items = {}; items[item.id] = 1;
     return { stars: 0, items: items, item: item.id, text: '得到 ' + item.icon + ' ' + item.name + '！' };

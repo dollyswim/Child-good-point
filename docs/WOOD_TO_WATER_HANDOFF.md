@@ -38,7 +38,7 @@ var woodDone = (p.islandClears && p.islandClears.wood >= 1);
 ## 6. 相關程式
 | 檔案 | 內容 |
 |---|---|
-| `js/game.js` | `ISLAND_ORDER`、`registerBoard()`、`nextIsland()`、`buildWood()`、`WOOD_OPEN`（目前 false）、`_resolveTile()` 的 `end` 分支、`_travel` |
+| `js/game.js` | `ISLAND_ORDER`、`registerBoard()`、`nextIsland()`、`buildWood()`、`WOOD_OPEN`（true）、`_resolveTile()` 的 `end` 分支、`_travel` |
 | `js/board-wood.js` | 木島 101 格座標與小精靈站位（由 `tools/gen_board_wood.py` 產生） |
 | `js/app.js` | `woodEnding()`、`WOOD_SLIDES`、`WOOD_END_LINES`、`playMove()`、`showClear()`（金島） |
 | `css/style.css` | `.wood-end`、`.we-*` |
@@ -46,6 +46,6 @@ var woodDone = (p.islandClears && p.islandClears.wood >= 1);
 ## 7. 測試與注意事項
 - 單元：`木島正式地圖：101 格…`（通關寫入 `islandClears.wood`、不影響 `goldClears`）。
 - E2E：`木島正式地圖與樹洞結局`（對話 3 句 → 5 張滑梯 → 完成卡片；獎勵不重複；第二次可略過；卡片不含「水島」字樣）。
-- 木島目前**未開放**（`WOOD_OPEN = false`）。預覽：在瀏覽器主控台或測試先設 `window.__cgpWoodOpen = true` 再載入頁面。
+- 木島已開放（`WOOD_OPEN = true`，2026-11-13）。水島註冊前，木島通關後的下一次移動會回到金島起點（`nextIsland('wood')` 回傳 `gold`）。
 - 第二次以後通關有「略過」按鈕；系統設定「減少動態效果」時只做淡入淡出。
 - 其他島的大圖不要放進 `sw.js` 的 `SHELL`（用到才下載）。

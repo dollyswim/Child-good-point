@@ -35,10 +35,11 @@ async function main() {
   // 其他流程測試：成就改用文字提示（不跳星光成就劇場，避免擋住後續點擊）；劇場另有專門測試（theater: true）
   const _newContext = browser.newContext.bind(browser);
   browser.newContext = async (opts = {}) => {
-    const { theater, story, goldGame, onboard, ...rest } = opts;
+    const { theater, story, goldGame, onboard, wood, ...rest } = opts;
     const c = await _newContext(rest);
     if (!theater) await c.addInitScript(() => { window.__cgpNoTheater = true; });
     if (!story) await c.addInitScript(() => { window.__cgpNoStory = true; });   // 金島劇情另有專門測試（story: true）
+    if (!wood) await c.addInitScript(() => { window.__cgpWoodClosed = true; });   // 舊流程以「只有金島」為前提；木島另有專門測試（wood: true）
     if (!onboard) await c.addInitScript(() => { window.__cgpNoOnboard = true; });   // 新手導覽、新手任務另有專門測試（onboard: true）
     // 金島小遊戲（木島上線前各 1/2 機率）：其他流程固定抓住星星；落葉找松果另有專門測試（goldGame: 'leaf'）
     await c.addInitScript((g) => { window.__cgpGoldGame = g; }, goldGame || 'stars');
@@ -824,16 +825,17 @@ async function main() {
   }
   console.log('✔ 新手上手：第一次打開跳導覽（iPhone／Android 各自的加到主畫面教學）、帶到新增孩子、新增後引導設定加扣分（設家長密碼）、首頁新手任務 5 步依進度打勾、可重看、可收起');
 
-  // ---------- 木島正式地圖＋樹洞結局（2026-11-12；木島還沒開放，用 __cgpWoodOpen 預覽） ----------
+  // ---------- 木島正式地圖＋樹洞結局（2026-11-13 木島已開放） ----------
   {
-    const c = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', story: true });
-    await c.addInitScript(() => { window.__cgpWoodOpen = true; window.__cgpFastEnding = true; });
+    const c = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', story: true, wood: true });
+    await c.addInitScript(() => { window.__cgpFastEnding = true; });
     const q = await c.newPage();
     q.on('pageerror', (e) => errors.push(e.message));
     await q.goto(url);
     const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '小安' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
       const p = s.getPlayer(a.id); p.island = 'wood'; p.bag.d6 = 4; s.setPlayerTile(a.id, 6); s.save(); return a.id; });
     await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    assert.ok(await q.evaluate(() => window.CGPGame.WOOD_OPEN === true && !!window.CGPGame.BOARDS.wood && window.CGPGame.nextIsland('gold') === 'wood'), '木島已開放：金島通關後下一座是木島');
     assert.match(await q.locator('.plaque h1').innerText(), /木島/);
     assert.equal(await q.locator('.mtile').count(), 100, '木島 100 格');
     await q.waitForFunction(() => { const i = document.querySelector('.map-bg[data-region=wood-01]'); return i && i.complete && i.naturalWidth === 1080; }, null, { timeout: 10000 });
