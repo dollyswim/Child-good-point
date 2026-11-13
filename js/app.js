@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.13-142';
+  var APP_VERSION = '2026.11.13-143';
   var store;
   try {
     store = new CGP.Store();
@@ -1996,6 +1996,7 @@
   ('advStart goldClear1 reachR2 reachR3 reachR4 goldHero woodClear1 woodHero chest1 chests10 mystery1 catch5 catch10 pine10 squirrel5 ' +
     'earn1000 earn2000 earn3000 earn4000 earn5000 earn6000 earn7000 earn8000 earn9000 earn10000 special1 special5 streak7 locked').split(' ')
     .forEach(function (id) { BADGE_IMG[id] = 'images/badges/badge_' + id + '.webp'; });
+  BADGE_IMG.woodClear1 = 'images/badges/badge_woodClear1v2.webp';   // 2026-11-13 換上家長提供的專屬圖（換檔名讓圖片快取立刻生效）
   /** 主徽章挑選：越高階／越稀有分數越高（只影響演出，不影響成就條件） */
   var ACH_RANK = { goldClear1: 300, woodClear1: 300, streak7: 120, reachR4: 110, catch10: 100, special5: 95, reachR3: 80, chests10: 75, mystery1: 70,
     reachR2: 60, catch5: 45, special1: 40, chest1: 30, advStart: 20 };
@@ -2183,13 +2184,13 @@
       var skipped = false, stepWait = null;
       function finish() {
         var first = ev.clear.first;
-        el.innerHTML = '<div class="we-card" data-testid="wood-end-card"><div class="we-crown"><img src="images/badges/badge_woodClear1.webp" alt="" aria-hidden="true" width="256" height="256" decoding="async"></div><h2>木島冒險完成！</h2>' +
+        el.innerHTML = '<div class="we-card" data-testid="wood-end-card"><div class="we-crown"><img src="' + BADGE_IMG.woodClear1 + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></div><h2>木島冒險完成！</h2>' +
           '<p class="we-q">「神祕的樹洞隧道，<br>究竟會通往什麼地方呢？」</p>' +
           '<ul class="clear-rewards">' + (first
             ? '<li><img src="images/items/mystery_chest.webp" alt="" width="48" height="48"> 神秘寶箱 ×1（不用鑰匙）</li><li><span>🏅</span> 成就「木島通關」</li>'
             : '<li>' + STAR_IMG + ' 能量星星 +' + GAME.GOLD_CLEAR_STARS + '</li>') + '</ul>' +
-          '<p class="we-soon">敬請期待下一場冒險！</p>' +
-          '<p class="muted small">' + (ev.clear.next ? '下次出發會前往「' + h(ev.clear.next) + '」！' : '下一座島還在準備中，下次出發會從木島起點開始新的一輪。') + '</p>' +
+          '<p class="we-soon">下一座島還在準備中，敬請期待！</p>' +
+          '<p class="muted small">' + (ev.clear.next ? '下次出發會先回到「' + h(ev.clear.next) + '」繼續冒險。' : '下次出發會從木島起點開始新的一輪。') + '</p>' +
           '<button type="button" class="btn primary block" data-we-ok>太棒了！</button></div>';
         el.classList.add('done');
         el.querySelector('[data-we-ok]').onclick = function () {

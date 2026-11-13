@@ -865,10 +865,10 @@ async function main() {
     assert.equal(await q.locator('#wood-ending img[src*=characters]').count(), 0, '第一人稱：不顯示角色');
     await q.waitForSelector('[data-testid=wood-end-card]', { timeout: 10000 });
     const card = await q.locator('[data-testid=wood-end-card]').innerText();
-    assert.match(card, /木島冒險完成！[\s\S]*究竟會通往什麼地方呢[\s\S]*神秘寶箱 ×1[\s\S]*成就「木島通關」[\s\S]*敬請期待下一場冒險！/);
+    assert.match(card, /木島冒險完成！[\s\S]*究竟會通往什麼地方呢[\s\S]*神秘寶箱 ×1[\s\S]*成就「木島通關」[\s\S]*下一座島還在準備中，敬請期待！[\s\S]*下次出發會先回到「金島」繼續冒險。/);
     assert.ok(await q.evaluate((cid) => window.__cgpStore.getAchievements(cid).find((a) => a.id === 'woodClear1').done, id), '解鎖成就「木島通關」');
     assert.doesNotMatch(card, /水島|珊瑚/, '不提前揭露水島');
-    assert.ok(await q.locator('[data-testid=wood-end-card] .we-crown img').evaluate((i) => /badge_woodClear1\.webp$/.test(i.src) && i.complete && i.naturalWidth === 256), '完成畫面用木島通關徽章圖');
+    assert.ok(await q.locator('[data-testid=wood-end-card] .we-crown img').evaluate((i) => /badge_woodClear1v2\.webp$/.test(i.src) && i.complete && i.naturalWidth === 256), '完成畫面用木島通關徽章圖');
     if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'wood-end-card.png') });
     await q.click('[data-we-ok]');
     await q.waitForSelector('#wood-ending', { state: 'detached' });
