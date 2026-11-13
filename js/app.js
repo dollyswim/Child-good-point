@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.12-140';
+  var APP_VERSION = '2026.11.13-141';
   var store;
   try {
     store = new CGP.Store();
@@ -2153,7 +2153,7 @@
   // ---------- 木島結局（2026-11-12 家長設計）：樹洞對話 → 第一人稱溜滑梯（5 張圖）→ 神祕藍光 → 木島冒險完成 ----------
   // 通關獎勵與通關次數在走到第 100 格時就已由 store 寫入（islandClears.wood）；這裡只負責演出，中途離開不會重複或漏發。
   // 不顯示角色（每個孩子的夥伴不同），也不顯示水島的任何畫面（水島開場由水島負責，見 docs/WOOD_TO_WATER_HANDOFF.md）。
-  var WOOD_SLIDES = [1, 2, 3, 4, 5].map(function (n) { return 'images/wood/ending/slide' + n + '.webp'; });
+  var WOOD_SLIDES = [1, 2, 3, 4, 5].map(function (n) { return 'images/wood/ending/tunnel' + n + '.webp'; });   // 2026-11-13 家長正式圖（810×1080）
   var WOOD_END_LINES = [
     ['me', '咦？樹洞裡怎麼會有海浪聲？'],
     ['elf', '傳說這裡藏著一條通往水島的祕密隧道喔！'],

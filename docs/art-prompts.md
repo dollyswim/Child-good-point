@@ -521,7 +521,7 @@ centered with margin, no text, no watermark. Vertical image, about 150 x 230 pro
 
 ## 木島結局：樹洞溜滑梯（5 張，2026-11-12）
 
-用途：木島第 100 格結局的第一人稱滑梯動畫。放 `images/wood/ending/slide1.webp`～`slide5.webp`（目前是佔位圖）。
+用途：木島第 100 格結局的第一人稱滑梯動畫。✅ 正式圖已上線：`images/wood/ending/tunnel1.webp`～`tunnel5.webp`（2026-11-13）。
 
 **共同規格（每張都要貼）**
 - 直式 3:4，至少 1080×1440；不要文字、不要邊框、不要任何角色、手、腳。
