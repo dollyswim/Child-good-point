@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.13-145';
+  var APP_VERSION = '2026.11.14-146';
   var store;
   try {
     store = new CGP.Store();
@@ -1458,7 +1458,7 @@
     var ended = store.isAdventureEnded(child.id);
     var reason = ended ? '🏁 今天的冒險已經結束了，明天見！' : !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
       : picking ? '🚪 傳送門：點地圖上的格子選擇要去的地方'
-      : atEnd ? (board.tiles[player.pos].type === 'end' ? '🏁 已抵達' + (board.goalName || '終點') + '、通關' + board.name + '！' + (GAME.nextIsland(player.island) ? '下次出發前往「' + GAME.BOARDS[GAME.nextIsland(player.island)].name + '」' : '下次出發從起點開始新的一輪') : '🚪 已抵達目前開放區域的終點！下次出發從起點開始新的一輪')
+      : atEnd ? (board.tiles[player.pos].type === 'end' ? '🏁 已抵達' + (board.goalName || '終點') + '、通關' + board.name + '！' + (store.flightReady(child.id) ? '按下面的按鈕，搭專機前往「' + store.flightReady(child.id).name + '」' : GAME.nextIsland(player.island) ? '下次出發前往「' + GAME.BOARDS[GAME.nextIsland(player.island)].name + '」' : '下次出發從起點開始新的一輪') : '🚪 已抵達目前開放區域的終點！下次出發從起點開始新的一輪')
         : noRolls ? '今天的 ' + limit + ' 次骰子用完了，明天再來！' + (lim.move && (bag.skates || bag.wings) ? '（前進道具今天還可以用 ' + lim.move + ' 次）' : '')
           : (!bag.d6 && !bag.d12 && !bag.skates ? '背包是空的，點左下角的商店用能量星星購買骰子' : '選一個道具出發吧！');
     var tiles = board.tiles.map(function (t) {   // 長地圖：所有已開放區域的格子都顯示
@@ -1506,6 +1506,7 @@
       (picking ? '<button type="button" class="btn block" data-action="cancel-door">取消傳送門</button>' : '') +
       (canPlay && pending ? '<button type="button" class="btn primary block" data-action="roll" data-kind="' + pending.die + '">🎲 已擲出 ' + pending.value + '，點這裡繼續</button>' : '') +
       (player.medalArmed ? '<p class="medal-on">🥇 好運金牌已啟用：下一次停在寶箱或機會格，效果發生 2 次</p>' : '') +
+      (canPlay && !picking && store.flightReady(child.id) ? '<button type="button" class="btn primary block flight-btn" data-action="take-flight"><img src="images/flight_plane.webp" alt="" aria-hidden="true" width="256" height="256"> 搭專機前往' + h(store.flightReady(child.id).name) + '<small>不算擲骰次數</small></button>' : '') +
       (canPlay && store.getPendingMinigame(child.id) ? '<button type="button" class="btn primary block mg-resume" data-action="play-minigame">🎮 今天的小遊戲還沒玩完，點這裡開始</button>' : '') +
       '<section class="dice-bar">' +
       act('d6', '6 面骰', bag.d6, !canPlay || noRolls || !bag.d6 || !!pending || picking) +
@@ -1810,9 +1811,8 @@
     var ev = res.event;
     try {
       if (res.travel) {   // 通關後前往下一座島：換成新島嶼的地圖，從起點出發
-        toast('🛶 出發前往' + res.travel.name + '！', 'pos');
-        render();
-        await sleep(500);
+        if (res.travel.island === 'wood') { await flightScene(child, { from: '金島', island: 'wood', name: res.travel.name }); }   // 沒按專機按鈕、直接擲骰：一樣搭專機過去
+        else { toast('🛶 出發前往' + res.travel.name + '！', 'pos'); render(); await sleep(500); }
       } else if (res.lap) {   // 從終點回到起點開始新的一輪
         toast('🔄 新的一輪開始！從起點出發', 'pos');
         await hopAlong(child, [0]);
@@ -2149,6 +2149,40 @@
     document.body.appendChild(el);
     toastEl.hidden = true;   // 通關畫面已列出成就，不另外跳提示
     el.querySelector('[data-clear-ok]').onclick = function () { el.remove(); render(); announceAchievements(child.id, ['goldClear1']); };   // 通關畫面已列出「金島通關」，劇場不重複演出
+  }
+
+  // ---------- 金島 → 木島：專機過場（2026-11-14 家長設計）----------
+  // 起飛 → 飛行 → 「抵達木島，降落！」。換島資料在過場開始前就已寫入；這裡只負責演出。圖片先用現有素材（專機道具圖去背、兩座島的大廳插圖）。
+  function flightScene(child, fl) {
+    return new Promise(function (resolve) {
+      var fast = window.__cgpFastEnding ? 0.08 : 1, still = reduceMotion;
+      var el = document.createElement('div');
+      el.className = 'flight' + (still ? ' still' : ''); el.id = 'flight';
+      el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '專機前往' + fl.name);
+      el.innerHTML = '<div class="fl-sky"><i class="fl-cloud c1"></i><i class="fl-cloud c2"></i><i class="fl-cloud c3"></i>' +
+        '<img class="fl-isle fl-from" src="images/gold-island.webp" alt="" width="1200" height="675">' +
+        '<img class="fl-isle fl-to" src="images/islands/' + fl.island + '.webp" alt="" width="1200" height="675">' +
+        '<img class="fl-plane" src="images/flight_plane.webp" alt="" width="256" height="256"></div>' +
+        '<p class="fl-msg" role="status">✈️ 專機起飛，前往' + h(fl.name) + '！</p>';
+      document.body.appendChild(el);
+      document.body.classList.add('pawn-acting');
+      toastEl.hidden = true;
+      var ready = preloadImages(['images/flight_plane.webp', 'images/gold-island.webp', 'images/islands/' + fl.island + '.webp'], 2500);
+      (async function () {
+        await ready;
+        render();   // 背後的地圖先換成新島嶼
+        el.classList.add('go');
+        await sleep((still ? 900 : 2600) * fast);
+        el.querySelector('.fl-msg').textContent = '☁️ 飛過雲海，' + fl.name + '就在前面…';
+        el.classList.add('near');
+        await sleep((still ? 700 : 2200) * fast);
+        el.classList.add('land');
+        el.innerHTML += '<div class="fl-card" data-testid="flight-arrive"><h2>🛬 抵達' + h(fl.name) + '，降落！</h2>' +
+          '<p>' + h(child.name) + ' 來到' + h(fl.name) + '的起點了。<br>新的冒險開始囉！</p>' +
+          '<button type="button" class="btn primary block" data-fl-ok>開始' + h(fl.name) + '冒險！</button></div>';
+        el.querySelector('[data-fl-ok]').onclick = function () { el.remove(); document.body.classList.remove('pawn-acting'); render(); resolve(); };
+      })();
+    });
   }
 
   // ---------- 木島結局（2026-11-12 家長設計）：樹洞對話 → 第一人稱溜滑梯（5 張圖）→ 神祕藍光 → 木島冒險完成 ----------
@@ -3988,6 +4022,12 @@
         case 'item-info': showInfo('道具說明', ITEM_INFO[el.getAttribute('data-kind')] || ''); break;
         case 'open-shop': openShop(childId); break;
         case 'play-minigame': openMinigame(childId); break;
+        case 'take-flight': {
+          if (ui.busy) break;
+          var fl = store.takeFlight(childId);   // 先寫入（已在木島起點），再演過場；中途關掉也不會卡在半路
+          flightScene(store.getChild(childId), fl);
+          break;
+        }
         case 'pick-character': openCharacterPicker(childId); break;
         case 'claim': {
           var cr = store.claimChallenge(childId, id);

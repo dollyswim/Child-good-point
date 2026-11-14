@@ -1544,12 +1544,27 @@ async function main() {
       s.getPlayer(cid).bag.d6 = 1; s.data.adventure.rolls = []; s.random = () => 0.1; s.save();
     }, id);
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);
-    assert.match(await q.locator('.map-hint').innerText(), /下次出發前往「木島」/);
-    await q.click('.dice-btn.d6');
-    await q.waitForFunction(() => (document.querySelector('#pawn') || {}).dataset && document.querySelector('#pawn').dataset.tile === 'wood-01-001', null, { timeout: 10000 });
+    assert.match(await q.locator('.map-hint').innerText(), /搭專機前往「木島」/);
+    // 2026-11-14：金島通關後地圖出現「搭專機前往木島」按鈕（不算次數）→ 飛行過場 →「抵達木島，降落！」
+    await q.evaluate(() => { window.__cgpFastEnding = true; });
+    const rolls0 = await q.evaluate((cid) => [window.__cgpStore.getRollsLeft(cid), window.__cgpStore.getPlayer(cid).bag.d6], id);
+    assert.match(await q.locator('[data-action=take-flight]').innerText(), /搭專機前往木島[\s\S]*不算擲骰次數/);
+    if (SHOT_DIR) await q.locator('[data-action=take-flight]').screenshot({ path: path.join(SHOT_DIR, 'flight-btn.png') });
+    await q.click('[data-action=take-flight]');
+    await q.waitForSelector('#flight .fl-plane');
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).island, id), 'wood', '換島資料在過場開始前就寫入');
+    await q.waitForSelector('[data-testid=flight-arrive]', { timeout: 8000 });
+    assert.match(await q.locator('[data-testid=flight-arrive]').innerText(), /抵達木島，降落！[\s\S]*開始木島冒險！/);
+    if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'flight-arrive.png') });
+    await q.click('[data-fl-ok]');
+    await q.waitForSelector('#flight', { state: 'detached' });
+    await q.waitForFunction(() => (document.querySelector('#pawn') || {}).dataset && /^wood-01-/.test(document.querySelector('#pawn').dataset.tile), null, { timeout: 10000 });
+    assert.equal(await q.locator('[data-testid=pos]').innerText(), '0 / 100', '降落在木島起點');
+    assert.deepEqual(await q.evaluate((cid) => [window.__cgpStore.getRollsLeft(cid), window.__cgpStore.getPlayer(cid).bag.d6], id), rolls0, '搭專機不算擲骰次數、不用骰子');
+    assert.equal(await q.locator('[data-action=take-flight]').count(), 0, '到木島後按鈕消失');
     assert.match(await q.locator('.plaque h1').innerText(), /木島/);
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).islands.gold.maxReached, id), 100, '金島進度保存');
-    console.log('✔ 換島：木島開放後通關金島 → 下一次出發到木島起點、地圖換成木島、金島進度保存');
+    console.log('✔ 換島：木島開放後通關金島 → 地圖出現專機按鈕 → 飛行過場 → 抵達木島起點（不算次數）、地圖換成木島、金島進度保存');
     console.log('✔ 成就：冒險大廳成就區、解鎖提示、說明；金島通關全螢幕慶祝、第一次通關獎勵與成就');
     await c16.close();
   }

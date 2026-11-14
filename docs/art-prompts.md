@@ -551,3 +551,12 @@ English (shared): First-person POV sliding down a wooden root slide inside a gia
 
 - 中文：圓形成就徽章，翡翠綠色圓潤粗外框（和「金島通關」徽章同一系列），圓框內是巨大古樹的樹洞入口，樹根纏繞成拱門，洞口上方掛著一串暖黃色小燈，洞裡透出淡淡的藍色神祕光芒，旁邊插一面紅色小旗；黏土玩具般的柔和質感、溫暖粉彩；純白背景，徽章置中，四周留約 8% 邊距；不要文字、不要數字。1024×1024。
 - English: Round achievement badge with a thick glossy emerald-green rim (same series as the existing "gold island clear" badge). Inside: the hollow entrance of a giant fairy-tale tree, roots forming an arch, a string of warm yellow lights above the opening, a soft mysterious blue glow from inside, a small red flag beside it. Soft clay-toy texture, warm pastels. Pure white background, centered, about 8% margin, no text, no numbers. 1024×1024.
+
+## 金島 → 木島：專機飛行過場（2026-11-14，選做）
+
+目前過場用現有素材拼成（專機道具圖＋兩座島的大廳插圖）。想換成專屬圖時可以做 1～2 張，到貨後改 `js/app.js` 的 `flightScene()`。
+
+- 直式 3:4，至少 1080×1440；不要文字、不要任何角色（每個孩子的夥伴不同）。風格：童話遊戲、黏土玩具般的柔和質感、溫暖粉彩。
+- 第 1 張（飛行中）：藍白相間、金色螺旋槳的可愛小飛機（和道具「呼叫專機」同一架）飛在藍天白雲間，左下方遠處是金色的金島（城堡、齒輪、礦山），右前方遠處是綠色的木島（巨樹、樹屋），飛機朝右上方飛。
+- 第 2 張（降落，選做）：同一架小飛機正要降落在木島森林入口的草地上，前方是土路和大樹，氣氛溫暖明亮。
+- English: A cute toy-like propeller plane (blue and cream with a golden propeller) flying through a bright sky with soft clouds; a golden island with a castle far behind on the lower left, a green forest island with a giant tree ahead on the right. Soft clay-toy texture, warm pastel storybook game art, portrait 3:4, no characters, no text.

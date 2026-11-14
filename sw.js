@@ -1,10 +1,10 @@
 /* 親子集點 Service Worker：離線可用。資料存在 localStorage，不受快取影響。 */
-var CACHE = 'cgp-shell-v155';
+var CACHE = 'cgp-shell-v156';
 // 2026-11-09：其他島（木島以後）的大廳插圖、木島劇情圖不預先下載，第一次用到才下載並存進圖片快取（金島小遊戲用的落葉找松果圖保留）
 var SHELL = [
   'images/challenge_scroll.webp', 'images/challenge_medal.webp', 'images/challenge_done.webp',
   'images/plaque/home2.webp', 'images/plaque/child.webp', 'images/plaque/challenge.webp', 'images/plaque/shop.webp', 'images/plaque/report.webp', 'images/plaque/lobby.webp',
-  'images/adv_map.webp',
+  'images/adv_map.webp', 'images/flight_plane.webp',
   'images/nav/nav_wood_bar.webp', 'images/nav/nav_home2.webp', 'images/nav/nav_child2.webp', 'images/nav/nav_challenge2.webp', 'images/nav/nav_rewards2.webp', 'images/nav/nav_records2.webp',
   'fonts/jf-openhuninn-app.woff2', 'fonts/jf-openhuninn-2.0.woff2',
   'images/badges/badge_advStart.webp', 'images/badges/badge_catch10.webp', 'images/badges/badge_catch5.webp', 'images/badges/badge_chest1.webp', 'images/badges/badge_chests10.webp', 'images/badges/badge_earn1000.webp', 'images/badges/badge_earn10000.webp', 'images/badges/badge_earn2000.webp', 'images/badges/badge_earn3000.webp', 'images/badges/badge_earn4000.webp', 'images/badges/badge_earn5000.webp', 'images/badges/badge_earn6000.webp', 'images/badges/badge_earn7000.webp', 'images/badges/badge_earn8000.webp', 'images/badges/badge_earn9000.webp', 'images/badges/badge_goldClear1.webp', 'images/badges/badge_goldHero.webp', 'images/badges/badge_locked.webp', 'images/badges/badge_mystery1.webp', 'images/badges/badge_pine10.webp', 'images/badges/badge_reachR2.webp', 'images/badges/badge_reachR3.webp', 'images/badges/badge_reachR4.webp', 'images/badges/badge_special1.webp', 'images/badges/badge_special5.webp', 'images/badges/badge_squirrel5.webp', 'images/badges/badge_streak7.webp', 'images/badges/badge_woodClear1v2.webp', 'images/badges/badge_woodHero.webp',

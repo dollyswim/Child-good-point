@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-13｜App 版本 `2026.11.13-145`｜Service Worker 快取 `cgp-shell-v155`｜`main` 最新：木島開放（2026-11-13）
+> 最後更新：2026-11-13｜App 版本 `2026.11.14-146`｜Service Worker 快取 `cgp-shell-v156`｜`main` 最新：木島開放（2026-11-13）
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -14,7 +14,7 @@
 - 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v155`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.13-145`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v156`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.14-146`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 142 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -61,6 +61,11 @@
 - 單元測試檔一開始會 `delete G.BOARDS.wood`（舊測試以「只有金島」為前提）；E2E 預設注入 `__cgpWoodClosed`、`__cgpNoOnboard`、`__cgpNoStory`、`__cgpNoTheater`，要測對應功能時傳 `wood`／`onboard`／`story`／`theater: true`。
 - Playwright 的 `waitForFunction` 不會等 async 判斷（Promise 一律算成立），要用輪詢。
 - 木島格子資料：改 `data/wood_island_coordinates_0_100.json` 後跑 `tools/gen_board_wood.py`。
+
+### 2026-11-14：金島 → 木島專機
+- 家長設計：通關金島、停在第 100 格時，地圖下方出現「搭專機前往木島（不算擲骰次數）」按鈕；按了 → 飛行過場 →「🛬 抵達木島，降落！」→ 木島起點。已通關過、還在金島繞圈的孩子要再走到第 100 格才會出現按鈕（家長決定）。木島通關後回金島維持原本做法。
+- `js/game.js`：`flightReady()`（只有金島終點且下一座島已開放時回傳目的地）、`takeFlight()`（用既有的 `_startNext()` 換島，不扣骰子、不記次數）。`js/app.js`：`flightScene()`、地圖按鈕 `data-action="take-flight"`；沒按按鈕直接擲骰時也會先播同一段過場再前進。換島資料在過場前就寫入。
+- 過場圖是暫用素材：`images/flight_plane.webp`（呼叫專機道具圖，只去除與外框相連的白底）＋金島、木島的大廳插圖。正式過場圖提示詞在 `docs/art-prompts.md`「金島 → 木島：專機飛行過場」。
 
 ### 2026-11-10～13 完成的重點（新的在上面；細節在下方各條）
 - 「木島通關」徽章換上家長提供的專屬圖（11-13）。

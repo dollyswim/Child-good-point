@@ -1114,6 +1114,26 @@
     this._logItem(childId, 'travel', to, 1, board.name, '前往' + nb.name);
     return { island: to, name: nb.name };
   };
+  /**
+   * 金島 → 木島的專機（2026-11-14 家長設計）：通關金島、停在第 100 格時，地圖出現「搭專機前往木島」按鈕。
+   * 不算擲骰或道具次數、不用任何道具。其他島之間的移動維持原本做法（下一次移動時出發）。
+   * @returns {{ island, name }|null} 現在可以搭專機時回傳目的地
+   */
+  Store.prototype.flightReady = function (childId) {
+    var p = this.getPlayer(childId), board = this.getBoard(childId);
+    if (p.island !== 'gold' || p.pendingRoll || board.tiles[p.pos].type !== 'end') return null;
+    var to = nextIsland(p.island);
+    return to ? { island: to, name: BOARDS[to].name } : null;
+  };
+  /** 搭專機：直接到下一座島的起點（第 0 格），原島進度照舊保存 */
+  Store.prototype.takeFlight = function (childId) {
+    this._requirePlay(childId);
+    if (!this.flightReady(childId)) throw new Error('現在沒有專機可以搭');
+    var from = this.getBoard(childId).name;
+    var dest = this._startNext(childId);
+    this.save();
+    return { from: from, island: dest.island, name: dest.name };
+  };
   /** 移動類道具：溜冰鞋 3 格、飛行翼 20 格（不算擲骰次數；到目前開放的最後一格就停） */
   var MOVE_ITEMS = { skates: { steps: 3, name: '溜冰鞋' }, wings: { steps: 20, name: '飛行翼' } };
   /** 每日使用上限（2026-11-07 家長決定）：前進類（溜冰鞋＋飛行翼）合計 5 次、傳送門 1 次 */

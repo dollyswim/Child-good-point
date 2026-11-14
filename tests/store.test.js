@@ -2742,3 +2742,25 @@ test('傳送門不能跳過還沒完成的任務格：最遠到前方第一個�
   assert.equal(store.useDoor(a.id, 95).path[0], 95);
   assert.equal(store.useDoor(a.id, 10).path[0], 10, '往回傳送不受限制');
 });
+
+test('金島 → 木島專機：通關金島停在第 100 格才能搭；不算擲骰次數、不用道具；到木島起點、金島進度保存；木島不能搭', () => {
+  const { store, a } = p3Store();
+  const p = store.getPlayer(a.id);
+  store.setPlayerTile(a.id, END);
+  assert.equal(store.flightReady(a.id), null, '木島沒開放：沒有專機');
+  G.registerBoard('wood', G.buildWood());
+  try {
+    store.setPlayerTile(a.id, END - 1);
+    assert.equal(store.flightReady(a.id), null, '還沒到第 100 格');
+    assert.throws(() => store.takeFlight(a.id), /沒有專機/);
+    store.setPlayerTile(a.id, END); p.maxReached = END;
+    assert.deepEqual(store.flightReady(a.id), { island: 'wood', name: '木島' });
+    const rolls = store.getRollsLeft(a.id), bag = JSON.stringify(p.bag), uses = store.data.adventure.rolls.length;
+    assert.deepEqual(store.takeFlight(a.id), { from: '金島', island: 'wood', name: '木島' });
+    assert.deepEqual([p.island, p.pos, p.tileId], ['wood', 0, 'wood-01-start']);
+    assert.equal(p.islands.gold.maxReached, END, '金島進度保存');
+    assert.deepEqual([store.getRollsLeft(a.id), JSON.stringify(p.bag), store.data.adventure.rolls.length], [rolls, bag, uses], '不算次數、不用道具');
+    assert.equal(store.flightReady(a.id), null, '在木島沒有專機（木島通關後維持原本做法）');
+    assert.throws(() => store.takeFlight(a.id), /沒有專機/);
+  } finally { delete G.BOARDS.wood; }
+});
