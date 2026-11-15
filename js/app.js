@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.15-147';
+  var APP_VERSION = '2026.11.15-148';
   var store;
   try {
     store = new CGP.Store();
@@ -965,7 +965,7 @@
     }).join('');
   }
   // ---------- 飛行員阿翔（2026-11-15 家長設計）：通關金島後站在金冠城堡旁，駕駛「飛行者」載孩子去木島 ----------
-  var PILOT = { name: '飛行員阿翔', emoji: '🧑‍✈️', img: '', x: 668, y: 566 };   // 位置：金島長地圖座標（第 100 格右邊的空地）；img 正式圖到貨後填上
+  var PILOT = { name: '飛行員阿翔', emoji: '🧑‍✈️', img: 'images/gold/pilot.webp', x: 668, y: 566 };   // 位置：金島長地圖座標（第 100 格右邊的空地）；img 正式圖到貨後填上
   function pilotArt(cls) {
     return PILOT.img ? '<img class="' + cls + '" src="' + PILOT.img + '" alt="" draggable="false">' : '<span class="pilot-emoji ' + cls + '" aria-hidden="true">' + PILOT.emoji + '</span>';
   }
@@ -2198,28 +2198,26 @@
   }
 
   // ---------- 金島 → 木島：專機過場（2026-11-14 家長設計）----------
-  // 起飛 → 飛行 → 「抵達木島，降落！」。換島資料在過場開始前就已寫入；這裡只負責演出。圖片先用現有素材（專機道具圖去背、兩座島的大廳插圖）。
+  // 起飛 → 飛行 → 「抵達木島，降落！」。換島資料在過場開始前就已寫入；這裡只負責演出。圖片：images/flight/fly.webp、land.webp（家長正式圖）。
   function flightScene(child, fl) {
     return new Promise(function (resolve) {
       var fast = window.__cgpFastEnding ? 0.08 : 1, still = reduceMotion;
       var el = document.createElement('div');
       el.className = 'flight' + (still ? ' still' : ''); el.id = 'flight';
       el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '飛行者前往' + fl.name);
-      el.innerHTML = '<div class="fl-sky"><i class="fl-cloud c1"></i><i class="fl-cloud c2"></i><i class="fl-cloud c3"></i>' +
-        '<img class="fl-isle fl-from" src="images/gold-island.webp" alt="" width="1200" height="675">' +
-        '<img class="fl-isle fl-to" src="images/islands/' + fl.island + '.webp" alt="" width="1200" height="675">' +
-        '<img class="fl-plane" src="images/flight_plane.webp" alt="" width="256" height="256"></div>' +
+      // 2026-11-15 家長正式圖：飛行中（阿翔駕駛飛行者，金島在後、木島在前）→ 降落在森林入口
+      el.innerHTML = '<i class="fl-frame fl-fly" style="background-image:url(images/flight/fly.webp)"></i><i class="fl-frame fl-land" style="background-image:url(images/flight/land.webp)"></i>' +
         '<p class="fl-msg" role="status">✈️ 「飛行者」起飛，前往' + h(fl.name) + '！</p>';
       document.body.appendChild(el);
       document.body.classList.add('pawn-acting');
       toastEl.hidden = true;
-      var ready = preloadImages(['images/flight_plane.webp', 'images/gold-island.webp', 'images/islands/' + fl.island + '.webp'], 2500);
+      var ready = preloadImages(['images/flight/fly.webp', 'images/flight/land.webp'], 3000);
       (async function () {
         await ready;
         render();   // 背後的地圖先換成新島嶼
         el.classList.add('go');
         await sleep((still ? 900 : 2600) * fast);
-        el.querySelector('.fl-msg').textContent = '☁️ 飛過雲海，' + fl.name + '就在前面…';
+        el.querySelector('.fl-msg').textContent = '🌳 看到' + fl.name + '了，準備降落！';
         el.classList.add('near');
         await sleep((still ? 700 : 2200) * fast);
         el.classList.add('land');

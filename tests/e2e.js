@@ -1585,7 +1585,7 @@ async function main() {
     await q.waitForSelector('#pilot-talk');
     await q.click('[data-pilot=next]');
     await q.click('[data-pilot=go]');
-    await q.waitForSelector('#flight .fl-plane');
+    await q.waitForSelector('#flight .fl-frame');
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).island, id), 'wood', '換島資料在過場開始前就寫入');
     await q.waitForSelector('[data-testid=flight-arrive]', { timeout: 8000 });
     assert.match(await q.locator('[data-testid=flight-arrive]').innerText(), /抵達木島，降落！[\s\S]*開始木島冒險！/);

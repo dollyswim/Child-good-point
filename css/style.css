@@ -2191,31 +2191,23 @@ html.font-on body { font-family: "jf-openhuninn", "jf-openhuninn-full", "Arial R
 .we-q { margin: 0; font-weight: 800; color: #3d6680; line-height: 1.6; } .we-soon { margin: 0; font-weight: 900; color: #e0761c; }
 /* 金島 → 木島 專機過場（2026-11-14）：只用 transform／opacity；減少動態時只淡入淡出 */
 .flight { position: fixed; inset: 0; z-index: 80; overflow: hidden; display: grid; place-items: center; background: linear-gradient(#69bdf2, #bfe6ff 60%, #eaf7ff); }
-.fl-sky { position: absolute; inset: 0; }
-.fl-cloud { position: absolute; width: 150px; height: 46px; border-radius: 99px; background: rgba(255, 255, 255, .9); box-shadow: 40px -18px 0 4px rgba(255, 255, 255, .9), 86px -6px 0 -4px rgba(255, 255, 255, .9); }
-.fl-cloud.c1 { left: 6%; top: 16%; } .fl-cloud.c2 { right: 4%; top: 34%; transform: scale(.8); } .fl-cloud.c3 { left: 30%; top: 60%; transform: scale(1.2); opacity: .8; }
-.flight.go .fl-cloud { animation: fl-drift 5s linear both; }
-@keyframes fl-drift { to { margin-left: -70vw; } }
-.fl-isle { position: absolute; bottom: 14%; width: min(64vw, 300px); height: auto; border-radius: 22px; border: 4px solid #fff; box-shadow: 0 8px 20px rgba(30, 70, 120, .25); transition: transform 2.4s ease-in, opacity 1.6s; }
-.fl-from { left: 6%; } .fl-to { right: 6%; opacity: 0; transform: translateX(60vw) scale(.8); }
-.flight.go .fl-from { transform: translateX(-80vw) scale(.8); opacity: 0; }
-.flight.near .fl-to { opacity: 1; transform: none; transition: transform 2s ease-out, opacity 1.2s; }
-.fl-plane { position: absolute; left: 50%; top: 30%; width: min(42vw, 190px); height: auto; margin-left: max(-21vw, -95px); transform: translate(-70vw, 30px) scaleX(-1) rotate(-8deg); filter: drop-shadow(0 10px 8px rgba(30, 70, 120, .25)); }
-.flight.go .fl-plane { animation: fl-fly 4.8s ease-in-out both; }
-@keyframes fl-fly { 0% { transform: translate(-70vw, 30px) scaleX(-1) rotate(-8deg); } 35% { transform: translate(-6vw, -10px) scaleX(-1) rotate(-3deg); } 65% { transform: translate(6vw, 4px) scaleX(-1) rotate(2deg); } 100% { transform: translate(14vw, 40px) scaleX(-1) rotate(8deg); } }
-.flight.land .fl-plane { opacity: .0; transition: opacity .5s; }
-.flight.still .fl-plane { transform: scaleX(-1); animation: none; } .flight.still .fl-cloud { animation: none; }
-.flight.still .fl-isle { transition: opacity .5s; } .flight.still.go .fl-from { transform: none; } .flight.still .fl-to { transform: none; }
+.fl-frame { position: absolute; inset: 0; display: block; opacity: 0; background: #bfe6ff no-repeat 50% 50% / cover; will-change: transform, opacity; }
+.fl-land { background-color: #8fc46f; }
+.flight.go .fl-fly { opacity: 1; animation: fl-pan 5.2s ease-in-out both; transition: opacity .5s; }
+@keyframes fl-pan { from { transform: scale(1.18) translate(3%, 2%); } to { transform: scale(1.04) translate(-2%, -1%); } }
+.flight.near .fl-land { opacity: 1; animation: fl-down 3s ease-out both; transition: opacity .8s; }
+@keyframes fl-down { from { transform: scale(1.2) translateY(-3%); } to { transform: scale(1.02); } }
+.flight.still .fl-frame { animation: none !important; }
 .fl-msg { position: absolute; left: 50%; top: calc(env(safe-area-inset-top) + 9%); transform: translateX(-50%); margin: 0; padding: 8px 18px; border-radius: 99px; background: rgba(255, 255, 255, .92); color: #2a5f8f; font-weight: 900; white-space: nowrap; max-width: 92vw; box-shadow: 0 4px 12px rgba(30, 70, 120, .18); }
 .flight.land .fl-msg { display: none; }
-.fl-card { position: relative; z-index: 2; width: min(92vw, 360px); display: grid; justify-items: center; gap: 10px; padding: 22px 18px; border-radius: 28px; background: #fff; text-align: center; box-shadow: 0 14px 40px rgba(20, 80, 110, .3); margin-top: -18vh; }
+.fl-card { position: relative; z-index: 2; width: min(92vw, 360px); display: grid; justify-items: center; gap: 10px; padding: 22px 18px; border-radius: 28px; background: #fff; text-align: center; box-shadow: 0 14px 40px rgba(20, 80, 110, .3); align-self: end; margin-bottom: calc(env(safe-area-inset-bottom) + 6vh); }   /* 放在下方，不擋住降落的飛行者 */
 .fl-card h2 { margin: 0; color: #2f7a22; font-size: 1.45rem; } .fl-card p { margin: 0; font-weight: 800; color: #5a3a1a; line-height: 1.6; }
 /* 飛行員阿翔（2026-11-15）：金島通關後站在城堡旁；正式圖到貨前用表情符號 */
-.story-guide.pilot { position: absolute; transform: translate(-50%, -100%); width: 64px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.story-guide.pilot { position: absolute; transform: translate(-50%, -100%); width: 62px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .pilot-emoji.pilot-art { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: #fff; border: 3px solid #5aa7e8; font-size: 40px; line-height: 1; box-shadow: 0 4px 6px rgba(30, 60, 110, .3); }
 img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 3px rgba(30, 60, 110, .3)); }
 .pilot-talk { position: fixed; inset: 0; z-index: 70; background: rgba(30, 20, 10, .28); }
 .pilot-box { bottom: calc(env(safe-area-inset-bottom) + 104px); }
 .pilot-box .we-who { color: #23709f; }
-.pilot-emoji.pilot-face { font-size: 1.5rem; line-height: 1; } img.pilot-face { width: 30px; height: auto; }
+.pilot-emoji.pilot-face { font-size: 1.5rem; line-height: 1; } img.pilot-face { width: 34px; height: auto; }
 .pilot-acts { display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px; margin-top: 4px; }
