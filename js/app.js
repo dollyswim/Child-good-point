@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.15-148';
+  var APP_VERSION = '2026.11.15-149';
   var store;
   try {
     store = new CGP.Store();
@@ -965,7 +965,7 @@
     }).join('');
   }
   // ---------- 飛行員阿翔（2026-11-15 家長設計）：通關金島後站在金冠城堡旁，駕駛「飛行者」載孩子去木島 ----------
-  var PILOT = { name: '飛行員阿翔', emoji: '🧑‍✈️', img: 'images/gold/pilot.webp', x: 668, y: 566 };   // 位置：金島長地圖座標（第 100 格右邊的空地）；img 正式圖到貨後填上
+  var PILOT = { name: '飛行員阿翔', emoji: '🧑‍✈️', img: 'images/gold/pilot2.webp', x: 668, y: 566 };   // 位置：金島長地圖座標（第 100 格右邊的空地）；img 正式圖到貨後填上
   function pilotArt(cls) {
     return PILOT.img ? '<img class="' + cls + '" src="' + PILOT.img + '" alt="" draggable="false">' : '<span class="pilot-emoji ' + cls + '" aria-hidden="true">' + PILOT.emoji + '</span>';
   }

@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-13｜App 版本 `2026.11.15-148`｜Service Worker 快取 `cgp-shell-v158`｜`main` 最新：木島開放（2026-11-13）
+> 最後更新：2026-11-13｜App 版本 `2026.11.15-149`｜Service Worker 快取 `cgp-shell-v159`｜`main` 最新：木島開放（2026-11-13）
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -14,7 +14,7 @@
 - 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v158`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.15-148`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v159`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.15-149`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 142 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -73,7 +73,7 @@
 - 原本的「搭專機前往木島」按鈕已移除。阿翔目前用表情符號 🧑‍✈️ 佔位，正式圖提示詞在 `docs/art-prompts.md`「飛行員阿翔」，到貨後填 `PILOT.img`（並加進 `sw.js`）。
 
 ### 2026-11-15：阿翔與飛行過場換上家長正式圖
-- `images/gold/pilot.webp`（阿翔，白底圖只去除與外框相連的白底＋腳邊的白色地面陰影，圍巾保留；高 480px）；`images/flight/fly.webp`（飛行中）、`images/flight/land.webp`（降落在木島森林入口），各 810×1085。
+- `images/gold/pilot2.webp`（阿翔，白底圖只去除與外框相連的白底，另外清掉外套下緣以下「兩腳中間與腳邊」的白色，圍巾保留；高 480px）；`images/flight/fly.webp`（飛行中）、`images/flight/land.webp`（降落在木島森林入口），各 810×1085。
 - `flightScene()` 改成兩張全螢幕圖（緩慢縮放平移）→ 下方出現「抵達木島，降落！」卡片；暫用的 `images/flight_plane.webp` 與拼貼做法已移除。
 
 ### 2026-11-10～13 完成的重點（新的在上面；細節在下方各條）
