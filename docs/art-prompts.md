@@ -560,3 +560,10 @@ English (shared): First-person POV sliding down a wooden root slide inside a gia
 - 第 1 張（飛行中）：藍白相間、金色螺旋槳的可愛小飛機（和道具「呼叫專機」同一架）飛在藍天白雲間，左下方遠處是金色的金島（城堡、齒輪、礦山），右前方遠處是綠色的木島（巨樹、樹屋），飛機朝右上方飛。
 - 第 2 張（降落，選做）：同一架小飛機正要降落在木島森林入口的草地上，前方是土路和大樹，氣氛溫暖明亮。
 - English: A cute toy-like propeller plane (blue and cream with a golden propeller) flying through a bright sky with soft clouds; a golden island with a castle far behind on the lower left, a green forest island with a giant tree ahead on the right. Soft clay-toy texture, warm pastel storybook game art, portrait 3:4, no characters, no text.
+
+## 飛行員阿翔（2026-11-15）
+
+用途：金島通關後站在金冠城堡旁的 NPC，也顯示在對話框的名字旁。目前用 🧑‍✈️ 佔位。到貨後放 `images/gold/pilot.webp`，填 `js/app.js` 的 `PILOT.img`，並加進 `sw.js`。
+
+- 中文：可愛的 Q 版小飛行員「阿翔」，全身站姿、面向正面略偏左，戴復古皮革飛行帽和護目鏡（護目鏡推到額頭上），穿藍色飛行夾克、白色圍巾隨風飄，一手舉起打招呼，表情開朗有自信；童話遊戲風格、黏土玩具般的柔和質感、溫暖粉彩，和金島技師同一個畫風；純白背景，角色置中，四周留邊，不要文字、不要飛機、不要地面陰影以外的背景。直式約 2:3，至少 800×1200。
+- English: A cute chibi pilot character named A-Xiang, full body standing, facing front slightly left, wearing a retro leather aviator cap with goggles pushed up on the forehead, a blue flight jacket and a white scarf fluttering, one hand raised in a friendly wave, cheerful and confident. Storybook game style, soft clay-toy texture, warm pastels, matching the existing gold-island technician character. Pure white background, centered with margin, no text, no airplane, portrait about 2:3, at least 800×1200.

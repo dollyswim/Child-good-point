@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.14-146';
+  var APP_VERSION = '2026.11.15-147';
   var store;
   try {
     store = new CGP.Store();
@@ -964,10 +964,53 @@
         (lever ? '<div class="story-lever" id="story-lever" style="left:' + lever.x.toFixed(1) + 'px;top:' + lever.y.toFixed(1) + 'px;z-index:' + Math.round(lever.y / 6) + '" aria-hidden="true"><i></i></div>' : '');
     }).join('');
   }
+  // ---------- 飛行員阿翔（2026-11-15 家長設計）：通關金島後站在金冠城堡旁，駕駛「飛行者」載孩子去木島 ----------
+  var PILOT = { name: '飛行員阿翔', emoji: '🧑‍✈️', img: '', x: 668, y: 566 };   // 位置：金島長地圖座標（第 100 格右邊的空地）；img 正式圖到貨後填上
+  function pilotArt(cls) {
+    return PILOT.img ? '<img class="' + cls + '" src="' + PILOT.img + '" alt="" draggable="false">' : '<span class="pilot-emoji ' + cls + '" aria-hidden="true">' + PILOT.emoji + '</span>';
+  }
+  function pilotDecor(child, board) {
+    if (board.id !== 'gold' || !store.flightReady(child.id)) return '';
+    return '<div class="story-guide pilot" id="pilot" data-tap="pilot" style="left:' + PILOT.x + 'px;top:' + PILOT.y + 'px;z-index:' + Math.round(PILOT.y / 6) + '" role="img" aria-label="' + PILOT.name + '：點我搭飛行者去木島">' +
+      pilotArt('pilot-art') + '<span class="story-bang" aria-hidden="true">！</span></div>';
+  }
+  /** 阿翔的對話：兩句介紹 →「好，出發！」（搭飛行者去下一座島）或「等一下」（阿翔留在城堡旁，之後點他再出發） */
+  function pilotTalk(child) {
+    var dest = store.flightReady(child.id);
+    if (!dest || document.getElementById('pilot-talk') || document.getElementById('flight')) return;
+    if (ui.cam) { ui.cam.cx = PILOT.x; ui.cam.cy = PILOT.y - 60; applyCam(true); }   // 鏡頭移到阿翔
+    var lines = ['我是飛行員阿翔！', '為了感謝你修好金島的能量塔，讓我駕駛「飛行者」，載你到' + dest.name + '去吧！'], i = 0;
+    var el = document.createElement('div');
+    el.className = 'pilot-talk'; el.id = 'pilot-talk';
+    el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', PILOT.name);
+    function draw() {
+      var last = i === lines.length - 1;
+      el.innerHTML = '<div class="we-talk pilot-box"><span class="we-who">' + pilotArt('pilot-face') + PILOT.name + '</span><p class="we-line">' + h(lines[i]) + '</p>' +
+        (last ? '<div class="pilot-acts"><button type="button" class="btn" data-pilot="wait">等一下</button><button type="button" class="btn primary" data-pilot="go">好，出發！</button></div>'
+          : '<button type="button" class="btn primary we-next" data-pilot="next">繼續</button>') + '</div>';
+    }
+    el.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-pilot]');
+      if (!t) return;
+      var a = t.getAttribute('data-pilot');
+      if (a === 'next') { i++; draw(); return; }
+      el.remove(); document.body.classList.remove('pawn-acting');
+      if (a === 'wait') { toast('阿翔會在城堡旁等你，準備好了再點他！'); followPawn(true); return; }
+      try {
+        var fl = store.takeFlight(child.id);   // 先寫入（已在木島起點），再演過場；中途關掉也不會卡在半路
+        flightScene(child, fl);
+      } catch (err) { toast(err.message, 'neg'); render(); }
+    });
+    draw();
+    document.body.appendChild(el);
+    document.body.classList.add('pawn-acting');
+  }
+
   /** 地圖上點到可互動的東西（地圖接管觸控，由 setupMap 的放開判斷呼叫） */
   function mapTap(child, el) {
     var kind = el.getAttribute('data-tap');
     if (kind === 'pick') { collectPick(el); return; }
+    if (kind === 'pilot') { pilotTalk(child); return; }
     if (kind === 'guide') {
       var id = el.getAttribute('data-story'), cfg = ISLAND_STORY[GAME.STORIES[id].island];
       techTalk(child, 3200, cfg.spots[id].hint, el); return;
@@ -1458,7 +1501,7 @@
     var ended = store.isAdventureEnded(child.id);
     var reason = ended ? '🏁 今天的冒險已經結束了，明天見！' : !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
       : picking ? '🚪 傳送門：點地圖上的格子選擇要去的地方'
-      : atEnd ? (board.tiles[player.pos].type === 'end' ? '🏁 已抵達' + (board.goalName || '終點') + '、通關' + board.name + '！' + (store.flightReady(child.id) ? '按下面的按鈕，搭專機前往「' + store.flightReady(child.id).name + '」' : GAME.nextIsland(player.island) ? '下次出發前往「' + GAME.BOARDS[GAME.nextIsland(player.island)].name + '」' : '下次出發從起點開始新的一輪') : '🚪 已抵達目前開放區域的終點！下次出發從起點開始新的一輪')
+      : atEnd ? (board.tiles[player.pos].type === 'end' ? '🏁 已抵達' + (board.goalName || '終點') + '、通關' + board.name + '！' + (store.flightReady(child.id) ? '飛行員阿翔在城堡旁等你，點他搭「飛行者」前往「' + store.flightReady(child.id).name + '」' : GAME.nextIsland(player.island) ? '下次出發前往「' + GAME.BOARDS[GAME.nextIsland(player.island)].name + '」' : '下次出發從起點開始新的一輪') : '🚪 已抵達目前開放區域的終點！下次出發從起點開始新的一輪')
         : noRolls ? '今天的 ' + limit + ' 次骰子用完了，明天再來！' + (lim.move && (bag.skates || bag.wings) ? '（前進道具今天還可以用 ' + lim.move + ' 次）' : '')
           : (!bag.d6 && !bag.d12 && !bag.skates ? '背包是空的，點左下角的商店用能量星星購買骰子' : '選一個道具出發吧！');
     var tiles = board.tiles.map(function (t) {   // 長地圖：所有已開放區域的格子都顯示
@@ -1488,7 +1531,7 @@
       '<div class="map-world" id="map-world" style="width:' + W + 'px;height:' + H + 'px" data-w="' + W + '" data-h="' + H + '">' +
       mapStrips(board) +
       towerDecor(board, player) +
-      storyDecor(board, player) +
+      storyDecor(board, player) + pilotDecor(child, board) +
       tiles +
       store.getMapChests(child.id).map(function (c) {
         var cp = worldXY(region, board.tiles[c.n]);
@@ -1506,7 +1549,6 @@
       (picking ? '<button type="button" class="btn block" data-action="cancel-door">取消傳送門</button>' : '') +
       (canPlay && pending ? '<button type="button" class="btn primary block" data-action="roll" data-kind="' + pending.die + '">🎲 已擲出 ' + pending.value + '，點這裡繼續</button>' : '') +
       (player.medalArmed ? '<p class="medal-on">🥇 好運金牌已啟用：下一次停在寶箱或機會格，效果發生 2 次</p>' : '') +
-      (canPlay && !picking && store.flightReady(child.id) ? '<button type="button" class="btn primary block flight-btn" data-action="take-flight"><img src="images/flight_plane.webp" alt="" aria-hidden="true" width="256" height="256"> 搭專機前往' + h(store.flightReady(child.id).name) + '<small>不算擲骰次數</small></button>' : '') +
       (canPlay && store.getPendingMinigame(child.id) ? '<button type="button" class="btn primary block mg-resume" data-action="play-minigame">🎮 今天的小遊戲還沒玩完，點這裡開始</button>' : '') +
       '<section class="dice-bar">' +
       act('d6', '6 面骰', bag.d6, !canPlay || noRolls || !bag.d6 || !!pending || picking) +
@@ -1785,6 +1827,7 @@
   async function playMove(childId, kind, arg) {
     if (ui.busy) return;
     var child = store.getChild(childId);
+    if (kind !== 'door' && store.flightReady(childId)) { pilotTalk(child); return; }   // 金島終點：要去木島請找阿翔（不扣骰子、不算次數）
     var isDie = kind === 'd6' || kind === 'd12' || kind === 'magic';
     var res, pr = null;
     var towerBefore = goldMaxOf(store.getPlayer(childId));   // 走過第 80 格的那一次播放通電動畫
@@ -2148,7 +2191,10 @@
       '<button type="button" class="btn primary block" data-clear-ok>太棒了！</button></div>';
     document.body.appendChild(el);
     toastEl.hidden = true;   // 通關畫面已列出成就，不另外跳提示
-    el.querySelector('[data-clear-ok]').onclick = function () { el.remove(); render(); announceAchievements(child.id, ['goldClear1']); };   // 通關畫面已列出「金島通關」，劇場不重複演出
+    el.querySelector('[data-clear-ok]').onclick = function () {
+      el.remove(); render(); announceAchievements(child.id, ['goldClear1']);
+      if (store.flightReady(child.id)) setTimeout(function () { if (route().name === 'map') pilotTalk(child); }, reduceMotion ? 100 : 700);   // 阿翔來接孩子去木島
+    };   // 通關畫面已列出「金島通關」，劇場不重複演出
   }
 
   // ---------- 金島 → 木島：專機過場（2026-11-14 家長設計）----------
@@ -2158,12 +2204,12 @@
       var fast = window.__cgpFastEnding ? 0.08 : 1, still = reduceMotion;
       var el = document.createElement('div');
       el.className = 'flight' + (still ? ' still' : ''); el.id = 'flight';
-      el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '專機前往' + fl.name);
+      el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '飛行者前往' + fl.name);
       el.innerHTML = '<div class="fl-sky"><i class="fl-cloud c1"></i><i class="fl-cloud c2"></i><i class="fl-cloud c3"></i>' +
         '<img class="fl-isle fl-from" src="images/gold-island.webp" alt="" width="1200" height="675">' +
         '<img class="fl-isle fl-to" src="images/islands/' + fl.island + '.webp" alt="" width="1200" height="675">' +
         '<img class="fl-plane" src="images/flight_plane.webp" alt="" width="256" height="256"></div>' +
-        '<p class="fl-msg" role="status">✈️ 專機起飛，前往' + h(fl.name) + '！</p>';
+        '<p class="fl-msg" role="status">✈️ 「飛行者」起飛，前往' + h(fl.name) + '！</p>';
       document.body.appendChild(el);
       document.body.classList.add('pawn-acting');
       toastEl.hidden = true;
@@ -4022,12 +4068,6 @@
         case 'item-info': showInfo('道具說明', ITEM_INFO[el.getAttribute('data-kind')] || ''); break;
         case 'open-shop': openShop(childId); break;
         case 'play-minigame': openMinigame(childId); break;
-        case 'take-flight': {
-          if (ui.busy) break;
-          var fl = store.takeFlight(childId);   // 先寫入（已在木島起點），再演過場；中途關掉也不會卡在半路
-          flightScene(store.getChild(childId), fl);
-          break;
-        }
         case 'pick-character': openCharacterPicker(childId); break;
         case 'claim': {
           var cr = store.claimChallenge(childId, id);

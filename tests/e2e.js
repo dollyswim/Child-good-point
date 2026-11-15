@@ -836,6 +836,25 @@ async function main() {
       const p = s.getPlayer(a.id); p.island = 'wood'; p.bag.d6 = 4; s.setPlayerTile(a.id, 6); s.save(); return a.id; });
     await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
     assert.ok(await q.evaluate(() => window.CGPGame.WOOD_OPEN === true && !!window.CGPGame.BOARDS.wood && window.CGPGame.nextIsland('gold') === 'wood'), '木島已開放：金島通關後下一座是木島');
+    {
+      // 金島第 97 格擲 6 → 通關畫面 → 按「太棒了」後阿翔自動開始對話 → 好，出發！→ 抵達木島
+      const kid = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '小樂' }); const it = s.addItem({ kind: 'bonus', name: '大2', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+        const p = s.getPlayer(a.id); Object.keys(window.CGPGame.STORIES).forEach((k) => { p.story[k] = true; }); p.bag.d6 = 2; s.setPlayerTile(a.id, 97); p.maxReached = 97; s.random = () => 0.99; s.save(); return a.id; });
+      await q.goto(url + '#map-' + kid); await q.waitForSelector('#pawn');
+      assert.equal(await q.locator('#pilot').count(), 0, '還沒通關：阿翔不出現');
+      await q.click('.dice-btn.d6');
+      await q.waitForSelector('#clear-screen', { timeout: 15000 });
+      await q.click('#clear-screen [data-clear-ok]');
+      await q.waitForSelector('#pilot-talk', { timeout: 5000 });
+      assert.equal(await q.locator('#pilot').count(), 1, '阿翔站在城堡旁');
+      if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'pilot-auto.png') });
+      await q.click('[data-pilot=next]'); await q.click('[data-pilot=go]');
+      await q.waitForSelector('[data-testid=flight-arrive]', { timeout: 8000 });
+      assert.match(await q.locator('[data-testid=flight-arrive]').innerText(), /抵達木島，降落！/);
+      await q.click('[data-fl-ok]');
+      assert.deepEqual(await q.evaluate((cid) => { const p = window.__cgpStore.getPlayer(cid); return [p.island, p.pos]; }, kid), ['wood', 0]);
+      await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    }
     assert.match(await q.locator('.plaque h1').innerText(), /木島/);
     assert.equal(await q.locator('.mtile').count(), 100, '木島 100 格');
     await q.waitForFunction(() => { const i = document.querySelector('.map-bg[data-region=wood-01]'); return i && i.complete && i.naturalWidth === 1080; }, null, { timeout: 10000 });
@@ -1544,13 +1563,28 @@ async function main() {
       s.getPlayer(cid).bag.d6 = 1; s.data.adventure.rolls = []; s.random = () => 0.1; s.save();
     }, id);
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);
-    assert.match(await q.locator('.map-hint').innerText(), /搭專機前往「木島」/);
-    // 2026-11-14：金島通關後地圖出現「搭專機前往木島」按鈕（不算次數）→ 飛行過場 →「抵達木島，降落！」
+    assert.match(await q.locator('.map-hint').innerText(), /飛行員阿翔在城堡旁等你[\s\S]*前往「木島」/);
+    // 2026-11-15：金島通關後，飛行員阿翔站在城堡旁；對話 →「好，出發！」→ 飛行過場 →「抵達木島，降落！」（不算次數）
     await q.evaluate(() => { window.__cgpFastEnding = true; });
     const rolls0 = await q.evaluate((cid) => [window.__cgpStore.getRollsLeft(cid), window.__cgpStore.getPlayer(cid).bag.d6], id);
-    assert.match(await q.locator('[data-action=take-flight]').innerText(), /搭專機前往木島[\s\S]*不算擲骰次數/);
-    if (SHOT_DIR) await q.locator('[data-action=take-flight]').screenshot({ path: path.join(SHOT_DIR, 'flight-btn.png') });
-    await q.click('[data-action=take-flight]');
+    assert.equal(await q.locator('[data-action=take-flight]').count(), 0, '不再有搭專機按鈕');
+    await q.waitForSelector('#pilot .story-bang');
+    // 在終點擲骰：不擲，先找阿翔；選「等一下」阿翔留在原地
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#pilot-talk');
+    assert.match(await q.locator('#pilot-talk').innerText(), /飛行員阿翔[\s\S]*我是飛行員阿翔！/);
+    await q.click('[data-pilot=next]');
+    assert.match(await q.locator('#pilot-talk').innerText(), /為了感謝你修好金島的能量塔，讓我駕駛「飛行者」，載你到木島去吧！[\s\S]*等一下[\s\S]*好，出發！/);
+    if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'pilot-talk.png') });
+    await q.click('[data-pilot=wait]');
+    await q.waitForSelector('#pilot-talk', { state: 'detached' });
+    assert.deepEqual(await q.evaluate((cid) => { const p = window.__cgpStore.getPlayer(cid); return [p.island, p.pos, window.__cgpStore.getRollsLeft(cid), p.bag.d6]; }, id), ['gold', 100, rolls0[0], rolls0[1]], '等一下：留在金島終點，骰子沒有用掉');
+    assert.equal(await q.locator('#pilot').count(), 1);
+    // 點阿翔再出發
+    await q.click('#pilot', { force: true });
+    await q.waitForSelector('#pilot-talk');
+    await q.click('[data-pilot=next]');
+    await q.click('[data-pilot=go]');
     await q.waitForSelector('#flight .fl-plane');
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).island, id), 'wood', '換島資料在過場開始前就寫入');
     await q.waitForSelector('[data-testid=flight-arrive]', { timeout: 8000 });
@@ -1561,10 +1595,10 @@ async function main() {
     await q.waitForFunction(() => (document.querySelector('#pawn') || {}).dataset && /^wood-01-/.test(document.querySelector('#pawn').dataset.tile), null, { timeout: 10000 });
     assert.equal(await q.locator('[data-testid=pos]').innerText(), '0 / 100', '降落在木島起點');
     assert.deepEqual(await q.evaluate((cid) => [window.__cgpStore.getRollsLeft(cid), window.__cgpStore.getPlayer(cid).bag.d6], id), rolls0, '搭專機不算擲骰次數、不用骰子');
-    assert.equal(await q.locator('[data-action=take-flight]').count(), 0, '到木島後按鈕消失');
+    assert.equal(await q.locator('#pilot').count(), 0, '到木島後阿翔不在這張地圖上');
     assert.match(await q.locator('.plaque h1').innerText(), /木島/);
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).islands.gold.maxReached, id), 100, '金島進度保存');
-    console.log('✔ 換島：木島開放後通關金島 → 地圖出現專機按鈕 → 飛行過場 → 抵達木島起點（不算次數）、地圖換成木島、金島進度保存');
+    console.log('✔ 換島：木島開放後通關金島 → 飛行員阿翔對話（等一下／好，出發！）→ 飛行過場 → 抵達木島起點（不算次數）、地圖換成木島、金島進度保存');
     console.log('✔ 成就：冒險大廳成就區、解鎖提示、說明；金島通關全螢幕慶祝、第一次通關獎勵與成就');
     await c16.close();
   }
