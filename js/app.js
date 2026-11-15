@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.15-149';
+  var APP_VERSION = '2026.11.15-150';
   var store;
   try {
     store = new CGP.Store();
@@ -931,7 +931,7 @@
           title: '做派對邀請卡！', sub: '貼 6～20 張花瓣和樹葉，也可以選顏色在白色地方畫圖', doneTitle: '💌 送給森林朋友！', doneSub: '點兔子、刺蝟和貓頭鷹，把邀請卡送給牠們',
           hint: '要邀請森林朋友來派對…走到第 65 格幫我做邀請卡！', intro: '我們來做派對邀請卡吧！用花瓣和樹葉把卡片布置得漂漂亮亮！', done: '大家都收到邀請卡了！派對見！' },
         party: { type: 'party', guide: [-90, -10], cam: [0, -120],
-          title: '布置森林派對！', sub: '選一種裝飾，再點發光的位置放上去（共 10 個）', doneTitle: '🎉 森林派對開始囉！', doneSub: '精靈巨樹：謝謝大家一起來參加派對！',
+          title: '布置森林派對！', sub: '選一種裝飾，再點你想放的地方（桌上、草地、樹上都可以，共 10 個）', doneTitle: '🎉 森林派對開始囉！', doneSub: '精靈巨樹：謝謝大家一起來參加派對！',
           hint: '派對場地還空空的…走到第 92 格幫我布置！', intro: '派對場地就在精靈巨樹下！幫我放上花、松果、莓果汁、莓果籃和汽球！', done: '大家玩得好開心！謝謝你幫忙準備森林派對！' }
       }
     }
@@ -969,6 +969,10 @@
   function pilotArt(cls) {
     return PILOT.img ? '<img class="' + cls + '" src="' + PILOT.img + '" alt="" draggable="false">' : '<span class="pilot-emoji ' + cls + '" aria-hidden="true">' + PILOT.emoji + '</span>';
   }
+  /** 對話視窗上方的人物大圖（半身：只露出上半部），比照成就視窗的大圖；孩子說話時放在右邊 */
+  function talkPortrait(src, right) {
+    return '<span class="we-portrait' + (right ? ' we-me' : '') + '" aria-hidden="true"><img src="' + h(src) + '" alt="" draggable="false"></span>';
+  }
   function pilotDecor(child, board) {
     if (board.id !== 'gold' || !store.flightReady(child.id)) return '';
     return '<div class="story-guide pilot" id="pilot" data-tap="pilot" style="left:' + PILOT.x + 'px;top:' + PILOT.y + 'px;z-index:' + Math.round(PILOT.y / 6) + '" role="img" aria-label="' + PILOT.name + '：點我搭飛行者去木島">' +
@@ -985,7 +989,7 @@
     el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', PILOT.name);
     function draw() {
       var last = i === lines.length - 1;
-      el.innerHTML = '<div class="we-talk pilot-box"><span class="we-who">' + pilotArt('pilot-face') + PILOT.name + '</span><p class="we-line">' + h(lines[i]) + '</p>' +
+      el.innerHTML = '<div class="we-talk pilot-box">' + (PILOT.img ? talkPortrait(PILOT.img).replace('we-portrait', i ? 'we-portrait still' : 'we-portrait') : '') + '<span class="we-who">' + (PILOT.img ? '' : pilotArt('pilot-face')) + PILOT.name + '</span><p class="we-line">' + h(lines[i]) + '</p>' +
         (last ? '<div class="pilot-acts"><button type="button" class="btn" data-pilot="wait">等一下</button><button type="button" class="btn primary" data-pilot="go">好，出發！</button></div>'
           : '<button type="button" class="btn primary we-next" data-pilot="next">繼續</button>') + '</div>';
     }
@@ -1100,14 +1104,18 @@
     panel.className = 'scene-panel story-panel party-panel ' + (extraCls || ''); panel.id = 'story-panel';
     panel.innerHTML = '<div class="scene-art party-art" id="party-art">' + (bg ? '<img class="party-bg" id="party-bg" src="' + PARTY_IMG + bg + '" alt="" width="1200" height="900" draggable="false">' : '') + '</div>' +
       '<b id="scene-title">' + h(sp.title) + '</b><small id="scene-sub">' + h(sp.sub) + '</small><div class="party-tools" id="party-tools"></div>';
-    document.body.appendChild(panel);
-    return { panel: panel, art: panel.querySelector('#party-art'), title: panel.querySelector('#scene-title'), sub: panel.querySelector('#scene-sub'), tools: panel.querySelector('#party-tools') };
+    // 全螢幕遮罩：擋住後面的地圖，手指點偏了也不會拖到地圖或點到別的東西
+    var shade = document.createElement('div');
+    shade.className = 'party-shade'; shade.id = 'party-shade';
+    shade.appendChild(panel);
+    document.body.appendChild(shade);
+    return { shade: shade, panel: panel, art: panel.querySelector('#party-art'), title: panel.querySelector('#scene-title'), sub: panel.querySelector('#scene-sub'), tools: panel.querySelector('#party-tools') };
   }
   /** 共用：完成後換標題、出現「太好了」按鈕，按下關閉 */
   function partyDone(P, sp) {
     P.title.textContent = sp.doneTitle; P.sub.textContent = sp.doneSub;
     P.tools.innerHTML = '<button type="button" class="btn primary charge-btn" id="scene-ok">🎉 太好了！</button>';
-    return new Promise(function (resolve) { P.tools.querySelector('#scene-ok').addEventListener('click', function () { P.panel.remove(); resolve(); }); });
+    return new Promise(function (resolve) { P.tools.querySelector('#scene-ok').addEventListener('click', function () { P.shade.remove(); resolve(); }); });
   }
   function partyImg(name, cls, label) {
     return '<img class="' + cls + '" src="' + PARTY_IMG + name + '.webp" alt="' + (label || '') + '" width="256" height="256" draggable="false">';
@@ -1334,10 +1342,8 @@
     });
     await partyDone(P, sp);
   }
-  /** 第 92 格：空的派對場地有 10 個發光空位；選一種裝飾、再點空位放上去；放滿換成派對完成的畫面 */
-  var PARTY_SLOTS = [[23.3, 72], [30.4, 69], [37.5, 66], [45, 64.2],   // 長桌上（場景圖 1200×900 的百分比，裝飾底部中央）
-    [70.8, 62.8], [77.5, 61.1], [83.3, 63.9],                              // 圓形舞台上
-    [9.2, 76.7], [54.2, 81.1], [68.3, 86.7]];                              // 草地上
+  /** 第 92 格：選一種裝飾，再點場地的任何地方（桌上、舞台、草地、樹上都可以）放上去；放滿 10 個換成派對完成的畫面 */
+  var PARTY_NEED = 10;
   var PARTY_DECOS = [['vase', '花瓶'], ['pinecone', '松果'], ['juice', '莓果汁'], ['basket', '一籃莓果'], ['balloons', '汽球']];
   async function storyParty(sp) {
     var P = partyPanel(sp, 'party_empty.webp');
@@ -1345,30 +1351,32 @@
     P.tools.innerHTML = '<div class="deco-tray" role="radiogroup" aria-label="選擇裝飾">' + PARTY_DECOS.map(function (d, i) {
       var src = d[0] === 'pinecone' ? 'images/wood/leaf_pinecone.webp' : PARTY_IMG + d[0] + '.webp';
       return '<button type="button" class="deco-src' + (i ? '' : ' on') + '" data-deco="' + d[0] + '" role="radio" aria-checked="' + (i ? 'false' : 'true') + '" aria-label="' + d[1] + '"><img src="' + src + '" alt="" width="256" height="256" draggable="false"><small>' + d[1] + '</small></button>';
-    }).join('') + '</div><span class="party-count" id="party-count">0 / ' + PARTY_SLOTS.length + '</span>';
+    }).join('') + '</div><span class="party-count" id="party-count">0 / ' + PARTY_NEED + '</span>';
     P.tools.querySelectorAll('.deco-src').forEach(function (b) {
       b.addEventListener('click', function () {
         pick = b.getAttribute('data-deco');
         P.tools.querySelectorAll('.deco-src').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b ? 'true' : 'false'); });
       });
     });
+    P.art.classList.add('party-free');
     await new Promise(function (resolve) {
-      PARTY_SLOTS.forEach(function (q, i) {
-        var s = document.createElement('button');
-        s.type = 'button'; s.className = 'party-slot'; s.setAttribute('data-slot', i); s.setAttribute('aria-label', '放裝飾的位置 ' + (i + 1));
-        s.style.left = q[0] + '%'; s.style.top = q[1] + '%';
-        s.addEventListener('click', function () {
-          if (s.classList.contains('filled')) return;
-          s.classList.add('filled', 'deco-' + pick);
-          s.innerHTML = '<img src="' + (pick === 'pinecone' ? 'images/wood/leaf_pinecone.webp' : PARTY_IMG + pick + '.webp') + '" alt="" width="256" height="256" draggable="false">';
-          filled++; P.tools.querySelector('#party-count').textContent = filled + ' / ' + PARTY_SLOTS.length;
-          if (filled >= PARTY_SLOTS.length) setTimeout(resolve, reduceMotion ? 100 : 700);
-        });
-        P.art.appendChild(s);
-      });
+      function place(e) {
+        if (filled >= PARTY_NEED) return;
+        if (e.cancelable) e.preventDefault();
+        var r = P.art.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        var x = Math.max(6, Math.min(94, (e.clientX - r.left) / r.width * 100)), y = Math.max(8, Math.min(92, (e.clientY - r.top) / r.height * 100));
+        var d = document.createElement('span');
+        d.className = 'party-deco deco-' + pick; d.style.left = x.toFixed(1) + '%'; d.style.top = y.toFixed(1) + '%'; d.style.zIndex = Math.round(y);
+        d.innerHTML = '<img src="' + (pick === 'pinecone' ? 'images/wood/leaf_pinecone.webp' : PARTY_IMG + pick + '.webp') + '" alt="" width="256" height="256" draggable="false">';
+        P.art.appendChild(d);
+        filled++; P.tools.querySelector('#party-count').textContent = filled + ' / ' + PARTY_NEED;
+        if (filled >= PARTY_NEED) setTimeout(resolve, reduceMotion ? 100 : 700);
+      }
+      P.art.addEventListener('pointerdown', place);   // 手指一碰就放，不用等放開（比較跟手）
     });
     // 放滿了：換成派對完成的畫面（動物們跳舞、串燈亮起）
-    P.art.querySelectorAll('.party-slot').forEach(function (s) { s.remove(); });
+    P.art.querySelectorAll('.party-deco').forEach(function (s) { s.remove(); }); P.art.classList.remove('party-free');
     var bg = P.art.querySelector('#party-bg');
     bg.src = PARTY_IMG + 'party_done.webp'; P.art.classList.add('party-done');
     await partyDone(P, sp);
@@ -2254,7 +2262,7 @@
       el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '木島結局');
       el.innerHTML = '<div class="we-scene we-tree" data-we="tree"></div>' +
         '<div class="we-slide" data-we="slide" hidden>' + WOOD_SLIDES.map(function (u, i) { return '<i class="we-frame we-f' + (i + 1) + '" style="background-image:url(' + u + ')"></i>'; }).join('') + '<b class="we-glow"></b></div>' +
-        '<div class="we-talk" data-we="talk"><span class="we-who"></span><p class="we-line"></p><button type="button" class="btn primary we-next" data-we-next>繼續</button></div>' +
+        '<div class="we-talk" data-we="talk"><span class="we-port"></span><span class="we-who"></span><p class="we-line"></p><button type="button" class="btn primary we-next" data-we-next>繼續</button></div>' +
         (repeat ? '<button type="button" class="we-skip" data-we-skip>略過 ›</button>' : '');
       document.body.appendChild(el);
       document.body.classList.add('pawn-acting');
@@ -2275,10 +2283,11 @@
           el.remove(); document.body.classList.remove('pawn-acting'); render(); announceAchievements(child.id, ['woodClear1']); resolve();   // 「木島通關」卡片上已經顯示，劇場不重複演出
         };
       }
-      function talk(i) {
+      function talk(i, noPortrait) {
         return new Promise(function (res) {
           var L = WOOD_END_LINES[i];
-          el.querySelector('.we-who').innerHTML = L[0] === 'elf' ? '<img src="images/wood/elf.webp" alt="" width="203" height="300">森林小精靈' : h(child.name);
+          el.querySelector('.we-who').textContent = L[0] === 'elf' ? '森林小精靈' : child.name;
+          el.querySelector('.we-port').innerHTML = noPortrait ? '' : L[0] === 'elf' ? talkPortrait('images/wood/elf.webp') : talkPortrait('images/characters/' + charIdOf(child) + '.webp', true);
           el.querySelector('.we-talk').className = 'we-talk we-' + L[0];
           el.querySelector('.we-line').textContent = L[1];
           stepWait = res;
@@ -2297,12 +2306,12 @@
           await sleep(900 * fast);
           var slide = el.querySelector('[data-we=slide]');
           slide.hidden = false; el.querySelector('[data-we=tree]').hidden = true;
-          talk(3); stepWait = null;   // 「哇啊啊！原來是溜滑梯！」停在畫面上一下
+          talk(3, true); stepWait = null;   // 「哇啊啊！原來是溜滑梯！」停在畫面上一下
           var frames = slide.querySelectorAll('.we-frame');
           for (var k = 0; k < frames.length && !skipped; k++) {
             frames[k].classList.add('on');
             if (k) frames[k - 1].classList.add('out');
-            if (k === 1) el.querySelector('.we-talk').hidden = true;
+            if (k === 1) { el.querySelector('.we-talk').hidden = true; el.querySelector('.we-port').innerHTML = ''; }   // 滑梯是第一人稱：收起對話與人物大圖
             await sleep(FRAME);
           }
           if (!skipped) { slide.classList.add('glow'); await sleep((still ? 600 : 1300) * fast); }   // 神祕藍光放大、淡出

@@ -2089,22 +2089,23 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 .invite-friend.got .friend-thanks { opacity: 1; }
 .invite-friend:not(.got) { animation: ore-bob 1.6s ease-in-out infinite; }
 /* 第 92 格：派對布置（裝飾 5 個排成一排） */
-.party-slot { position: absolute; width: 10%; aspect-ratio: 1; padding: 0; border: 0; border-radius: 50%; transform: translate(-50%, -88%); cursor: pointer;
-  background: radial-gradient(circle, rgba(255, 250, 200, .95) 0, rgba(255, 230, 120, .55) 45%, rgba(255, 230, 120, 0) 70%); animation: ore-bob 1.2s ease-in-out infinite; }
-.party-slot.filled { background: none; animation: none; width: 11%; }
-.party-slot img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(40, 30, 10, .35)); }
-.party-slot.deco-balloons { width: 12%; }
+.party-shade { position: fixed; inset: 0; z-index: 1200; background: rgba(40, 28, 10, .38); touch-action: none; overscroll-behavior: contain; }
+.party-art.party-free { cursor: pointer; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.party-deco { position: absolute; width: 12%; aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: none; animation: deco-pop .25s ease-out; }
+.party-deco img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(40, 30, 10, .35)); }
+.party-deco.deco-balloons { width: 14%; }
+@keyframes deco-pop { from { transform: translate(-50%, -50%) scale(.3); opacity: 0; } }
 .deco-tray { flex-wrap: nowrap; gap: 6px; }
 .deco-src { cursor: pointer; padding: 4px 5px; border-radius: 12px; min-width: 0; flex: 1 1 0; max-width: 64px; }
 .deco-src img { width: 36px; height: 36px; object-fit: contain; }
 .deco-src small { font-size: .68rem; white-space: nowrap; }
 .deco-src.on { border-color: #ff9c3a; background: #fff1d6; box-shadow: 0 0 0 3px rgba(255, 156, 58, .35); }
-@media (prefers-reduced-motion: reduce) { .meadow-img, .invite-friend, .party-slot, .wood-elf img { animation: none; } .meadow-item { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .meadow-img, .invite-friend, .party-deco, .wood-elf img { animation: none; } .meadow-item { transition: none; } }
 /* .scene-art img 預設撐滿畫面；視窗裡的貼紙、卡片、動物、畫布維持自己的大小 */
 .scene-art .card-sticker { width: 18%; height: auto; object-fit: contain; }
 .scene-art .invite-card-img, .scene-art .friend-img { height: auto; object-fit: contain; }
 .scene-art .invite-draw { width: 100%; height: 100%; }
-.scene-art .meadow-img, .scene-art .party-slot img { object-fit: contain; }
+.scene-art .meadow-img, .scene-art .party-deco img { object-fit: contain; }
 /* 一般冒險事件視窗（2026-11-09）：暖白大圓角面板、橘金主色；事件卡片依類型換淡色底（獎勵奶油黃／命運淡紫／路障珊瑚橘／其他天藍）；不用動畫 */
 .modal.confirm.ev-modal { background: transparent; box-shadow: none; overflow: visible; width: min(440px, calc(100vw - 24px)); max-height: none; }
 .ev { --ev-accent: #e0761c; display: flex; flex-direction: column; gap: 12px; max-height: calc(100dvh - 32px); box-sizing: border-box; padding: 20px 16px 16px;
@@ -2211,3 +2212,12 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .pilot-box .we-who { color: #23709f; }
 .pilot-emoji.pilot-face { font-size: 1.5rem; line-height: 1; } img.pilot-face { width: 34px; height: auto; }
 .pilot-acts { display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px; margin-top: 4px; }
+/* 對話視窗的人物大圖（2026-11-15）：站在對話框上緣，只露出上半身；孩子在右、其他角色在左 */
+.we-port { display: contents; }
+.we-portrait { position: absolute; left: 10px; bottom: calc(100% - 14px); width: min(46vw, 190px); aspect-ratio: 1 / 1.05; overflow: hidden; pointer-events: none; animation: port-in .3s ease-out; }
+.we-portrait.we-me { left: auto; right: 10px; }
+.we-portrait img { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 6px rgba(30, 20, 10, .45)); }
+.we-talk { padding-top: 22px; }
+@keyframes port-in { from { transform: translateY(14px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .we-portrait { animation: none; } }
+.we-portrait.still { animation: none; }

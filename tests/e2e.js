@@ -876,6 +876,8 @@ async function main() {
     if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'wood-end-talk.png') });
     await q.click('[data-we-next]');
     assert.match(await q.locator('#wood-ending .we-talk').innerText(), /森林小精靈[\s\S]*祕密隧道/);
+    assert.match(await q.locator('#wood-ending .we-portrait img').getAttribute('src'), /elf/, '對話視窗有人物大圖');
+    if (SHOT_DIR) { await q.waitForTimeout(400); await q.screenshot({ path: path.join(SHOT_DIR, 'wood-end-talk-elf.png') }); }
     await q.click('[data-we-next]');
     assert.match(await q.locator('#wood-ending .we-talk').innerText(), /那我們進去冒險吧/);
     await q.click('[data-we-next]');
@@ -1573,6 +1575,8 @@ async function main() {
     await q.click('.dice-btn.d6');
     await q.waitForSelector('#pilot-talk');
     assert.match(await q.locator('#pilot-talk').innerText(), /飛行員阿翔[\s\S]*我是飛行員阿翔！/);
+    assert.equal(await q.locator('#pilot-talk .we-portrait img').count(), 1, '阿翔的半身大圖');
+    if (SHOT_DIR) { await q.waitForTimeout(400); await q.screenshot({ path: path.join(SHOT_DIR, 'pilot-talk-1.png') }); }
     await q.click('[data-pilot=next]');
     assert.match(await q.locator('#pilot-talk').innerText(), /為了感謝你修好金島的能量塔，讓我駕駛「飛行者」，載你到木島去吧！[\s\S]*等一下[\s\S]*好，出發！/);
     if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'pilot-talk.png') });
@@ -2161,16 +2165,23 @@ async function main() {
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);
     await q.waitForSelector('.story-guide[data-story=party]');
     await q.click('.dice-btn.d6');
-    await q.waitForSelector('.party-slot', { timeout: 15000 });
-    assert.equal(await q.locator('.party-slot').count(), 10);
+    await q.waitForSelector('.party-art.party-free', { timeout: 15000 });
+    assert.equal(await q.locator('#party-shade').count(), 1, '有遮罩擋住後面的地圖');
+    const camBefore = await q.evaluate(() => document.querySelector('.map-world, #map-world, .board') ? document.querySelector('.map-world, #map-world, .board').getAttribute('style') : '');
+    const artBox = await q.locator('#party-art').boundingBox();
+    const spots = [[0.3, 0.2], [0.45, 0.3], [0.15, 0.25], [0.3, 0.62], [0.4, 0.6], [0.75, 0.62], [0.82, 0.66], [0.1, 0.8], [0.55, 0.85], [0.7, 0.2]];   // 樹上、長桌、舞台、草地
     const decos = ['vase', 'pinecone', 'juice', 'basket', 'balloons'];
     for (let k = 0; k < 10; k++) {
       await q.click('.deco-src[data-deco=' + decos[k % 5] + ']');
-      await q.locator('.party-slot:not(.filled)').first().click({ force: true });   // 空位有浮動動畫
+      await q.mouse.click(artBox.x + artBox.width * spots[k][0], artBox.y + artBox.height * spots[k][1]);
+      assert.equal(await q.locator('.party-deco').count(), k + 1, '點哪裡就放哪裡（含樹上）');
+      if (k === 0) { await q.mouse.move(8, 400); await q.mouse.down(); await q.mouse.move(8, 300, { steps: 4 }); await q.mouse.up();   // 在視窗外面拖：地圖不會動
+        assert.equal(await q.evaluate(() => document.querySelector('.map-world, #map-world, .board') ? document.querySelector('.map-world, #map-world, .board').getAttribute('style') : ''), camBefore, '遮罩外拖曳不會動到地圖'); }
       if (k === 6 && SD) await q.locator('#story-panel').screenshot({ path: path.join(SD, 'party-92.png') });
     }
     await q.waitForSelector('.party-art.party-done', { timeout: 5000 });
     assert.match(await q.locator('#party-bg').getAttribute('src'), /party_done/);
+    assert.equal(await q.locator('.party-deco').count(), 0);
     assert.match(await q.locator('#story-panel').innerText(), /森林派對開始囉[\s\S]*謝謝大家/);
     if (SD) { await q.waitForTimeout(500); await q.locator('#story-panel').screenshot({ path: path.join(SD, 'party-92-done.png') }); }
     await q.click('#scene-ok');

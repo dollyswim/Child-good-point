@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-13｜App 版本 `2026.11.15-149`｜Service Worker 快取 `cgp-shell-v159`｜`main` 最新：木島開放（2026-11-13）
+> 最後更新：2026-11-13｜App 版本 `2026.11.15-150`｜Service Worker 快取 `cgp-shell-v160`｜`main` 最新：木島開放（2026-11-13）
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -14,7 +14,7 @@
 - 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v159`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.15-149`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v160`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.15-150`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 142 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -75,6 +75,13 @@
 ### 2026-11-15：阿翔與飛行過場換上家長正式圖
 - `images/gold/pilot2.webp`（阿翔，白底圖只去除與外框相連的白底，另外清掉外套下緣以下「兩腳中間與腳邊」的白色，圍巾保留；高 480px）；`images/flight/fly.webp`（飛行中）、`images/flight/land.webp`（降落在木島森林入口），各 810×1085。
 - `flightScene()` 改成兩張全螢幕圖（緩慢縮放平移）→ 下方出現「抵達木島，降落！」卡片；暫用的 `images/flight_plane.webp` 與拼貼做法已移除。
+
+### 2026-11-15：布置森林派對改成自由擺放（家長回報會點到後面、樹上不能放）
+- 第 40、65、92 格的視窗（`partyPanel()`）外面多一層全螢幕遮罩 `.party-shade`，點偏了不會拖到後面的地圖。
+- 第 92 格拿掉 10 個固定發光空位（`PARTY_SLOTS`），改成選裝飾後點場地任何地方就放（樹上、桌上、舞台、草地都可以），手指一碰就放（`pointerdown`）；放滿 `PARTY_NEED = 10` 個換成派對完成圖。放錯不能收回（家長沒要求）。
+
+### 2026-11-15：對話視窗加人物半身大圖
+- 木島結局對話（森林小精靈、孩子）與飛行員阿翔的對話框上緣多一張人物大圖（`talkPortrait()`、`.we-portrait`，只露上半身）：其他角色在左、孩子的冒險夥伴在右；名字前的小頭像拿掉。地圖上技師／小精靈的小對話泡泡（`techTalk`）沒有改。
 
 ### 2026-11-10～13 完成的重點（新的在上面；細節在下方各條）
 - 「木島通關」徽章換上家長提供的專屬圖（11-13）。
