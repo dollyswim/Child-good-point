@@ -1810,13 +1810,7 @@ body.mg-open { overflow: hidden; }
 .gold-tech { position: absolute; transform: translate(-50%, -100%); padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .gold-tech img { display: block; width: 100%; height: auto; animation: tech-wave 2.6s ease-in-out infinite; transform-origin: 50% 100%; }
 @keyframes tech-wave { 50% { transform: rotate(-3deg) translateY(-2px); } }
-.tech-bubble { position: absolute; z-index: 8; width: 188px; padding: 8px 10px; border-radius: 14px; background: #fff; color: #4e4339;
-  font-size: 13px; font-weight: 800; line-height: 1.4; box-shadow: 0 4px 12px rgba(0, 0, 0, .25); pointer-events: none; animation: bubble-in .25s ease-out both; }
-@keyframes bubble-in { from { opacity: 0; } }
-.tech-bubble::after { content: ""; position: absolute; left: 32px; bottom: -8px; border: 8px solid transparent; border-top-color: #fff; border-bottom: 0; }
-.tech-bubble.bye { opacity: 0; transition: opacity .3s; }
 @media (prefers-reduced-motion: reduce) { .tower-sparks i, .gold-tower.lit .tower-on, .gold-tech img { animation: none; } .gold-tower.just-lit::after { display: none; } }
-.tech-bubble.below::after { bottom: auto; top: -8px; border: 8px solid transparent; border-bottom-color: #fff; border-top: 0; }   /* 泡泡在技師下方：尾巴朝上 */
 
 /* 第 80 格：能源開關（通電前一閃一閃） */
 .mtile.mt-switch::before { filter: hue-rotate(10deg) saturate(2.4) brightness(1.08) drop-shadow(0 0 8px rgba(255, 210, 63, 1)) drop-shadow(0 4px 3px rgba(80, 50, 20, .35)); }
@@ -2091,7 +2085,10 @@ body.story-on .map-page .map-shop, body.story-on .map-page .dice-bar, body.story
 /* 第 92 格：派對布置（裝飾 5 個排成一排） */
 .party-shade { position: fixed; inset: 0; z-index: 1200; background: rgba(40, 28, 10, .38); touch-action: none; overscroll-behavior: contain; }
 .party-art.party-free { cursor: pointer; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
-.party-deco { position: absolute; width: 12%; aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: none; animation: deco-pop .25s ease-out; }
+.party-deco { position: absolute; width: 12%; aspect-ratio: 1; transform: translate(-50%, -50%); cursor: grab; touch-action: none; animation: deco-pop .25s ease-out; }
+.party-deco.hold { transform: translate(-50%, -50%) scale(1.15); z-index: 200 !important; cursor: grabbing; }
+.party-deco img { pointer-events: none; }
+.party-acts { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; width: 100%; }
 .party-deco img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(40, 30, 10, .35)); }
 .party-deco.deco-balloons { width: 14%; }
 @keyframes deco-pop { from { transform: translate(-50%, -50%) scale(.3); opacity: 0; } }
@@ -2221,3 +2218,8 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 @keyframes port-in { from { transform: translateY(14px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .we-portrait { animation: none; } }
 .we-portrait.still { animation: none; }
+/* 地圖上的角色對話（2026-11-15）：畫面下方對話框＋人物半身大圖，取代原本的小泡泡 */
+.we-talk.map-talk { position: fixed; z-index: 60; bottom: calc(env(safe-area-inset-bottom) + 104px); cursor: pointer; animation: port-in .25s ease-out; }
+.map-talk .we-who { color: #8a4f12; } .map-talk.we-elf .we-who { color: #2f7a22; }
+.map-talk.bye { opacity: 0; transition: opacity .3s; }
+@media (prefers-reduced-motion: reduce) { .we-talk.map-talk { animation: none; } }

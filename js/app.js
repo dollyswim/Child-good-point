@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.15-150';
+  var APP_VERSION = '2026.11.15-151';
   var store;
   try {
     store = new CGP.Store();
@@ -807,18 +807,16 @@
     if (!view || !tech) return;
     var lit = goldMaxOf(store.getPlayer(child.id)) >= TOWER_LIT_AT;
     var old = document.getElementById('tech-bubble'); if (old) old.remove();
+    // 2026-11-15：和其他對話一樣，用畫面下方的對話框＋人物半身大圖（原本是角色旁邊的小泡泡）；時間到自動收起，點一下也可以先關掉
+    var img = tech.querySelector('img'), who = (tech.getAttribute('aria-label') || '技師').replace(/[（：].*$/, '');
     var b = document.createElement('div');
-    b.className = 'tech-bubble'; b.id = 'tech-bubble'; b.setAttribute('role', 'status');
-    // 泡泡放在地圖視窗上（不跟著地圖縮放，字才看得清楚），位置在技師頭上
-    var vr = view.getBoundingClientRect(), tr = tech.getBoundingClientRect();
-    b.style.left = Math.max(8, Math.min(vr.width - 196, tr.left - vr.left + tr.width / 2 - 40)) + 'px';
-    b.textContent = text || (lit ? '謝謝你！能源塔亮起來了，金冠城堡就在前面！' : '能源塔沒電了！幫我走到第 80 格的 ⚡ 開關，把它充飽電！');
-    view.appendChild(b);
-    // 放在技師腳下（不蓋住技師，也不擋到主塔）；下方放不下才放到頭上
-    var below = tr.bottom - vr.top + 12;
-    if (below + b.offsetHeight <= vr.height - 8) { b.style.top = below + 'px'; b.classList.add('below'); }
-    else b.style.top = Math.max(8, tr.top - vr.top - b.offsetHeight - 10) + 'px';
-    setTimeout(function () { b.classList.add('bye'); setTimeout(function () { b.remove(); }, 300); }, ms || 3200);
+    b.className = 'we-talk map-talk' + (tech.classList.contains('wood-elf') ? ' we-elf' : ''); b.id = 'tech-bubble'; b.setAttribute('role', 'status');
+    b.innerHTML = (img ? talkPortrait(img.getAttribute('src')) : '') + '<span class="we-who">' + h(who) + '</span><p class="we-line">' +
+      h(text || (lit ? '謝謝你！能源塔亮起來了，金冠城堡就在前面！' : '能源塔沒電了！幫我走到第 80 格的 ⚡ 開關，把它充飽電！')) + '</p>';
+    document.body.appendChild(b);
+    function bye() { if (!b.parentNode || b.classList.contains('bye')) return; b.classList.add('bye'); setTimeout(function () { b.remove(); }, 300); }
+    b.addEventListener('click', bye);
+    setTimeout(bye, ms || 3200);
   }
   var TOWER_SWITCH_ID = 'gold-03-080';   // 第 80 格：能源開關
   var TOWER_INTRO_AT = 56;               // 第一次走進齒輪工坊：技師主動求助
@@ -1351,7 +1349,8 @@
     P.tools.innerHTML = '<div class="deco-tray" role="radiogroup" aria-label="選擇裝飾">' + PARTY_DECOS.map(function (d, i) {
       var src = d[0] === 'pinecone' ? 'images/wood/leaf_pinecone.webp' : PARTY_IMG + d[0] + '.webp';
       return '<button type="button" class="deco-src' + (i ? '' : ' on') + '" data-deco="' + d[0] + '" role="radio" aria-checked="' + (i ? 'false' : 'true') + '" aria-label="' + d[1] + '"><img src="' + src + '" alt="" width="256" height="256" draggable="false"><small>' + d[1] + '</small></button>';
-    }).join('') + '</div><span class="party-count" id="party-count">0 / ' + PARTY_NEED + '</span>';
+    }).join('') + '</div><span class="party-count" id="party-count">0 / ' + PARTY_NEED + '</span>' +
+      '<div class="party-acts"><button type="button" class="btn" id="party-undo" disabled>↩ 收回一個</button><button type="button" class="btn primary" id="party-ok" disabled>🎉 布置好了！</button></div>';
     P.tools.querySelectorAll('.deco-src').forEach(function (b) {
       b.addEventListener('click', function () {
         pick = b.getAttribute('data-deco');
@@ -1360,20 +1359,39 @@
     });
     P.art.classList.add('party-free');
     await new Promise(function (resolve) {
-      function place(e) {
-        if (filled >= PARTY_NEED) return;
-        if (e.cancelable) e.preventDefault();
+      var drag = null, undoBtn = P.tools.querySelector('#party-undo'), okBtn = P.tools.querySelector('#party-ok');
+      function count() {
+        filled = P.art.querySelectorAll('.party-deco').length;
+        P.tools.querySelector('#party-count').textContent = filled + ' / ' + PARTY_NEED;
+        undoBtn.disabled = !filled; okBtn.disabled = filled < PARTY_NEED;
+        P.sub.textContent = filled >= PARTY_NEED ? '放好了！還可以拖著裝飾換位置，滿意了就按「布置好了」' : sp.sub;
+      }
+      function moveTo(d, e) {
         var r = P.art.getBoundingClientRect();
         if (!r.width || !r.height) return;
         var x = Math.max(6, Math.min(94, (e.clientX - r.left) / r.width * 100)), y = Math.max(8, Math.min(92, (e.clientY - r.top) / r.height * 100));
-        var d = document.createElement('span');
-        d.className = 'party-deco deco-' + pick; d.style.left = x.toFixed(1) + '%'; d.style.top = y.toFixed(1) + '%'; d.style.zIndex = Math.round(y);
-        d.innerHTML = '<img src="' + (pick === 'pinecone' ? 'images/wood/leaf_pinecone.webp' : PARTY_IMG + pick + '.webp') + '" alt="" width="256" height="256" draggable="false">';
-        P.art.appendChild(d);
-        filled++; P.tools.querySelector('#party-count').textContent = filled + ' / ' + PARTY_NEED;
-        if (filled >= PARTY_NEED) setTimeout(resolve, reduceMotion ? 100 : 700);
+        d.style.left = x.toFixed(1) + '%'; d.style.top = y.toFixed(1) + '%'; d.style.zIndex = Math.round(y);
       }
-      P.art.addEventListener('pointerdown', place);   // 手指一碰就放，不用等放開（比較跟手）
+      // 手指碰到空的地方：放一個新的；碰到已經放好的裝飾：抓起來。兩種都可以接著拖到想要的位置
+      P.art.addEventListener('pointerdown', function (e) {
+        if (e.cancelable) e.preventDefault();
+        var d = e.target.closest ? e.target.closest('.party-deco') : null;
+        if (!d) {
+          if (filled >= PARTY_NEED) return;
+          d = document.createElement('span');
+          d.className = 'party-deco deco-' + pick;
+          d.innerHTML = '<img src="' + (pick === 'pinecone' ? 'images/wood/leaf_pinecone.webp' : PARTY_IMG + pick + '.webp') + '" alt="" width="256" height="256" draggable="false">';
+          moveTo(d, e);
+        }
+        P.art.appendChild(d);   // 最後碰的排在最後（「收回一個」收的就是它）
+        d.classList.add('hold'); drag = d; count();
+        try { P.art.setPointerCapture(e.pointerId); } catch (err) { /* 舊瀏覽器沒有也能放，只是不能拖 */ }
+      });
+      P.art.addEventListener('pointermove', function (e) { if (drag) moveTo(drag, e); });
+      function drop() { if (drag) { drag.classList.remove('hold'); drag = null; } }
+      P.art.addEventListener('pointerup', drop); P.art.addEventListener('pointercancel', drop);
+      undoBtn.addEventListener('click', function () { var all = P.art.querySelectorAll('.party-deco'); if (all.length) all[all.length - 1].remove(); count(); });
+      okBtn.addEventListener('click', function () { if (filled >= PARTY_NEED) resolve(); });
     });
     // 放滿了：換成派對完成的畫面（動物們跳舞、串燈亮起）
     P.art.querySelectorAll('.party-deco').forEach(function (s) { s.remove(); }); P.art.classList.remove('party-free');

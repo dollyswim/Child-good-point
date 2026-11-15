@@ -2179,6 +2179,20 @@ async function main() {
         assert.equal(await q.evaluate(() => document.querySelector('.map-world, #map-world, .board') ? document.querySelector('.map-world, #map-world, .board').getAttribute('style') : ''), camBefore, '遮罩外拖曳不會動到地圖'); }
       if (k === 6 && SD) await q.locator('#story-panel').screenshot({ path: path.join(SD, 'party-92.png') });
     }
+    assert.equal(await q.locator('.party-deco').count(), 10);
+    assert.ok(await q.locator('#party-ok').isEnabled(), '放滿 10 個才能按布置好了');
+    // 拖著移動：把樹上的第一個拖到草地
+    const d0 = q.locator('.party-deco').first(); const before = await d0.getAttribute('style'); const b0 = await d0.boundingBox();
+    await q.mouse.move(b0.x + b0.width / 2, b0.y + b0.height / 2); await q.mouse.down(); await q.mouse.move(artBox.x + artBox.width * 0.5, artBox.y + artBox.height * 0.75, { steps: 5 }); await q.mouse.up();
+    assert.equal(await q.locator('.party-deco').count(), 10, '移動不會多放');
+    assert.match(await q.locator('.party-deco').last().getAttribute('style'), /left: 50(\.\d)?%; top: 75(\.\d)?%/, '裝飾跟著手指移到新位置');
+    assert.notEqual(await q.locator('.party-deco').last().getAttribute('style'), before);
+    // 收回一個 → 不能完成 → 再放一個
+    await q.click('#party-undo');
+    assert.equal(await q.locator('.party-deco').count(), 9); assert.ok(await q.locator('#party-ok').isDisabled());
+    await q.mouse.click(artBox.x + artBox.width * 0.6, artBox.y + artBox.height * 0.4);
+    if (SD) await q.locator('#story-panel').screenshot({ path: path.join(SD, 'party-92-full.png') });
+    await q.click('#party-ok');
     await q.waitForSelector('.party-art.party-done', { timeout: 5000 });
     assert.match(await q.locator('#party-bg').getAttribute('src'), /party_done/);
     assert.equal(await q.locator('.party-deco').count(), 0);
