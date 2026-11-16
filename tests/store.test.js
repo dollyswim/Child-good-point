@@ -2764,3 +2764,27 @@ test('金島 → 木島專機：通關金島停在第 100 格才能搭；不算�
     assert.throws(() => store.takeFlight(a.id), /沒有專機/);
   } finally { delete G.BOARDS.wood; }
 });
+
+test('任務重置：回到做過任務的島會詢問；選要→任務清空、能源塔歸零、再完成再給星星；選不要→維持；沒做過任務不問', () => {
+  const { store, a } = p3Store();
+  const p = store.getPlayer(a.id);
+  assert.equal(store.storyResetOffer(a.id), null, '平常不問');
+  store.setPlayerTile(a.id, END); p.maxReached = END;
+  store._startNext(a.id);   // 只有金島：回起點開始新的一輪
+  assert.equal(store.storyResetOffer(a.id), null, '沒做過任務：不問');
+  store.completeStory(a.id, 'ore'); store.completeStory(a.id, 'tower'); p.towerIntro = true;
+  store.setPlayerTile(a.id, END); p.maxReached = END;
+  store._startNext(a.id);
+  assert.deepEqual(store.storyResetOffer(a.id), { island: 'gold', name: '金島', count: 2 });
+  assert.equal(store.answerStoryReset(a.id, false), false);
+  assert.equal(store.storyResetOffer(a.id), null, '回答後這一趟不再問');
+  assert.ok(p.story.ore && p.story.tower, '選不要：維持已完成');
+  assert.equal(store.completeStory(a.id, 'ore'), false, '已完成的不會再給星星');
+  store.setPlayerTile(a.id, END); p.maxReached = END;
+  store._startNext(a.id);
+  const stars = store.getStarBalance(a.id);
+  assert.equal(store.answerStoryReset(a.id, true), true);
+  assert.deepEqual([p.story.ore, p.story.tower, p.maxReached, p.towerIntro, p.storyAsk], [undefined, undefined, 0, false, null], '任務清空、能源塔回到沒電');
+  assert.equal(store.completeStory(a.id, 'ore'), true, '重置後再完成：再給星星');
+  assert.equal(store.getStarBalance(a.id), stars + G.STORY_STARS);
+});

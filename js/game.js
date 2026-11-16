@@ -1098,6 +1098,7 @@
     var p = this.getPlayer(childId), tiles = this.getBoard(childId).tiles;
     p.pos = 0; p.tileId = tiles[0].id; p.looted = [];
     p.laps = (p.laps || 0) + 1;
+    this._offerStoryReset(childId);
   };
   /**
    * 在最後一格時的下一次移動：停在全島終點且有下一座已開放的島 → 前往該島起點；否則從起點開始新的一輪。
@@ -1112,6 +1113,7 @@
     p.island = to; p.pos = 0; p.tileId = nb.tiles[0].id; p.looted = [];
     p.laps = keep.laps || 0; p.maxReached = keep.maxReached || 0;
     this._logItem(childId, 'travel', to, 1, board.name, '前往' + nb.name);
+    this._offerStoryReset(childId);
     return { island: to, name: nb.name };
   };
   /**
@@ -1263,6 +1265,34 @@
     this._ledger(childId, STORY_STARS, '劇情：' + STORIES[id].name);
     this.save();
     return true;
+  };
+  /**
+   * 任務重置（2026-11-16 家長決定）：重新回到一座島的起點時，如果這座島有做過的任務，先記下「要問孩子」；
+   * 畫面詢問「這次要不要把任務重新來一次」。選要：這座島的任務全部重置，再完成一樣給 ⭐STORY_STARS；選不要：維持已完成。
+   */
+  Store.prototype._offerStoryReset = function (childId) {
+    var p = this.getPlayer(childId);
+    p.storyAsk = storiesOf(p.island).some(function (id) { return p.story[id]; }) ? p.island : null;
+  };
+  /** @returns {{ island, name, count }|null} 現在要問孩子的島（count＝做過的任務數） */
+  Store.prototype.storyResetOffer = function (childId) {
+    var p = this.getPlayer(childId);
+    if (!p.storyAsk || p.storyAsk !== p.island) return null;
+    var n = storiesOf(p.island).filter(function (id) { return p.story[id]; }).length;
+    return n ? { island: p.island, name: this.getBoard(childId).name, count: n } : null;
+  };
+  /** 孩子的回答：yes＝重置這座島的任務（金島的能源塔也回到沒電）；不管選哪個，這一趟都不再問 */
+  Store.prototype.answerStoryReset = function (childId, yes) {
+    this._requirePlay(childId);
+    var p = this.getPlayer(childId), offer = this.storyResetOffer(childId);
+    p.storyAsk = null;
+    if (offer && yes) {
+      storiesOf(p.island).forEach(function (id) { delete p.story[id]; });
+      if (p.island === 'gold') { p.maxReached = p.pos || 0; p.towerIntro = false; }   // 能源塔看「走到過第幾格」，一起歸零才會再沒電
+      this._logItem(childId, 'story-reset', p.island, 1, offer.name, '任務重新開始');
+    }
+    this.save();
+    return !!(offer && yes);
   };
   /** 能源主塔：技師已經主動求助過（只出現一次） */
   Store.prototype.markTowerIntro = function (childId) {

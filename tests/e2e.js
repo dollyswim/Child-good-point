@@ -865,7 +865,7 @@ async function main() {
     assert.equal(await q.locator('.story-guide.wood-elf').count(), 4);
     if (SHOT_DIR) await q.locator('#map-view').screenshot({ path: path.join(SHOT_DIR, 'wood-map.png') });
     // 第 97 格擲 6 → 第 100 格樹洞口：不放金島的通關畫面，改演樹洞結局
-    await q.evaluate((cid) => { const s = window.__cgpStore; const p = s.getPlayer(cid); Object.keys(window.CGPGame.STORIES).forEach((k) => { p.story[k] = true; }); s.data.adventure.rolls = []; s.setPlayerTile(cid, 97); s.random = () => 0.99; s.save(); }, id);
+    await q.evaluate((cid) => { const s = window.__cgpStore; const p = s.getPlayer(cid); Object.keys(window.CGPGame.STORIES).forEach((k) => { p.story[k] = true; }); p.storyAsk = null; s.data.adventure.rolls = []; s.setPlayerTile(cid, 97); s.random = () => 0.99; s.save(); }, id);
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
     await q.click('.dice-btn.d6');
     await q.waitForSelector('#wood-ending .we-talk', { timeout: 15000 });
@@ -2029,7 +2029,20 @@ async function main() {
     assert.equal(await q.locator('#pawn').getAttribute('data-pos'), '3', '按上車前還在機會格');
     await q.click('#cart-btn');
     await q.waitForFunction(() => document.getElementById('pawn').dataset.pos === '5', null, { timeout: 8000 });
-    console.log('✔ 金島劇情：技師導遊提示、第 5 格撿礦石、第 30 格拉轉轍器、各 ⭐3、不重複；機會卡礦車按上車才前進');
+    // 回到起點開始新的一輪：技師詢問要不要重置任務
+    await q.waitForTimeout(4500);   // 等前一段的演出結束
+    const doneN = await q.evaluate((cid) => { const s = window.__cgpStore, p = s.getPlayer(cid); s.setPlayerTile(cid, 100); p.maxReached = 100; s._startNext(cid); s.save(); return Object.keys(p.story).length; }, id);
+    assert.ok(doneN >= 2);
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);
+    await q.waitForSelector('#story-reset', { timeout: 5000 });
+    assert.match(await q.locator('#story-reset').innerText(), new RegExp('技師[\\s\\S]*歡迎回到金島[\\s\\S]*' + doneN + ' 個任務重新來一次[\\s\\S]*不用了[\\s\\S]*好，重新來'));
+    if (SHOT_DIR) { await q.waitForTimeout(400); await q.screenshot({ path: path.join(SHOT_DIR, 'story-reset.png') }); }
+    await q.reload(); await q.waitForSelector('#story-reset', { timeout: 5000 });   // 還沒回答：重新整理會再問
+    await q.click('#story-reset [data-reset=yes]');
+    await q.waitForSelector('.story-guide[data-story=ore]');
+    assert.deepEqual(await q.evaluate((cid) => { const p = window.__cgpStore.getPlayer(cid); return [Object.keys(p.story).length, p.storyAsk]; }, id), [0, null], '任務重置、不再詢問');
+    assert.equal(await q.locator('#story-reset').count(), 0);
+    console.log('✔ 金島劇情：技師導遊提示、第 5 格撿礦石、第 30 格拉轉轍器、各 ⭐3、不重複；機會卡礦車按上車才前進；回到島上可重置任務');
     await cs.close();
   }
 

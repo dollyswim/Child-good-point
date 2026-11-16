@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.16-153';
+  var APP_VERSION = '2026.11.16-154';
   var store;
   try {
     store = new CGP.Store();
@@ -247,10 +247,12 @@
     app.dataset.view = r.name;
     alignHeroLinks();
     var notes = [];   // 同時有多則提示時合併顯示，避免互相蓋掉
+    var sr = document.getElementById('story-reset');   // 離開地圖、或已經不用問了：收起「要不要重置任務」的詢問
+    if (sr && (r.name !== 'map' || !store.storyResetOffer(r.arg))) { sr.remove(); document.body.classList.remove('pawn-acting'); }
     if (r.name === 'map') {
       setupMap(store.getChild(r.arg));
       pawnIdle();
-      if (!ui.busy) { var mc = store.getChild(r.arg); setTimeout(function () { if (!ui.busy && route().name === 'map') towerIntro(mc); }, 600); }
+      if (!ui.busy) { var mc = store.getChild(r.arg); setTimeout(function () { if (!ui.busy && route().name === 'map' && route().arg === mc.id) { if (!storyResetAsk(mc)) towerIntro(mc); } }, 600); }
       if (store.takeChestHint(r.arg)) notes.push('✨ 附近似乎藏著神秘寶物……');
       var wp = store.getPlayer(r.arg); if (wp.island === 'wood' && wp.pos >= 85) preloadImages(WOOD_SLIDES);   // 快到樹洞了：先在背景載入滑梯圖
     }
@@ -950,6 +952,36 @@
   /** 導遊的樣子（金島技師用圖，木島小精靈先用表情符號） */
   function guideArt(g) {
     return g.img ? '<img src="' + g.img + '" alt="" width="' + g.iw + '" height="' + g.ih + '" draggable="false">' : '<span class="guide-emoji" aria-hidden="true">' + g.emoji + '</span>';
+  }
+  /**
+   * 回到做過任務的島：導遊問「這次要不要把任務重新來一次？」（2026-11-16 家長決定）。
+   * 選要：任務全部重置、再完成一樣送星星；選不要：維持已完成。回答之前重新整理也會再問一次。
+   * @returns {boolean} 有跳出詢問
+   */
+  function storyResetAsk(child) {
+    var offer = window.__cgpNoStory ? null : store.storyResetOffer(child.id);
+    if (!offer || !store.canPlayToday(child.id)) return false;
+    if (document.getElementById('story-reset') || document.getElementById('flight') || document.getElementById('pilot-talk')) return true;
+    var g = (ISLAND_STORY[offer.island] || {}).guide || {};
+    var el = document.createElement('div');
+    el.className = 'pilot-talk'; el.id = 'story-reset';
+    el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '要不要重新開始任務');
+    el.innerHTML = '<div class="we-talk pilot-box' + (g.cls === 'wood-elf' ? ' we-elf' : '') + '">' + (g.img ? talkPortrait(g.img) : '') + '<span class="we-who">' + h(g.label || '導遊') + '</span>' +
+      '<p class="we-line">歡迎回到' + h(offer.name) + '！這次要不要把 ' + offer.count + ' 個任務重新來一次？再完成一樣送你 ⭐' + GAME.STORY_STARS + '！</p>' +
+      '<div class="pilot-acts"><button type="button" class="btn" data-reset="no">不用了</button><button type="button" class="btn primary" data-reset="yes">好，重新來！</button></div></div>';
+    el.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-reset]');
+      if (!t) return;
+      el.remove(); document.body.classList.remove('pawn-acting');
+      try {
+        var did = store.answerStoryReset(child.id, t.getAttribute('data-reset') === 'yes');
+        toast(did ? '🔄 ' + offer.name + '的任務重新開始囉！' : '好，任務維持已完成。', 'pos');
+      } catch (err) { toast(err.message, 'neg'); }
+      render();
+    });
+    document.body.appendChild(el);
+    document.body.classList.add('pawn-acting');
+    return true;
   }
   /** 還沒完成的劇情：導遊站在劇情地點（頭上有「！」），點他會提示要去哪一格 */
   function storyDecor(board, player) {

@@ -414,6 +414,7 @@
             laps: Math.max(0, toInt(p.laps, 0)),   // 走完目前開放區域幾輪
             goldClears: Math.max(0, toInt(p.goldClears, 0)),   // 金島通關次數（走到第 100 格）
             towerIntro: !!p.towerIntro,   // 能源主塔：技師已主動求助過
+            storyAsk: typeof p.storyAsk === 'string' && /^[a-z]{2,12}$/.test(p.storyAsk) ? p.storyAsk : null,   // 回到這座島：還沒問孩子要不要重置任務
             story: (function () {   // 金島劇情完成日期 { ore, rail, tower }
               var o = {}, src2 = p.story && typeof p.story === 'object' ? p.story : {};
               Object.keys(src2).forEach(function (k) { if (/^\d{4}-\d{2}-\d{2}$/.test(src2[k])) o[k] = src2[k]; });
