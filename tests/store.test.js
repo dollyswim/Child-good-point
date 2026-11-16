@@ -2788,3 +2788,39 @@ test('任務重置：回到做過任務的島會詢問；選要→任務清空�
   assert.equal(store.completeStory(a.id, 'ore'), true, '重置後再完成：再給星星');
   assert.equal(store.getStarBalance(a.id), stars + G.STORY_STARS);
 });
+
+test('換島不受任務影響：不管任務有沒有做、有沒有重置，第 100 格都能金島→木島→金島一直走下去', () => {
+  const { store, a } = p3Store();
+  const p = store.getPlayer(a.id);
+  G.registerBoard('wood', G.buildWood());
+  try {
+    const lap = (label) => {
+      // 金島第 100 格：阿翔的飛行者
+      store.setPlayerTile(a.id, END); if (p.maxReached < END) p.maxReached = END;
+      assert.deepEqual(store.flightReady(a.id), { island: 'wood', name: '木島' }, label + '：金島終點可以搭飛行者');
+      store.takeFlight(a.id);
+      assert.deepEqual([p.island, p.pos], ['wood', 0], label + '：到木島起點');
+      // 木島第 100 格：下一次擲骰回金島
+      store.setPlayerTile(a.id, END); store.data.adventure.rolls = []; p.bag.d6 = 3; store.random = () => 0.1;
+      const back = store.rollDice(a.id, 'd6');
+      assert.equal(back.travel.island, 'gold', label + '：木島終點擲骰回金島');
+      assert.equal(p.island, 'gold');
+    };
+    lap('任務都沒做');
+    assert.equal(store.storyResetOffer(a.id), null, '沒做過任務不會問');
+    G.storiesOf('gold').concat(G.storiesOf('wood')).forEach((k) => store.completeStory(a.id, k));
+    lap('任務都做完');
+    // 回到金島：還沒回答詢問也不影響資料（畫面會先問）；選重置
+    store.setPlayerTile(a.id, 0); p.storyAsk = 'gold';
+    assert.equal(store.answerStoryReset(a.id, true), true);
+    lap('金島重置後任務沒重做');
+    store.setPlayerTile(a.id, 0); p.storyAsk = 'gold';
+    store.answerStoryReset(a.id, false);
+    lap('選不重置');
+    // 人在木島、還沒回答木島的詢問時走到終點：照樣能回金島
+    store.setPlayerTile(a.id, END); store.takeFlight(a.id);
+    assert.equal(store.storyResetOffer(a.id).island, 'wood');
+    store.setPlayerTile(a.id, END); store.data.adventure.rolls = []; p.bag.d6 = 3; store.random = () => 0.1;
+    assert.equal(store.rollDice(a.id, 'd6').travel.island, 'gold', '沒回答詢問也能換島');
+  } finally { delete G.BOARDS.wood; }
+});
