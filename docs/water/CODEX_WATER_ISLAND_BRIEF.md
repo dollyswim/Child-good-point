@@ -247,7 +247,7 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 | F-2（K3） | 滑出樹洞 | `First-person view shooting out of the round root-tunnel exit on the shore, white sand right ahead and a wide turquoise sea and horizon, a few soft clouds, sense of speed` 中文：從海邊的樹根洞口衝出來，前方是白沙、水藍大海和海平線，有速度感 |
 | F-3（K4） | 落在沙灘 | `First-person view resting on soft white sand at a sunny beach, calm pale-blue shallow water and colorful round coral ahead, small shells and a little crab, calm and welcoming, empty sky area at the top for a title` 中文：停在陽光白沙灘上，前方是淺藍海水和彩色圓潤珊瑚、小貝殼、小螃蟹；上方天空留空給 App 寫「歡迎來到水島！」 |
 | F-4 | 白鯨送回岸 | `First-person view riding on the back of a cute baby beluga whale (only the top of its smooth white head and back visible at the bottom of the frame), gliding on the sea surface toward the sunny coral beach, splashes and bubbles, joyful` 中文：第一人稱騎在小白鯨背上（畫面下方只看到白鯨圓滑的頭頂和背），在海面上滑向陽光珊瑚沙灘，水花和泡泡 |
-| F-5 | 白鯨送去金島 | 同 F-4 構圖，`gliding toward a distant golden island with a castle and gears on the horizon` 中文：同 F-4，但遠方是金色島嶼（有城堡與齒輪），表示要回金島 |
+| F-5 | 白鯨出發去下一座島（通用） | 同 F-4 構圖，`gliding out to the open sea toward the bright horizon at sunrise, a faint misty island silhouette far away whose shape cannot be recognized, sparkling water, sense of a new journey` 中文：同 F-4，但白鯨往開闊大海和明亮的海平線游去，遠方只有一個**看不出是哪座島**的朦朧島影。**不要畫出金島或任何特定島嶼的特徵**——現在用來回金島，火島做好後同一張圖直接改成去火島（目的地由 App 的文字卡片說明） |
 
 ---
 
