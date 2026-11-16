@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-13｜App 版本 `2026.11.16-152`｜Service Worker 快取 `cgp-shell-v162`｜`main` 最新：木島開放（2026-11-13）
+> 最後更新：2026-11-13｜App 版本 `2026.11.16-153`｜Service Worker 快取 `cgp-shell-v163`｜`main` 最新：木島開放（2026-11-13）
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -14,7 +14,7 @@
 - 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v162`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.16-152`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v163`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.16-153`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 142 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -89,6 +89,9 @@
 
 ### 2026-11-16：派對裝飾縮小
 - 家長回報桌子在畫面裡偏小、裝飾顯得太大：裝飾寬度 12% → 8%（汽球 10%、松果 6.5%），抓取範圍用 `::before` 外擴 18%，拿起來時放大 1.3 倍。
+
+### 2026-11-16：家長預覽連結
+- 網址加 `?preview=party`（第 92 格布置派對）、`?preview=flowers`（第 40 格）、`?preview=invite`（第 65 格）可直接打開任務視窗試玩；不寫入存檔、不給星星（`js/app.js` 最後面）。
 
 ### 2026-11-10～13 完成的重點（新的在上面；細節在下方各條）
 - 「木島通關」徽章換上家長提供的專屬圖（11-13）。
