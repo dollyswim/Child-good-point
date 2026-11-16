@@ -851,8 +851,20 @@ async function main() {
       await q.click('[data-pilot=next]'); await q.click('[data-pilot=go]');
       await q.waitForSelector('[data-testid=flight-arrive]', { timeout: 8000 });
       assert.match(await q.locator('[data-testid=flight-arrive]').innerText(), /抵達木島，降落！/);
+      assert.equal(await q.locator('#flight [data-trip-skip]').count(), 0, '第一次飛行不能略過');
       await q.click('[data-fl-ok]');
       assert.deepEqual(await q.evaluate((cid) => { const p = window.__cgpStore.getPlayer(cid); return [p.island, p.pos]; }, kid), ['wood', 0]);
+      // 去過木島、再從金島飛過去：可以略過
+      await q.evaluate((cid) => { const s = window.__cgpStore, p = s.getPlayer(cid); p.islands.wood = { laps: 0, maxReached: 30 }; p.island = 'gold'; s.setPlayerTile(cid, 100); s.save(); }, kid);
+      await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('#pawn');
+      await q.waitForTimeout(800);
+      if (!(await q.locator('#pilot-talk').count())) await q.locator('#pilot').click({ force: true });
+      await q.waitForSelector('#pilot-talk');
+      await q.click('[data-pilot=next]'); await q.click('[data-pilot=go]');
+      await q.waitForSelector('#flight [data-trip-skip]', { timeout: 5000 });
+      await q.click('[data-trip-skip]');
+      await q.waitForSelector('[data-testid=flight-arrive]', { timeout: 3000 });
+      await q.click('[data-fl-ok]');
       await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
     }
     assert.match(await q.locator('.plaque h1').innerText(), /木島/);
@@ -895,9 +907,20 @@ async function main() {
     await q.waitForSelector('#wood-ending', { state: 'detached' });
     assert.equal(await q.locator('#ach-theater').count(), 0, '木島通關已在卡片上顯示，不再跳成就劇場');
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.giftMysteryChest, id), 1, '神秘寶箱只發 1 個');
+    // 第一次回金島：完整播放、不能略過
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.getPlayer(cid).bag.d6 = 3; s.random = () => 0.1; s.save(); }, id);
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#trip-back .we-frame.on', { timeout: 10000 });
+    assert.equal(await q.locator('#trip-back [data-trip-skip]').count(), 0, '第一次回金島不能略過');
+    await q.waitForSelector('[data-testid=trip-back-card]', { timeout: 8000 });
+    await q.click('[data-trip-ok]');
+    await q.waitForFunction(() => /停在第 \d+ 格/.test((document.getElementById('toast') || {}).textContent || '') || document.querySelector('.ev-pop, #ev-popup'), null, { timeout: 8000 });   // 等這一步的移動演完
+    await q.evaluate((cid) => { const s = window.__cgpStore, p = s.getPlayer(cid); p.island = 'wood'; s.setPlayerTile(cid, 0); s.save(); }, id);   // 回木島測第二次通關
     // 第二次通關：可以略過，獎勵改成能量星星；通關次數 2
     await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 97); s.random = () => 0.99; s.save(); }, id);
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    await q.evaluate(() => { window.__cgpStore.random = () => 0.99; });   // 重新載入後要再設一次（擲 6 到第 100 格）
     await q.click('.dice-btn.d6');
     await q.waitForSelector('#wood-ending [data-we-skip]', { timeout: 15000 });
     await q.click('[data-we-skip]');
@@ -905,8 +928,21 @@ async function main() {
     assert.match(await q.locator('[data-testid=wood-end-card]').innerText(), /能量星星 \+10/);
     assert.deepEqual(await q.evaluate((cid) => { const p = window.__cgpStore.getPlayer(cid); return [p.islandClears.wood, p.bag.giftMysteryChest]; }, id), [2, 1]);
     await q.click('[data-we-ok]');
+    // 2026-11-16：木島 → 回金島的過場（樹洞隧道 →「回到金島」）；第 2 次通關後的這一趟可以略過
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.getPlayer(cid).bag.d6 = 3; s.random = () => 0.1; s.save(); }, id);
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#trip-back [data-trip-skip]', { timeout: 10000 });
+    await q.click('[data-trip-skip]');
+    await q.waitForSelector('[data-testid=trip-back-card]', { timeout: 3000 });
+    assert.match(await q.locator('[data-testid=trip-back-card]').innerText(), /回到金島！[\s\S]*小安 穿過樹洞隧道，回到金島的起點了[\s\S]*繼續冒險！/);
+    assert.doesNotMatch(await q.locator('[data-testid=trip-back-card]').innerText(), /水島/);
+    if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'trip-back.png') });
+    await q.click('[data-trip-ok]');
+    await q.waitForSelector('#trip-back', { state: 'detached' });
+    assert.deepEqual(await q.evaluate((cid) => { const p = window.__cgpStore.getPlayer(cid); return [p.island, p.pos]; }, id), ['gold', 1], '換島的這一擲從金島起點走 1 格');
     await c.close();
-    console.log('✔ 木島正式地圖與樹洞結局：100 格與背景、小精靈站位、第 100 格對話 → 5 張第一人稱滑梯 → 木島冒險完成、獎勵不重複、第二次可略過');
+    console.log('✔ 木島正式地圖與樹洞結局：100 格與背景、小精靈站位、第 100 格對話 → 5 張第一人稱滑梯 → 木島冒險完成、獎勵不重複、第二次可略過；回金島過場可略過');
   }
 
   // ---------- 一般冒險事件視窗（2026-11-09）：卡片式、單一視窗整合多個事件；內容沿用事件原文 ----------

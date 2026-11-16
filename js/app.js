@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.16-155';
+  var APP_VERSION = '2026.11.16-156';
   var store;
   try {
     store = new CGP.Store();
@@ -1886,6 +1886,7 @@
     if (ui.busy) return;
     var child = store.getChild(childId);
     if (kind !== 'door' && store.flightReady(childId)) { pilotTalk(child); return; }   // 金島終點：要去木島請找阿翔（不扣骰子、不算次數）
+    var fromIsland = store.getPlayer(childId).island;   // 換島過場用：從哪座島出發
     var isDie = kind === 'd6' || kind === 'd12' || kind === 'magic';
     var res, pr = null;
     var towerBefore = goldMaxOf(store.getPlayer(childId));   // 走過第 80 格的那一次播放通電動畫
@@ -1913,7 +1914,8 @@
     try {
       if (res.travel) {   // 通關後前往下一座島：換成新島嶼的地圖，從起點出發
         if (res.travel.island === 'wood') { await flightScene(child, { from: '金島', island: 'wood', name: res.travel.name }); }   // 沒按專機按鈕、直接擲骰：一樣搭專機過去
-        else { toast('🛶 出發前往' + res.travel.name + '！', 'pos'); render(); await sleep(500); }
+        else if (fromIsland === 'wood' && res.travel.island === 'gold') { await returnScene(child, res.travel); }   // 木島 → 暫時回金島：穿過樹洞隧道
+        else { toast('🛶 出發前往' + res.travel.name + '！', 'pos'); render(); await sleep(500); }   // 其他（木島 → 水島的開場由水島負責，見 docs/WOOD_TO_WATER_HANDOFF.md）
       } else if (res.lap) {   // 從終點回到起點開始新的一輪
         toast('🔄 新的一輪開始！從起點出發', 'pos');
         await hopAlong(child, [0]);
@@ -2264,8 +2266,12 @@
       el.className = 'flight' + (still ? ' still' : ''); el.id = 'flight';
       el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '飛行者前往' + fl.name);
       // 2026-11-15 家長正式圖：飛行中（阿翔駕駛飛行者，金島在左下、木島在右）→ 降落在森林入口
+      // 第二次以後（去過木島又回來）可以略過（2026-11-16 家長決定：所有換島過場都一樣）
+      var p0 = store.getPlayer(child.id), repeat = !!(p0.islands && p0.islands[fl.island] && (p0.islands[fl.island].laps || p0.islands[fl.island].maxReached || (p0.islandClears || {})[fl.island]));
       el.innerHTML = '<i class="fl-frame fl-fly" style="background-image:url(images/flight/fly.webp)"></i><i class="fl-frame fl-land" style="background-image:url(images/flight/land.webp)"></i>' +
-        '<p class="fl-msg" role="status">✈️ 「飛行者」起飛，前往' + h(fl.name) + '！</p>';
+        '<p class="fl-msg" role="status">✈️ 「飛行者」起飛，前往' + h(fl.name) + '！</p>' +
+        (repeat ? '<button type="button" class="we-skip" data-trip-skip>略過 ›</button>' : '');
+      var trip = tripSkipper(el);
       document.body.appendChild(el);
       document.body.classList.add('pawn-acting');
       toastEl.hidden = true;
@@ -2275,17 +2281,66 @@
         render();   // 背後的地圖先換成新島嶼
         // 2026-11-16 家長調整：第一、二段都是飛行圖，鏡頭從左邊的金島慢慢移到右邊的木島；第三段才換成降落圖
         el.classList.add('go');
-        await sleep((still ? 900 : 2600) * fast);
+        await trip.wait((still ? 900 : 2600) * fast);
         el.querySelector('.fl-msg').textContent = '☁️ 飛過雲海，' + fl.name + '就在前面…';
-        await sleep((still ? 900 : 2600) * fast);
+        await trip.wait((still ? 900 : 2600) * fast);
         el.querySelector('.fl-msg').textContent = '🌳 到' + fl.name + '了，準備降落！';
         el.classList.add('near');
-        await sleep((still ? 700 : 1500) * fast);
-        el.classList.add('land');
-        el.innerHTML += '<div class="fl-card" data-testid="flight-arrive"><h2>🛬 抵達' + h(fl.name) + '，降落！</h2>' +
+        await trip.wait((still ? 700 : 1500) * fast);
+        trip.done(); el.classList.add('go', 'near', 'land');
+        el.insertAdjacentHTML('beforeend', '<div class="fl-card" data-testid="flight-arrive"><h2>🛬 抵達' + h(fl.name) + '，降落！</h2>' +
           '<p>' + h(child.name) + ' 來到' + h(fl.name) + '的起點了。<br>新的冒險開始囉！</p>' +
-          '<button type="button" class="btn primary block" data-fl-ok>開始' + h(fl.name) + '冒險！</button></div>';
+          '<button type="button" class="btn primary block" data-fl-ok>開始' + h(fl.name) + '冒險！</button></div>');
         el.querySelector('[data-fl-ok]').onclick = function () { el.remove(); document.body.classList.remove('pawn-acting'); render(); resolve(); };
+      })();
+    });
+  }
+
+  /** 換島過場的「略過」：按下後目前與後面的等待都立刻結束（直接跳到抵達卡片） */
+  function tripSkipper(el) {
+    var skipped = false, wake = null, btn = el.querySelector('[data-trip-skip]');
+    if (btn) btn.addEventListener('click', function () { skipped = true; btn.remove(); el.classList.add('skipped'); if (wake) { var w = wake; wake = null; w(); } });
+    return {
+      wait: function (ms) { return skipped ? Promise.resolve() : new Promise(function (r) { wake = r; setTimeout(function () { if (wake === r) { wake = null; r(); } }, ms); }); },
+      done: function () { if (btn && btn.parentNode) btn.remove(); }
+    };
+  }
+  /**
+   * 木島 → 暫時回金島（2026-11-16 家長決定：沿用木島「往水島」的樹洞隧道圖，因為只是暫時回金島；水島做好後改由水島開場）。
+   * 隧道後段兩張 → 藍光 →「回到金島」卡片。第二次以後可以略過。換島資料在過場前就已寫入，這裡只負責演出。
+   */
+  function returnScene(child, travel) {
+    return new Promise(function (resolve) {
+      var fast = window.__cgpFastEnding ? 0.08 : 1, still = reduceMotion;
+      var p0 = store.getPlayer(child.id), repeat = ((p0.islandClears || {}).wood || 0) > 1;
+      var el = document.createElement('div');
+      el.className = 'wood-end trip-back' + (still ? ' still' : ''); el.id = 'trip-back';
+      el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '穿過樹洞隧道，回到' + travel.name);
+      el.innerHTML = '<div class="we-slide">' + [WOOD_SLIDES[3], WOOD_SLIDES[4]].map(function (u, i) { return '<i class="we-frame we-f' + (i + 1) + '" style="background-image:url(' + u + ')"></i>'; }).join('') + '<b class="we-glow"></b></div>' +
+        '<p class="fl-msg" role="status">🌳 穿過樹洞隧道…</p>' +
+        (repeat ? '<button type="button" class="we-skip" data-trip-skip>略過 ›</button>' : '');
+      document.body.appendChild(el);
+      document.body.classList.add('pawn-acting');
+      toastEl.hidden = true;
+      var trip = tripSkipper(el), frames = el.querySelectorAll('.we-frame');
+      (async function () {
+        await preloadImages([WOOD_SLIDES[3], WOOD_SLIDES[4]], 2500);
+        render();   // 背後的地圖先換成金島
+        for (var i = 0; i < frames.length; i++) {
+          if (i) frames[i - 1].classList.add('out');
+          frames[i].classList.add('on');
+          await trip.wait((still ? 900 : 1700) * fast);
+        }
+        el.querySelector('.fl-msg').textContent = '✨ 前面好亮…';
+        el.querySelector('.we-slide').classList.add('glow');
+        await trip.wait((still ? 600 : 1300) * fast);
+        trip.done(); el.querySelector('.we-slide').classList.add('glow');
+        var msg = el.querySelector('.fl-msg'); if (msg) msg.remove();
+        el.insertAdjacentHTML('beforeend', '<div class="we-card trip-card" data-testid="trip-back-card"><h2>🌟 回到' + h(travel.name) + '！</h2>' +
+          '<p>' + h(child.name) + ' 穿過樹洞隧道，回到' + h(travel.name) + '的起點了。</p>' +
+          '<p class="muted small">下一座島還在準備中，先在' + h(travel.name) + '繼續冒險吧！</p>' +
+          '<button type="button" class="btn primary block" data-trip-ok>繼續冒險！</button></div>');
+        el.querySelector('[data-trip-ok]').onclick = function () { el.remove(); document.body.classList.remove('pawn-acting'); render(); resolve(); };
       })();
     });
   }

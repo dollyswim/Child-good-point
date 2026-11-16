@@ -1,13 +1,14 @@
 # 木島 → 水島 銜接文件（WOOD_TO_WATER_HANDOFF）
 
-> 2026-11-12 建立，**2026-11-16 更新**（目前版本 `2026.11.16-155`、快取 `cgp-shell-v165`）。
+> 2026-11-12 建立，**2026-11-16 更新**（目前版本 `2026.11.16-156`、快取 `cgp-shell-v166`）。
+> 水島分工：另一個 AI 先寫水島總計畫草稿 → Claude 審查是否可執行 → 美術交給 Codex，其他部分由 Claude 處理。
 > 木島已開放（結局、任務、飛行員阿翔都已上線）；水島尚未製作。以下都依實際程式記錄。
 > 水島製作前也請先讀：`CLAUDE.md`（工作規則）、`docs/HANDOFF.md` 第 0、1 節（固定流程、容易踩到的地方）。
 
 ## 0. 現況一句話
 - 島嶼順序：金 → 木 →（水島未註冊）→ 回金島。水島註冊後會自動變成金 → 木 → 水 → 回金。
 - 金島 → 木島：飛行員阿翔駕駛「飛行者」載過去（有過場動畫）。
-- 木島 → 下一座島：**沒有專屬過場**。木島第 100 格演完樹洞結局後，下一次擲骰直接換島，只有一行提示「🛶 出發前往…」。
+- 木島 → 回金島：下一次擲骰時播 `returnScene()`（沿用樹洞隧道圖 →「回到金島！」卡片，2026-11-16）。**木島 → 水島目前沒有過場**，要由水島製作。
 - 木島結局每次通關都會播（第二次起可略過），內容只到「滑進樹洞隧道、看到藍光」，**不演出抵達水島**。
 
 ## 1. 木島結局的觸發條件
@@ -37,6 +38,7 @@ var woodDone = (p.islandClears && p.islandClears.wood >= 1);
 |---|---|---|
 | 金島 → 木島 | 金島第 100 格：阿翔自動跳出對話 →「好，出發！」→ 飛行過場（不扣骰子） | `game.js` 的 `flightReady()`／`takeFlight()`（**只限金島**）；`app.js` 的 `pilotTalk()`、`flightScene()` |
 | 木島 → 下一座 | 木島第 100 格，下一次擲骰或前進道具 | `game.js` 的 `_startNext()`（`nextIsland('wood')`），結果放在 `res.travel` |
+| 木島 → 回金島 | 同上；播 `returnScene()` | `app.js` 的 `playMove()`：`fromIsland === 'wood' && res.travel.island === 'gold'` |
 | 回到某座島 | 同上 | `_startNext()` 會呼叫 `_offerStoryReset()`（見第 6 節） |
 
 - 開放水島：比照木島，在 `game.js` 加 `buildWater()` 與 `WATER_OPEN`，或直接 `GAME.registerBoard('water', board)`。註冊後 `nextIsland('wood')` 就會回傳 `water`，不用改換島程式。
@@ -44,10 +46,12 @@ var woodDone = (p.islandClears && p.islandClears.wood >= 1);
   ```js
   if (res.travel) {
     if (res.travel.island === 'wood') { await flightScene(...); }   // 金島 → 木島
+    else if (fromIsland === 'wood' && res.travel.island === 'gold') { await returnScene(child, res.travel); }   // 木島 → 暫時回金島
     else { toast('🛶 出發前往' + res.travel.name + '！', 'pos'); render(); await sleep(500); }   // ← 水島開場加在這裡
   }
   ```
-  建議改成 `else if (res.travel.island === 'water') { await waterOpening(child, res.travel); }`，回金島維持原本提示。
+  建議加 `else if (res.travel.island === 'water') { await waterOpening(child, res.travel); }`。水島開放後木島不會再回金島，`returnScene()` 會自然用不到。
+- **略過按鈕**（2026-11-16 家長決定：所有換島過場第一次完整播、第二次起可略過）：共用 `tripSkipper(el)`，畫面放 `<button class="we-skip" data-trip-skip>略過 ›</button>`，等待改用 `trip.wait(ms)`，到卡片前呼叫 `trip.done()`。水島開場請照做。
 - 換島那一步不會演出任務（`if (!res.travel)`），水島開場演完後孩子停在水島第 0 格。
 - 要像阿翔一樣「不扣骰子、按了就走」：`flightReady()` 目前寫死 `p.island !== 'gold'`，要改成判斷目的地；若維持「下一次擲骰才換島」則不用改。
 

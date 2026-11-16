@@ -2227,3 +2227,8 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .map-talk .we-who { color: #8a4f12; } .map-talk.we-elf .we-who { color: #2f7a22; }
 .map-talk.bye { opacity: 0; transition: opacity .3s; }
 @media (prefers-reduced-motion: reduce) { .we-talk.map-talk { animation: none; } }
+/* 換島過場（2026-11-16）：木島 → 回金島沿用樹洞隧道圖；第二次以後有「略過」 */
+.trip-back .fl-msg { z-index: 2; }
+.trip-back .we-card { position: relative; z-index: 3; }
+.trip-card h2 { margin: 0; color: #b07a10; font-size: 1.45rem; } .trip-card p { margin: 0; font-weight: 800; color: #5a3a1a; line-height: 1.6; }
+.flight .we-skip, .trip-back .we-skip { z-index: 4; }
