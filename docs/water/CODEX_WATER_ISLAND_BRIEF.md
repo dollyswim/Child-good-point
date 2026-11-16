@@ -12,7 +12,7 @@
 | B | 正式場景地圖 S1～S4 | 4 | 1080×1350 | Codex | ② 一次一張 |
 | C | 角色（NPC） | 7 | 直式白底 | Gemini 等 | 可和 B 同時 |
 | D | 任務視窗場景 | 4 | 1200×900 | Gemini 等 | 可和 B 同時 |
-| E | 任務小圖（貼紙） | 29 | 1024×1024 白底 | Gemini 等 | 可和 B 同時 |
+| E | 任務小圖（貼紙）＋潛水艇道具圖 | 30 | 1024×1024 白底 | Gemini 等 | 可和 B 同時 |
 | F | 過場動畫 | 5 | 直式 3:4 | Gemini 等 | 可和 B 同時 |
 | G | 成就徽章（選做） | 1 | 1024×1024 | 任一 | 最後 |
 
@@ -219,6 +219,13 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 | E-26 | 濕痕 | `a small puddle of water with a few droplets` 中文：一小灘水和幾滴水珠（放在貝殼箱旁） |
 
 > E-16～E-19 四張要畫**同一個布包**，不要畫出被子的全貌，也不要數字、時鐘或能拼起來的邊緣。E-20～E-23 是同一款箱子，只換符號；要和神秘寶箱明顯不同（樸素木頭色）。
+
+### 水島道具（2026-11-16 新增）
+| 代號 | 物件 | 提示詞 |
+|---|---|---|
+| E-30 | 潛水艇（寶物商店道具） | `a cute small round yellow submarine with a big round porthole window, a little periscope, a tiny propeller at the back, rivets, friendly toy-like look` 中文：可愛的圓胖小黃潛水艇，大圓窗、小潛望鏡、後面小螺旋槳、鉚釘，像玩具一樣友善。和其他道具圖（防護罩、傳送門）同樣大小與畫風 |
+
+> 「小白鯨載我前進」的按鈕和動畫沿用 C-2 小白鯨，不另做圖。
 
 ### 第二版（選做）
 | E-27 | 小白鯨呼喚貝殼 | `a pearly pink and white spiral seashell with a tiny heart-shaped sparkle` |
