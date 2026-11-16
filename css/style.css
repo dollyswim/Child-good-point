@@ -2192,8 +2192,11 @@ html.font-on body { font-family: "jf-openhuninn", "jf-openhuninn-full", "Arial R
 .flight { position: fixed; inset: 0; z-index: 80; overflow: hidden; display: grid; place-items: center; background: linear-gradient(#69bdf2, #bfe6ff 60%, #eaf7ff); }
 .fl-frame { position: absolute; inset: 0; display: block; opacity: 0; background: #bfe6ff no-repeat 50% 50% / cover; will-change: transform, opacity; }
 .fl-land { background-color: #8fc46f; }
-.flight.go .fl-fly { opacity: 1; animation: fl-pan 5.2s ease-in-out both; transition: opacity .5s; }
-@keyframes fl-pan { from { transform: scale(1.18) translate(3%, 2%); } to { transform: scale(1.04) translate(-2%, -1%); } }
+/* 飛行圖比畫面寬、也高一點：鏡頭由左下（金島）慢慢移到右邊（木島），做出「從金島飛往木島」的感覺 */
+.fl-fly { inset: auto; left: 0; top: 50%; height: 118vh; width: calc(118vh * .7465); min-width: 135vw; transform: translate(0, -57%); }
+.flight.go .fl-fly { opacity: 1; animation: fl-pan 5.4s ease-in-out both; transition: opacity .5s; }
+@keyframes fl-pan { from { transform: translate(0, -57%); } to { transform: translate(calc(100vw - 100%), -47%); } }
+.flight.still .fl-fly { transform: translate(calc(50vw - 50%), -50%); }
 .flight.near .fl-land { opacity: 1; animation: fl-down 3s ease-out both; transition: opacity .8s; }
 @keyframes fl-down { from { transform: scale(1.2) translateY(-3%); } to { transform: scale(1.02); } }
 .flight.still .fl-frame { animation: none !important; }

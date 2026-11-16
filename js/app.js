@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.16-154';
+  var APP_VERSION = '2026.11.16-155';
   var store;
   try {
     store = new CGP.Store();
@@ -2263,7 +2263,7 @@
       var el = document.createElement('div');
       el.className = 'flight' + (still ? ' still' : ''); el.id = 'flight';
       el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '飛行者前往' + fl.name);
-      // 2026-11-15 家長正式圖：飛行中（阿翔駕駛飛行者，金島在後、木島在前）→ 降落在森林入口
+      // 2026-11-15 家長正式圖：飛行中（阿翔駕駛飛行者，金島在左下、木島在右）→ 降落在森林入口
       el.innerHTML = '<i class="fl-frame fl-fly" style="background-image:url(images/flight/fly.webp)"></i><i class="fl-frame fl-land" style="background-image:url(images/flight/land.webp)"></i>' +
         '<p class="fl-msg" role="status">✈️ 「飛行者」起飛，前往' + h(fl.name) + '！</p>';
       document.body.appendChild(el);
@@ -2273,11 +2273,14 @@
       (async function () {
         await ready;
         render();   // 背後的地圖先換成新島嶼
+        // 2026-11-16 家長調整：第一、二段都是飛行圖，鏡頭從左邊的金島慢慢移到右邊的木島；第三段才換成降落圖
         el.classList.add('go');
         await sleep((still ? 900 : 2600) * fast);
-        el.querySelector('.fl-msg').textContent = '🌳 看到' + fl.name + '了，準備降落！';
+        el.querySelector('.fl-msg').textContent = '☁️ 飛過雲海，' + fl.name + '就在前面…';
+        await sleep((still ? 900 : 2600) * fast);
+        el.querySelector('.fl-msg').textContent = '🌳 到' + fl.name + '了，準備降落！';
         el.classList.add('near');
-        await sleep((still ? 700 : 2200) * fast);
+        await sleep((still ? 700 : 1500) * fast);
         el.classList.add('land');
         el.innerHTML += '<div class="fl-card" data-testid="flight-arrive"><h2>🛬 抵達' + h(fl.name) + '，降落！</h2>' +
           '<p>' + h(child.name) + ' 來到' + h(fl.name) + '的起點了。<br>新的冒險開始囉！</p>' +
