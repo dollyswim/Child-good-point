@@ -1,6 +1,7 @@
 # 木島 → 水島 銜接文件（WOOD_TO_WATER_HANDOFF）
 
 > 2026-11-12 建立，**2026-11-16 更新**（目前版本 `2026.11.16-156`、快取 `cgp-shell-v166`）。
+> 水島確認版計畫：`docs/water/WATER_ISLAND_PLAN.md`；美術提示詞：`docs/water/CODEX_WATER_ISLAND_BRIEF.md`。
 > 水島計畫審查與家長決定：`docs/water/WATER_PLAN_REVIEW.md`（以它為準）。
 > 水島分工：另一個 AI 先寫水島總計畫草稿 → Claude 審查是否可執行 → 美術交給 Codex，其他部分由 Claude 處理。
 > 木島已開放（結局、任務、飛行員阿翔都已上線）；水島尚未製作。以下都依實際程式記錄。
