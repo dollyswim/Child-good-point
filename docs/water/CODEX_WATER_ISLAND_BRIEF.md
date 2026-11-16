@@ -12,7 +12,7 @@
 | B | 正式場景地圖 S1～S4 | 4 | 1080×1350 | Codex | ② 一次一張 |
 | C | 角色（NPC） | 7 | 直式白底 | Gemini 等 | 可和 B 同時 |
 | D | 任務視窗場景 | 4 | 1200×900 | Gemini 等 | 可和 B 同時 |
-| E | 任務小圖（貼紙）＋潛水艇道具圖 | 30 | 1024×1024 白底 | Gemini 等 | 可和 B 同時 |
+| E | 任務小圖（貼紙）＋潛水艇道具圖 | 31 | 1024×1024 白底 | Gemini 等 | 可和 B 同時 |
 | F | 過場動畫 | 5 | 直式 3:4 | Gemini 等 | 可和 B 同時 |
 | G | 成就徽章（選做） | 1 | 1024×1024 | 任一 | 最後 |
 
@@ -79,6 +79,7 @@ single subject, no text, no watermark, plain white background
 | 角色 | 旁邊的格 | 空地大小 | 備註 |
 |---|---|---|---|
 | 牛奶瓶提示 | 8（S1） | 80×80 | 放瓶子圖示 |
+| 漁夫（迎接） | 0（S1） | 140×140 | 起點旁的小木碼頭，放漁夫和裝魚水桶（2026-11-16 新增） |
 | 漁夫 | 16（S1） | 100×140 | 岸邊或露出水面的木平台 |
 | 小白鯨 | 34、42（S2）、62（S3） | 240×180 | 路旁水域 |
 | 大鯊魚 | 48（S2） | 300×220 | 路的側邊，不能蓋到 48、49 格 |
@@ -98,12 +99,13 @@ A sunny tropical shoreline with shallow clear turquoise water, colorful rounded 
 At the bottom center, the end of a big curved tree-root tunnel opening onto white sand (where the player just slid out from the forest island).
 One clear pale sandy path starts from that safe bottom-center position and winds smoothly upward through the beach and shallow coral water
 to a small diving point near the top of the image (a wooden jetty edge over deeper blue water).
+Right next to the starting point, a small wooden pier with a flat empty spot (about 140x140) for a fisherman and a bucket.
 Beside the path, a flat wooden platform at the water's edge left empty for a fisherman character.
 The path is continuous, flat and spacious with room for 25 stops, but do not draw any tiles or numbers.
 Keep the bottom-left 180x220 and bottom-right 80x180 corners calm with no path or important objects.
 No characters, no large sea animals, no text, no UI.
 ```
-中文重點：暖陽海岸、清澈水藍淺水、彩色圓潤珊瑚、礁石與小貝殼；**下方中央是大樹根隧道的出口**（剛從木島滑出來的地方）通到白沙；淺色沙道從下方中央蜿蜒往上，到畫面上方的下潛點（深藍水邊的木棧橋）；路旁有空的木平台給漁夫。
+中文重點：暖陽海岸、清澈水藍淺水、彩色圓潤珊瑚、礁石與小貝殼；**下方中央是大樹根隧道的出口**（剛從木島滑出來的地方）通到白沙；淺色沙道從下方中央蜿蜒往上，到畫面上方的下潛點（深藍水邊的木棧橋）；路旁有空的木平台給漁夫。起點旁要有一個小木碼頭，留 140×140 平坦空地給漁夫和魚桶（不要畫漁夫、不要畫魚桶）。
 
 ### S2 深海世界（25～58）
 ```
@@ -182,6 +184,7 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 | 代號 | 物件 | 提示詞 |
 |---|---|---|
 | E-1 | 玻璃牛奶瓶 | `a sealed glass milk bottle with a round cork cap and a little milk-drop shaped emboss near the bottom, rolled paper scraps visible inside` 中文：密封玻璃牛奶瓶、圓軟木塞、瓶底附近有牛奶滴形浮雕，裡面看得到捲起來的碎紙（瓶底的樣子要能和 D-4 的瓶架對上） |
+| E-31 | 一桶魚 | `a small wooden bucket full of cute little silver-blue fish peeking out, a rope handle, a few water drops` 中文：小木桶裝滿探出頭的銀藍小魚、繩子提把、幾滴水珠（2026-11-16 新增，地圖上放在漁夫腳邊，也當「故事物品」圖示） |
 | E-2 | 潛水藥水 | `a small round potion bottle with glowing aqua liquid and a tiny bubble pattern, cork stopper` 中文：小圓藥水瓶，發光水藍色液體、小泡泡圖案 |
 
 ### 第 34 格餵白鯨
