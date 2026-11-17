@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.17-161';
+  var APP_VERSION = '2026.11.17-162';
   var store;
   try {
     store = new CGP.Store();
@@ -2166,7 +2166,7 @@
     // 通關：⭐3＋第一次 3 個神秘寶箱（之後 10 星）
     var ev = child.preview ? { clear: { first: true, next: '金島' }, text: '\n通關獎勵：🎁 神秘寶箱 ×3（不用鑰匙）（預覽，沒有存檔）' } : store.finishWaterBoss(child.id);
     if (ev.clear.first) {
-      await talkSeq([line(me, '那三個寶箱是什麼？'), line(M, '喔，那三個大箱子喔？'), line(M, '太佔空間了啦！'), line(M, '我每次經過都會踢到小拇指！'),
+      await talkSeq([line(me, '下面好像還有東西，那是什麼？'), line(M, '喔，那三個大箱子喔？'), line(M, '太佔空間了啦！'), line(M, '我每次經過都會踢到小拇指！'),
         line(WHO.monster('blanket'), '這個留下，亮晶晶的給你們！你幫我搬走好不好？', { choices: [{ label: '🎁 收下 3 個神秘寶箱', val: true, primary: true }] })]);
     } else await talkSeq([line(WHO.monster('blanket'), '這次換我請你吃星星糖！', { choices: [{ label: '⭐ 收下 ' + GAME.GOLD_CLEAR_STARS + ' 顆能量星星', val: true, primary: true }] })]);
     await talkSeq([line(M, '謝謝你！我一定會記得你的！'), line(M, '……欸？你叫什麼名字？'), line(me, '我是你的冒險朋友！'),
