@@ -35,11 +35,12 @@ async function main() {
   // 其他流程測試：成就改用文字提示（不跳星光成就劇場，避免擋住後續點擊）；劇場另有專門測試（theater: true）
   const _newContext = browser.newContext.bind(browser);
   browser.newContext = async (opts = {}) => {
-    const { theater, story, goldGame, onboard, wood, ...rest } = opts;
+    const { theater, story, goldGame, onboard, wood, water, ...rest } = opts;
     const c = await _newContext(rest);
     if (!theater) await c.addInitScript(() => { window.__cgpNoTheater = true; });
     if (!story) await c.addInitScript(() => { window.__cgpNoStory = true; });   // 金島劇情另有專門測試（story: true）
     if (!wood) await c.addInitScript(() => { window.__cgpWoodClosed = true; });   // 舊流程以「只有金島」為前提；木島另有專門測試（wood: true）
+    if (water) await c.addInitScript(() => { window.__cgpWaterOpen = true; });   // 水島預設未開放（2026-11-17）
     if (!onboard) await c.addInitScript(() => { window.__cgpNoOnboard = true; });   // 新手導覽、新手任務另有專門測試（onboard: true）
     // 金島小遊戲（木島上線前各 1/2 機率）：其他流程固定抓住星星；落葉找松果另有專門測試（goldGame: 'leaf'）
     await c.addInitScript((g) => { window.__cgpGoldGame = g; }, goldGame || 'stars');
@@ -943,6 +944,154 @@ async function main() {
     assert.deepEqual(await q.evaluate((cid) => { const p = window.__cgpStore.getPlayer(cid); return [p.island, p.pos]; }, id), ['gold', 1], '換島的這一擲從金島起點走 1 格');
     await c.close();
     console.log('✔ 木島正式地圖與樹洞結局：100 格與背景、小精靈站位、第 100 格對話 → 5 張第一人稱滑梯 → 木島冒險完成、獎勵不重複、第二次可略過；回金島過場可略過');
+  }
+
+  // ---------- 水島（2026-11-17；預設未開放，water: true 才開）：入島、漁夫迎接、必要關卡、鯊魚、燈籠魚、健忘怪、通關回金島 ----------
+  {
+    const c = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', story: true, wood: true, water: true });
+    await c.addInitScript(() => { window.__cgpFastEnding = true; });
+    const q = await c.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    const F6 = (n) => (n - 0.5) / 6, F12 = (n) => (n - 0.5) / 12;
+    const kid = await q.evaluate(() => {
+      const s = window.__cgpStore, a = s.addChild({ name: '小安' }), it = s.addItem({ kind: 'bonus', name: '大', points: 100 });
+      s.recordItem(a.id, it.id); s.settleToday(a.id);
+      const p = s.getPlayer(a.id); p.island = 'wood'; s.setPlayerTile(a.id, 100);
+      ['ore', 'rail', 'tower', 'pinecone', 'flowers', 'invite', 'party'].forEach((k) => { p.story[k] = '2026-11-17'; });
+      p.islandClears.wood = 1; p.bag.d6 = 20; p.bag.skates = 1; p.bag.wings = 1; p.bag.door = 1; p.bag.shield = 0; s.save(); return a.id;
+    });
+    // 對話一句一句點到底，直到出現 sel
+    async function talkUntil(sel, ms = 15000) {
+      const t0 = Date.now();
+      while (Date.now() - t0 < ms) {
+        if (!(await q.locator('#water-talk').count()) && await q.locator(sel).count() && await q.locator(sel).first().isVisible()) { await q.waitForTimeout(150); if (!(await q.locator('#water-talk').count())) return; }
+        if (await q.locator('#water-talk [data-talk]').count()) { await q.locator('#water-talk [data-talk]').last().click(); await q.waitForTimeout(60); }
+        else await q.waitForTimeout(120);
+      }
+      throw new Error('等不到 ' + sel);
+    }
+    // 等這一步全部演完：沒有對話、沒有任務視窗、角色沒在演出、骰子可以按
+    async function idle(ms = 20000) {
+      const t0 = Date.now();
+      while (Date.now() - t0 < ms) {
+        if (await q.locator('#water-talk [data-talk]').count()) { await q.locator('#water-talk [data-talk]').last().click(); await q.waitForTimeout(60); continue; }
+        const busy = await q.evaluate(() => !!document.getElementById('party-shade') || document.body.classList.contains('pawn-acting') || !!document.querySelector('.dice-btn.d6[disabled]') || !!document.getElementById('water-talk'));
+        if (!busy) { await q.waitForTimeout(200); if (!(await q.evaluate(() => !!document.getElementById('water-talk') || !!document.getElementById('party-shade')))) return; }
+        await q.waitForTimeout(120);
+      }
+      throw new Error('畫面一直沒有空下來');
+    }
+    const setRand = (v) => q.evaluate((x) => { window.__cgpStore.random = () => x; }, v);
+    const P = () => q.evaluate((cid) => { const p = window.__cgpStore.getPlayer(cid); return { island: p.island, pos: p.pos, story: p.story, water: p.water, gift: p.bag.giftMysteryChest, clears: p.islandClears.water || 0 }; }, kid);
+    await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('#pawn');
+    // 1. 木島第 100 格擲 6 → 水島開場 → 漁夫迎接（3 句＋拿魚桶）→ 走 1～6，經過第 4 格撿到牛奶瓶
+    await setRand(F6(6));
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('[data-testid=water-open-card]', { timeout: 15000 });
+    assert.match(await q.locator('[data-testid=water-open-card]').innerText(), /歡迎來到水島[\s\S]*珊瑚淺灘/);
+    await q.click('[data-trip-ok]');
+    await q.waitForSelector('#water-talk');
+    assert.match(await q.locator('#water-talk').innerText(), /漁夫爺爺[\s\S]*歡迎來到水島/);
+    await q.click('#water-talk [data-talk]');
+    assert.match(await q.locator('#water-talk').innerText(), /溜冰鞋、飛行翼和傳送門都不能用/);
+    await q.click('#water-talk [data-talk]');
+    assert.match(await q.locator('#water-talk').innerText(), /拿一桶魚/);
+    await q.click('#water-talk [data-talk]');
+    await q.waitForSelector('#water-talk', { timeout: 8000 });   // 第 4 格：牛奶瓶
+    assert.match(await q.locator('#water-talk').innerText(), /玻璃牛奶瓶/);
+    await q.click('#water-talk [data-talk]');
+    await q.waitForSelector('#confirm [data-testid=event]', { timeout: 8000 });   // 第 6 格是寶箱：事件視窗
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction(() => !document.body.classList.contains('pawn-acting') && !document.getElementById('water-talk'), null, { timeout: 8000 });
+    let st = await P();
+    assert.deepEqual([st.island, st.pos, st.water.bucket, st.water.bottle, st.water.welcomed], ['water', 6, true, true, true]);
+    assert.equal(await q.locator('[data-action=use-skates]').count(), 0, '水島沒有溜冰鞋按鈕');
+    assert.equal(await q.locator('.dice-btn.beluga').count(), 1, '換成小白鯨按鈕');
+    assert.equal(await q.locator('.item-btn[data-kind=wings], .item-btn[data-kind=door]').count(), 0, '水島不顯示飛行翼、傳送門');
+    assert.equal(await q.locator('#map-world').getAttribute('data-scene'), 'water-01');
+    if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'water-map.png') });
+    // 2. 第 6 格擲 6 → 停在第 8 格（剩下 4 步作廢）→ 自動開拼圖 → 20 片拼完
+    await setRand(F6(6));
+    await q.click('.dice-btn.d6');
+    await talkUntil('.memo-piece');
+    assert.equal((await P()).pos, 8, '停在第 8 格');
+    for (let k = 0; k < 20; k++) { await q.click('.memo-piece[data-piece="' + k + '"]'); await q.click('.memo-slot[data-slot="' + k + '"]'); }
+    await q.waitForSelector('#scene-ok');
+    if (SHOT_DIR) await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, 'water-memo.png') });
+    await q.click('#scene-ok');
+    await idle();
+    assert.ok((await P()).story.memo, '拼圖完成');
+    // 3. 鯊魚：第 47 格擲 1 → 48 → 免費 12 面骰 10 沒過、11 過關 → 第 49 格
+    await q.evaluate((cid) => { const s = window.__cgpStore, p = s.getPlayer(cid); ['potion', 'feed'].forEach((k) => { p.story[k] = '2026-11-17'; }); s.data.adventure.rolls = []; s.setPlayerTile(cid, 47); s.save(); }, kid);
+    await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('#pawn');
+    await setRand(F6(1));
+    await q.click('.dice-btn.d6');
+    await talkUntil('#shark-roll');
+    await setRand(F12(10)); await q.click('#shark-roll');
+    await q.waitForFunction(() => /擲出 10/.test(document.getElementById('scene-sub').textContent));
+    assert.equal((await P()).pos, 48);
+    await setRand(F12(11)); await q.click('#shark-roll');
+    await idle();
+    st = await P();
+    assert.deepEqual([st.pos, !!st.story.shark], [49, true], '鯊魚過關只到第 49 格');
+    // 4. 燈籠魚：第 55 格擲 1 → 56 → 黑暗中拖燈照亮東西再點
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 55); s.save(); }, kid);
+    await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('#pawn');
+    await setRand(F6(1));
+    await q.click('.dice-btn.d6');
+    await talkUntil('#lantern-dark');
+    const art = await q.locator('#party-art').boundingBox();
+    const first = q.locator('.lantern-item').first(), fb = await first.boundingBox();
+    await q.mouse.click(fb.x + fb.width / 2, fb.y + fb.height / 2);   // 還沒照亮：點下去只會把燈移過去（燈在手指上方）
+    assert.equal(await q.locator('.lantern-item.got').count(), 0, '沒照亮的東西點不到');
+    for (let i = 0; i < 10; i++) {
+      const it = q.locator('.lantern-item[data-i="' + i + '"]'), b = await it.boundingBox();
+      await q.mouse.move(b.x + b.width / 2, Math.min(art.y + art.height - 2, b.y + b.height / 2 + 34)); await q.mouse.down(); await q.mouse.up();   // 先把燈移到東西上
+      await q.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+    }
+    if (SHOT_DIR) await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, 'water-lantern.png') });
+    await q.waitForSelector('#scene-ok', { timeout: 5000 });
+    await q.click('#scene-ok');
+    await idle();
+    assert.ok((await P()).story.lantern, '燈籠魚找齊 10 樣');
+    // 5. 健忘怪：第 99 格擲 1 → 100 → 三階段 → 通關 3 箱 → 白鯨送回岸
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 99); s.save(); }, kid);
+    await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('#pawn');
+    const gift0 = (await P()).gift;
+    await setRand(F6(1));
+    await q.click('.dice-btn.d6');
+    await talkUntil('.boss-spot');
+    for (const sp of ['bed', 'cupboard', 'desk', 'crate', 'wardrobe']) { await talkUntil('.boss-spot[data-spot="' + sp + '"]:not(.seen)'); await q.click('.boss-spot[data-spot="' + sp + '"]'); }
+    await talkUntil('.order-card');
+    for (let k = 0; k < 4; k++) { await q.click('.order-card[data-c="' + k + '"]'); await q.click('.order-slot[data-o="' + k + '"]'); }
+    await q.click('#order-check');
+    await talkUntil('#use-bottle');
+    await q.click('#use-bottle');
+    await talkUntil('.box-one');
+    await q.click('.box-one[data-b="0"]'); await q.click('.box-one[data-b="1"]');
+    assert.equal(await q.locator('#box-open').count(), 0, '三個箱子都看過才能打開');
+    await q.click('.box-one[data-b="2"]'); await q.click('.box-one[data-b="0"]');
+    if (SHOT_DIR) await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, 'water-boxes.png') });
+    await q.click('#box-open');
+    assert.equal((await P()).clears, 0, '選錯箱子不會通關');
+    await q.click('.box-one[data-b="2"]'); await q.click('#box-open');
+    await talkUntil('[data-testid=water-end-card]', 20000);
+    assert.match(await q.locator('[data-testid=water-end-card]').innerText(), /水島冒險完成[\s\S]*神秘寶箱 ×3/);
+    st = await P();
+    assert.deepEqual([st.clears, st.gift - gift0, !!st.story.blanket], [1, 3, true], '第一次通關：3 個神秘寶箱');
+    await q.click('[data-we-ok]');
+    // 6. 下一擲：小白鯨送行 → 回金島
+    await q.evaluate((cid) => { window.__cgpStore.data.adventure.rolls = []; }, kid);
+    await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('#pawn');
+    await setRand(F6(2));
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('[data-testid=water-leave-card]', { timeout: 10000 });
+    assert.match(await q.locator('[data-testid=water-leave-card]').innerText(), /回到「金島」/);
+    await q.click('[data-trip-ok]');
+    await q.waitForFunction((cid) => window.__cgpStore.getPlayer(cid).island === 'gold', kid, { timeout: 8000 });
+    await c.close();
+    console.log('✔ 水島：入島開場、漁夫迎接與魚桶、沿路對話、水島道具限制、關卡停下、拼圖、鯊魚 11／12 到 49、燈籠魚黑暗找東西、健忘怪三階段與 3 箱、小白鯨送回金島');
   }
 
   // ---------- 一般冒險事件視窗（2026-11-09）：卡片式、單一視窗整合多個事件；內容沿用事件原文 ----------

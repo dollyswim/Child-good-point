@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.16-156';
+  var APP_VERSION = '2026.11.17-157';
   var store;
   try {
     store = new CGP.Store();
@@ -1694,7 +1694,7 @@
     bottle: '', potion: 'images/water/items/potion.webp', fish: 'images/water/items/fish.webp', bucket: 'images/water/items/fish_bucket.webp',
     blanket: ''
   };
-  function charImg(child) { return 'images/characters/' + charIdOf(child) + '.webp'; }
+  function kidImg(child) { return 'images/characters/' + charIdOf(child) + '.webp'; }
   function waterImg(src, alt, cls, emoji) {
     return src ? '<img class="' + (cls || '') + '" src="' + src + '" alt="' + (alt || '') + '" draggable="false">' : '<span class="w-emoji ' + (cls || '') + '" aria-hidden="true">' + (emoji || '❔') + '</span>';
   }
@@ -1728,11 +1728,11 @@
     shark: function () { return { who: '大鯊魚', img: WATER_NPC.shark }; },
     lantern: function () { return { who: '燈籠魚', img: WATER_NPC.lantern }; },
     monster: function (k) { return { who: '健忘怪', img: k === 'surprised' ? WATER_NPC.monsterSurprised : k === 'blanket' ? WATER_NPC.monsterBlanket : WATER_NPC.monster }; },
-    me: function (child) { return { who: child.name, img: charImg(child), me: true }; }
+    me: function (child) { return { who: child.name, img: kidImg(child), me: true }; }
   };
   function line(w, text, extra) { return Object.assign({}, w, { text: text }, extra || {}); }
   /** 預覽模式（?preview=water-…）不寫存檔 */
-  function wflag(child, k, v) { if (!child.preview) wflag(child, k, v); }
+  function wflag(child, k, v) { if (!child.preview) store.setWaterFlag(child.id, k, v); }
   function wstate(child) { return child.preview ? { water: {}, bag: { shield: 1 } } : store.getPlayer(child.id); }
 
   // 沿路短對話（A 類，經過就播；12 段，計畫第 4 節）
@@ -1853,7 +1853,7 @@
           if (++miss >= 2) slots[pick].classList.add('hint');   // 錯兩次：亮出正確位置
           return;
         }
-        s.classList.add('done'); s.setAttribute('style', style + 'background-position:' + bgPos(pick));
+        s.classList.add('done'); s.setAttribute('style', style.replace(/&quot;/g, '"') + 'background-position:' + bgPos(pick));
         var pc = P.tools.querySelector('.memo-piece[data-piece="' + pick + '"]'); pc.classList.add('used'); pc.classList.remove('on');
         pick = null; clearHint(); placed++;
         P.tools.querySelector('#memo-count').textContent = placed + ' / ' + N;
