@@ -1,0 +1,242 @@
+{
+  "schemaVersion": "water-1.0",
+  "coordinateSystem": {
+    "origin": "top-left",
+    "xDirection": "right",
+    "yDirection": "down",
+    "unit": "px",
+    "sceneWidth": 1080,
+    "sceneHeight": 1350
+  },
+  "scenes": [
+    {
+      "sceneId": "water-01",
+      "file": "water_scene01.png",
+      "name": "珊瑚淺灘",
+      "from": 0,
+      "to": 24
+    }
+  ],
+  "tiles": [
+    {
+      "tile": 0,
+      "id": "water-01-start",
+      "sceneId": "water-01",
+      "x": 750.0,
+      "y": 1070.0
+    },
+    {
+      "tile": 1,
+      "id": "water-01-001",
+      "sceneId": "water-01",
+      "x": 681.52,
+      "y": 1067.61
+    },
+    {
+      "tile": 2,
+      "id": "water-01-002",
+      "sceneId": "water-01",
+      "x": 613.63,
+      "y": 1058.37
+    },
+    {
+      "tile": 3,
+      "id": "water-01-003",
+      "sceneId": "water-01",
+      "x": 549.36,
+      "y": 1034.63
+    },
+    {
+      "tile": 4,
+      "id": "water-01-004",
+      "sceneId": "water-01",
+      "x": 490.64,
+      "y": 999.32
+    },
+    {
+      "tile": 5,
+      "id": "water-01-005",
+      "sceneId": "water-01",
+      "x": 445.12,
+      "y": 948.12
+    },
+    {
+      "tile": 6,
+      "id": "water-01-006",
+      "sceneId": "water-01",
+      "x": 431.56,
+      "y": 880.95
+    },
+    {
+      "tile": 7,
+      "id": "water-01-007",
+      "sceneId": "water-01",
+      "x": 475.7,
+      "y": 828.55
+    },
+    {
+      "tile": 8,
+      "id": "water-01-008",
+      "sceneId": "water-01",
+      "x": 532.74,
+      "y": 790.6
+    },
+    {
+      "tile": 9,
+      "id": "water-01-009",
+      "sceneId": "water-01",
+      "x": 590.89,
+      "y": 754.36
+    },
+    {
+      "tile": 10,
+      "id": "water-01-010",
+      "sceneId": "water-01",
+      "x": 644.84,
+      "y": 712.12
+    },
+    {
+      "tile": 11,
+      "id": "water-01-011",
+      "sceneId": "water-01",
+      "x": 655.74,
+      "y": 644.47
+    },
+    {
+      "tile": 12,
+      "id": "water-01-012",
+      "sceneId": "water-01",
+      "x": 599.81,
+      "y": 604.89
+    },
+    {
+      "tile": 13,
+      "id": "water-01-013",
+      "sceneId": "water-01",
+      "x": 538.24,
+      "y": 574.83
+    },
+    {
+      "tile": 14,
+      "id": "water-01-014",
+      "sceneId": "water-01",
+      "x": 478.07,
+      "y": 542.06
+    },
+    {
+      "tile": 15,
+      "id": "water-01-015",
+      "sceneId": "water-01",
+      "x": 431.31,
+      "y": 491.98
+    },
+    {
+      "tile": 16,
+      "id": "water-01-016",
+      "sceneId": "water-01",
+      "x": 449.81,
+      "y": 426.0
+    },
+    {
+      "tile": 17,
+      "id": "water-01-017",
+      "sceneId": "water-01",
+      "x": 503.79,
+      "y": 383.81
+    },
+    {
+      "tile": 18,
+      "id": "water-01-018",
+      "sceneId": "water-01",
+      "x": 564.76,
+      "y": 352.54
+    },
+    {
+      "tile": 19,
+      "id": "water-01-019",
+      "sceneId": "water-01",
+      "x": 626.8,
+      "y": 323.46
+    },
+    {
+      "tile": 20,
+      "id": "water-01-020",
+      "sceneId": "water-01",
+      "x": 661.53,
+      "y": 264.4
+    },
+    {
+      "tile": 21,
+      "id": "water-01-021",
+      "sceneId": "water-01",
+      "x": 608.91,
+      "y": 220.51
+    },
+    {
+      "tile": 22,
+      "id": "water-01-022",
+      "sceneId": "water-01",
+      "x": 546.01,
+      "y": 193.34
+    },
+    {
+      "tile": 23,
+      "id": "water-01-023",
+      "sceneId": "water-01",
+      "x": 481.47,
+      "y": 170.35
+    },
+    {
+      "tile": 24,
+      "id": "water-01-024",
+      "sceneId": "water-01",
+      "x": 435.0,
+      "y": 120.0
+    }
+  ],
+  "npcSpots": [
+    {
+      "npc": "fisherman-welcome",
+      "tile": 0,
+      "sceneId": "water-01",
+      "x": 680,
+      "y": 1170,
+      "w": 140,
+      "h": 140
+    },
+    {
+      "npc": "milk-bottle-hint",
+      "tile": 8,
+      "sceneId": "water-01",
+      "x": 590,
+      "y": 865,
+      "w": 80,
+      "h": 80
+    },
+    {
+      "npc": "fisherman",
+      "tile": 16,
+      "sceneId": "water-01",
+      "x": 260,
+      "y": 285,
+      "w": 100,
+      "h": 140
+    }
+  ],
+  "safeZones": [
+    {
+      "sceneId": "all",
+      "x": 0,
+      "y": 1130,
+      "w": 180,
+      "h": 220
+    },
+    {
+      "sceneId": "all",
+      "x": 1000,
+      "y": 1170,
+      "w": 80,
+      "h": 180
+    }
+  ]
+}
