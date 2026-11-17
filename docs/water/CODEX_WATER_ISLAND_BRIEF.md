@@ -120,7 +120,7 @@ No characters, no large sea animals, no text, no UI.
 ```
 Vertical 1080x1350 game map background, Water Island "Deep Sea World". Fixed isometric 2.5D view, underwater but bright and friendly.
 Light rays enter from the upper left where the water is lighter aqua, gradually becoming deeper teal-blue toward the lower right, still clearly readable.
-One pale sandy seabed ridge path enters near the upper left and winds smoothly in 2 to 3 gentle bends toward the lower right,
+One pale grey-beige fine seabed sand path with gentle ripple patterns, small shells and pebbles along its edges, becoming slightly cooler toward the lower right but always clearly brighter than the surrounding water (2026-11-17: not the yellow beach sand of S1), enters near the upper left and winds smoothly in 2 to 3 gentle bends toward the lower right,
 ending at a softly glowing cave mouth set slightly inside the frame (not in the bottom-right corner).
 Soft coral gardens, swaying seaweed, glowing jellyfish lights as small accents, scattered bubbles, a few tiny fish only far in the background.
 Leave open water areas beside the path for a large friendly beluga (240x180), a big shark (300x220) and a lantern fish near the cave (160x160); do not draw these animals.
