@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.17-163';
+  var APP_VERSION = '2026.11.17-164';
   var store;
   try {
     store = new CGP.Store();
@@ -1633,7 +1633,7 @@
         return '<div class="map-chest" data-chest="' + c.n + '" style="left:' + cp.x.toFixed(1) + 'px;top:' + cp.y.toFixed(1) + 'px" title="神秘寶箱"><img src="images/items/mystery_chest.webp" alt="神秘寶箱" width="256" height="256" draggable="false"></div>';
       }).join('') +
       (pawnShown ? '<div class="pawn" id="pawn" data-char="' + h(characterId(child)) + '" data-pos="' + shownN + '" data-tile="' + h(board.tiles[shownN].id) + '" style="left:' + pp.x.toFixed(1) + 'px;top:' + pp.y.toFixed(1) + 'px">' +
-      '<div class="pawn-inner">' + characterArt(child) + '</div></div>' : '') +
+      '<div class="pawn-inner">' + characterArt(child) + '</div>' + (ui.ride ? '<img class="pawn-ride" src="' + WATER_NPC.beluga + '" alt="" aria-hidden="true" draggable="false">' : '') + '</div>' : '') +
       '</div>' +
       '<div class="map-ctrl"><button type="button" data-map="in" aria-label="放大">＋</button><button type="button" data-map="out" aria-label="縮小">－</button>' +
       '<button type="button" data-map="follow" aria-label="回到角色位置">🎯</button></div>' +
@@ -1709,7 +1709,7 @@
       function draw() {
         var L = lines[i], last = i === lines.length - 1, ch = L.choices || [{ label: last ? '好！' : '繼續', val: true, primary: true }];
         el.setAttribute('aria-label', L.who || '對話');
-        el.innerHTML = '<div class="we-talk pilot-box">' + (L.img ? talkPortrait(L.img, L.me) : '') + '<span class="we-who">' + h(L.who || '') + '</span><p class="we-line">' + h(L.text) + '</p>' +
+        el.innerHTML = '<div class="we-talk pilot-box">' + (L.img ? talkPortrait(L.img, L.me).replace('we-portrait', 'we-portrait' + (L.big ? ' we-big' : '')) : '') + '<span class="we-who">' + h(L.who || '') + '</span><p class="we-line">' + h(L.text) + '</p>' +
           '<div class="pilot-acts' + (ch.length < 2 ? ' one' : '') + '">' + ch.map(function (c, k) { return '<button type="button" class="btn' + (c.primary ? ' primary' : '') + '" data-talk="' + k + '">' + h(c.label) + '</button>'; }).join('') + '</div></div>';
       }
       el.addEventListener('click', function (e) {
@@ -1727,7 +1727,7 @@
     beluga: function () { return { who: '小白鯨', img: WATER_NPC.beluga }; },
     shark: function () { return { who: '大鯊魚', img: WATER_NPC.shark }; },
     lantern: function () { return { who: '燈籠魚', img: WATER_NPC.lantern }; },
-    monster: function (k) { return { who: '健忘怪', img: k === 'surprised' ? WATER_NPC.monsterSurprised : k === 'blanket' ? WATER_NPC.monsterBlanket : WATER_NPC.monster }; },
+    monster: function (k) { return { who: '健忘怪', big: true, img: k === 'surprised' ? WATER_NPC.monsterSurprised : k === 'blanket' ? WATER_NPC.monsterBlanket : WATER_NPC.monster }; },
     me: function (child) { return { who: child.name, img: kidImg(child), me: true }; }
   };
   function line(w, text, extra) { return Object.assign({}, w, { text: text }, extra || {}); }
@@ -1902,6 +1902,9 @@
         if (!f || f.classList.contains('got')) return;
         f.classList.add('got'); n++;
         bel.classList.remove('yum'); void bel.offsetWidth; bel.classList.add('yum');
+        var hb = document.createElement('img'); hb.className = 'feed-heart'; hb.src = 'images/water/items/heart_bubble.webp'; hb.alt = ''; hb.draggable = false;   // 每餵一條冒一顆愛心泡泡
+        hb.style.left = (bel.offsetLeft + bel.offsetWidth * (0.35 + Math.random() * 0.3)).toFixed(0) + 'px'; hb.style.top = (bel.offsetTop + bel.offsetHeight * 0.5).toFixed(0) + 'px';
+        P.art.appendChild(hb); setTimeout(function () { hb.remove(); }, 1600);
         P.tools.querySelector('#feed-count').textContent = '🐟 ' + n + ' / 10';
         if (n >= 10) setTimeout(resolve, reduceMotion ? 100 : 700);
       });
@@ -1919,6 +1922,18 @@
   function callBeluga() {
     if (callBusy) return;
     callBusy = true;
+    var pawn = document.getElementById('pawn');
+    if (pawn) {   // 冒險地圖上：小白鯨游到角色旁邊，冒愛心泡泡
+      var f = document.createElement('div');
+      f.className = 'pawn-beluga-friend'; f.setAttribute('aria-hidden', 'true');
+      f.innerHTML = '<img class="pbf-body" src="' + WATER_NPC.beluga + '" alt="" draggable="false">' +
+        Array.from({ length: 4 }, function (_, i) { return '<img class="pbf-bubble" src="images/water/items/heart_bubble.webp" alt="" draggable="false" style="left:' + (10 + i * 22) + '%;animation-delay:' + (0.6 + i * 0.35).toFixed(2) + 's">'; }).join('');
+      pawn.appendChild(f);
+      if (typeof followPawn === 'function') followPawn(true);
+      toast('🐳 ' + CALL_LINES[Math.floor(Math.random() * CALL_LINES.length)], 'pos');
+      setTimeout(function () { f.remove(); callBusy = false; }, reduceMotion ? 1500 : 3600);
+      return;
+    }
     var el = document.createElement('div');
     el.className = 'beluga-call'; el.setAttribute('aria-hidden', 'true');
     el.innerHTML = '<div class="bc-beluga"><img src="' + WATER_NPC.beluga + '" alt="" draggable="false"></div>' +
@@ -2196,7 +2211,7 @@
       var el = document.createElement('div');
       el.className = 'flight water-trip' + (reduceMotion ? ' still' : ''); el.id = 'water-ending'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '水島冒險完成');
       el.innerHTML = '<div class="wt-sea"><div class="wt-beluga">' + waterImg(WATER_NPC.beluga, '小白鯨') + '</div></div>' +
-        '<div class="fl-card" data-testid="water-end-card"><h2>🌊 水島冒險完成！</h2><p>' + h(child.name) + ' 幫健忘怪找回了小被被，小白鯨把你送回珊瑚淺灘。</p>' +
+        '<div class="fl-card" data-testid="water-end-card"><div class="we-crown"><img src="' + BADGE_IMG.waterClear1 + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></div><h2>🌊 水島冒險完成！</h2><p>' + h(child.name) + ' 幫健忘怪找回了小被被，小白鯨把你送回珊瑚淺灘。</p>' +
         '<p>' + h(ev.text.split('\n').slice(1).join('\n')).replace(/\n/g, '<br>') + '</p>' +
         (ev.clear.next ? '<p class="muted small">下一座島還在準備中，下次出發會先回到「' + h(ev.clear.next) + '」繼續冒險。</p>' : '') +
         '<button type="button" class="btn primary block" data-we-ok>太棒了！</button></div>';
@@ -2457,7 +2472,8 @@
       pawn.style.left = p.x.toFixed(1) + 'px'; pawn.style.top = p.y.toFixed(1) + 'px';
       pawn.dataset.pos = path[i]; pawn.dataset.tile = t.id;
       markHere(t.id);
-      if (pawn.animate && !reduceMotion) pawnPlay('jump', .62);   // 跳格：蹲下蓄力、騰空、落地回彈
+      if (ui.ride) { /* 小白鯨載著：滑過去，不跳 */ }
+      else if (pawn.animate && !reduceMotion) pawnPlay('jump', .62);   // 跳格：蹲下蓄力、騰空、落地回彈
       else { pawn.classList.remove('hop'); void pawn.offsetWidth; pawn.classList.add('hop'); }
       followPawn(true);
       await sleep(reduceMotion ? 60 : 360);
@@ -2587,7 +2603,18 @@
         await hopAlong(child, [0]);
         await sleep(300);
       }
-      await hopAlong(child, res.path);
+      if (kind === 'beluga') {   // 小白鯨游到角色腳下，載著前進，到了再游走
+        ui.ride = true;
+        var pw = document.getElementById('pawn');
+        if (pw && !pw.querySelector('.pawn-ride')) pw.insertAdjacentHTML('beforeend', '<img class="pawn-ride" src="' + WATER_NPC.beluga + '" alt="" aria-hidden="true" draggable="false">');
+        if (pw) pw.classList.add('riding');
+        await sleep(reduceMotion ? 50 : 650);
+        try { await hopAlong(child, res.path); } finally { ui.ride = false; }
+        pw = document.getElementById('pawn');
+        var rd = pw && pw.querySelector('.pawn-ride');
+        if (rd) { rd.classList.add('leave'); await sleep(reduceMotion ? 50 : 600); rd.remove(); }
+        if (pw) pw.classList.remove('riding');
+      } else await hopAlong(child, res.path);
       if (ev && ev.extraPath && ev.extraPath.length) {
         var cu = cartUI(store.getPlayer(childId).island);
         if (ev.cart) await cartBoard(cu.text(ev.extraPath.length), cu);   // 機會卡礦車（木島藤蔓）：按「上車！」才出發
@@ -2602,7 +2629,7 @@
         await sleep(500);
         await hopAlong(child, back.backPath);
       }
-    } finally { ui.busy = false; ui.pawnHold = null; }
+    } finally { ui.busy = false; ui.pawnHold = null; ui.ride = false; }
     render();
     if (towerBefore < TOWER_LIT_AT && goldMaxOf(store.getPlayer(childId)) >= TOWER_LIT_AT && document.getElementById('gold-tower')) {
       ui.busy = true; document.body.classList.add('pawn-acting');   // 演出期間暫停骰子
@@ -2769,9 +2796,10 @@
   ('advStart goldClear1 reachR2 reachR3 reachR4 goldHero woodClear1 woodHero chest1 chests10 mystery1 catch5 catch10 pine10 squirrel5 ' +
     'earn1000 earn2000 earn3000 earn4000 earn5000 earn6000 earn7000 earn8000 earn9000 earn10000 special1 special5 streak7 locked').split(' ')
     .forEach(function (id) { BADGE_IMG[id] = 'images/badges/badge_' + id + '.webp'; });
-  BADGE_IMG.woodClear1 = 'images/badges/badge_woodClear1v2.webp';   // 2026-11-13 換上家長提供的專屬圖（換檔名讓圖片快取立刻生效）
+  BADGE_IMG.woodClear1 = 'images/badges/badge_woodClear1v2.webp';
+  BADGE_IMG.waterClear1 = 'images/badges/badge_waterClear1.webp';   // 2026-11-17 家長提供（沉船＋小白鯨＋星星旗）；水島圖不放進 SHELL，第一次用到才下載   // 2026-11-13 換上家長提供的專屬圖（換檔名讓圖片快取立刻生效）
   /** 主徽章挑選：越高階／越稀有分數越高（只影響演出，不影響成就條件） */
-  var ACH_RANK = { goldClear1: 300, woodClear1: 300, streak7: 120, reachR4: 110, catch10: 100, special5: 95, reachR3: 80, chests10: 75, mystery1: 70,
+  var ACH_RANK = { goldClear1: 300, woodClear1: 300, waterClear1: 300, streak7: 120, reachR4: 110, catch10: 100, special5: 95, reachR3: 80, chests10: 75, mystery1: 70,
     reachR2: 60, catch5: 45, special1: 40, chest1: 30, advStart: 20 };
   function achRank(a) { var m = /^earn(\d+)$/.exec(a.id); return m ? 50 + Number(m[1]) / 100 : (ACH_RANK[a.id] || 10); }
   /** 徽章 HTML（size：lg 主徽章、sm 小徽章、xs 收藏格） */

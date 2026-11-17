@@ -2363,3 +2363,22 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 @keyframes bc-swim { 0% { transform: translateX(-160%); } 25% { transform: translateX(-50%) rotate(-4deg); } 45% { transform: translateX(-50%) translateY(-8px) rotate(3deg); } 70% { transform: translateX(-50%) rotate(-2deg); } 100% { transform: translateX(120%); } }
 @keyframes bc-bubble { 0% { opacity: 0; transform: translateY(0) scale(.5); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-220px) scale(1.1); } }
 @media (prefers-reduced-motion: reduce) { .bc-beluga { animation: none; } .bc-bubble { animation-duration: .01s; } }
+
+/* 2026-11-17 水島：餵魚愛心泡泡、對話頭像大小、地圖上的小白鯨 */
+.scene-art .feed-heart { position: absolute; width: 38px; height: auto; pointer-events: none; z-index: 5; animation: feed-heart-up 1.6s ease-out forwards; }
+@keyframes feed-heart-up { 0% { opacity: 0; transform: translate(-50%, 0) scale(.5); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -70px) scale(1.15); } }
+.water-talk .we-portrait.we-me { width: min(30vw, 124px); }
+.water-talk .we-portrait.we-big { width: min(60vw, 250px); }
+.pawn-beluga-friend { position: absolute; left: 70%; bottom: -10%; width: 200%; pointer-events: none; animation: pbf-in 3.6s ease-in-out forwards; }
+.pawn-beluga-friend .pbf-body { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 4px rgba(0, 40, 80, .3)); }
+.pbf-bubble { position: absolute; top: 10%; width: 34%; height: auto; opacity: 0; animation: bc-bubble 1.8s ease-out forwards; }
+@keyframes pbf-in { 0% { opacity: 0; transform: translateX(80%); } 18% { opacity: 1; transform: translateX(0); } 50% { transform: translateY(-6%); } 82% { opacity: 1; transform: translateX(0); } 100% { opacity: 0; transform: translateX(80%); } }
+.pawn-ride { position: absolute; left: 50%; bottom: -78%; width: 230%; max-width: none; transform: translateX(-50%); z-index: -1; pointer-events: none; animation: ride-in .6s ease-out; filter: drop-shadow(0 3px 4px rgba(0, 40, 80, .3)); }
+.pawn-ride.leave { animation: ride-out .6s ease-in forwards; }
+.pawn.riding .pawn-inner { transform: translateY(-12%); transition: transform .3s; }
+.pawn.riding { transition: left .36s linear, top .36s linear; }
+@keyframes ride-in { from { opacity: 0; transform: translateX(10%) scale(.7); } }
+@keyframes ride-out { to { opacity: 0; transform: translateX(-120%) scale(.8); } }
+@media (prefers-reduced-motion: reduce) { .pawn-beluga-friend, .pawn-ride, .pawn-ride.leave, .feed-heart { animation-duration: .01s; } }
+.fl-card .we-crown img { margin: 0 auto 6px; }
+.pawn.riding::after { display: none; }   /* 騎小白鯨時不畫角色腳下的影子 */

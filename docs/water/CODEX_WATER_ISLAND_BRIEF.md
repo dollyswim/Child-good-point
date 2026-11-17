@@ -247,6 +247,8 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 
 > 「小白鯨載我前進」的按鈕和動畫沿用 C-2 小白鯨，不另做圖。
 
+> ✅ 2026-11-17 水島通關成就徽章已收（家長提供：沉船＋小白鯨＋星星旗，綠框）→ `images/badges/badge_waterClear1.webp`，用在成就和水島通關卡片。
+
 ### 第二版（選做）
 
 > ✅ 2026-11-17 已收（Gemini）：E-27 呼喚貝殼 → `images/water/items/call_shell.webp`（愛心光暈改成柔和漸淡）；E-28 愛心泡泡 → `images/water/items/heart_bubble.webp`。2026-11-17 已做成「呼喚貝殼」：第 34 格餵完小白鯨後送的，水島道具列點了小白鯨游出來冒愛心泡泡，不限次數、不給獎勵。

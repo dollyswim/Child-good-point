@@ -1039,10 +1039,18 @@ async function main() {
     await q.waitForSelector('[data-action="call-beluga"]');
     const before = JSON.stringify(await P());
     await q.click('[data-action="call-beluga"]');
-    await q.waitForSelector('.beluga-call');
+    await q.waitForSelector('#pawn .pawn-beluga-friend');
     if (SHOT_DIR) { await q.waitForTimeout(1300); await q.screenshot({ path: path.join(SHOT_DIR, '42-water-call-beluga.png') }); }
-    await q.waitForSelector('.beluga-call', { state: 'detached', timeout: 5000 });
+    await q.waitForSelector('#pawn .pawn-beluga-friend', { state: 'detached', timeout: 6000 });
     assert.equal(JSON.stringify(await P()), before, '呼喚貝殼不給獎勵、不改存檔');
+    // 小白鯨載我：地圖上出現小白鯨載著角色前進，到了游走
+    await setRand(F6(1));
+    await q.click('[data-action="beluga-ride"]');
+    await q.waitForSelector('#pawn .pawn-ride');
+    if (SHOT_DIR) { await q.waitForTimeout(500); await q.screenshot({ path: path.join(SHOT_DIR, '43-water-beluga-ride.png') }); }
+    await idle();
+    await q.waitForSelector('#pawn .pawn-ride', { state: 'detached', timeout: 5000 });
+    assert.equal((await P()).pos, 50, '小白鯨載 1 格');
     // 4. 燈籠魚：第 55 格擲 1 → 56 → 黑暗中拖燈照亮東西再點
     await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 55); s.save(); }, kid);
     await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('#pawn');
