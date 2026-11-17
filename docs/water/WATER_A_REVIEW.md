@@ -76,3 +76,23 @@
 - 24 格、相鄰格距 73.4px、不相鄰最近 155.9px ✅；第 62 格白鯨空地為空水域；左下、右下按鈕區乾淨 ✅。
 - Claude 微調：第 81 格往路面內側移 (+4, −8)px（原本下緣稍微碰到水邊），相鄰格距仍為 73～74px。座標存為 `data/water/water_scene03_tiles_final.json`。部署圖 `images/water/scene03.webp`。
 - 下一步：S4 沉船（記得第 83 格破艙口、第 91～99 格翻找痕跡與空白小紙條、第 100 格健忘怪房門）。
+
+---
+
+## 2026-11-17 第五次交件（`water_S4_delivery.zip`）
+
+### S4 沉船：✅ 通過
+- 亮色木船板主路（比深色地板亮很多）、魔法乾燥氣泡外框、左上第 83 格旁的破艙口、船燈、圓窗 ✅。
+- 伏筆：晾衣繩（衣服、襪子）、牆上兩張空白紙條、打開的抽屜櫃、倒下的小凳子、地上的襪子 ✅；沒有被子、收納箱、寶藏、角色、文字 ✅。
+- 第 100 格在路的盡頭，下方 300×200 空地（較亮的木板平台）＋右下圓形房門 ✅。
+- 18 格、相鄰格距 74.9px、不相鄰最近 148.3px；每格 70×50 都在亮色船板上；左下、右下按鈕區是船外的水，乾淨 ✅。
+- 小意見（不用改）：翻找痕跡集中在右側，離第 92、98 格稍遠；這兩格只是經過時的短對話，不影響。
+- 部署圖 `images/water/scene04.webp`；座標 `data/water/water_scene04_tiles_final.json`。
+
+## 地圖四區全部完成 ✅
+| 區 | 部署圖 | 座標 |
+|---|---|---|
+| S1 珊瑚淺灘（0～24） | `images/water/scene01_v2.webp` | `data/water/water_scene01_tiles_final.json` |
+| S2 深海世界（25～58） | `images/water/scene02_v2.webp` | `data/water/water_scene02_tiles_final.json` |
+| S3 水下洞穴（59～82） | `images/water/scene03.webp` | `data/water/water_scene03_tiles_final.json`（第 81 格已微調） |
+| S4 沉船（83～100） | `images/water/scene04.webp` | `data/water/water_scene04_tiles_final.json` |
