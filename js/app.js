@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.17-159';
+  var APP_VERSION = '2026.11.17-161';
   var store;
   try {
     store = new CGP.Store();
@@ -2048,7 +2048,7 @@
   ];
   var BOSS_CARDS = [['soiled', '弄髒了', '🟤'], ['wash', '洗一洗', '🫧'], ['dry', '晾乾', '☀️'], ['store', '收好', '📥']];   // 2026-11-17 E-16～E-19 正式圖：images/water/items/card_<id>.webp
   function bossCard(c) { var k = BOSS_CARDS[c]; return '<img class="card-art" src="images/water/items/card_' + k[0] + '.webp" alt="" draggable="false"><small>' + k[1] + '</small>'; }
-  var BOSS_BOXES = [['star', '星星箱', '⭐', '箱子裡有扳手和起子，叮叮噹噹的。'], ['shell', '貝殼箱', '🐚', '箱子摸起來濕濕的，旁邊有一小灘水。'], ['moon', '月亮箱', '🌙', '箱子乾乾的，裡面也沒有工具。']];
+  var BOSS_BOXES = [['star', '星星箱', '⭐', '箱子裡有扳手和起子，叮叮噹噹的。', 'wrench'], ['shell', '貝殼箱', '🐚', '箱子摸起來濕濕的，旁邊有一小灘水。', 'puddle'], ['moon', '月亮箱', '🌙', '箱子乾乾的，裡面也沒有工具。', '']];   // 第 5 欄：點開後出現的證據圖（E-24 扳手、E-26 水窪）
   async function waterBoss(child) {
     var M = WHO.monster(), me = WHO.me(child), stage = wstate(child).water.bossStage || 0;
     if (!stage) await talkSeq([line(M, '不見了！我的寶貝不見了啦！'), line(me, '我們有藏寶圖，也在找寶藏！'), line(M, '太好了！你們有沒有看到……我剛才要找什麼？'), line(M, '好像在床底下……不對！在冰箱裡！')]);
@@ -2075,9 +2075,14 @@
           if (s.notebook) {
             notebook = true;
             var book = document.createElement('div'); book.className = 'boss-book';   // E-15 翻開的筆記本：頁面上的字由 App 寫
-            book.innerHTML = '<img src="images/water/items/notebook_open.webp" alt="" draggable="false"><p class="bb-l">重要事情<br>千萬不能<br>忘記！</p><p class="bb-r">記得帶<br>筆記本。</p>';
+            // E-14 先闔上看封面，再換 E-15 翻開
+            book.className = 'boss-book closed';
+            book.innerHTML = '<img src="images/water/items/notebook_closed.webp" alt="" draggable="false"><p class="bb-cover">健忘怪的<br>重要事情！<br>千萬不能<br>忘記！</p>';
             layer.appendChild(book);
-            await talkSeq([line(me, '筆記本封面寫著：「健忘怪的重要事情！千萬不能忘記！」'), line(me, '第一頁寫著：「記得帶筆記本。」'),
+            await talkSeq([line(me, '筆記本封面寫著：「健忘怪的重要事情！千萬不能忘記！」')]);
+            book.className = 'boss-book';
+            book.innerHTML = '<img src="images/water/items/notebook_open.webp" alt="" draggable="false"><p class="bb-l">重要事情<br>千萬不能<br>忘記！</p><p class="bb-r">記得帶<br>筆記本。</p>';
+            await talkSeq([line(me, '第一頁寫著：「記得帶筆記本。」'),
               line(M, '太好了，提醒得真清楚！……筆記本在哪？'), line(me, '就在我手上啊！'), line(M, '喔喔喔！原來在這裡！')]);
             book.remove();
           }
@@ -2133,14 +2138,14 @@
       line(WHO.monster('surprised'), '我怕忘記重要的事情，就把紙條塞進瓶子裡……'), line(WHO.monster('surprised'), '結果我忘記把瓶子放在哪裡！'),
       line(me, '所以我們找到的不是藏寶圖，是你的備忘紙！'), line(M, '對！我還畫了回家的路，怕連家也忘記！'), line(M, '我記得放在箱子裡，可是忘記是哪個！箱子會自己換班嗎？')]);
     P.title.textContent = '📦 寶貝在哪個箱子裡？'; P.sub.textContent = '先點每個箱子看看，再選一個打開（要乾乾的、不跟工具放一起）';
-    layer.innerHTML = '<div class="box-row">' + BOSS_BOXES.map(function (b, i) { return '<button type="button" class="box-one" data-b="' + i + '"><span>' + b[2] + '</span><small>' + b[1] + '</small><em hidden>' + b[3] + '</em></button>'; }).join('') + '</div>';
+    layer.innerHTML = '<div class="box-row">' + BOSS_BOXES.map(function (b, i) { return '<button type="button" class="box-one" data-b="' + i + '"><span class="box-pic"><img src="images/water/items/box_' + b[0] + '.webp" alt="" class="box-art" draggable="false">' + (b[4] ? '<img src="images/water/items/' + b[4] + '.webp" alt="" class="box-ev ev-' + b[4] + '" draggable="false" hidden>' : '') + '</span><small>' + b[1] + '</small><em hidden>' + b[3] + '</em></button>'; }).join('') + '</div>';
     P.tools.innerHTML = '<span class="party-count" id="box-tip">看過 0 / 3 個箱子</span>';
     await new Promise(function (resolve) {
       var seen = {}, chosen = null;
       layer.addEventListener('click', function (e) {
         var b = e.target.closest('.box-one'); if (!b) return;
         var i = Number(b.getAttribute('data-b'));
-        if (!seen[i]) { seen[i] = true; b.classList.add('seen'); b.querySelector('em').hidden = false; }
+        if (!seen[i]) { seen[i] = true; b.classList.add('seen'); b.querySelector('em').hidden = false; var ev = b.querySelector('.box-ev'); if (ev) ev.hidden = false; }
         layer.querySelectorAll('.box-one').forEach(function (x) { x.classList.toggle('on', x === b); }); chosen = i;
         var n = Object.keys(seen).length;
         P.tools.innerHTML = n < 3 ? '<span class="party-count">看過 ' + n + ' / 3 個箱子</span>' : '<button type="button" class="btn primary charge-btn" id="box-open">打開' + BOSS_BOXES[chosen][1] + '</button>';
@@ -2152,7 +2157,10 @@
       });
     });
     var moonBox = layer.querySelector('.box-one[data-b="2"]'); moonBox.classList.add('open');
-    if (WATER_ART.blanket) moonBox.querySelector('span').innerHTML = '<img src="' + WATER_ART.blanket + '" alt="小被被" class="box-art" draggable="false">';
+    // E-23 打開的箱子＋E-25 小被被從箱子裡冒出來
+    moonBox.querySelector('span').innerHTML = '<img src="images/water/items/box_open.webp" alt="" class="box-art" draggable="false">' + (WATER_ART.blanket ? '<img src="' + WATER_ART.blanket + '" alt="小被被" class="box-blanket" draggable="false">' : '');
+    P.title.textContent = '🌙 找到了！'; P.sub.textContent = '月亮箱裡有……'; P.tools.innerHTML = '';
+    await new Promise(function (r) { setTimeout(r, reduceMotion ? 300 : 1800); });   // 先讓孩子看到小被被從箱子裡冒出來，再關掉視窗
     P.shade.remove();
     await talkSeq([line(me, '原來「最重要的寶……」是寶貝小被被！'), line(WHO.monster('blanket'), '找到啦！小被被，你都沒長高，我怎麼會找不到你！'), line(WHO.monster('blanket'), '它從我小時候就陪著我，有它就安心了。')]);
     // 通關：⭐3＋第一次 3 個神秘寶箱（之後 10 星）

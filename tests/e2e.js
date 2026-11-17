@@ -1073,10 +1073,11 @@ async function main() {
     await q.click('.box-one[data-b="0"]'); await q.click('.box-one[data-b="1"]');
     assert.equal(await q.locator('#box-open').count(), 0, '三個箱子都看過才能打開');
     await q.click('.box-one[data-b="2"]'); await q.click('.box-one[data-b="0"]');
-    if (SHOT_DIR) await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, 'water-boxes.png') });
+    if (SHOT_DIR) { await q.waitForTimeout(500); await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, 'water-boxes.png') }); }
     await q.click('#box-open');
     assert.equal((await P()).clears, 0, '選錯箱子不會通關');
     await q.click('.box-one[data-b="2"]'); await q.click('#box-open');
+    if (SHOT_DIR) { await q.waitForTimeout(800); await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, '41-water-box-open.png') }); }
     await talkUntil('[data-testid=water-end-card]', 20000);
     assert.match(await q.locator('[data-testid=water-end-card]').innerText(), /水島冒險完成[\s\S]*神秘寶箱 ×3/);
     st = await P();

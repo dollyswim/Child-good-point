@@ -2323,10 +2323,21 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 @keyframes boss-book-in { from { opacity: 0; transform: translate(-50%, -46%) scale(.9); } }
 .boss-book img { display: block; width: 100%; }
 .boss-book p { position: absolute; top: 24%; width: 30%; margin: 0; text-align: center; font-weight: 900; font-size: clamp(.62rem, 3vw, .85rem); line-height: 1.6; color: #4a5a8a; }
+.boss-book.closed { width: min(62%, 240px); }
+.boss-book .bb-cover { left: 22%; top: 20%; width: 46%; transform: rotate(-8deg); color: #3a5a8a; }
 .boss-book .bb-l { left: 16%; } .boss-book .bb-r { right: 16%; color: #6b4426; }
 .box-row { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-around; padding: 0 4%; }
 .box-one { width: 29%; display: grid; justify-items: center; gap: 2px; padding: 10px 4px; border: 3px solid #b88a55; border-radius: 14px; background: #f1d9ae; cursor: pointer; }
-.box-one span { font-size: 2rem; } .box-one small { font-weight: 900; color: #6b4426; }
+.box-one span { font-size: 2rem; }
+.box-one .box-pic { position: relative; width: 100%; display: grid; place-items: center; }
+.box-one .box-art { width: 100%; max-width: 88px; height: auto; aspect-ratio: 1; }
+.box-one .box-ev { position: absolute; width: 40%; height: auto; aspect-ratio: 1; object-fit: contain; animation: box-ev-in .4s ease-out; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .2)); }
+.box-one .box-ev[hidden] { display: none; }
+@keyframes box-ev-in { from { opacity: 0; transform: scale(.6); } }
+.box-one .ev-wrench { right: 0; bottom: -6%; }
+.box-one .ev-puddle { left: 0; bottom: -16%; width: 46%; }
+.box-one .box-blanket { position: absolute; left: 44%; top: -14%; width: 50%; transform: translateX(-50%); animation: box-blanket-up .6s ease-out; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .25)); }
+@keyframes box-blanket-up { from { opacity: 0; transform: translate(-50%, 40%) scale(.7); } } .box-one small { font-weight: 900; color: #6b4426; }
 .box-one em { font-style: normal; font-size: .7rem; font-weight: 700; color: #5a3a1a; line-height: 1.35; }
 .box-one.on { border-color: #ff9f1a; box-shadow: 0 0 0 3px rgba(255, 159, 26, .4); }
 .btn-ico { width: 24px; height: 24px; vertical-align: middle; }
