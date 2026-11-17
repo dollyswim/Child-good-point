@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.17-165';
+  var APP_VERSION = '2026.11.17-166';
   var store;
   try {
     store = new CGP.Store();
@@ -2216,10 +2216,18 @@
           var c = e.target.closest('.order-card');
           if (c && !c.classList.contains('used')) { pick = Number(c.getAttribute('data-c')); P.tools.querySelectorAll('.order-card').forEach(function (x) { x.classList.toggle('on', x === c); }); return; }
           if (e.target.closest('#order-check')) {
-            var bad = -1; for (var i = 0; i < 3; i++) if (put[i] > put[i + 1]) { bad = i; break; }
+            // 2026-11-17 家長：台詞要和排錯的地方有關 → 找第一個放錯的位置 i，看那裡放了哪張卡 c（c 一定排在比 i 後面）
+            var bad = -1; for (var i = 0; i < 4; i++) if (put[i] !== i) { bad = i; break; }
             if (bad < 0) { resolve(); return; }
-            var why = put[bad] === 3 || put[bad + 1] === 3 ? '收起來之前，要先洗乾淨、晾乾才行喔！' : put[bad] === 2 ? '還沒洗就晾乾，髒髒的怎麼辦？' : '洗乾淨之後才會弄髒嗎？好像怪怪的！';
-            say(M, '我先收好才晾乾……那箱子不就會下雨？'); toast('🤔 ' + why, 'neg');
+            var WRONG = {
+              '0-1': ['還沒弄髒就先洗？乾乾淨淨的幹嘛洗呀？', '第一張應該是「弄髒了」，髒了才要洗喔！'],
+              '0-2': ['還沒弄髒、也沒洗，要晾什麼呢？', '第一張應該是「弄髒了」！'],
+              '0-3': ['一開始就收好了？那後來怎麼會弄髒？', '第一張應該是「弄髒了」，收好是最後一步喔！'],
+              '1-2': ['髒髒的就直接晾乾？泥巴還黏在上面耶！', '弄髒之後，要先洗一洗才晾乾喔！'],
+              '1-3': ['髒髒的就收起來？箱子會變得臭臭的！', '弄髒之後，要先洗一洗喔！'],
+              '2-3': ['剛洗完濕答答就收好？那箱子不就會下雨？', '洗完要先晾乾，才能收起來喔！']
+            }[bad + '-' + put[bad]];
+            say(M, WRONG[0]); toast('🤔 ' + WRONG[1], 'neg');
           }
         });
         layer.addEventListener('click', function (e) {

@@ -1096,6 +1096,19 @@ async function main() {
     await talkUntil('.boss-spot');
     for (const sp of ['bed', 'cupboard', 'desk', 'crate', 'wardrobe']) { await talkUntil('.boss-spot[data-spot="' + sp + '"]:not(.seen)'); await q.click('.boss-spot[data-spot="' + sp + '"]'); }
     await talkUntil('.order-card');
+    // 排錯：台詞要對應排錯的地方（家長截圖：洗一洗、晾乾、收好、弄髒了）
+    for (const [o, c] of [[0, 1], [1, 2], [2, 3], [3, 0]]) { await q.click('.order-card[data-c="' + c + '"]'); await q.click('.order-slot[data-o="' + o + '"]'); }
+    await q.click('#order-check');
+    await q.waitForSelector('#water-talk');
+    assert.match(await q.locator('#water-talk .we-line').innerText(), /還沒弄髒就先洗/, '排錯第一張：說沒弄髒就洗');
+    await q.locator('#water-talk [data-talk]').last().click();
+    for (let o = 0; o < 4; o++) await q.click('.order-slot[data-o="' + o + '"]');   // 全部拿回來
+    for (const [o, c] of [[0, 0], [1, 3], [2, 1], [3, 2]]) { await q.click('.order-card[data-c="' + c + '"]'); await q.click('.order-slot[data-o="' + o + '"]'); }
+    await q.click('#order-check');
+    await q.waitForSelector('#water-talk');
+    assert.match(await q.locator('#water-talk .we-line').innerText(), /髒髒的就收起來/, '弄髒後直接收好：說會臭臭的');
+    await q.locator('#water-talk [data-talk]').last().click();
+    for (let o = 0; o < 4; o++) await q.click('.order-slot[data-o="' + o + '"]');
     for (let k = 0; k < 4; k++) { await q.click('.order-card[data-c="' + k + '"]'); await q.click('.order-slot[data-o="' + k + '"]'); }
     if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, '40-water-cards.png') });
     await q.click('#order-check');
