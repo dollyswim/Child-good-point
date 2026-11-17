@@ -168,7 +168,7 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 | C-6 | 健忘怪（驚喜） | 同 C-5 角色、同角度，`both hands on cheeks, mouth wide open in a happy surprise, sparkling eyes` 中文：雙手捧臉、張嘴驚喜、眼睛發亮 |
 | C-7 | 健忘怪（抱被被） | 同 C-5 角色，`hugging a soft cream-colored blanket with a big yellow star patch tightly, eyes closed, cheek pressed against it, very happy and relieved` 中文：緊緊抱著有黃色大星星布章的奶油色小被被，閉眼貼臉，非常安心 |
 
-> ✅ 2026-11-17 已收：C-1 漁夫、C-2 小白鯨、C-3 鯊魚、C-4 燈籠魚（Gemini），已去背存為 `images/water/npc/fisherman.webp`、`beluga.webp`、`shark.webp`、`anglerfish.webp`（640×640，只去除與外框相連的白底；燈籠魚另去掉燈旁淡黃光暈與燈桿內側白底，燈泡保留）。還缺 C-5～C-7 健忘怪。
+> ✅ 2026-11-17 已收：C-1 漁夫、C-2 小白鯨、C-3 鯊魚、C-4 燈籠魚（Gemini），已去背存為 `images/water/npc/fisherman.webp`、`beluga.webp`、`shark.webp`、`anglerfish.webp`（640×640，只去除與外框相連的白底；燈籠魚另去掉燈旁淡黃光暈與燈桿內側白底，燈泡保留）。C-5～C-7 健忘怪也已收（2026-11-17）：`monster_confused.webp`（迷糊）、`monster_surprised.webp`（驚喜）、`monster_blanket.webp`（抱小被被）。**C 節全部完成。** 小被被定案外觀：奶油色、中間一顆黃色大星星，E-25 要畫成一樣。
 
 > C-5～C-7 必須是**同一個角色、同樣比例和角度**，只換動作表情（先做 C-5，再請同一個對話改成 C-6、C-7）。小被被的樣子要和 E-25 一致。
 
