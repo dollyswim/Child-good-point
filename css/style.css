@@ -2239,3 +2239,99 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .scene-nav button { width: 32px; height: 32px; border: 0; border-radius: 50%; background: #e3f4ff; color: #23709f; font: inherit; font-weight: 900; cursor: pointer; }
 .scene-nav button:disabled { opacity: .35; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .map-world { transition: none; } }
+/* 水島劇情（2026-11-17）：NPC、對話、任務視窗（正式插圖到貨前用色塊與表情符號佔位） */
+.water-npc { position: absolute; transform: translate(-50%, -100%); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.water-npc img { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 3px rgba(20, 50, 80, .3)); }
+.water-npc .guide-emoji { display: grid; place-items: center; width: 100%; aspect-ratio: 1; font-size: 34px; background: rgba(255, 255, 255, .85); border-radius: 50%; border: 3px solid #5aa7e8; }
+.water-talk { z-index: 1300; }
+.pilot-acts.one { grid-template-columns: 1fr; }
+.w-emoji { display: inline-grid; place-items: center; font-size: 2rem; line-height: 1; }
+.water-panel .party-art { background: linear-gradient(#7fd3f0, #2f9fc9 70%, #1d7aa5); aspect-ratio: 4 / 3; overflow: hidden; }
+/* 拼圖 */
+.memo-panel .party-art { background: #f3e6c8; }
+.memo-board { position: absolute; inset: 4%; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 1fr); gap: 2px; }
+.memo-slot { border: 2px dashed rgba(120, 90, 50, .35); border-radius: 4px; background: rgba(255, 255, 255, .35); padding: 0; cursor: pointer; }
+.memo-slot.done { border: 0; border-radius: 0; cursor: default; }
+.memo-slot.hint { border-color: #ff9f1a; box-shadow: 0 0 0 3px rgba(255, 159, 26, .5) inset; }
+.memo-slot.shake { animation: memo-shake .3s; }
+@keyframes memo-shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.memo-tray { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; width: 100%; }
+.memo-piece { aspect-ratio: 4 / 3; border: 2px solid #e2d3b2; border-radius: 6px; padding: 0; cursor: pointer; min-height: 40px; }
+.memo-piece.on { border-color: #ff9f1a; box-shadow: 0 0 0 3px rgba(255, 159, 26, .45); }
+.memo-piece.used { visibility: hidden; }
+.memo-text { position: absolute; left: 50%; bottom: 5%; transform: translateX(-50%); margin: 0; padding: 2px 12px; border-radius: 99px; background: rgba(255, 255, 255, .85); color: #6b4426; font-weight: 900; }
+/* 藥水 */
+.potion-show { position: absolute; inset: 0; display: grid; place-items: center; }
+.potion-img { width: 45%; height: auto; animation: elf-float 2.4s ease-in-out infinite; }
+.potion-show .bub { position: absolute; bottom: 10%; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .8); animation: bub-up 2.4s ease-in infinite; }
+.potion-show .b1 { left: 30%; } .potion-show .b2 { left: 55%; animation-delay: .8s; } .potion-show .b3 { left: 70%; animation-delay: 1.6s; }
+@keyframes bub-up { to { transform: translateY(-260%); opacity: 0; } }
+/* 餵白鯨 */
+.feed-beluga { position: absolute; left: 50%; top: 4%; width: 40%; transform: translateX(-50%); }
+.feed-beluga img { width: 100%; height: auto; }
+.feed-beluga.yum { animation: yum .45s; }
+@keyframes yum { 50% { transform: translateX(-50%) scale(1.08) rotate(-3deg); } }
+.feed-fish { position: absolute; left: 14%; right: 14%; bottom: 3%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.feed-one { aspect-ratio: 1; border: 0; border-radius: 12px; background: rgba(255, 255, 255, .45); padding: 3px; cursor: pointer; min-height: 40px; }
+.feed-one img { width: 100%; height: 100%; object-fit: contain; }
+.feed-one.got { transform: translate(0, -260%) scale(.3); opacity: 0; transition: transform .45s ease-in, opacity .45s; pointer-events: none; }
+/* 鯊魚 */
+.shark-big { position: absolute; left: 50%; top: 6%; width: 62%; transform: translateX(-50%); transition: transform .9s ease-in; }
+.shark-big img { width: 100%; height: auto; }
+.shark-big.aside { transform: translateX(60%) scale(.8); }
+.shark-die { position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%); min-width: 64px; padding: 8px 14px; border-radius: 16px; background: #fff; font-size: 1.8rem; font-weight: 900; text-align: center; color: #23709f; box-shadow: 0 4px 10px rgba(0, 0, 0, .2); }
+.shark-die.win { background: #ffe27a; color: #8a4f12; }
+/* 燈籠魚：黑暗中找東西 */
+.lantern-panel .party-art { touch-action: none; user-select: none; -webkit-user-select: none; }
+.lantern-bg-ph { position: absolute; inset: 0; background: radial-gradient(circle at 30% 70%, #3f8f8a 0 12%, transparent 13%), radial-gradient(circle at 75% 30%, #6e5a9a 0 10%, transparent 11%), linear-gradient(#2a6f8f, #1f5a6f); }
+.lantern-item { position: absolute; width: 10%; aspect-ratio: 1; transform: translate(-50%, -50%); border: 0; background: none; padding: 0; min-width: 30px; }
+.lantern-item img, .lantern-item .w-emoji { width: 100%; height: 100%; object-fit: contain; font-size: 1.3rem; }
+.lantern-item.got { opacity: 0; transform: translate(-50%, -120%) scale(1.4); transition: transform .4s, opacity .4s; pointer-events: none; }
+.lantern-dark { position: absolute; inset: 0; pointer-events: none; transition: opacity 1.2s; }
+.lantern-dark.bright { opacity: 0; }
+.lantern-fish { position: absolute; width: 16%; transform: translate(-18%, -12%); pointer-events: none; z-index: 2; }
+.lantern-fish img { width: 100%; height: auto; }
+.lantern-spark { position: absolute; width: 10px; height: 10px; transform: translate(-50%, -50%); border-radius: 50%; background: #fff7c2; box-shadow: 0 0 10px 4px rgba(255, 240, 160, .8); z-index: 3; animation: spark-blink .9s ease-out both; pointer-events: none; }
+@keyframes spark-blink { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.3); } 40% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); } }
+.lantern-say { position: absolute; left: 50%; top: 4%; transform: translateX(-50%); z-index: 4; padding: 4px 12px; border-radius: 99px; background: rgba(255, 255, 255, .92); color: #5a3a8a; font-weight: 900; white-space: nowrap; }
+.lantern-list { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; width: 100%; }
+.lantern-want { display: grid; justify-items: center; padding: 2px; border-radius: 10px; background: #f3f0fa; opacity: .55; }
+.lantern-want img, .lantern-want .w-emoji { width: 30px; height: 30px; object-fit: contain; font-size: 1.2rem; }
+.lantern-want small { font-size: .65rem; font-weight: 800; }
+.lantern-want.got { opacity: 1; background: #fff3c4; }
+.lantern-acts { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+/* 健忘怪的家 */
+.room-ph { position: absolute; inset: 0; background: linear-gradient(#e9c58e, #c99459); }
+.boss-panel .party-art { background: #d8ad74; }
+.boss-layer { position: absolute; inset: 0; }
+.boss-spot { position: absolute; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 0; min-width: 64px; padding: 6px; border: 0; border-radius: 14px; background: rgba(255, 255, 255, .75); cursor: pointer; box-shadow: 0 3px 8px rgba(80, 40, 0, .2); }
+.boss-spot span { font-size: 1.8rem; line-height: 1.1; } .boss-spot small { font-weight: 800; font-size: .72rem; color: #6b4426; }
+.boss-spot .paper-corner { position: absolute; right: -6px; bottom: -6px; font-style: normal; font-size: 1rem; }
+.boss-spot.seen { background: rgba(255, 243, 196, .9); }
+.boss-spot.match { box-shadow: 0 0 0 4px #ffd23f, 0 0 18px #ffd23f; }
+.order-row { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 2px; padding: 0 4%; }
+.order-slot { width: 21%; aspect-ratio: 3 / 4; border: 3px dashed rgba(255, 255, 255, .8); border-radius: 12px; background: rgba(255, 255, 255, .3); display: grid; place-items: center; align-content: center; padding: 0; }
+.order-arrow { color: #fff; font-weight: 900; }
+.order-slot span, .order-card span { font-size: 1.8rem; } .order-slot small, .order-card small { font-weight: 800; font-size: .75rem; color: #6b4426; }
+.order-deck { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; }
+.order-card { display: grid; justify-items: center; padding: 6px 2px; border: 2px solid #ead9b6; border-radius: 12px; background: #fffaf0; cursor: pointer; }
+.order-card.on { border-color: #ff9f1a; box-shadow: 0 0 0 3px rgba(255, 159, 26, .4); }
+.order-card.used { visibility: hidden; }
+.box-row { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-around; padding: 0 4%; }
+.box-one { width: 29%; display: grid; justify-items: center; gap: 2px; padding: 10px 4px; border: 3px solid #b88a55; border-radius: 14px; background: #f1d9ae; cursor: pointer; }
+.box-one span { font-size: 2rem; } .box-one small { font-weight: 900; color: #6b4426; }
+.box-one em { font-style: normal; font-size: .7rem; font-weight: 700; color: #5a3a1a; line-height: 1.35; }
+.box-one.on { border-color: #ff9f1a; box-shadow: 0 0 0 3px rgba(255, 159, 26, .4); }
+.btn-ico { width: 24px; height: 24px; vertical-align: middle; }
+/* 開場、離開、通關 */
+.water-open .we-card { position: relative; z-index: 3; }
+.water-open .wo-beach { position: absolute; inset: 0; background: center / cover no-repeat; animation: fade-in .6s ease-out both; }
+.water-open.out .we-frame { opacity: 0; transition: opacity .9s; }
+.water-trip { background: linear-gradient(#bfe9ff, #5cc3ea 55%, #1f8fc0); }
+.wt-sea { position: absolute; inset: 0; }
+.wt-beluga { position: absolute; left: 50%; top: 22%; width: min(58vw, 280px); transform: translateX(-50%); animation: elf-float 2.4s ease-in-out infinite; }
+.wt-beluga img { width: 100%; height: auto; }
+.wt-beluga.go { animation: wt-go 3s ease-in-out both; }
+@keyframes wt-go { from { transform: translateX(-90%) scale(1); } to { transform: translateX(-10%) scale(.7); } }
+@keyframes fade-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .potion-img, .wt-beluga, .feed-beluga.yum, .memo-slot.shake { animation: none; } .shark-big, .lantern-dark { transition: none; } }

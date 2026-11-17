@@ -252,7 +252,15 @@
     if (r.name === 'map') {
       setupMap(store.getChild(r.arg));
       pawnIdle();
-      if (!ui.busy) { var mc = store.getChild(r.arg); setTimeout(function () { if (!ui.busy && route().name === 'map' && route().arg === mc.id) { if (!storyResetAsk(mc)) towerIntro(mc); } }, 600); }
+      if (!ui.busy) { var mc = store.getChild(r.arg); setTimeout(function () {
+        if (ui.busy || route().name !== 'map' || route().arg !== mc.id) return;
+        var mp = store.getPlayer(mc.id);
+        if (mp.island === 'water' && !window.__cgpNoStory && store.canPlayToday(mc.id) && (!mp.water.welcomed || store.storyResetOffer(mc.id))) {   // 水島：漁夫迎接＋重置任務詢問
+          ui.busy = true; waterWelcome(mc).then(function () { ui.busy = false; render(); }, function () { ui.busy = false; });
+          return;
+        }
+        if (!storyResetAsk(mc)) towerIntro(mc);
+      }, 600); }
       if (store.takeChestHint(r.arg)) notes.push('✨ 附近似乎藏著神秘寶物……');
       var wp = store.getPlayer(r.arg); if (wp.island === 'wood' && wp.pos >= 85) preloadImages(WOOD_SLIDES);   // 快到樹洞了：先在背景載入滑梯圖
     }
@@ -935,12 +943,25 @@
           title: '布置森林派對！', sub: '選一種裝飾，再點你想放的地方（桌上、草地、樹上都可以，共 10 個）', doneTitle: '🎉 森林派對開始囉！', doneSub: '精靈巨樹：謝謝大家一起來參加派對！',
           hint: '派對場地還空空的…走到第 92 格幫我布置！', intro: '派對場地就在精靈巨樹下！幫我放上花、松果、莓果汁、莓果籃和汽球！', done: '大家玩得好開心！謝謝你幫忙準備森林派對！' }
       }
+    },
+    // 2026-11-17 水島：6 個必要關卡，各關的 NPC 站在地圖預留的空地（board.npcSpots）；任務本身在 waterTask() 裡
+    water: {
+      rel: true,
+      guide: { cls: 'water-npc', label: '漁夫爺爺', img: 'images/water/npc/fisherman.webp', iw: 640, ih: 640, w: 62 },
+      spots: {
+        memo: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc water-bottle', label: '神秘的牛奶瓶', emoji: '🍼', w: 50 }, hint: '撿到的牛奶瓶裡有好多碎紙條……走到第 8 格拼拼看！' },
+        potion: { type: 'water', guide: [0, 0], cam: [0, -60], hint: '漁夫爺爺在第 16 格的木平台等你！' },
+        feed: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '小白鯨', img: 'images/water/npc/beluga.webp', iw: 640, ih: 640, w: 150 }, hint: '小白鯨好像肚子餓了……走到第 34 格餵牠吃魚！' },
+        shark: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '大鯊魚', img: 'images/water/npc/shark.webp', iw: 640, ih: 640, w: 190 }, hint: '大鯊魚守在第 48 格，要擲出 11 或 12 才讓你過！' },
+        lantern: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '燈籠魚', img: 'images/water/npc/anglerfish.webp', iw: 640, ih: 640, w: 100 }, hint: '燈籠魚的東西掉了一地……走到第 56 格幫牠找！' },
+        blanket: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '健忘怪', img: 'images/water/npc/monster_confused.webp', iw: 640, ih: 640, w: 100 }, hint: '門裡有人在翻箱倒櫃……走到第 100 格看看！' }
+      }
     }
   };
   /** 劇情座標換算成長地圖座標 */
   function storyXY(board, id, v) {
     var cfg = ISLAND_STORY[board.id], t = board.tiles[GAME.STORIES[id].tile];
-    var spot = v === cfg.spots[id].guide && board.guideSpots && board.guideSpots[t.n];   // 正式地圖：導遊站在地圖預留的空地（木島 guideSpots）
+    var spot = v === cfg.spots[id].guide && ((board.guideSpots && board.guideSpots[t.n]) || (board.npcSpots && board.npcSpots[t.n]));   // 正式地圖：導遊站在地圖預留的空地（木島 guideSpots、水島 npcSpots）
     if (spot) return { x: spot[0], y: spot[1] };
     return cfg.rel ? { x: t.gx + v[0], y: t.gy + v[1] } : { x: v[0], y: v[1] };
   }
@@ -988,10 +1009,10 @@
   function storyDecor(board, player, scene) {
     var cfg = ISLAND_STORY[board.id];
     return storyOpen(board, player).filter(function (id) { return !scene || board.tiles[GAME.STORIES[id].tile].regionId === scene.id; }).map(function (id) {
-      var sp = cfg.spots[id], g = storyXY(board, id, sp.guide);
+      var sp = cfg.spots[id], g = storyXY(board, id, sp.guide), gd = sp.npc || cfg.guide;
       var lever = sp.lever ? storyXY(board, id, sp.lever) : null;
-      return '<div class="story-guide ' + cfg.guide.cls + '" data-tap="guide" data-story="' + id + '" style="left:' + g.x.toFixed(1) + 'px;top:' + g.y.toFixed(1) + 'px;width:' + cfg.guide.w + 'px;z-index:' + Math.round(g.y / 6) + '" role="img" aria-label="' + cfg.guide.label + '（需要幫忙）">' +
-        guideArt(cfg.guide) + '<span class="story-bang" aria-hidden="true">！</span></div>' +
+      return '<div class="story-guide ' + gd.cls + '" data-tap="guide" data-story="' + id + '" style="left:' + g.x.toFixed(1) + 'px;top:' + g.y.toFixed(1) + 'px;width:' + gd.w + 'px;z-index:' + Math.round(g.y / 6) + '" role="img" aria-label="' + gd.label + '（需要幫忙）">' +
+        guideArt(gd) + '<span class="story-bang" aria-hidden="true">！</span></div>' +
         (lever ? '<div class="story-lever" id="story-lever" style="left:' + lever.x.toFixed(1) + 'px;top:' + lever.y.toFixed(1) + 'px;z-index:' + Math.round(lever.y / 6) + '" aria-hidden="true"><i></i></div>' : '');
     }).join('');
   }
@@ -1048,6 +1069,7 @@
     if (kind === 'pilot') { pilotTalk(child); return; }
     if (kind === 'guide') {
       var id = el.getAttribute('data-story'), cfg = ISLAND_STORY[GAME.STORIES[id].island];
+      if (store.waterTaskHere(child.id) === id) { runStory(child, id); return; }
       techTalk(child, 3200, cfg.spots[id].hint, el); return;
     }
     techTalk(child);
@@ -1500,6 +1522,14 @@
   async function runStory(child, id) {
     var board = store.getBoard(child.id), cfg = ISLAND_STORY[board.id], sp = cfg && cfg.spots[id], world = document.getElementById('map-world');
     var guide = document.querySelector('.story-guide[data-story="' + id + '"]');
+    if (sp && sp.type === 'water') {   // 水島：任務視窗自己完成資料寫入（鯊魚過關會移到第 49 格）
+      if (ui.busy && !runStory.inMove) return;
+      ui.busy = true; document.body.classList.add('pawn-acting', 'story-on');
+      try { if (guide && ui.cam) { var wc = storyXY(board, id, sp.cam); ui.cam.cx = wc.x; ui.cam.cy = wc.y; applyCam(true); await sleep(reduceMotion ? 50 : 600); } await waterTask(child, id, sp, guide); }
+      finally { ui.busy = false; document.body.classList.remove('pawn-acting', 'story-on'); }
+      render();
+      return;
+    }
     if (!sp || !world || !guide) return;
     ui.busy = true; document.body.classList.add('pawn-acting', 'story-on');
     try {
@@ -1652,6 +1682,539 @@
   function waterDecor(child, board, player, scene) {
     if (board.id !== 'water' || typeof waterMapDecor !== 'function') return '';
     return waterMapDecor(child, board, player, scene);
+  }
+
+  // ---------- 水島劇情（2026-11-17 起；計畫 docs/water/WATER_ISLAND_PLAN.md 第 4、5 節）----------
+  // 還沒到貨的插圖先用佔位（表情符號、色塊、程式畫的備忘圖）；正式圖到貨後只要填 WATER_ART 的檔名。
+  var WATER_ART = {
+    memo: '',            // D-1 備忘藏寶圖 1200×900（拼圖底圖）；空白時用程式畫的佔位圖
+    seabed: '',          // D-2 明亮海底（餵白鯨、鯊魚）
+    lanternBg: '',       // D-3 燈籠魚找東西的海底（明亮版，黑暗由程式疊上）
+    room: '',            // D-4 健忘怪房間
+    bottle: '', potion: 'images/water/items/potion.webp', fish: 'images/water/items/fish.webp', bucket: 'images/water/items/fish_bucket.webp',
+    blanket: ''
+  };
+  function charImg(child) { return 'images/characters/' + charIdOf(child) + '.webp'; }
+  function waterImg(src, alt, cls, emoji) {
+    return src ? '<img class="' + (cls || '') + '" src="' + src + '" alt="' + (alt || '') + '" draggable="false">' : '<span class="w-emoji ' + (cls || '') + '" aria-hidden="true">' + (emoji || '❔') + '</span>';
+  }
+  /**
+   * 連續對話（下方對話框＋人物半身大圖）：lines＝[{ who, img, me, text, choices }]；最後一句的選項回傳 val
+   * 孩子說的話 me＝true（大圖在右邊）
+   */
+  function talkSeq(lines) {
+    return new Promise(function (resolve) {
+      var i = 0, el = document.createElement('div');
+      el.className = 'pilot-talk water-talk'; el.id = 'water-talk'; el.setAttribute('role', 'dialog');
+      function draw() {
+        var L = lines[i], last = i === lines.length - 1, ch = L.choices || [{ label: last ? '好！' : '繼續', val: true, primary: true }];
+        el.setAttribute('aria-label', L.who || '對話');
+        el.innerHTML = '<div class="we-talk pilot-box">' + (L.img ? talkPortrait(L.img, L.me) : '') + '<span class="we-who">' + h(L.who || '') + '</span><p class="we-line">' + h(L.text) + '</p>' +
+          '<div class="pilot-acts' + (ch.length < 2 ? ' one' : '') + '">' + ch.map(function (c, k) { return '<button type="button" class="btn' + (c.primary ? ' primary' : '') + '" data-talk="' + k + '">' + h(c.label) + '</button>'; }).join('') + '</div></div>';
+      }
+      el.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-talk]');
+        if (!b) return;
+        var c = (lines[i].choices || [{ val: true }])[Number(b.getAttribute('data-talk'))];
+        if (i < lines.length - 1 && !lines[i].choices) { i++; draw(); return; }
+        el.remove(); resolve(c.val);
+      });
+      draw(); document.body.appendChild(el);
+    });
+  }
+  var WHO = {
+    fisher: function () { return { who: '漁夫爺爺', img: WATER_NPC.fisherman }; },
+    beluga: function () { return { who: '小白鯨', img: WATER_NPC.beluga }; },
+    shark: function () { return { who: '大鯊魚', img: WATER_NPC.shark }; },
+    lantern: function () { return { who: '燈籠魚', img: WATER_NPC.lantern }; },
+    monster: function (k) { return { who: '健忘怪', img: k === 'surprised' ? WATER_NPC.monsterSurprised : k === 'blanket' ? WATER_NPC.monsterBlanket : WATER_NPC.monster }; },
+    me: function (child) { return { who: child.name, img: charImg(child), me: true }; }
+  };
+  function line(w, text, extra) { return Object.assign({}, w, { text: text }, extra || {}); }
+  /** 預覽模式（?preview=water-…）不寫存檔 */
+  function wflag(child, k, v) { if (!child.preview) wflag(child, k, v); }
+  function wstate(child) { return child.preview ? { water: {}, bag: { shield: 1 } } : store.getPlayer(child.id); }
+
+  // 沿路短對話（A 類，經過就播；12 段，計畫第 4 節）
+  var WATER_NOTES = {
+    4: { id: 'n4', who: 'me', text: '咦？沙灘上有一個玻璃牛奶瓶，裡面塞著好多碎紙條！先帶著它吧。', bottle: true },
+    24: { id: 'n24', who: 'fisher', text: '喝了藥水就可以在水裡呼吸囉！出發吧，小心別迷路！' },
+    30: { id: 'n30', who: 'me', text: '哇～海底好漂亮！好多會發光的水母和彩色小魚！' },
+    42: { id: 'n42', who: 'beluga', text: '前面有一隻大鯊魚守著路，要小心喔！' },
+    58: { id: 'n58', who: 'lantern', text: '洞口就在這裡！跟著小白鯨游進去吧！' },
+    62: { id: 'n62', who: 'beluga', text: '我帶你穿過石柱，跟緊我喔！' },
+    70: { id: 'n70', who: 'me', text: '牆上的礦石在發光……上面好像畫著一條船的航線！' },
+    78: { id: 'n78', who: 'me', text: '看！柱子後面有一艘沉船！藏寶圖上畫的就是它！' },
+    82: { id: 'n82', who: 'me', text: '船艙門破了一個洞，我們從這裡進去吧！' },
+    86: { id: 'n86', who: 'voice', text: '（門後傳來聲音）「我的寶貝跑去哪裡了？」……一定是寶藏！' },
+    92: { id: 'n92', who: 'me', text: '牆上的紙牌寫著「記得看提醒」……是誰這麼健忘呀？' },
+    98: { id: 'n98', who: 'voice', text: '（門後）「找到了！……喔，是我的腳。」門縫裡看得到倒放的椅子。' }
+  };
+  /** 這次走過的格子有沒看過的沿路對話：依序播出（點一下可以先關掉） */
+  async function waterNotes(child, visited) {
+    var p = store.getPlayer(child.id);
+    if (p.island !== 'water' || window.__cgpNoStory) return;
+    var list = visited.filter(function (n, i) { return WATER_NOTES[n] && visited.indexOf(n) === i; });
+    for (var i = 0; i < list.length; i++) {
+      var N = WATER_NOTES[list[i]];
+      if (!store.markWaterNote(child.id, N.id)) continue;
+      if (N.bottle) wflag(child, 'bottle', true);
+      var w = N.who === 'me' ? WHO.me(child) : N.who === 'voice' ? { who: '？？？', img: '' } : WHO[N.who]();
+      await talkSeq([line(w, N.text)]);
+    }
+  }
+
+  /** 抵達水島：漁夫迎接（第一次完整說明＋送魚桶；之後一句提醒）、重置任務詢問（計畫第 4.1 節） */
+  async function waterWelcome(child) {
+    var p = store.getPlayer(child.id);
+    if (p.island !== 'water' || window.__cgpNoStory) return;
+    var F = WHO.fisher(), first = !p.water.welcomed;
+    if (first) {
+      await talkSeq([line(F, '歡迎來到水島！我是這裡的漁夫爺爺。'),
+        line(F, '在水裡，溜冰鞋、飛行翼和傳送門都不能用喔！要靠自己的腳和骰子前進。'),
+        line(F, '海裡的朋友常常肚子餓，帶一桶魚去吧，遇到餓肚子的朋友可以分給牠！', { choices: [{ label: '🪣 拿一桶魚', val: true, primary: true }] })]);
+      wflag(child, 'bucket', true); wflag(child, 'welcomed', true); wflag(child, 'rulesSeen', true);
+      toast('🪣 拿到一桶魚！（故事物品）', 'pos');
+      return;
+    }
+    await talkSeq([line(F, '又見面啦！記得在水裡不能用溜冰鞋、飛行翼和傳送門喔！', { choices: [{ label: '知道了', val: true, primary: true }] })]);
+    var offer = store.storyResetOffer(child.id);
+    if (offer && store.canPlayToday(child.id)) {
+      var yes = await talkSeq([line(F, '這次要不要把 ' + offer.count + ' 個任務重新來一次？再完成一樣送你 ⭐' + GAME.STORY_STARS + '！',
+        { choices: [{ label: '不用了', val: false }, { label: '好，重新來！', val: true, primary: true }] })]);
+      store.answerStoryReset(child.id, yes);
+      if (yes) {
+        await talkSeq([line(F, '好！魚桶也幫你裝滿了！', { choices: [{ label: '🪣 拿一桶魚', val: true, primary: true }] })]);
+        wflag(child, 'bucket', true);
+        toast('🔄 水島的任務重新開始囉！', 'pos');
+      }
+    } else if (!p.water.bucket && !p.story.feed) {
+      await talkSeq([line(F, '魚桶空了吧？再帶一桶去！', { choices: [{ label: '🪣 拿一桶魚', val: true, primary: true }] })]);
+      wflag(child, 'bucket', true);
+    }
+  }
+
+  /** 水島任務入口（runStory 遇到水島時改走這裡）：每一關自己完成資料寫入 */
+  async function waterTask(child, id, sp, guide) {
+    if (id === 'memo') return waterMemo(child);
+    if (id === 'potion') return waterPotion(child);
+    if (id === 'feed') return waterFeed(child);
+    if (id === 'shark') return waterShark(child);
+    if (id === 'lantern') return waterLantern(child);
+    if (id === 'blanket') return waterBoss(child);
+  }
+  /** 完成一般關卡：⭐3＋提示 */
+  function waterDone(child, id) {
+    if (child.preview) return false;
+    var first = store.completeStory(child.id, id);
+    if (first) toast('⭐ 完成任務「' + GAME.STORIES[id].name + '」：+' + GAME.STORY_STARS + ' 能量星星', 'pos');
+    return first;
+  }
+
+  // 第 8 格：拼回 20 片備忘地圖（5×4，點一片再點位置；選了的片會提示正確位置的輪廓）
+  function memoPlaceholder() {   // 正式 D-1 到貨前：程式畫的蠟筆風備忘圖（沉船、大星星、歪箭頭、三個箱子、小枕頭）
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900"><rect width="1200" height="900" fill="#f6ead0"/><rect x="30" y="30" width="1140" height="840" fill="none" stroke="#d8c39a" stroke-width="10" stroke-dasharray="40 20"/>' +
+      '<path d="M120 640 q90 70 260 0 l-30 -90 h-200 z" fill="#b5835a" stroke="#6b4426" stroke-width="10"/><rect x="200" y="470" width="20" height="90" fill="#6b4426"/><path d="M220 470 l90 45 l-90 25z" fill="#e7c37a"/>' +
+      '<path d="M430 590 q60 -120 140 -60 q60 50 120 -40" fill="none" stroke="#4a7fbf" stroke-width="12" stroke-dasharray="30 18"/><path d="M690 480 l-10 40 l40 -14z" fill="#4a7fbf"/>' +
+      '<polygon points="900,150 935,240 1030,245 955,300 985,390 900,335 815,390 845,300 770,245 865,240" fill="#ffd23f" stroke="#c9961a" stroke-width="8"/>' +
+      '<g fill="#e0b98a" stroke="#6b4426" stroke-width="8"><rect x="700" y="610" width="110" height="90" rx="8"/><rect x="840" y="610" width="110" height="90" rx="8"/><rect x="980" y="610" width="110" height="90" rx="8"/></g>' +
+      '<ellipse cx="200" cy="200" rx="110" ry="60" fill="#fff" stroke="#9aa6c8" stroke-width="8"/><path d="M110 200 q90 30 180 0" stroke="#c7cde3" stroke-width="6" fill="none"/>' +
+      '<path d="M500 260 q40 -60 80 0 t80 0" stroke="#7a5a3a" stroke-width="10" fill="none"/><path d="M640 250 l20 15 l-25 10z" fill="#7a5a3a"/></svg>';
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+  async function waterMemo(child) {
+    var p = wstate(child);
+    if (!p.water.bottle) { wflag(child, 'bottle', true); await talkSeq([line(WHO.me(child), '路上撿到的玻璃牛奶瓶，裡面塞著好多碎紙條……')]); }
+    await talkSeq([line(WHO.me(child), '瓶子裡的紙條好像可以拼成一張圖！我來拼拼看！')]);
+    var src = WATER_ART.memo || memoPlaceholder(), COLS = 5, ROWS = 4, N = COLS * ROWS;
+    var P = partyPanel({ title: '拼回神秘的地圖！', sub: '點一片碎紙，再點它在地圖上的位置（共 20 片）' }, null, 'water-panel memo-panel');
+    var order = []; for (var k = 0; k < N; k++) order.push(k);
+    for (var j = N - 1; j > 0; j--) { var r = Math.floor(Math.random() * (j + 1)); var tmp = order[j]; order[j] = order[r]; order[r] = tmp; }
+    function bgPos(k) { return (k % COLS) / (COLS - 1) * 100 + '% ' + Math.floor(k / COLS) / (ROWS - 1) * 100 + '%'; }
+    var style = 'background-image:url(&quot;' + src + '&quot;);background-size:' + COLS * 100 + '% ' + ROWS * 100 + '%;';
+    P.art.innerHTML = '<div class="memo-board" id="memo-board">' + order.map(function (q, i) { return '<button type="button" class="memo-slot" data-slot="' + i + '" aria-label="位置 ' + (i + 1) + '"></button>'; }).join('') + '</div>';
+    P.tools.innerHTML = '<div class="memo-tray" id="memo-tray">' + order.map(function (k) { return '<button type="button" class="memo-piece" data-piece="' + k + '" style="' + style + 'background-position:' + bgPos(k) + '" aria-label="碎紙"></button>'; }).join('') + '</div>' +
+      '<span class="party-count" id="memo-count">0 / ' + N + '</span>';
+    await new Promise(function (resolve) {
+      var pick = null, placed = 0, miss = 0;
+      var slots = P.art.querySelectorAll('.memo-slot');
+      function clearHint() { slots.forEach(function (s) { s.classList.remove('hint'); }); }
+      P.tools.addEventListener('click', function (e) {
+        var b = e.target.closest('.memo-piece');
+        if (!b || b.classList.contains('used')) return;
+        P.tools.querySelectorAll('.memo-piece').forEach(function (x) { x.classList.toggle('on', x === b); });
+        pick = Number(b.getAttribute('data-piece')); miss = 0; clearHint();
+      });
+      P.art.addEventListener('click', function (e) {
+        var s = e.target.closest('.memo-slot');
+        if (!s || pick == null || s.classList.contains('done')) return;
+        if (Number(s.getAttribute('data-slot')) !== pick) {
+          s.classList.remove('shake'); void s.offsetWidth; s.classList.add('shake');
+          if (++miss >= 2) slots[pick].classList.add('hint');   // 錯兩次：亮出正確位置
+          return;
+        }
+        s.classList.add('done'); s.setAttribute('style', style + 'background-position:' + bgPos(pick));
+        var pc = P.tools.querySelector('.memo-piece[data-piece="' + pick + '"]'); pc.classList.add('used'); pc.classList.remove('on');
+        pick = null; clearHint(); placed++;
+        P.tools.querySelector('#memo-count').textContent = placed + ' / ' + N;
+        if (placed >= N) setTimeout(resolve, reduceMotion ? 100 : 500);
+      });
+      // 數字的格子位置對應拼圖的位置（第 k 個格子＝第 k 片）
+      slots.forEach(function (s, i) { s.setAttribute('data-slot', String(i)); });
+    });
+    P.art.insertAdjacentHTML('beforeend', '<p class="memo-text">最重要的寶……</p>');
+    P.title.textContent = '🗺️ 拼好了！'; P.sub.textContent = '沉船、大星星、歪歪的箭頭、三個箱子……還有一個小枕頭？';
+    P.tools.innerHTML = '<button type="button" class="btn primary charge-btn" id="scene-ok">一定是藏寶圖！</button>';
+    await new Promise(function (r) { P.tools.querySelector('#scene-ok').onclick = function () { P.shade.remove(); r(); }; });
+    waterDone(child, 'memo');
+    await talkSeq([line(WHO.me(child), '「最重要的寶……」一定是寶藏！我們去找漁夫爺爺問問看！')]);
+  }
+
+  // 第 16 格：漁夫看藏寶圖、送潛水藥水
+  async function waterPotion(child) {
+    var F = WHO.fisher(), M = WHO.me(child);
+    await talkSeq([line(F, '這張圖怪怪的……怎麼還畫著一個枕頭？'), line(M, '那一定是藏寶的暗號！'), line(F, '……你確定？'),
+      line(F, '好吧，要去海底找沉船，就喝下這瓶潛水藥水，在水裡也能呼吸！', { choices: [{ label: '🧪 喝下藥水', val: true, primary: true }] })]);
+    var P = partyPanel({ title: '喝下潛水藥水！', sub: '咕嚕咕嚕……身體輕飄飄的！' }, null, 'water-panel potion-panel');
+    P.art.innerHTML = '<div class="potion-show">' + waterImg(WATER_ART.potion, '潛水藥水', 'potion-img', '🧪') + '<i class="bub b1"></i><i class="bub b2"></i><i class="bub b3"></i></div>';
+    P.tools.innerHTML = '<button type="button" class="btn primary charge-btn" id="scene-ok">🌊 可以在水裡呼吸了！</button>';
+    await new Promise(function (r) { P.tools.querySelector('#scene-ok').onclick = function () { P.shade.remove(); r(); }; });
+    waterDone(child, 'potion');
+  }
+
+  // 第 34 格：一條一條把魚餵給小白鯨（10 條）
+  async function waterFeed(child) {
+    var p = wstate(child), B = WHO.beluga();
+    if (!p.water.bucket) {
+      await talkSeq([line(B, '好餓喔……'), line(WHO.fisher(), '（漁夫爺爺划著小船過來）忘了帶魚桶嗎？拿去吧！', { choices: [{ label: '🪣 拿一桶魚', val: true, primary: true }] })]);
+      wflag(child, 'bucket', true);
+    }
+    await talkSeq([line(B, '咕嚕～我肚子好餓喔……'), line(WHO.me(child), '我有一桶魚！一條一條餵你吃！')]);
+    var P = partyPanel({ title: '餵小白鯨吃魚！', sub: '點一條魚，餵給小白鯨（共 10 條）' }, null, 'water-panel feed-panel');
+    P.art.innerHTML = (WATER_ART.seabed ? '<img class="party-bg" src="' + WATER_ART.seabed + '" alt="" draggable="false">' : '') +
+      '<div class="feed-beluga" id="feed-beluga">' + waterImg(WATER_NPC.beluga, '小白鯨') + '</div>' +
+      '<div class="feed-fish">' + Array.from({ length: 10 }, function (_, i) { return '<button type="button" class="feed-one" data-i="' + i + '" aria-label="魚">' + waterImg(WATER_ART.fish, '', '', '🐟') + '</button>'; }).join('') + '</div>';
+    P.tools.innerHTML = '<span class="party-count" id="feed-count">🐟 0 / 10</span>';
+    await new Promise(function (resolve) {
+      var n = 0, bel = P.art.querySelector('#feed-beluga');
+      P.art.addEventListener('click', function (e) {
+        var f = e.target.closest('.feed-one');
+        if (!f || f.classList.contains('got')) return;
+        f.classList.add('got'); n++;
+        bel.classList.remove('yum'); void bel.offsetWidth; bel.classList.add('yum');
+        P.tools.querySelector('#feed-count').textContent = '🐟 ' + n + ' / 10';
+        if (n >= 10) setTimeout(resolve, reduceMotion ? 100 : 700);
+      });
+    });
+    P.shade.remove();
+    wflag(child, 'bucket', false);   // 魚桶空了
+    waterDone(child, 'feed');
+    await talkSeq([line(B, '好飽好飽！謝謝你！我們是好朋友了！'), line(B, '以後我每天可以載你游 ' + store.getLimits().beluga + ' 次喔！按「小白鯨載我」就可以了！')]);
+  }
+
+  // 第 48 格：大鯊魚（免費 12 面骰擲到 11 或 12 才過；或用防護罩，過關後補 10 星）
+  async function waterShark(child) {
+    await talkSeq([line(WHO.shark(), '站住！這條路是我守的！'), line(WHO.shark(), '想過去？擲出 11 或 12 我就讓你過！擲幾次都可以，不收錢～')]);
+    var P = partyPanel({ title: '大鯊魚攔路！', sub: '擲鯊魚骰（免費、可以一直擲），擲出 11 或 12 就能過關' }, null, 'water-panel shark-panel');
+    P.art.innerHTML = (WATER_ART.seabed ? '<img class="party-bg" src="' + WATER_ART.seabed + '" alt="" draggable="false">' : '') +
+      '<div class="shark-big" id="shark-big">' + waterImg(WATER_NPC.shark, '大鯊魚') + '</div><div class="shark-die" id="shark-die" aria-live="polite">🎲</div>';
+    var shieldN = wstate(child).bag.shield;
+    P.tools.innerHTML = '<button type="button" class="btn primary charge-btn" id="shark-roll">🎲 擲鯊魚骰（免費）</button>' +
+      (shieldN ? '<button type="button" class="btn" id="shark-shield">🛡️ 用 1 個防護罩過關（補 ⭐' + GAME.SHARK_SHIELD_STARS + '）</button>' : '') +
+      '<small class="muted" id="shark-tip">不算每天的擲骰次數，也不用背包裡的骰子</small>';
+    var FAIL = ['鯊魚搖搖頭：「還不夠喔！」', '差一點點！再擲一次！', '鯊魚打了個呵欠：「再試試看～」', '鯊魚甩甩尾巴：「再來！」'];
+    var res = await new Promise(function (resolve) {
+      var busy = false, k = 0, die = P.art.querySelector('#shark-die');
+      P.tools.querySelector('#shark-roll').onclick = async function () {
+        if (busy) return; busy = true;
+        var r;
+        try { if (child.preview) { var v = 1 + Math.floor(Math.random() * 12); r = { value: v, pass: v >= GAME.SHARK_PASS, first: true }; } else r = store.sharkTry(child.id); } catch (err) { toast(err.message, 'neg'); busy = false; return; }
+        for (var i = 0; i < (reduceMotion ? 1 : 6); i++) { die.textContent = 1 + Math.floor(Math.random() * 12); await sleep(60); }
+        die.textContent = r.value;
+        die.classList.toggle('win', r.pass);
+        P.sub.textContent = r.pass ? '🎉 擲出 ' + r.value + '！鯊魚讓開了！' : '擲出 ' + r.value + '……' + FAIL[k++ % FAIL.length];
+        busy = false;
+        if (r.pass) { P.art.querySelector('#shark-big').classList.add('aside'); setTimeout(function () { resolve(r); }, reduceMotion ? 300 : 1200); }
+      };
+      var sb = P.tools.querySelector('#shark-shield');
+      if (sb) sb.onclick = function () {
+        confirmThen('用 1 個 🛡️ 防護罩讓鯊魚讓路？\n過關後補你 ' + GAME.SHARK_SHIELD_STARS + ' 顆能量星星。', '使用', false, function () {
+          try { var r = child.preview ? { pass: true, shield: true, stars: GAME.SHARK_SHIELD_STARS, first: true } : store.sharkShield(child.id); P.art.querySelector('#shark-big').classList.add('aside'); setTimeout(function () { resolve(r); }, reduceMotion ? 300 : 900); } catch (err) { toast(err.message, 'neg'); }
+        });
+      };
+    });
+    P.shade.remove();
+    if (res.first) toast('⭐ 完成任務「大鯊魚攔路」：+' + GAME.STORY_STARS + ' 能量星星' + (res.shield ? '，防護罩補償 +' + res.stars : ''), 'pos');
+    await talkSeq([line(WHO.shark(), res.shield ? '哇，防護罩好厲害！過去吧！' : '好運氣！我讓你過去～'), line(WHO.me(child), '謝謝大鯊魚！')]);
+    if (!child.preview) await hopAlong(child, [GAME.STORIES.shark.tile + 1]);
+  }
+
+  // 第 56 格：在黑暗中，拖著燈籠魚的燈照亮一小圈，找回 10 樣東西（計畫第 4.3 節；光圈直徑先用畫面寬度 1/8）
+  var LANTERN_ITEMS = [['coral', '珊瑚', ''], ['scallop', '扇貝', ''], ['starfish', '海星', ''], ['conch', '海螺', ''], ['pearl', '珍珠', ''],
+    ['seaglass', '海玻璃', '🟢'], ['stone', '小石片', ''], ['driftwood', '漂流木', ''], ['seaweed', '海草束', '🌿'], ['bell', '銅鈴', '']];
+  var LANTERN_SPOTS = [[14, 22], [32, 74], [50, 32], [72, 20], [86, 62], [20, 52], [62, 82], [42, 56], [80, 40], [10, 84]];
+  var LANTERN_LIGHT = 1 / 8;   // 照亮的圓直徑＝畫面寬度的 1/8（2026-11-16 家長決定，試玩後可調）
+  async function waterLantern(child) {
+    var L = WHO.lantern();
+    await talkSeq([line(L, '嗚嗚……我的東西掉了一地，這裡好黑，我一個人找不到……'), line(WHO.me(child), '我來幫你！拖著你的燈，我們一起找！')]);
+    var P = partyPanel({ title: '燈籠魚找東西', sub: '拖著燈籠魚移動，燈光照到東西時點一下（共 10 樣）' }, null, 'water-panel lantern-panel');
+    P.art.innerHTML = (WATER_ART.lanternBg ? '<img class="party-bg" src="' + WATER_ART.lanternBg + '" alt="" draggable="false">' : '<div class="lantern-bg-ph"></div>') +
+      LANTERN_ITEMS.map(function (it, i) {
+        var src = it[2] ? '' : 'images/water/find/' + it[0] + '.webp';
+        return '<button type="button" class="lantern-item" data-i="' + i + '" style="left:' + LANTERN_SPOTS[i][0] + '%;top:' + LANTERN_SPOTS[i][1] + '%" aria-label="' + it[1] + '">' + waterImg(src, '', '', it[2]) + '</button>';
+      }).join('') +
+      '<div class="lantern-dark" id="lantern-dark"></div><div class="lantern-fish" id="lantern-fish">' + waterImg(WATER_NPC.lantern, '燈籠魚') + '</div><div class="lantern-say" id="lantern-say" hidden></div>';
+    P.tools.innerHTML = '<div class="lantern-list" id="lantern-list">' + LANTERN_ITEMS.map(function (it, i) {
+      return '<span class="lantern-want" data-i="' + i + '">' + waterImg(it[2] ? '' : 'images/water/find/' + it[0] + '.webp', '', '', it[2]) + '<small>' + it[1] + '</small></span>';
+    }).join('') + '</div><div class="lantern-acts"><span class="party-count" id="lantern-count">0 / 10</span><button type="button" class="btn small" id="lantern-hint">💡 提示</button></div>';
+    var art = P.art, dark = art.querySelector('#lantern-dark'), fish = art.querySelector('#lantern-fish'), say = art.querySelector('#lantern-say');
+    var lx = 50, ly = 50, boost = 1, found = 0, hintLv = 0, timers = [];
+    function radius() { return art.clientWidth * LANTERN_LIGHT / 2 * boost; }
+    function place() {
+      var W = art.clientWidth, H = art.clientHeight, x = lx / 100 * W, y = ly / 100 * H, r = radius();
+      dark.style.background = 'radial-gradient(circle at ' + x + 'px ' + y + 'px, rgba(8,18,46,0) 0, rgba(8,18,46,0) ' + r + 'px, rgba(8,18,46,.97) ' + (r + 10) + 'px)';
+      fish.style.left = x + 'px'; fish.style.top = y + 'px';
+    }
+    function moveTo(e) {
+      var R = art.getBoundingClientRect();
+      lx = Math.max(2, Math.min(98, (e.clientX - R.left) / R.width * 100));
+      ly = Math.max(2, Math.min(98, (e.clientY - 34 - R.top) / R.height * 100));   // 燈在手指上方一點，手指不會擋住
+      place();
+    }
+    function lit(i) {
+      var W = art.clientWidth, H = art.clientHeight;
+      return Math.hypot((LANTERN_SPOTS[i][0] - lx) / 100 * W, (LANTERN_SPOTS[i][1] - ly) / 100 * H) <= radius() + W * 0.035;
+    }
+    function nearest() {
+      var best = -1, bd = 1e9;
+      LANTERN_ITEMS.forEach(function (_, i) { if (art.querySelector('.lantern-item[data-i="' + i + '"].got')) return; var d = Math.hypot(LANTERN_SPOTS[i][0] - lx, LANTERN_SPOTS[i][1] - ly); if (d < bd) { bd = d; best = i; } });
+      return best;
+    }
+    function speak(t) { say.hidden = false; say.textContent = t; clearTimeout(speak.t); speak.t = setTimeout(function () { say.hidden = true; }, 2600); }
+    place();
+    await new Promise(function (resolve) {
+      var dragging = false;
+      art.addEventListener('pointerdown', function (e) {
+        var it = e.target.closest('.lantern-item');
+        if (it && lit(Number(it.getAttribute('data-i')))) {
+          if (it.classList.contains('got')) return;
+          var i = Number(it.getAttribute('data-i'));
+          it.classList.add('got'); found++;
+          P.tools.querySelector('.lantern-want[data-i="' + i + '"]').classList.add('got');
+          P.tools.querySelector('#lantern-count').textContent = found + ' / 10';
+          speak('找到' + LANTERN_ITEMS[i][1] + '了！');
+          if (found >= 10) { timers.forEach(clearInterval); setTimeout(resolve, reduceMotion ? 100 : 700); }
+          return;
+        }
+        dragging = true; try { art.setPointerCapture(e.pointerId); } catch (err) { /* 不支援也能點 */ }
+        moveTo(e);
+      });
+      art.addEventListener('pointermove', function (e) { if (dragging) moveTo(e); });
+      art.addEventListener('pointerup', function () { dragging = false; });
+      art.addEventListener('pointercancel', function () { dragging = false; });
+      timers.push(setInterval(function () {   // 黑暗中偶爾在還沒找到的東西附近閃一下
+        var left = LANTERN_ITEMS.map(function (_, i) { return i; }).filter(function (i) { return !art.querySelector('.lantern-item[data-i="' + i + '"].got'); });
+        if (!left.length) return;
+        var i = left[Math.floor(Math.random() * left.length)], s = document.createElement('i');
+        s.className = 'lantern-spark'; s.style.left = LANTERN_SPOTS[i][0] + (Math.random() * 8 - 4) + '%'; s.style.top = LANTERN_SPOTS[i][1] + (Math.random() * 8 - 4) + '%';
+        art.appendChild(s); setTimeout(function () { s.remove(); }, 900);
+      }, 4500));
+      P.tools.querySelector('#lantern-hint').onclick = function () {
+        var i = nearest(); if (i < 0) return;
+        hintLv = hintLv % 3 + 1;
+        var dx = LANTERN_SPOTS[i][0] - lx, dy = LANTERN_SPOTS[i][1] - ly;
+        var dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? '右邊' : '左邊') : (dy > 0 ? '下面' : '上面');
+        if (hintLv === 1) speak('好像在' + dir + '……');
+        else if (hintLv === 2) { boost = 2; place(); speak('我用力發光！'); setTimeout(function () { boost = 1; place(); }, 5000); }
+        else speak('往' + dir + '游！' + (dir === '右邊' ? '➡️' : dir === '左邊' ? '⬅️' : dir === '下面' ? '⬇️' : '⬆️'));
+      };
+    });
+    dark.classList.add('bright');
+    P.title.textContent = '✨ 全部找到了！'; P.sub.textContent = '燈籠魚的燈越來越亮，照出了一個洞口！';
+    P.tools.innerHTML = '<button type="button" class="btn primary charge-btn" id="scene-ok">🎉 太好了！</button>';
+    await new Promise(function (r) { P.tools.querySelector('#scene-ok').onclick = function () { P.shade.remove(); r(); }; });
+    waterDone(child, 'lantern');
+    await talkSeq([line(L, '謝謝你！我的燈照出洞口了，沿著路往前游就到囉！')]);
+  }
+
+  // 第 100 格：健忘怪的家（三階段：搜索 → 整理昨天 → 牛奶瓶真相與選箱），每完成一階段存檔（計畫第 5.3 節）
+  var BOSS_SPOTS = [
+    { id: 'bed', label: '床', emoji: '🛏️', x: 18, y: 30, card: 0, say: '床底下只有一隻拖鞋……床沿露出一角紙！' },
+    { id: 'cupboard', label: '雪花櫃', emoji: '🧊', x: 46, y: 22, say: '櫃子門上貼著雪花……打開一看，只有一條木頭魚。這只是普通的櫃子嘛！', monster: '我貼了雪花，它還不肯變冰箱，真有個性！' },
+    { id: 'desk', label: '書桌', emoji: '🪑', x: 76, y: 30, card: 2, notebook: true, say: '桌上有墨跡，側邊抽屜露出筆記本的一角，桌腳旁還有一張紙！' },
+    { id: 'crate', label: '木箱', emoji: '📦', x: 24, y: 70, card: 1, say: '把木箱推開一點……箱腳旁邊藏著一張紙！' },
+    { id: 'wardrobe', label: '衣櫃', emoji: '🚪', x: 52, y: 66, card: 3, say: '衣櫃門縫夾著一張紙！' },
+    { id: 'rack', label: '窗邊的瓶架', emoji: '🪟', x: 82, y: 66, say: '窗台上有一個空空的圓形瓶架……原本放什麼呢？先記下來。' }
+  ];
+  var BOSS_CARDS = [['soiled', '弄髒了', '🟤'], ['wash', '洗一洗', '🫧'], ['dry', '晾乾', '☀️'], ['store', '收好', '📥']];
+  var BOSS_BOXES = [['star', '星星箱', '⭐', '箱子裡有扳手和起子，叮叮噹噹的。'], ['shell', '貝殼箱', '🐚', '箱子摸起來濕濕的，旁邊有一小灘水。'], ['moon', '月亮箱', '🌙', '箱子乾乾的，裡面也沒有工具。']];
+  async function waterBoss(child) {
+    var M = WHO.monster(), me = WHO.me(child), stage = wstate(child).water.bossStage || 0;
+    if (!stage) await talkSeq([line(M, '不見了！我的寶貝不見了啦！'), line(me, '我們有藏寶圖，也在找寶藏！'), line(M, '太好了！你們有沒有看到……我剛才要找什麼？'), line(M, '好像在床底下……不對！在冰箱裡！')]);
+    var P = partyPanel({ title: '健忘怪的家', sub: '' }, null, 'water-panel boss-panel');
+    P.art.innerHTML = (WATER_ART.room ? '<img class="party-bg" src="' + WATER_ART.room + '" alt="" draggable="false">' : '<div class="room-ph"></div>') + '<div class="boss-layer" id="boss-layer"></div>';
+    var layer = P.art.querySelector('#boss-layer');
+    function say(w, t) { return talkSeq([line(w, t)]); }
+    function okBtn(label) { return new Promise(function (r) { P.tools.innerHTML = '<button type="button" class="btn primary charge-btn" id="scene-ok">' + label + '</button>'; P.tools.querySelector('#scene-ok').onclick = function () { r(); }; }); }
+    // 階段一：搜索
+    if (stage < 1) {
+      P.title.textContent = '🔍 找找看！'; P.sub.textContent = '點房間裡的東西，找出筆記本和 4 張紙卡';
+      layer.innerHTML = BOSS_SPOTS.map(function (s) { return '<button type="button" class="boss-spot" data-spot="' + s.id + '" style="left:' + s.x + '%;top:' + s.y + '%"><span>' + s.emoji + '</span><small>' + s.label + '</small>' + (s.card != null || s.notebook ? '<i class="paper-corner" aria-hidden="true">📄</i>' : '') + '</button>'; }).join('');
+      await new Promise(function (resolve) {
+        var cards = 0, notebook = false;
+        function prog() { P.tools.innerHTML = '<span class="party-count">📒 ' + (notebook ? 1 : 0) + ' / 1　📄 ' + cards + ' / 4</span>'; }
+        prog();
+        layer.addEventListener('click', async function (e) {
+          var b = e.target.closest('.boss-spot'); if (!b || b.classList.contains('seen')) return;
+          var s = BOSS_SPOTS.filter(function (x) { return x.id === b.getAttribute('data-spot'); })[0];
+          b.classList.add('seen');
+          await say(me, s.say);
+          if (s.monster) await say(M, s.monster);
+          if (s.card != null) cards++;
+          if (s.notebook) {
+            notebook = true;
+            await talkSeq([line(me, '筆記本封面寫著：「健忘怪的重要事情！千萬不能忘記！」'), line(me, '第一頁寫著：「記得帶筆記本。」'),
+              line(M, '太好了，提醒得真清楚！……筆記本在哪？'), line(me, '就在我手上啊！'), line(M, '喔喔喔！原來在這裡！')]);
+          }
+          prog();
+          if (cards >= 4 && notebook) setTimeout(resolve, 300);
+        });
+      });
+      await say(M, '那些不是垃圾，是我的記憶出去放風了！');
+      wflag(child, 'bossStage', 1); stage = 1;
+    }
+    // 階段二：把 4 張紙卡排成昨天的順序
+    if (stage < 2) {
+      P.title.textContent = '🗂️ 昨天發生了什麼事？'; P.sub.textContent = '點一張紙卡，再點空格，排出昨天的順序';
+      await say(M, '昨天好像拿去洗了……還是拿去游泳？');
+      var deck = [0, 1, 2, 3]; do { deck.sort(function () { return Math.random() - .5; }); } while (deck.join() === '0,1,2,3');
+      layer.innerHTML = '<div class="order-row">' + [0, 1, 2, 3].map(function (i) { return '<button type="button" class="order-slot" data-o="' + i + '"></button>' + (i < 3 ? '<span class="order-arrow">→</span>' : ''); }).join('') + '</div>';
+      P.tools.innerHTML = '<div class="order-deck">' + deck.map(function (c) { return '<button type="button" class="order-card" data-c="' + c + '"><span>' + BOSS_CARDS[c][2] + '</span><small>' + BOSS_CARDS[c][1] + '</small></button>'; }).join('') + '</div>' +
+        '<button type="button" class="btn primary" id="order-check" disabled>看看順不順</button>';
+      await new Promise(function (resolve) {
+        var pick = null, put = [null, null, null, null];
+        function sync() { P.tools.querySelector('#order-check').disabled = put.some(function (x) { return x == null; }); }
+        P.tools.addEventListener('click', function (e) {
+          var c = e.target.closest('.order-card');
+          if (c && !c.classList.contains('used')) { pick = Number(c.getAttribute('data-c')); P.tools.querySelectorAll('.order-card').forEach(function (x) { x.classList.toggle('on', x === c); }); return; }
+          if (e.target.closest('#order-check')) {
+            var bad = -1; for (var i = 0; i < 3; i++) if (put[i] > put[i + 1]) { bad = i; break; }
+            if (bad < 0) { resolve(); return; }
+            var why = put[bad] === 3 || put[bad + 1] === 3 ? '收起來之前，要先洗乾淨、晾乾才行喔！' : put[bad] === 2 ? '還沒洗就晾乾，髒髒的怎麼辦？' : '洗乾淨之後才會弄髒嗎？好像怪怪的！';
+            say(M, '我先收好才晾乾……那箱子不就會下雨？'); toast('🤔 ' + why, 'neg');
+          }
+        });
+        layer.addEventListener('click', function (e) {
+          var s = e.target.closest('.order-slot'); if (!s) return;
+          var o = Number(s.getAttribute('data-o'));
+          if (put[o] != null) {   // 點已放的格子：拿回來
+            P.tools.querySelector('.order-card[data-c="' + put[o] + '"]').classList.remove('used'); put[o] = null; s.innerHTML = ''; sync(); return;
+          }
+          if (pick == null) return;
+          put[o] = pick; s.innerHTML = '<span>' + BOSS_CARDS[pick][2] + '</span><small>' + BOSS_CARDS[pick][1] + '</small>';
+          var c = P.tools.querySelector('.order-card[data-c="' + pick + '"]'); c.classList.add('used'); c.classList.remove('on'); pick = null; sync();
+        });
+      });
+      await talkSeq([line(M, '乾乾的才收好！這次我寫得比記得還清楚。'), line(me, '最後一張紙卡畫著太陽，還有一個被劃掉的扳手……'), line(M, '對！不能跟扳手一起睡，叮叮噹噹會吵醒寶貝！')]);
+      toast('📌 得到線索：「要乾乾的」「不跟工具放一起」', 'pos');
+      wflag(child, 'bossStage', 2); stage = 2;
+    }
+    // 階段三：牛奶瓶真相 → 選對收納箱
+    P.title.textContent = '🍼 這個瓶架……'; P.sub.textContent = '把路上撿到的牛奶瓶放到窗邊的瓶架上';
+    layer.innerHTML = '<button type="button" class="boss-spot rack-spot" id="rack-spot" style="left:72%;top:40%"><span>🪟</span><small>空的瓶架</small></button>';
+    P.tools.innerHTML = '<button type="button" class="btn primary" id="use-bottle">' + (WATER_ART.bottle ? '<img src="' + WATER_ART.bottle + '" alt="" class="btn-ico">' : '🍼 ') + '拿出牛奶瓶</button>';
+    await new Promise(function (r) { P.tools.querySelector('#use-bottle').onclick = function () { layer.querySelector('#rack-spot').classList.add('match'); setTimeout(r, reduceMotion ? 50 : 700); }; });
+    await talkSeq([line(me, '牛奶瓶的瓶底，跟瓶架的圓圈剛好一樣大！'), line(WHO.monster('surprised'), '啊啊啊！這不是我的牛奶瓶嗎？！'),
+      line(WHO.monster('surprised'), '我怕忘記重要的事情，就把紙條塞進瓶子裡……'), line(WHO.monster('surprised'), '結果我忘記把瓶子放在哪裡！'),
+      line(me, '所以我們找到的不是藏寶圖，是你的備忘紙！'), line(M, '對！我還畫了回家的路，怕連家也忘記！'), line(M, '我記得放在箱子裡，可是忘記是哪個！箱子會自己換班嗎？')]);
+    P.title.textContent = '📦 寶貝在哪個箱子裡？'; P.sub.textContent = '先點每個箱子看看，再選一個打開（要乾乾的、不跟工具放一起）';
+    layer.innerHTML = '<div class="box-row">' + BOSS_BOXES.map(function (b, i) { return '<button type="button" class="box-one" data-b="' + i + '"><span>' + b[2] + '</span><small>' + b[1] + '</small><em hidden>' + b[3] + '</em></button>'; }).join('') + '</div>';
+    P.tools.innerHTML = '<span class="party-count" id="box-tip">看過 0 / 3 個箱子</span>';
+    await new Promise(function (resolve) {
+      var seen = {}, chosen = null;
+      layer.addEventListener('click', function (e) {
+        var b = e.target.closest('.box-one'); if (!b) return;
+        var i = Number(b.getAttribute('data-b'));
+        if (!seen[i]) { seen[i] = true; b.classList.add('seen'); b.querySelector('em').hidden = false; }
+        layer.querySelectorAll('.box-one').forEach(function (x) { x.classList.toggle('on', x === b); }); chosen = i;
+        var n = Object.keys(seen).length;
+        P.tools.innerHTML = n < 3 ? '<span class="party-count">看過 ' + n + ' / 3 個箱子</span>' : '<button type="button" class="btn primary charge-btn" id="box-open">打開' + BOSS_BOXES[chosen][1] + '</button>';
+        var ob = P.tools.querySelector('#box-open');
+        if (ob) ob.onclick = function () {
+          if (BOSS_BOXES[chosen][0] === 'moon') { resolve(); return; }
+          toast(chosen === 0 ? '星星箱裡有扳手，會叮叮噹噹吵醒寶貝喔！' : '貝殼箱濕濕的，寶貝要放在乾乾的地方喔！', 'neg');
+        };
+      });
+    });
+    layer.querySelector('.box-one[data-b="2"]').classList.add('open');
+    P.shade.remove();
+    await talkSeq([line(me, '原來「最重要的寶……」是寶貝小被被！'), line(WHO.monster('blanket'), '找到啦！小被被，你都沒長高，我怎麼會找不到你！'), line(WHO.monster('blanket'), '它從我小時候就陪著我，有它就安心了。')]);
+    // 通關：⭐3＋第一次 3 個神秘寶箱（之後 10 星）
+    var ev = child.preview ? { clear: { first: true, next: '金島' }, text: '\n通關獎勵：🎁 神秘寶箱 ×3（不用鑰匙）（預覽，沒有存檔）' } : store.finishWaterBoss(child.id);
+    if (ev.clear.first) {
+      await talkSeq([line(me, '那三個寶箱是什麼？'), line(M, '喔，那三個大箱子喔？'), line(M, '太佔空間了啦！'), line(M, '我每次經過都會踢到小拇指！'),
+        line(WHO.monster('blanket'), '這個留下，亮晶晶的給你們！你幫我搬走好不好？', { choices: [{ label: '🎁 收下 3 個神秘寶箱', val: true, primary: true }] })]);
+    } else await talkSeq([line(WHO.monster('blanket'), '這次換我請你吃星星糖！', { choices: [{ label: '⭐ 收下 ' + GAME.GOLD_CLEAR_STARS + ' 顆能量星星', val: true, primary: true }] })]);
+    await talkSeq([line(M, '謝謝你！我一定會記得你的！'), line(M, '……欸？你叫什麼名字？'), line(me, '我是你的冒險朋友！'),
+      line(M, '（拿起筆記本寫）「第一件事：出門前檢查小被被。」'), line(M, '「第二件事：記得看第一件事。」'), line(WHO.beluga(), '我送你回岸邊！')]);
+    await waterEnding(child, ev);
+  }
+
+  /** 白鯨送回岸＋「水島冒險完成！」卡片（F-4 正式圖到貨前用海面色塊＋小白鯨） */
+  function waterEnding(child, ev) {
+    return new Promise(function (resolve) {
+      var el = document.createElement('div');
+      el.className = 'flight water-trip' + (reduceMotion ? ' still' : ''); el.id = 'water-ending'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '水島冒險完成');
+      el.innerHTML = '<div class="wt-sea"><div class="wt-beluga">' + waterImg(WATER_NPC.beluga, '小白鯨') + '</div></div>' +
+        '<div class="fl-card" data-testid="water-end-card"><h2>🌊 水島冒險完成！</h2><p>' + h(child.name) + ' 幫健忘怪找回了小被被，小白鯨把你送回珊瑚淺灘。</p>' +
+        '<p>' + h(ev.text.split('\n').slice(1).join('\n')).replace(/\n/g, '<br>') + '</p>' +
+        (ev.clear.next ? '<p class="muted small">下一座島還在準備中，下次出發會先回到「' + h(ev.clear.next) + '」繼續冒險。</p>' : '') +
+        '<button type="button" class="btn primary block" data-we-ok>太棒了！</button></div>';
+      document.body.appendChild(el);
+      el.querySelector('[data-we-ok]').onclick = function () { el.remove(); render(); if (!child.preview) announceAchievements(child.id); resolve(); };
+    });
+  }
+  /** 木島 → 水島開場（K1～K4；正式 F-1～F-3 到貨前：木島滑梯最後一張＋藍光 → 珊瑚淺灘地圖當沙灘） */
+  function waterOpening(child, travel, repeat) {
+    return new Promise(function (resolve) {
+      var fast = window.__cgpFastEnding ? 0.08 : 1;
+      var el = document.createElement('div');
+      el.className = 'wood-end water-open' + (reduceMotion ? ' still' : ''); el.id = 'water-open'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '來到水島');
+      el.innerHTML = '<div class="we-slide glow"><i class="we-frame we-f1 on" style="background-image:url(' + WOOD_SLIDES[4] + ')"></i><b class="we-glow"></b></div>' +
+        '<p class="fl-msg" role="status">咦？前面好亮！</p>' + (repeat ? '<button type="button" class="we-skip" data-trip-skip>略過 ›</button>' : '');
+      document.body.appendChild(el); document.body.classList.add('pawn-acting');
+      var trip = tripSkipper(el);
+      (async function () {
+        await trip.wait((reduceMotion ? 700 : 1600) * fast);
+        el.querySelector('.fl-msg').textContent = '咻——！';
+        el.classList.add('out');
+        await trip.wait((reduceMotion ? 500 : 1200) * fast);
+        trip.done(); var msg = el.querySelector('.fl-msg'); if (msg) msg.remove();
+        el.insertAdjacentHTML('beforeend', '<div class="wo-beach" style="background-image:url(' + store.getBoard(child.id).regions[0].background.webp + ')"></div>' +
+          '<div class="we-card trip-card" data-testid="water-open-card"><h2>🌊 歡迎來到水島！</h2><p>第一區：珊瑚淺灘</p><p class="muted small">哇！我們真的來到水島了！</p>' +
+          '<button type="button" class="btn primary block" data-trip-ok>開始探索！</button></div>');
+        el.querySelector('[data-trip-ok]').onclick = function () { el.remove(); document.body.classList.remove('pawn-acting'); render(); resolve(); };
+      })();
+    });
+  }
+  /** 水島 → 下一座島（目前回金島）：小白鯨往海平線游去（F-5 正式圖到貨前用海面色塊） */
+  function waterLeave(child, travel, repeat) {
+    return new Promise(function (resolve) {
+      var el = document.createElement('div');
+      el.className = 'flight water-trip' + (reduceMotion ? ' still' : ''); el.id = 'water-leave'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '小白鯨送你出發');
+      el.innerHTML = '<div class="wt-sea"><div class="wt-beluga go">' + waterImg(WATER_NPC.beluga, '小白鯨') + '</div></div>' +
+        '<div class="fl-card" data-testid="water-leave-card"><h2>🐳 小白鯨送你出發！</h2><p>' + (travel.island === 'gold' ? '下一座島還在準備中，先回到「金島」繼續冒險吧！' : '前往「' + h(travel.name) + '」！') + '</p>' +
+        '<button type="button" class="btn primary block" data-trip-ok>繼續冒險！</button></div>';
+      document.body.appendChild(el);
+      el.querySelector('[data-trip-ok]').onclick = function () { el.remove(); render(); resolve(); };
+    });
+  }
+  /** 地圖上的水島裝飾：起點旁的迎接漁夫與魚桶（還沒迎接時） */
+  function waterMapDecor(child, board, player, scene) {
+    if (!scene || scene.id !== 'water-01' || player.water.welcomed) return '';
+    var s = board.npcSpots && board.npcSpots['0'];
+    if (!s) return '';
+    return '<div class="story-guide water-npc" style="left:' + s[0] + 'px;top:' + s[1] + 'px;width:62px;z-index:' + Math.round(s[1] / 6) + '" role="img" aria-label="漁夫爺爺">' + waterImg(WATER_NPC.fisherman, '') + '</div>';
   }
 
   // ---------- 鏡頭：拖曳、雙指縮放、跟隨角色 ----------
@@ -1985,6 +2548,8 @@
     try {
       if (res.travel) {   // 通關後前往下一座島：換成新島嶼的地圖，從起點出發
         if (res.travel.island === 'wood') { await flightScene(child, { from: '金島', island: 'wood', name: res.travel.name }); }   // 沒按專機按鈕、直接擲骰：一樣搭專機過去
+        else if (res.travel.island === 'water') { await waterOpening(child, res.travel, !!store.getPlayer(childId).water.welcomed); await waterWelcome(child); }   // 木島 → 水島：滑出樹洞、漁夫迎接
+        else if (fromIsland === 'water') { await waterLeave(child, res.travel); }   // 水島 → 下一座島（目前回金島）：小白鯨送行
         else if (fromIsland === 'wood' && res.travel.island === 'gold') { await returnScene(child, res.travel); }   // 木島 → 暫時回金島：穿過樹洞隧道
         else { toast('🛶 出發前往' + res.travel.name + '！', 'pos'); render(); await sleep(500); }   // 其他（木島 → 水島的開場由水島負責，見 docs/WOOD_TO_WATER_HANDOFF.md）
       } else if (res.lap) {   // 從終點回到起點開始新的一輪
@@ -2026,7 +2591,9 @@
       ui.busy = false; document.body.classList.remove('pawn-acting');
     }
     var visited = [].concat(res.path || [], (ev && ev.extraPath) || [], (ev && ev.backPath) || [], (ev && ev.then && ev.then.extraPath) || []);
-    if (!res.travel) {   // 這次走過的格子有還沒完成的劇情：依序演出（換島那一步不演）
+    var inWater = store.getPlayer(childId).island === 'water';
+    if (inWater) await waterNotes(child, visited);   // 水島：沿路短對話（經過就播）
+    if (!res.travel || inWater) {   // 這次走過的格子有還沒完成的劇情：依序演出（換島那一步不演；水島入島那一擲也要演）
       var sboard = store.getBoard(childId), sids = storyOpen(sboard, store.getPlayer(childId));
       for (var si = 0; si < sids.length; si++) {
         if (visited.indexOf(GAME.STORIES[sids[si]].tile) >= 0) { await runStory(child, sids[si]); render(); }
@@ -2040,6 +2607,8 @@
     // 停在小遊戲格（或礦車載到小遊戲格）：直接開始「抓住星星」
     var clearEv = ev && ev.clear ? ev : (ev && ev.then && ev.then.clear ? ev.then : null);
     if (clearEv && clearEv.clear.island === 'wood') { await woodEnding(child, clearEv); return; }   // 木島：樹洞溜滑梯結局
+    if (clearEv && clearEv.clear.island === 'water') { await waterEnding(child, clearEv); return; }   // 水島（第二輪以後直接通關）：小白鯨送回岸
+    if (ev && ev.waterBoss) return;   // 水島第 100 格：健忘怪的任務已在上面演出
     if (clearEv) { await mapFireworks(); showClear(child, clearEv); return; }
     var mgEv = ev && ev.minigame ? ev : (ev && ev.then && ev.then.minigame ? ev.then : null);
     if (mgEv) { openMinigame(childId, head + '・停在第 ' + store.getPlayer(childId).pos + ' 格'); return; }
@@ -4388,6 +4957,25 @@
 
   render();
 
+  // 家長預覽用（2026-11-17）：?preview=water-memo（拼圖）、water-potion、water-feed、water-shark、water-lantern（燈籠魚）、water-boss（健忘怪）、water-open（開場）
+  (function () {
+    var m = /[?&]preview=water-(memo|potion|feed|shark|lantern|boss|open)\b/.exec(location.search);
+    if (!m) return;
+    var kid = { id: 'preview', preview: true, name: '小朋友', avatar: GAME.CHARACTERS[0].id };
+    setTimeout(function () {
+      var job = m[1] === 'open' ? waterPreviewOpen(kid) : waterTask(kid, { memo: 'memo', potion: 'potion', feed: 'feed', shark: 'shark', lantern: 'lantern', boss: 'blanket' }[m[1]]);
+      Promise.resolve(job).then(function () { toast('預覽結束（沒有存檔）。再玩一次請重新整理', 'pos'); }).catch(function (e) { toast(e.message, 'neg'); });
+    }, 400);
+    function waterPreviewOpen(k) {
+      var el = document.createElement('div');   // 開場用到地圖背景：預覽時直接用珊瑚淺灘圖
+      return new Promise(function (resolve) {
+        var fake = { regions: [{ background: { webp: 'images/water/scene01_v2.webp' } }] }, real = store.getBoard;
+        store.getBoard = function () { return fake; };
+        waterOpening(k, { island: 'water', name: '水島' }, false).then(function () { store.getBoard = real; resolve(); });
+        void el;
+      });
+    }
+  })();
   // 家長預覽用（2026-11-16）：網址加 ?preview=party（或 flowers、invite）直接打開木島的任務視窗試玩，不動存檔、不給星星
   (function () {
     var m = /[?&]preview=(party|flowers|invite)\b/.exec(location.search);
