@@ -104,16 +104,17 @@ single subject, no text, no watermark, plain white background
 ```
 Vertical 1080x1350 game map background, Water Island "Coral Shallows". Fixed isometric 2.5D view.
 A sunny tropical shoreline with shallow clear turquoise water, colorful rounded coral, smooth round rocks and little shells.
-At the bottom center, the end of a big curved tree-root tunnel opening onto white sand (where the player just slid out from the forest island).
-One clear pale sandy path starts from that safe bottom-center position and winds smoothly upward through the beach and shallow coral water
+Near the bottom right (roughly 70% to 92% of the width, low in the image, but left of the bottom-right 80x180 button strip), the end of a big curved tree-root tunnel
+whose round opening faces LEFT toward the path and opens onto white sand (where the player just slid out from the forest island); we see the opening from the side, not from behind.
+One clear pale sandy path starts right in front of that opening (the starting point) and winds smoothly to the left and upward through the beach and shallow coral water
 to a small diving point near the top of the image (a wooden jetty edge over deeper blue water).
-Right next to the starting point, a small wooden pier with a flat empty spot (about 140x140) for a fisherman and a bucket.
+Close to the starting point, beside the path on the water side (not blocking the tunnel opening or the path), a small wooden pier with a flat empty spot (about 140x140) for a fisherman and a bucket.
 Beside the path, a flat wooden platform at the water's edge left empty for a fisherman character.
 The path is continuous, flat and spacious with room for 25 stops, but do not draw any tiles or numbers.
 Keep the bottom-left 180x220 and bottom-right 80x180 corners calm with no path or important objects.
 No characters, no large sea animals, no text, no UI.
 ```
-中文重點：暖陽海岸、清澈水藍淺水、彩色圓潤珊瑚、礁石與小貝殼；**下方中央是大樹根隧道的出口**（剛從木島滑出來的地方）通到白沙；淺色沙道從下方中央蜿蜒往上，到畫面上方的下潛點（深藍水邊的木棧橋）；路旁有空的木平台給漁夫。起點旁要有一個小木碼頭，留 140×140 平坦空地給漁夫和魚桶（不要畫漁夫、不要畫魚桶）。
+中文重點：暖陽海岸、清澈水藍淺水、彩色圓潤珊瑚、礁石與小貝殼；**大樹根隧道的出口在右下方**（約畫面寬度 70%～92%、靠下，但要在右下角 80×180 縮放按鈕區的左邊），**洞口朝左、對著路**，從側面看得到圓形洞口（剛從木島滑出來的地方）通到白沙；第 0 格就在洞口前，淺色沙道往左、往上蜿蜒，到畫面上方的下潛點（深藍水邊的木棧橋）；路旁有空的木平台給漁夫。起點附近、路旁靠水的一側要有一個小木碼頭（不要擋住洞口和路），留 140×140 平坦空地給漁夫和魚桶（不要畫漁夫、不要畫魚桶）。
 
 ### S2 深海世界（25～58）
 ```
