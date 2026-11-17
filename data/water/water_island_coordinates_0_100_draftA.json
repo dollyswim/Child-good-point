@@ -1,0 +1,849 @@
+{
+  "schemaVersion": "water-1.0",
+  "coordinateSystem": {
+    "origin": "top-left",
+    "xDirection": "right",
+    "yDirection": "down",
+    "unit": "px",
+    "sceneWidth": 1080,
+    "sceneHeight": 1350
+  },
+  "scenes": [
+    {
+      "sceneId": "water-01",
+      "file": "water_scene01.png",
+      "name": "珊瑚淺灘",
+      "from": 0,
+      "to": 24
+    },
+    {
+      "sceneId": "water-02",
+      "file": "water_scene02.png",
+      "name": "深海世界",
+      "from": 25,
+      "to": 58
+    },
+    {
+      "sceneId": "water-03",
+      "file": "water_scene03.png",
+      "name": "水下洞穴",
+      "from": 59,
+      "to": 82
+    },
+    {
+      "sceneId": "water-04",
+      "file": "water_scene04.png",
+      "name": "沉船",
+      "from": 83,
+      "to": 100
+    }
+  ],
+  "tiles": [
+    {
+      "tile": 0,
+      "id": "water-01-start",
+      "sceneId": "water-01",
+      "x": 780.0,
+      "y": 1070.0
+    },
+    {
+      "tile": 1,
+      "id": "water-01-001",
+      "sceneId": "water-01",
+      "x": 709.16,
+      "y": 1064.56
+    },
+    {
+      "tile": 2,
+      "id": "water-01-002",
+      "sceneId": "water-01",
+      "x": 638.53,
+      "y": 1056.86
+    },
+    {
+      "tile": 3,
+      "id": "water-01-003",
+      "sceneId": "water-01",
+      "x": 570.16,
+      "y": 1037.54
+    },
+    {
+      "tile": 4,
+      "id": "water-01-004",
+      "sceneId": "water-01",
+      "x": 508.93,
+      "y": 1001.51
+    },
+    {
+      "tile": 5,
+      "id": "water-01-005",
+      "sceneId": "water-01",
+      "x": 466.58,
+      "y": 944.47
+    },
+    {
+      "tile": 6,
+      "id": "water-01-006",
+      "sceneId": "water-01",
+      "x": 482.16,
+      "y": 875.15
+    },
+    {
+      "tile": 7,
+      "id": "water-01-007",
+      "sceneId": "water-01",
+      "x": 536.21,
+      "y": 829.03
+    },
+    {
+      "tile": 8,
+      "id": "water-01-008",
+      "sceneId": "water-01",
+      "x": 597.76,
+      "y": 793.56
+    },
+    {
+      "tile": 9,
+      "id": "water-01-009",
+      "sceneId": "water-01",
+      "x": 658.09,
+      "y": 756.03
+    },
+    {
+      "tile": 10,
+      "id": "water-01-010",
+      "sceneId": "water-01",
+      "x": 715.62,
+      "y": 714.34
+    },
+    {
+      "tile": 11,
+      "id": "water-01-011",
+      "sceneId": "water-01",
+      "x": 720.53,
+      "y": 643.47
+    },
+    {
+      "tile": 12,
+      "id": "water-01-012",
+      "sceneId": "water-01",
+      "x": 661.59,
+      "y": 603.8
+    },
+    {
+      "tile": 13,
+      "id": "water-01-013",
+      "sceneId": "water-01",
+      "x": 595.37,
+      "y": 578.06
+    },
+    {
+      "tile": 14,
+      "id": "water-01-014",
+      "sceneId": "water-01",
+      "x": 529.34,
+      "y": 551.85
+    },
+    {
+      "tile": 15,
+      "id": "water-01-015",
+      "sceneId": "water-01",
+      "x": 468.39,
+      "y": 515.33
+    },
+    {
+      "tile": 16,
+      "id": "water-01-016",
+      "sceneId": "water-01",
+      "x": 450.7,
+      "y": 446.52
+    },
+    {
+      "tile": 17,
+      "id": "water-01-017",
+      "sceneId": "water-01",
+      "x": 504.6,
+      "y": 400.23
+    },
+    {
+      "tile": 18,
+      "id": "water-01-018",
+      "sceneId": "water-01",
+      "x": 568.76,
+      "y": 369.71
+    },
+    {
+      "tile": 19,
+      "id": "water-01-019",
+      "sceneId": "water-01",
+      "x": 632.61,
+      "y": 338.55
+    },
+    {
+      "tile": 20,
+      "id": "water-01-020",
+      "sceneId": "water-01",
+      "x": 684.62,
+      "y": 290.16
+    },
+    {
+      "tile": 21,
+      "id": "water-01-021",
+      "sceneId": "water-01",
+      "x": 645.3,
+      "y": 230.98
+    },
+    {
+      "tile": 22,
+      "id": "water-01-022",
+      "sceneId": "water-01",
+      "x": 581.0,
+      "y": 200.76
+    },
+    {
+      "tile": 23,
+      "id": "water-01-023",
+      "sceneId": "water-01",
+      "x": 516.39,
+      "y": 171.22
+    },
+    {
+      "tile": 24,
+      "id": "water-01-024",
+      "sceneId": "water-01",
+      "x": 460.0,
+      "y": 128.0
+    },
+    {
+      "tile": 25,
+      "id": "water-02-025",
+      "sceneId": "water-02",
+      "x": 100.0,
+      "y": 180.0
+    },
+    {
+      "tile": 26,
+      "id": "water-02-026",
+      "sceneId": "water-02",
+      "x": 167.61,
+      "y": 199.86
+    },
+    {
+      "tile": 27,
+      "id": "water-02-027",
+      "sceneId": "water-02",
+      "x": 235.9,
+      "y": 217.22
+    },
+    {
+      "tile": 28,
+      "id": "water-02-028",
+      "sceneId": "water-02",
+      "x": 305.6,
+      "y": 227.55
+    },
+    {
+      "tile": 29,
+      "id": "water-02-029",
+      "sceneId": "water-02",
+      "x": 375.77,
+      "y": 233.96
+    },
+    {
+      "tile": 30,
+      "id": "water-02-030",
+      "sceneId": "water-02",
+      "x": 445.76,
+      "y": 242.12
+    },
+    {
+      "tile": 31,
+      "id": "water-02-031",
+      "sceneId": "water-02",
+      "x": 515.65,
+      "y": 251.1
+    },
+    {
+      "tile": 32,
+      "id": "water-02-032",
+      "sceneId": "water-02",
+      "x": 585.08,
+      "y": 263.12
+    },
+    {
+      "tile": 33,
+      "id": "water-02-033",
+      "sceneId": "water-02",
+      "x": 650.83,
+      "y": 288.48
+    },
+    {
+      "tile": 34,
+      "id": "water-02-034",
+      "sceneId": "water-02",
+      "x": 703.83,
+      "y": 334.91
+    },
+    {
+      "tile": 35,
+      "id": "water-02-035",
+      "sceneId": "water-02",
+      "x": 700.45,
+      "y": 405.3
+    },
+    {
+      "tile": 36,
+      "id": "water-02-036",
+      "sceneId": "water-02",
+      "x": 644.47,
+      "y": 448.08
+    },
+    {
+      "tile": 37,
+      "id": "water-02-037",
+      "sceneId": "water-02",
+      "x": 576.71,
+      "y": 467.43
+    },
+    {
+      "tile": 38,
+      "id": "water-02-038",
+      "sceneId": "water-02",
+      "x": 507.38,
+      "y": 480.01
+    },
+    {
+      "tile": 39,
+      "id": "water-02-039",
+      "sceneId": "water-02",
+      "x": 437.96,
+      "y": 492.09
+    },
+    {
+      "tile": 40,
+      "id": "water-02-040",
+      "sceneId": "water-02",
+      "x": 368.24,
+      "y": 502.33
+    },
+    {
+      "tile": 41,
+      "id": "water-02-041",
+      "sceneId": "water-02",
+      "x": 298.97,
+      "y": 515.25
+    },
+    {
+      "tile": 42,
+      "id": "water-02-042",
+      "sceneId": "water-02",
+      "x": 230.78,
+      "y": 532.98
+    },
+    {
+      "tile": 43,
+      "id": "water-02-043",
+      "sceneId": "water-02",
+      "x": 166.78,
+      "y": 562.47
+    },
+    {
+      "tile": 44,
+      "id": "water-02-044",
+      "sceneId": "water-02",
+      "x": 131.63,
+      "y": 623.54
+    },
+    {
+      "tile": 45,
+      "id": "water-02-045",
+      "sceneId": "water-02",
+      "x": 141.24,
+      "y": 693.35
+    },
+    {
+      "tile": 46,
+      "id": "water-02-046",
+      "sceneId": "water-02",
+      "x": 184.04,
+      "y": 749.32
+    },
+    {
+      "tile": 47,
+      "id": "water-02-047",
+      "sceneId": "water-02",
+      "x": 240.96,
+      "y": 790.86
+    },
+    {
+      "tile": 48,
+      "id": "water-02-048",
+      "sceneId": "water-02",
+      "x": 305.56,
+      "y": 819.0
+    },
+    {
+      "tile": 49,
+      "id": "water-02-049",
+      "sceneId": "water-02",
+      "x": 374.1,
+      "y": 835.34
+    },
+    {
+      "tile": 50,
+      "id": "water-02-050",
+      "sceneId": "water-02",
+      "x": 443.54,
+      "y": 847.29
+    },
+    {
+      "tile": 51,
+      "id": "water-02-051",
+      "sceneId": "water-02",
+      "x": 513.35,
+      "y": 856.9
+    },
+    {
+      "tile": 52,
+      "id": "water-02-052",
+      "sceneId": "water-02",
+      "x": 583.53,
+      "y": 863.25
+    },
+    {
+      "tile": 53,
+      "id": "water-02-053",
+      "sceneId": "water-02",
+      "x": 653.41,
+      "y": 872.24
+    },
+    {
+      "tile": 54,
+      "id": "water-02-054",
+      "sceneId": "water-02",
+      "x": 722.47,
+      "y": 886.23
+    },
+    {
+      "tile": 55,
+      "id": "water-02-055",
+      "sceneId": "water-02",
+      "x": 785.75,
+      "y": 917.25
+    },
+    {
+      "tile": 56,
+      "id": "water-02-056",
+      "sceneId": "water-02",
+      "x": 826.31,
+      "y": 974.87
+    },
+    {
+      "tile": 57,
+      "id": "water-02-057",
+      "sceneId": "water-02",
+      "x": 848.72,
+      "y": 1041.67
+    },
+    {
+      "tile": 58,
+      "id": "water-02-058",
+      "sceneId": "water-02",
+      "x": 900.0,
+      "y": 1090.0
+    },
+    {
+      "tile": 59,
+      "id": "water-03-059",
+      "sceneId": "water-03",
+      "x": 250.0,
+      "y": 1120.0
+    },
+    {
+      "tile": 60,
+      "id": "water-03-060",
+      "sceneId": "water-03",
+      "x": 307.53,
+      "y": 1089.76
+    },
+    {
+      "tile": 61,
+      "id": "water-03-061",
+      "sceneId": "water-03",
+      "x": 367.12,
+      "y": 1063.8
+    },
+    {
+      "tile": 62,
+      "id": "water-03-062",
+      "sceneId": "water-03",
+      "x": 429.62,
+      "y": 1045.98
+    },
+    {
+      "tile": 63,
+      "id": "water-03-063",
+      "sceneId": "water-03",
+      "x": 488.5,
+      "y": 1018.47
+    },
+    {
+      "tile": 64,
+      "id": "water-03-064",
+      "sceneId": "water-03",
+      "x": 537.13,
+      "y": 975.34
+    },
+    {
+      "tile": 65,
+      "id": "water-03-065",
+      "sceneId": "water-03",
+      "x": 572.06,
+      "y": 920.53
+    },
+    {
+      "tile": 66,
+      "id": "water-03-066",
+      "sceneId": "water-03",
+      "x": 537.73,
+      "y": 865.34
+    },
+    {
+      "tile": 67,
+      "id": "water-03-067",
+      "sceneId": "water-03",
+      "x": 482.99,
+      "y": 830.3
+    },
+    {
+      "tile": 68,
+      "id": "water-03-068",
+      "sceneId": "water-03",
+      "x": 424.25,
+      "y": 802.49
+    },
+    {
+      "tile": 69,
+      "id": "water-03-069",
+      "sceneId": "water-03",
+      "x": 366.73,
+      "y": 772.22
+    },
+    {
+      "tile": 70,
+      "id": "water-03-070",
+      "sceneId": "water-03",
+      "x": 312.33,
+      "y": 736.65
+    },
+    {
+      "tile": 71,
+      "id": "water-03-071",
+      "sceneId": "water-03",
+      "x": 308.07,
+      "y": 671.8
+    },
+    {
+      "tile": 72,
+      "id": "water-03-072",
+      "sceneId": "water-03",
+      "x": 361.3,
+      "y": 634.52
+    },
+    {
+      "tile": 73,
+      "id": "water-03-073",
+      "sceneId": "water-03",
+      "x": 423.22,
+      "y": 614.76
+    },
+    {
+      "tile": 74,
+      "id": "water-03-074",
+      "sceneId": "water-03",
+      "x": 485.1,
+      "y": 594.86
+    },
+    {
+      "tile": 75,
+      "id": "water-03-075",
+      "sceneId": "water-03",
+      "x": 547.22,
+      "y": 575.75
+    },
+    {
+      "tile": 76,
+      "id": "water-03-076",
+      "sceneId": "water-03",
+      "x": 607.52,
+      "y": 551.51
+    },
+    {
+      "tile": 77,
+      "id": "water-03-077",
+      "sceneId": "water-03",
+      "x": 653.14,
+      "y": 505.22
+    },
+    {
+      "tile": 78,
+      "id": "water-03-078",
+      "sceneId": "water-03",
+      "x": 649.57,
+      "y": 440.32
+    },
+    {
+      "tile": 79,
+      "id": "water-03-079",
+      "sceneId": "water-03",
+      "x": 607.61,
+      "y": 390.68
+    },
+    {
+      "tile": 80,
+      "id": "water-03-080",
+      "sceneId": "water-03",
+      "x": 548.23,
+      "y": 364.26
+    },
+    {
+      "tile": 81,
+      "id": "water-03-081",
+      "sceneId": "water-03",
+      "x": 509.65,
+      "y": 311.95
+    },
+    {
+      "tile": 82,
+      "id": "water-03-082",
+      "sceneId": "water-03",
+      "x": 490.0,
+      "y": 250.0
+    },
+    {
+      "tile": 83,
+      "id": "water-04-083",
+      "sceneId": "water-04",
+      "x": 300.0,
+      "y": 285.0
+    },
+    {
+      "tile": 84,
+      "id": "water-04-084",
+      "sceneId": "water-04",
+      "x": 374.1,
+      "y": 290.6
+    },
+    {
+      "tile": 85,
+      "id": "water-04-085",
+      "sceneId": "water-04",
+      "x": 447.54,
+      "y": 301.95
+    },
+    {
+      "tile": 86,
+      "id": "water-04-086",
+      "sceneId": "water-04",
+      "x": 516.8,
+      "y": 328.87
+    },
+    {
+      "tile": 87,
+      "id": "water-04-087",
+      "sceneId": "water-04",
+      "x": 576.39,
+      "y": 373.27
+    },
+    {
+      "tile": 88,
+      "id": "water-04-088",
+      "sceneId": "water-04",
+      "x": 560.81,
+      "y": 445.93
+    },
+    {
+      "tile": 89,
+      "id": "water-04-089",
+      "sceneId": "water-04",
+      "x": 492.48,
+      "y": 475.12
+    },
+    {
+      "tile": 90,
+      "id": "water-04-090",
+      "sceneId": "water-04",
+      "x": 421.73,
+      "y": 497.86
+    },
+    {
+      "tile": 91,
+      "id": "water-04-091",
+      "sceneId": "water-04",
+      "x": 350.96,
+      "y": 520.52
+    },
+    {
+      "tile": 92,
+      "id": "water-04-092",
+      "sceneId": "water-04",
+      "x": 282.41,
+      "y": 549.21
+    },
+    {
+      "tile": 93,
+      "id": "water-04-093",
+      "sceneId": "water-04",
+      "x": 230.01,
+      "y": 601.9
+    },
+    {
+      "tile": 94,
+      "id": "water-04-094",
+      "sceneId": "water-04",
+      "x": 268.18,
+      "y": 665.66
+    },
+    {
+      "tile": 95,
+      "id": "water-04-095",
+      "sceneId": "water-04",
+      "x": 335.75,
+      "y": 696.58
+    },
+    {
+      "tile": 96,
+      "id": "water-04-096",
+      "sceneId": "water-04",
+      "x": 405.73,
+      "y": 721.58
+    },
+    {
+      "tile": 97,
+      "id": "water-04-097",
+      "sceneId": "water-04",
+      "x": 474.37,
+      "y": 750.05
+    },
+    {
+      "tile": 98,
+      "id": "water-04-098",
+      "sceneId": "water-04",
+      "x": 540.62,
+      "y": 783.71
+    },
+    {
+      "tile": 99,
+      "id": "water-04-099",
+      "sceneId": "water-04",
+      "x": 593.63,
+      "y": 835.78
+    },
+    {
+      "tile": 100,
+      "id": "water-04-100",
+      "sceneId": "water-04",
+      "x": 590.0,
+      "y": 910.0
+    }
+  ],
+  "npcSpots": [
+    {
+      "npc": "fisherman-welcome",
+      "tile": 0,
+      "sceneId": "water-01",
+      "x": 710,
+      "y": 1140,
+      "w": 140,
+      "h": 140
+    },
+    {
+      "npc": "milk-bottle-hint",
+      "tile": 8,
+      "sceneId": "water-01",
+      "x": 620,
+      "y": 860,
+      "w": 80,
+      "h": 80
+    },
+    {
+      "npc": "fisherman",
+      "tile": 16,
+      "sceneId": "water-01",
+      "x": 285,
+      "y": 280,
+      "w": 100,
+      "h": 140
+    },
+    {
+      "npc": "little-white-whale",
+      "tile": 34,
+      "sceneId": "water-02",
+      "x": 765,
+      "y": 120,
+      "w": 240,
+      "h": 180
+    },
+    {
+      "npc": "little-white-whale",
+      "tile": 42,
+      "sceneId": "water-02",
+      "x": 350,
+      "y": 575,
+      "w": 240,
+      "h": 180
+    },
+    {
+      "npc": "great-shark",
+      "tile": 48,
+      "sceneId": "water-02",
+      "x": 195,
+      "y": 925,
+      "w": 300,
+      "h": 220
+    },
+    {
+      "npc": "lanternfish",
+      "tile": 56,
+      "sceneId": "water-02",
+      "x": 890,
+      "y": 785,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "npc": "little-white-whale",
+      "tile": 62,
+      "sceneId": "water-03",
+      "x": 445,
+      "y": 1115,
+      "w": 240,
+      "h": 180
+    },
+    {
+      "npc": "forgetful-monster-door",
+      "tile": 100,
+      "sceneId": "water-04",
+      "x": 440,
+      "y": 980,
+      "w": 300,
+      "h": 200
+    }
+  ],
+  "safeZones": [
+    {
+      "sceneId": "all",
+      "x": 0,
+      "y": 1130,
+      "w": 180,
+      "h": 220
+    },
+    {
+      "sceneId": "all",
+      "x": 1000,
+      "y": 1170,
+      "w": 80,
+      "h": 180
+    }
+  ]
+}
