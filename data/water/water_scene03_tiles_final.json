@@ -1,0 +1,217 @@
+{
+  "schemaVersion": "water-1.0",
+  "coordinateSystem": {
+    "origin": "top-left",
+    "xDirection": "right",
+    "yDirection": "down",
+    "unit": "px",
+    "sceneWidth": 1080,
+    "sceneHeight": 1350
+  },
+  "scenes": [
+    {
+      "sceneId": "water-03",
+      "file": "water_scene03.png",
+      "name": "水下洞穴",
+      "from": 59,
+      "to": 82
+    }
+  ],
+  "tiles": [
+    {
+      "tile": 59,
+      "id": "water-03-059",
+      "sceneId": "water-03",
+      "x": 250.0,
+      "y": 1090.0
+    },
+    {
+      "tile": 60,
+      "id": "water-03-060",
+      "sceneId": "water-03",
+      "x": 319.6,
+      "y": 1066.8
+    },
+    {
+      "tile": 61,
+      "id": "water-03-061",
+      "sceneId": "water-03",
+      "x": 389.2,
+      "y": 1043.6
+    },
+    {
+      "tile": 62,
+      "id": "water-03-062",
+      "sceneId": "water-03",
+      "x": 459.45,
+      "y": 1022.47
+    },
+    {
+      "tile": 63,
+      "id": "water-03-063",
+      "sceneId": "water-03",
+      "x": 529.32,
+      "y": 1000.1
+    },
+    {
+      "tile": 64,
+      "id": "water-03-064",
+      "sceneId": "water-03",
+      "x": 585.92,
+      "y": 953.43
+    },
+    {
+      "tile": 65,
+      "id": "water-03-065",
+      "sceneId": "water-03",
+      "x": 597.56,
+      "y": 881.0
+    },
+    {
+      "tile": 66,
+      "id": "water-03-066",
+      "sceneId": "water-03",
+      "x": 543.1,
+      "y": 831.84
+    },
+    {
+      "tile": 67,
+      "id": "water-03-067",
+      "sceneId": "water-03",
+      "x": 474.93,
+      "y": 804.74
+    },
+    {
+      "tile": 68,
+      "id": "water-03-068",
+      "sceneId": "water-03",
+      "x": 403.97,
+      "y": 786.14
+    },
+    {
+      "tile": 69,
+      "id": "water-03-069",
+      "sceneId": "water-03",
+      "x": 333.01,
+      "y": 767.5
+    },
+    {
+      "tile": 70,
+      "id": "water-03-070",
+      "sceneId": "water-03",
+      "x": 264.22,
+      "y": 742.01
+    },
+    {
+      "tile": 71,
+      "id": "water-03-071",
+      "sceneId": "water-03",
+      "x": 211.07,
+      "y": 691.44
+    },
+    {
+      "tile": 72,
+      "id": "water-03-072",
+      "sceneId": "water-03",
+      "x": 241.06,
+      "y": 624.49
+    },
+    {
+      "tile": 73,
+      "id": "water-03-073",
+      "sceneId": "water-03",
+      "x": 306.88,
+      "y": 592.1
+    },
+    {
+      "tile": 74,
+      "id": "water-03-074",
+      "sceneId": "water-03",
+      "x": 379.25,
+      "y": 580.05
+    },
+    {
+      "tile": 75,
+      "id": "water-03-075",
+      "sceneId": "water-03",
+      "x": 451.63,
+      "y": 568.11
+    },
+    {
+      "tile": 76,
+      "id": "water-03-076",
+      "sceneId": "water-03",
+      "x": 523.99,
+      "y": 556.04
+    },
+    {
+      "tile": 77,
+      "id": "water-03-077",
+      "sceneId": "water-03",
+      "x": 594.61,
+      "y": 536.15
+    },
+    {
+      "tile": 78,
+      "id": "water-03-078",
+      "sceneId": "water-03",
+      "x": 659.69,
+      "y": 502.29
+    },
+    {
+      "tile": 79,
+      "id": "water-03-079",
+      "sceneId": "water-03",
+      "x": 666.95,
+      "y": 429.29
+    },
+    {
+      "tile": 80,
+      "id": "water-03-080",
+      "sceneId": "water-03",
+      "x": 613.61,
+      "y": 378.92
+    },
+    {
+      "tile": 81,
+      "id": "water-03-081",
+      "sceneId": "water-03",
+      "x": 556.99,
+      "y": 329.6
+    },
+    {
+      "tile": 82,
+      "id": "water-03-082",
+      "sceneId": "water-03",
+      "x": 490.0,
+      "y": 300.0
+    }
+  ],
+  "npcSpots": [
+    {
+      "npc": "little-white-whale",
+      "tile": 62,
+      "sceneId": "water-03",
+      "x": 460,
+      "y": 1110,
+      "w": 240,
+      "h": 180
+    }
+  ],
+  "safeZones": [
+    {
+      "sceneId": "all",
+      "x": 0,
+      "y": 1130,
+      "w": 180,
+      "h": 220
+    },
+    {
+      "sceneId": "all",
+      "x": 1000,
+      "y": 1170,
+      "w": 80,
+      "h": 180
+    }
+  ]
+}
