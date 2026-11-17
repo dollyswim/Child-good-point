@@ -177,6 +177,8 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 
 ## D. 任務視窗場景（4 張，橫式 4:3、1200×900、畫滿不要白底）
 
+> ✅ 2026-11-17 D 節 4 張已收（Codex）→ `images/water/task/memo_map.webp`、`open_water.webp`、`search_cave.webp`、`cabin_room.webp`（轉 webp）。D-1 下方空白由 App 先寫「最重要的寶……」再切 20 片，長得一樣的碎紙互相算對；D-4 的搜查點對準家具，圖裡沒有木箱，原「木箱」搜查點改成「布簾」。
+
 共用風格用「地圖與場景」那段，再加 `horizontal 4:3 composition, full scene`。
 
 | 代號 | 用在 | 提示詞 |
@@ -260,6 +262,8 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 ---
 
 ## F. 過場動畫（5 張，直式 3:4，至少 1080×1440，畫滿不要白底）
+
+> ✅ 2026-11-17 F 節 5 張已收（Codex）→ `images/water/trip/f1_exit／f2_out／f3_beach／f4_return／f5_depart.webp`（縮成 810×1080，和木島滑梯同尺寸）。開場：木島滑梯第 5 張 → F-1 → F-2 → F-3＋歡迎卡片；通關：F-4；離開水島：F-5（先看 1.8 秒全圖，卡片再出現）。
 
 和木島結局的樹洞滑梯（`images/wood/ending/tunnel1～5.webp`，App 裡是 810×1080）同一系列。**第一人稱**：不要畫孩子的臉、手、腳或身體。
 

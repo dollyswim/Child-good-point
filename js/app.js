@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.17-166';
+  var APP_VERSION = '2026.11.17-168';
   var store;
   try {
     store = new CGP.Store();
@@ -262,7 +262,7 @@
         if (!storyResetAsk(mc)) towerIntro(mc);
       }, 600); }
       if (store.takeChestHint(r.arg)) notes.push('✨ 附近似乎藏著神秘寶物……');
-      var wp = store.getPlayer(r.arg); if (wp.island === 'wood' && wp.pos >= 85) preloadImages(WOOD_SLIDES);   // 快到樹洞了：先在背景載入滑梯圖
+      var wp = store.getPlayer(r.arg); if (wp.island === 'wood' && wp.pos >= 85) preloadImages(WOOD_SLIDES.concat(GAME.WATER_OPEN || window.__cgpWaterOpen ? WATER_TRIP.slice(0, 3) : []));   // 快到樹洞了：先在背景載入滑梯圖
     }
     if (r.name === 'home' && !store.data.flags.tourSeen && !onboardOff()) setTimeout(openTour, 300);   // 第一次打開：新手導覽
     if (r.name === 'minigame-test') openMinigame(null, null, { practice: true });
@@ -1687,10 +1687,11 @@
   // ---------- 水島劇情（2026-11-17 起；計畫 docs/water/WATER_ISLAND_PLAN.md 第 4、5 節）----------
   // 還沒到貨的插圖先用佔位（表情符號、色塊、程式畫的備忘圖）；正式圖到貨後只要填 WATER_ART 的檔名。
   var WATER_ART = {
-    memo: '',            // D-1 備忘藏寶圖 1200×900（拼圖底圖）；空白時用程式畫的佔位圖
-    seabed: '',          // D-2 明亮海底（餵白鯨、鯊魚）
-    lanternBg: '',       // D-3 燈籠魚找東西的海底（明亮版，黑暗由程式疊上）
-    room: '',            // D-4 健忘怪房間
+    // 2026-11-17 D 節正式圖（Codex）驗收通過；水島圖不放進 SHELL，第一次用到才下載
+    memo: 'images/water/task/memo_map.webp',        // D-1 備忘藏寶圖 1200×900（拼圖底圖；下方空白由 App 寫「最重要的寶……」再切片）
+    seabed: 'images/water/task/open_water.webp',    // D-2 明亮海底（餵白鯨、鯊魚）
+    lanternBg: 'images/water/task/search_cave.webp', // D-3 燈籠魚找東西的海底（明亮版，黑暗由程式疊上）
+    room: 'images/water/task/cabin_room.webp',      // D-4 健忘怪房間
     bottle: 'images/water/items/bottle.webp', potion: 'images/water/items/potion.webp', fish: 'images/water/items/fish.webp', bucket: 'images/water/items/fish_bucket.webp',
     blanket: 'images/water/items/blanket.webp'
   };
@@ -1812,6 +1813,37 @@
   }
 
   // 第 8 格：拼回 20 片備忘地圖（5×4，點一片再點位置；選了的片會提示正確位置的輪廓）
+  /**
+   * 拼圖底圖準備：正式圖下方的空白處先寫上「最重要的寶……」再切片（不然最下面一排都是一樣的空白紙）；
+   * 並比對每一片的縮圖，長得幾乎一樣的碎紙互相算對（孩子分不出來的不該算錯）
+   */
+  async function memoPrepare(url, COLS, ROWS) {
+    var N = COLS * ROWS, fallback = { src: url, text: false, same: function () { return false; } };
+    if (/^data:/.test(url)) return fallback;   // 佔位圖已經有字
+    try {
+      var img = new Image(); img.src = url;
+      await img.decode();
+      try { if (document.fonts && document.fonts.load) await Promise.race([document.fonts.load('900 40px "jf-openhuninn"', '最重要的寶……'), sleep(1500)]); } catch (e) { /* 沒有字型也照樣寫 */ }
+      var W = img.naturalWidth, H = img.naturalHeight, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      var g = cv.getContext('2d'); g.drawImage(img, 0, 0);
+      g.save(); g.translate(W * 0.5, H * 0.875); g.rotate(-0.03);
+      g.font = '900 ' + Math.round(H * 0.11) + 'px "jf-openhuninn", "Huninn", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.lineJoin = 'round'; g.lineWidth = H * 0.012; g.strokeStyle = 'rgba(120, 70, 30, .35)'; g.strokeText('最重要的寶……', 0, 0);
+      g.fillStyle = '#7a4a26'; g.fillText('最重要的寶……', 0, 0);
+      g.restore();
+      var tw = 16, th = 12, sm = document.createElement('canvas'); sm.width = COLS * tw; sm.height = ROWS * th;
+      var sg = sm.getContext('2d'); sg.drawImage(cv, 0, 0, sm.width, sm.height);
+      var px = sg.getImageData(0, 0, sm.width, sm.height).data;
+      function diff(a, b) {
+        var ax = (a % COLS) * tw, ay = Math.floor(a / COLS) * th, bx = (b % COLS) * tw, by = Math.floor(b / COLS) * th, t = 0;
+        for (var y = 0; y < th; y++) for (var x = 0; x < tw; x++) for (var c = 0; c < 3; c++) t += Math.abs(px[((ay + y) * sm.width + ax + x) * 4 + c] - px[((by + y) * sm.width + bx + x) * 4 + c]);
+        return t / (tw * th * 3);
+      }
+      var SAME = {};
+      for (var a = 0; a < N; a++) for (var b = a + 1; b < N; b++) if (diff(a, b) < 7) { SAME[a + '-' + b] = SAME[b + '-' + a] = true; }
+      return { src: cv.toDataURL('image/webp', 0.85), text: true, same: function (a, b) { return !!SAME[a + '-' + b]; } };
+    } catch (err) { return fallback; }
+  }
   function memoPlaceholder() {   // 正式 D-1 到貨前：程式畫的蠟筆風備忘圖（沉船、大星星、歪箭頭、三個箱子、小枕頭）
     var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900"><rect width="1200" height="900" fill="#f6ead0"/><rect x="30" y="30" width="1140" height="840" fill="none" stroke="#d8c39a" stroke-width="10" stroke-dasharray="40 20"/>' +
       '<path d="M120 640 q90 70 260 0 l-30 -90 h-200 z" fill="#b5835a" stroke="#6b4426" stroke-width="10"/><rect x="200" y="470" width="20" height="90" fill="#6b4426"/><path d="M220 470 l90 45 l-90 25z" fill="#e7c37a"/>' +
@@ -1826,7 +1858,8 @@
     var p = wstate(child);
     if (!p.water.bottle) { wflag(child, 'bottle', true); await talkSeq([line(WHO.me(child), '路上撿到的玻璃牛奶瓶，裡面塞著好多碎紙條……')]); }
     await talkSeq([line(WHO.me(child), '瓶子裡的紙條好像可以拼成一張圖！我來拼拼看！')]);
-    var src = WATER_ART.memo || memoPlaceholder(), COLS = 5, ROWS = 4, N = COLS * ROWS;
+    var COLS = 5, ROWS = 4, N = COLS * ROWS, prep = await memoPrepare(WATER_ART.memo || memoPlaceholder(), COLS, ROWS), src = prep.src, same = prep.same;
+    function ok(i) { return at[i] != null && (at[i] === i || same(at[i], i)); }   // 長得一樣的碎紙放哪一片都算對
     var P = partyPanel({ title: '拼回神秘的地圖！', sub: '把碎紙拖到地圖上（或先點碎紙、再點位置），放錯可以再拖去別的地方' }, null, 'water-panel memo-panel');
     // 2026-11-17 家長：要真的能拼——想放哪就放哪、可以自己調整，全部放對才完成；另有提示按鈕
     // 狀態：at[格子]＝放在那裡的碎紙編號（null＝空）；碎紙 k 的正確位置就是格子 k
@@ -1855,7 +1888,7 @@
         return '<button type="button" class="memo-piece' + (sel && sel.from === 'tray' && sel.k === k ? ' on' : '') + '" data-piece="' + k + '" aria-label="碎紙"></button>';
       }).join('');
       tray.querySelectorAll('.memo-piece').forEach(function (b) { paint(b, Number(b.getAttribute('data-piece'))); });
-      var filled = at.filter(function (x) { return x != null; }).length, right = at.filter(function (x, i) { return x === i; }).length;
+      var filled = at.filter(function (x) { return x != null; }).length, right = at.filter(function (x, i) { return ok(i); }).length;
       P.tools.querySelector('#memo-count').textContent = filled + ' / ' + N;
       if (filled === N && right < N) P.sub.textContent = '還有 ' + (N - right) + ' 片位置不對，拖一拖換個位置，或按「💡 提示」';
       return right === N;
@@ -1875,7 +1908,7 @@
     // 點選：先點碎紙（下面或地圖上的），再點格子；選起地圖上的碎紙後點下面＝收回
     function tapAt(target) {
       var slot = target.closest && target.closest('.memo-slot'), piece = target.closest && target.closest('.memo-piece'), inTray = target.closest && target.closest('#memo-tray');
-      if (piece) { var pk = Number(piece.getAttribute('data-piece')); sel = sel && sel.from === 'tray' && sel.k === pk ? null : { k: pk, from: 'tray' }; draw(); return; }
+      if (piece) { var pk = Number(piece.getAttribute('data-piece')); sel = { k: pk, from: 'tray' }; draw(); return; }   // 點同一片也維持選取（提示幫忙選好後，孩子常會再點一次）
       if (slot) {
         var i = Number(slot.getAttribute('data-slot'));
         if (sel) { move(sel.k, sel.from, i); after(); return; }
@@ -1929,17 +1962,20 @@
     // 提示：先標出一片放錯的；都沒放錯，就亮出一片碎紙和它的位置
     function hint() {
       draw();
-      var wrong = at.findIndex(function (x, i) { return x != null && x !== i; });
+      var wrong = at.findIndex(function (x, i) { return x != null && !ok(i); });
       if (wrong >= 0) { slots[wrong].classList.add('wrong'); P.sub.textContent = '💡 亮紅框的這片放錯了，拖去別的地方試試看！'; return; }
-      var k = trayOrder.filter(function (x) { return !onBoard(x); })[0];
+      var left = trayOrder.filter(function (x) { return !onBoard(x); }), k = left[0];
       if (k == null) return;
+      var to = at[k] == null ? k : at.findIndex(function (x, i) { return x == null && same(k, i); });   // 位置被長得一樣的碎紙佔了：找一個一樣的空位
+      if (to < 0) to = k;
       sel = { k: k, from: 'tray' }; draw();
-      slots[k].classList.add('hint');
+      slots[to].classList.add('hint');
       P.sub.textContent = '💡 這片碎紙（已經幫你選好了）要放在亮黃框的位置！';
     }
     draw();
     await done;
-    P.art.insertAdjacentHTML('beforeend', '<p class="memo-text">最重要的寶……</p>');
+    P.art.querySelector('#memo-board').classList.add('complete');   // 拼好：拿掉格線，變成一整張圖
+    if (!prep.text) P.art.insertAdjacentHTML('beforeend', '<p class="memo-text">最重要的寶……</p>');
     P.title.textContent = '🗺️ 拼好了！'; P.sub.textContent = '沉船、大星星、歪歪的箭頭、三個箱子……還有一個小枕頭？';
     P.tools.innerHTML = '<button type="button" class="btn primary charge-btn" id="scene-ok">一定是藏寶圖！</button>';
     await new Promise(function (r) { P.tools.querySelector('#scene-ok').onclick = function () { P.shade.remove(); r(); }; });
@@ -2147,12 +2183,13 @@
 
   // 第 100 格：健忘怪的家（三階段：搜索 → 整理昨天 → 牛奶瓶真相與選箱），每完成一階段存檔（計畫第 5.3 節）
   var BOSS_SPOTS = [
-    { id: 'bed', label: '床', emoji: '🛏️', x: 18, y: 30, card: 0, say: '床底下只有一隻拖鞋……床沿露出一角紙！' },
-    { id: 'cupboard', label: '雪花櫃', emoji: '🧊', x: 46, y: 22, say: '櫃子門上貼著雪花……打開一看，只有一條木頭魚。這只是普通的櫃子嘛！', monster: '我貼了雪花，它還不肯變冰箱，真有個性！' },
-    { id: 'desk', label: '書桌', emoji: '🪑', x: 76, y: 30, card: 2, notebook: true, say: '桌上有墨跡，側邊抽屜露出筆記本的一角，桌腳旁還有一張紙！' },
-    { id: 'crate', label: '木箱', emoji: '📦', x: 24, y: 70, card: 1, say: '把木箱推開一點……箱腳旁邊藏著一張紙！' },
-    { id: 'wardrobe', label: '衣櫃', emoji: '🚪', x: 52, y: 66, card: 3, say: '衣櫃門縫夾著一張紙！' },
-    { id: 'rack', label: '窗邊的瓶架', emoji: '🪟', x: 82, y: 66, say: '窗台上有一個空空的圓形瓶架……原本放什麼呢？先記下來。' }
+    // 2026-11-17 位置對準 D-4 正式圖的家具（x、y＝畫面百分比）；圖裡沒有木箱，改成布簾
+    { id: 'bed', label: '床', emoji: '🛏️', x: 16, y: 56, card: 0, say: '床底下只有一隻拖鞋……床沿露出一角紙！' },
+    { id: 'cupboard', label: '雪花櫃', emoji: '🧊', x: 30, y: 38, say: '櫃子門上貼著雪花……打開一看，只有一條木頭魚。這只是普通的櫃子嘛！', monster: '我貼了雪花，它還不肯變冰箱，真有個性！' },
+    { id: 'desk', label: '書桌', emoji: '🪑', x: 58, y: 50, card: 2, notebook: true, say: '桌上有墨跡，側邊抽屜露出筆記本的一角，桌腳旁還有一張紙！' },
+    { id: 'curtain', label: '布簾', emoji: '🪟', x: 89, y: 32, card: 1, say: '把布簾掀開一點……後面藏著一張紙！' },
+    { id: 'wardrobe', label: '衣櫃', emoji: '🚪', x: 80, y: 42, card: 3, say: '衣櫃門縫夾著一張紙！' },
+    { id: 'rack', label: '窗邊的瓶架', emoji: '🫙', x: 52, y: 26, say: '窗台上有一個空空的圓形瓶架……原本放什麼呢？先記下來。' }
   ];
   var BOSS_CARDS = [['soiled', '弄髒了', '🟤'], ['wash', '洗一洗', '🫧'], ['dry', '晾乾', '☀️'], ['store', '收好', '📥']];   // 2026-11-17 E-16～E-19 正式圖：images/water/items/card_<id>.webp
   function bossCard(c) { var k = BOSS_CARDS[c]; return '<img class="card-art" src="images/water/items/card_' + k[0] + '.webp" alt="" draggable="false"><small>' + k[1] + '</small>'; }
@@ -2247,7 +2284,7 @@
     }
     // 階段三：牛奶瓶真相 → 選對收納箱
     P.title.textContent = '🍼 這個瓶架……'; P.sub.textContent = '把路上撿到的牛奶瓶放到窗邊的瓶架上';
-    layer.innerHTML = '<button type="button" class="boss-spot rack-spot" id="rack-spot" style="left:72%;top:40%"><span>🪟</span><small>空的瓶架</small></button>';
+    layer.innerHTML = '<button type="button" class="boss-spot rack-spot" id="rack-spot" style="left:52%;top:26%"><span></span><small>空的瓶架</small></button>';
     P.tools.innerHTML = '<button type="button" class="btn primary" id="use-bottle">' + (WATER_ART.bottle ? '<img src="' + WATER_ART.bottle + '" alt="" class="btn-ico">' : '🍼 ') + '拿出牛奶瓶</button>';
     await new Promise(function (r) { P.tools.querySelector('#use-bottle').onclick = function () { var rk = layer.querySelector('#rack-spot'); rk.classList.add('match'); if (WATER_ART.bottle) rk.querySelector('span').innerHTML = '<img src="' + WATER_ART.bottle + '" alt="" class="box-art" draggable="false">'; setTimeout(r, reduceMotion ? 50 : 700); }; });
     await talkSeq([line(me, '牛奶瓶的瓶底，跟瓶架的圓圈剛好一樣大！'), line(WHO.monster('surprised'), '啊啊啊！這不是我的牛奶瓶嗎？！'),
@@ -2290,12 +2327,14 @@
     await waterEnding(child, ev);
   }
 
-  /** 白鯨送回岸＋「水島冒險完成！」卡片（F-4 正式圖到貨前用海面色塊＋小白鯨） */
+  // 2026-11-17 F 節正式圖（Codex，810×1080）：開場 F-1～F-3、通關送回岸 F-4、出發去下一座島 F-5（水島圖不放進 SHELL）
+  var WATER_TRIP = ['f1_exit', 'f2_out', 'f3_beach', 'f4_return', 'f5_depart'].map(function (n) { return 'images/water/trip/' + n + '.webp'; });
+  /** 白鯨送回岸＋「水島冒險完成！」卡片（F-4：騎在小白鯨背上滑向沙灘） */
   function waterEnding(child, ev) {
     return new Promise(function (resolve) {
       var el = document.createElement('div');
       el.className = 'flight water-trip' + (reduceMotion ? ' still' : ''); el.id = 'water-ending'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '水島冒險完成');
-      el.innerHTML = '<div class="wt-sea"><div class="wt-beluga">' + waterImg(WATER_NPC.beluga, '小白鯨') + '</div></div>' +
+      el.innerHTML = '<div class="wt-photo" style="background-image:url(' + WATER_TRIP[3] + ')"></div>' +
         '<div class="fl-card" data-testid="water-end-card"><div class="we-crown"><img src="' + BADGE_IMG.waterClear1 + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></div><h2>🌊 水島冒險完成！</h2><p>' + h(child.name) + ' 幫健忘怪找回了小被被，小白鯨把你送回珊瑚淺灘。</p>' +
         '<p>' + h(ev.text.split('\n').slice(1).join('\n')).replace(/\n/g, '<br>') + '</p>' +
         (ev.clear.next ? '<p class="muted small">下一座島還在準備中，下次出發會先回到「' + h(ev.clear.next) + '」繼續冒險。</p>' : '') +
@@ -2304,35 +2343,39 @@
       el.querySelector('[data-we-ok]').onclick = function () { el.remove(); render(); if (!child.preview) announceAchievements(child.id); resolve(); };
     });
   }
-  /** 木島 → 水島開場（K1～K4；正式 F-1～F-3 到貨前：木島滑梯最後一張＋藍光 → 珊瑚淺灘地圖當沙灘） */
+  /** 木島 → 水島開場：木島滑梯最後一張 → F-1 出口亮起 → F-2 衝出樹洞 → F-3 落在沙灘＋歡迎卡片（第二次以後可略過） */
   function waterOpening(child, travel, repeat) {
     return new Promise(function (resolve) {
       var fast = window.__cgpFastEnding ? 0.08 : 1;
       var el = document.createElement('div');
       el.className = 'wood-end water-open' + (reduceMotion ? ' still' : ''); el.id = 'water-open'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '來到水島');
-      el.innerHTML = '<div class="we-slide glow"><i class="we-frame we-f1 on" style="background-image:url(' + WOOD_SLIDES[4] + ')"></i><b class="we-glow"></b></div>' +
-        '<p class="fl-msg" role="status">咦？前面好亮！</p>' + (repeat ? '<button type="button" class="we-skip" data-trip-skip>略過 ›</button>' : '');
+      var shots = [WOOD_SLIDES[4], WATER_TRIP[0], WATER_TRIP[1]], says = ['咦？前面好亮！', '是出口！', '咻——！'];
+      el.innerHTML = '<div class="we-slide">' + shots.map(function (u, i) { return '<i class="we-frame we-f' + (i + 1) + (i ? '' : ' on') + '" style="background-image:url(' + u + ')"></i>'; }).join('') + '</div>' +
+        '<p class="fl-msg" role="status">' + says[0] + '</p>' + (repeat ? '<button type="button" class="we-skip" data-trip-skip>略過 ›</button>' : '');
       document.body.appendChild(el); document.body.classList.add('pawn-acting');
-      var trip = tripSkipper(el);
+      var trip = tripSkipper(el), frames = el.querySelectorAll('.we-frame');
       (async function () {
-        await trip.wait((reduceMotion ? 700 : 1600) * fast);
-        el.querySelector('.fl-msg').textContent = '咻——！';
-        el.classList.add('out');
-        await trip.wait((reduceMotion ? 500 : 1200) * fast);
+        await Promise.race([preloadImages(WATER_TRIP.slice(0, 3), 2500), sleep(2500)]);
+        await trip.wait((reduceMotion ? 700 : 1400) * fast);
+        for (var i = 1; i < frames.length; i++) {   // 一張接一張往前衝
+          frames[i - 1].classList.remove('on'); frames[i - 1].classList.add('out'); frames[i].classList.add('on');
+          var msg0 = el.querySelector('.fl-msg'); if (msg0) msg0.textContent = says[i];
+          await trip.wait((reduceMotion ? 600 : 1300) * fast);
+        }
         trip.done(); var msg = el.querySelector('.fl-msg'); if (msg) msg.remove();
-        el.insertAdjacentHTML('beforeend', '<div class="wo-beach" style="background-image:url(' + store.getBoard(child.id).regions[0].background.webp + ')"></div>' +
+        el.insertAdjacentHTML('beforeend', '<div class="wo-beach" style="background-image:url(' + WATER_TRIP[2] + ')"></div>' +
           '<div class="we-card trip-card" data-testid="water-open-card"><h2>🌊 歡迎來到水島！</h2><p>第一區：珊瑚淺灘</p><p class="muted small">哇！我們真的來到水島了！</p>' +
           '<button type="button" class="btn primary block" data-trip-ok>開始探索！</button></div>');
         el.querySelector('[data-trip-ok]').onclick = function () { el.remove(); document.body.classList.remove('pawn-acting'); render(); resolve(); };
       })();
     });
   }
-  /** 水島 → 下一座島（目前回金島）：小白鯨往海平線游去（F-5 正式圖到貨前用海面色塊） */
+  /** 水島 → 下一座島（目前回金島）：F-5 騎著小白鯨往海平線游去（不畫特定島嶼，目的地由卡片文字說明） */
   function waterLeave(child, travel, repeat) {
     return new Promise(function (resolve) {
       var el = document.createElement('div');
       el.className = 'flight water-trip' + (reduceMotion ? ' still' : ''); el.id = 'water-leave'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '小白鯨送你出發');
-      el.innerHTML = '<div class="wt-sea"><div class="wt-beluga go">' + waterImg(WATER_NPC.beluga, '小白鯨') + '</div></div>' +
+      el.innerHTML = '<div class="wt-photo" style="background-image:url(' + WATER_TRIP[4] + ')"></div>' +
         '<div class="fl-card" data-testid="water-leave-card"><h2>🐳 小白鯨送你出發！</h2><p>' + (travel.island === 'gold' ? '下一座島還在準備中，先回到「金島」繼續冒險吧！' : '前往「' + h(travel.name) + '」！') + '</p>' +
         '<button type="button" class="btn primary block" data-trip-ok>繼續冒險！</button></div>';
       document.body.appendChild(el);

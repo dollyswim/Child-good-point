@@ -989,6 +989,7 @@ async function main() {
     await setRand(F6(6));
     await q.click('.dice-btn.d6');
     await q.waitForSelector('[data-testid=water-open-card]', { timeout: 15000 });
+    if (SHOT_DIR) { await q.waitForTimeout(700); await q.screenshot({ path: path.join(SHOT_DIR, '44-water-open.png') }); }
     assert.match(await q.locator('[data-testid=water-open-card]').innerText(), /歡迎來到水島[\s\S]*珊瑚淺灘/);
     await q.click('[data-trip-ok]');
     await q.waitForSelector('#water-talk');
@@ -1032,6 +1033,7 @@ async function main() {
     await dragTo('.memo-piece[data-piece="0"]', '.memo-slot[data-slot="0"]');   // 從下面拖上去
     await q.click('#memo-hint');
     assert.equal(await q.locator('.memo-slot.hint').count(), 1, '都沒放錯時：提示亮出下一片的位置');
+    { const hk = await q.locator('.memo-piece.on').getAttribute('data-piece'); await q.click('.memo-piece[data-piece="' + hk + '"]'); assert.equal(await q.locator('.memo-piece.on').count(), 1, '提示選好的碎紙再點一次，仍然維持選取'); }
     for (let k = 2; k < 20; k++) { await q.click('.memo-piece[data-piece="' + k + '"]'); await q.click('.memo-slot[data-slot="' + k + '"]'); }
     await q.waitForSelector('#scene-ok');
     if (SHOT_DIR) await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, 'water-memo.png') });
@@ -1094,7 +1096,7 @@ async function main() {
     await setRand(F6(1));
     await q.click('.dice-btn.d6');
     await talkUntil('.boss-spot');
-    for (const sp of ['bed', 'cupboard', 'desk', 'crate', 'wardrobe']) { await talkUntil('.boss-spot[data-spot="' + sp + '"]:not(.seen)'); await q.click('.boss-spot[data-spot="' + sp + '"]'); }
+    for (const sp of ['bed', 'cupboard', 'desk', 'curtain', 'wardrobe']) { await talkUntil('.boss-spot[data-spot="' + sp + '"]:not(.seen)'); await q.click('.boss-spot[data-spot="' + sp + '"]'); }
     await talkUntil('.order-card');
     // 排錯：台詞要對應排錯的地方（家長截圖：洗一洗、晾乾、收好、弄髒了）
     for (const [o, c] of [[0, 1], [1, 2], [2, 3], [3, 0]]) { await q.click('.order-card[data-c="' + c + '"]'); await q.click('.order-slot[data-o="' + o + '"]'); }
@@ -1124,6 +1126,7 @@ async function main() {
     await q.click('.box-one[data-b="2"]'); await q.click('#box-open');
     if (SHOT_DIR) { await q.waitForTimeout(800); await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, '41-water-box-open.png') }); }
     await talkUntil('[data-testid=water-end-card]', 20000);
+    if (SHOT_DIR) { await q.waitForTimeout(800); await q.screenshot({ path: path.join(SHOT_DIR, '45a-water-end-photo.png') }); await q.waitForTimeout(1800); await q.screenshot({ path: path.join(SHOT_DIR, '45-water-end.png') }); }
     assert.match(await q.locator('[data-testid=water-end-card]').innerText(), /水島冒險完成[\s\S]*神秘寶箱 ×3/);
     st = await P();
     assert.deepEqual([st.clears, st.gift - gift0, !!st.story.blanket], [1, 3, true], '第一次通關：3 個神秘寶箱');
@@ -1134,6 +1137,7 @@ async function main() {
     await setRand(F6(2));
     await q.click('.dice-btn.d6');
     await q.waitForSelector('[data-testid=water-leave-card]', { timeout: 10000 });
+    if (SHOT_DIR) { await q.waitForTimeout(700); await q.screenshot({ path: path.join(SHOT_DIR, '46-water-leave.png') }); }
     assert.match(await q.locator('[data-testid=water-leave-card]').innerText(), /回到「金島」/);
     await q.click('[data-trip-ok]');
     await q.waitForFunction((cid) => window.__cgpStore.getPlayer(cid).island === 'gold', kid, { timeout: 8000 });

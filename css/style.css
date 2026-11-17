@@ -2387,3 +2387,21 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 @media (prefers-reduced-motion: reduce) { .pawn-beluga-friend, .pawn-ride, .pawn-ride.leave, .feed-heart { animation-duration: .01s; } }
 .fl-card .we-crown img { margin: 0 auto 6px; }
 .pawn.riding::after { display: none; }   /* 騎小白鯨時不畫角色腳下的影子 */
+
+/* D-4 正式房間圖：搜查點變成家具上的小標籤＋呼吸光圈（不再用大表情符號） */
+.boss-panel .boss-spot { min-width: 0; padding: 3px 9px; background: rgba(255, 250, 235, .82); border-radius: 99px; box-shadow: 0 0 0 3px rgba(255, 210, 63, .7), 0 3px 8px rgba(80, 40, 0, .25); animation: spot-breathe 1.8s ease-in-out infinite; }
+.boss-panel .boss-spot span { display: none; } .boss-panel .boss-spot small { white-space: nowrap; }
+.boss-panel .boss-spot.seen { animation: none; box-shadow: 0 2px 6px rgba(80, 40, 0, .25); background: rgba(255, 243, 196, .92); }
+.boss-panel .rack-spot span { display: block; } .boss-panel .rack-spot span:empty { display: none; }
+@keyframes spot-breathe { 50% { box-shadow: 0 0 0 6px rgba(255, 210, 63, .35), 0 3px 8px rgba(80, 40, 0, .25); } }
+@media (prefers-reduced-motion: reduce) { .boss-panel .boss-spot { animation: none; } }
+.memo-board.complete { gap: 0; } .memo-board.complete .memo-slot { border: 0; border-radius: 0; outline: 0; }
+
+/* F 節正式過場圖：慢慢往前推近（像在往前游） */
+.wt-photo { position: absolute; inset: 0; background: center / cover no-repeat; animation: wt-push 6s ease-out both; transform-origin: 50% 40%; }
+@keyframes wt-push { from { transform: scale(1); } to { transform: scale(1.12); } }
+.water-trip .fl-card { position: relative; z-index: 2; }
+@media (prefers-reduced-motion: reduce) { .wt-photo { animation: none; } }
+.water-trip .fl-card { animation: wt-card-in .5s 1.8s ease-out both; }   /* 先看 1.8 秒過場圖（小白鯨在畫面下方），卡片再出現 */
+@keyframes wt-card-in { from { opacity: 0; transform: translateY(24px); } }
+@media (prefers-reduced-motion: reduce) { .water-trip .fl-card { animation: none; } }
