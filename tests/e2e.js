@@ -1016,7 +1016,23 @@ async function main() {
     await q.click('.dice-btn.d6');
     await talkUntil('.memo-piece');
     assert.equal((await P()).pos, 8, '停在第 8 格');
-    for (let k = 0; k < 20; k++) { await q.click('.memo-piece[data-piece="' + k + '"]'); await q.click('.memo-slot[data-slot="' + k + '"]'); }
+    // 真的拼圖：放哪都可以（放錯不擋），提示會標出放錯的，拖曳可以移動或交換
+    await q.click('.memo-piece[data-piece="1"]'); await q.click('.memo-slot[data-slot="0"]');
+    assert.equal(await q.locator('.memo-slot[data-slot="0"]').getAttribute('data-piece-on'), '1', '放錯位置也可以放');
+    await q.click('#memo-hint');
+    assert.equal(await q.locator('.memo-slot.wrong').getAttribute('data-slot'), '0', '提示標出放錯的那片');
+    const dragTo = async (from, to) => {
+      const a = await q.locator(from).boundingBox(), b = await q.locator(to).boundingBox();
+      await q.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await q.mouse.down();
+      await q.mouse.move(a.x + a.width / 2 + 20, a.y + a.height / 2 + 20, { steps: 4 });
+      await q.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 6 }); await q.mouse.up();
+    };
+    await dragTo('.memo-slot[data-slot="0"]', '.memo-slot[data-slot="1"]');   // 拖到正確位置
+    assert.deepEqual([await q.locator('.memo-slot[data-slot="0"]').getAttribute('data-piece-on'), await q.locator('.memo-slot[data-slot="1"]').getAttribute('data-piece-on')], [null, '1'], '拖曳移動拼片');
+    await dragTo('.memo-piece[data-piece="0"]', '.memo-slot[data-slot="0"]');   // 從下面拖上去
+    await q.click('#memo-hint');
+    assert.equal(await q.locator('.memo-slot.hint').count(), 1, '都沒放錯時：提示亮出下一片的位置');
+    for (let k = 2; k < 20; k++) { await q.click('.memo-piece[data-piece="' + k + '"]'); await q.click('.memo-slot[data-slot="' + k + '"]'); }
     await q.waitForSelector('#scene-ok');
     if (SHOT_DIR) await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, 'water-memo.png') });
     await q.click('#scene-ok');

@@ -2250,15 +2250,20 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 /* 拼圖 */
 .memo-panel .party-art { background: #f3e6c8; }
 .memo-board { position: absolute; inset: 4%; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 1fr); gap: 2px; }
-.memo-slot { border: 2px dashed rgba(120, 90, 50, .35); border-radius: 4px; background: rgba(255, 255, 255, .35); padding: 0; cursor: pointer; }
-.memo-slot.done { border: 0; border-radius: 0; cursor: default; }
-.memo-slot.hint { border-color: #ff9f1a; box-shadow: 0 0 0 3px rgba(255, 159, 26, .5) inset; }
-.memo-slot.shake { animation: memo-shake .3s; }
+.memo-slot { border: 2px dashed rgba(120, 90, 50, .35); border-radius: 4px; background: rgba(255, 255, 255, .35); background-repeat: no-repeat; padding: 0; cursor: pointer; touch-action: none; }
+.memo-slot.filled { border: 1px solid rgba(120, 90, 50, .25); border-radius: 2px; }
+.memo-slot.on { outline: 3px solid #ff9f1a; outline-offset: -3px; }
+.memo-slot.over { outline: 3px dashed #3aa0e0; outline-offset: -3px; }
+.memo-slot.hint { border: 3px solid #ffc21a; box-shadow: 0 0 0 3px rgba(255, 194, 26, .55) inset; animation: memo-glow .8s ease-in-out 3; }
+.memo-slot.wrong { outline: 3px solid #e8483c; outline-offset: -3px; animation: memo-shake .3s 2; }
+.memo-slot.lifting, .memo-piece.lifting { opacity: .35; }
 @keyframes memo-shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-.memo-tray { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; width: 100%; }
-.memo-piece { aspect-ratio: 4 / 3; border: 2px solid #e2d3b2; border-radius: 6px; padding: 0; cursor: pointer; min-height: 40px; }
+@keyframes memo-glow { 50% { box-shadow: 0 0 0 6px rgba(255, 194, 26, .8) inset; } }
+.memo-tray { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; width: 100%; min-height: 44px; padding: 4px; border-radius: 10px; background: rgba(243, 230, 200, .6); box-sizing: border-box; }
+.memo-piece { aspect-ratio: 4 / 3; border: 2px solid #e2d3b2; border-radius: 6px; padding: 0; cursor: grab; min-height: 40px; background-repeat: no-repeat; touch-action: none; }
 .memo-piece.on { border-color: #ff9f1a; box-shadow: 0 0 0 3px rgba(255, 159, 26, .45); }
-.memo-piece.used { visibility: hidden; }
+.memo-bar { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; }
+.memo-drag { position: fixed; z-index: 2000; pointer-events: none; transform: translate(-50%, -50%) scale(1.15); background-repeat: no-repeat; border: 2px solid #ff9f1a; border-radius: 4px; box-shadow: 0 6px 14px rgba(0, 0, 0, .3); }
 .memo-text { position: absolute; left: 50%; bottom: 5%; transform: translateX(-50%); margin: 0; padding: 2px 12px; border-radius: 99px; background: rgba(255, 255, 255, .85); color: #6b4426; font-weight: 900; }
 /* 藥水 */
 .potion-show { position: absolute; inset: 0; display: grid; place-items: center; }
@@ -2353,7 +2358,7 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .wt-beluga.go { animation: wt-go 3s ease-in-out both; }
 @keyframes wt-go { from { transform: translateX(-90%) scale(1); } to { transform: translateX(-10%) scale(.7); } }
 @keyframes fade-in { from { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .potion-img, .wt-beluga, .feed-beluga.yum, .memo-slot.shake { animation: none; } .shark-big, .lantern-dark { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .potion-img, .wt-beluga, .feed-beluga.yum, .memo-slot.wrong, .memo-slot.hint { animation: none; } .shark-big, .lantern-dark { transition: none; } }
 
 /* 小白鯨呼喚貝殼（水島第二版）：白鯨從左邊游進來，冒出愛心泡泡，3 秒後離開 */
 .beluga-call { position: fixed; left: 0; right: 0; bottom: 34%; height: 50%; z-index: 900; pointer-events: none; overflow: hidden; }

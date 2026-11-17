@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.17-164';
+  var APP_VERSION = '2026.11.17-165';
   var store;
   try {
     store = new CGP.Store();
@@ -1827,41 +1827,118 @@
     if (!p.water.bottle) { wflag(child, 'bottle', true); await talkSeq([line(WHO.me(child), '路上撿到的玻璃牛奶瓶，裡面塞著好多碎紙條……')]); }
     await talkSeq([line(WHO.me(child), '瓶子裡的紙條好像可以拼成一張圖！我來拼拼看！')]);
     var src = WATER_ART.memo || memoPlaceholder(), COLS = 5, ROWS = 4, N = COLS * ROWS;
-    var P = partyPanel({ title: '拼回神秘的地圖！', sub: '點一片碎紙，再點它在地圖上的位置（共 20 片）' }, null, 'water-panel memo-panel');
-    var order = []; for (var k = 0; k < N; k++) order.push(k);
-    for (var j = N - 1; j > 0; j--) { var r = Math.floor(Math.random() * (j + 1)); var tmp = order[j]; order[j] = order[r]; order[r] = tmp; }
+    var P = partyPanel({ title: '拼回神秘的地圖！', sub: '把碎紙拖到地圖上（或先點碎紙、再點位置），放錯可以再拖去別的地方' }, null, 'water-panel memo-panel');
+    // 2026-11-17 家長：要真的能拼——想放哪就放哪、可以自己調整，全部放對才完成；另有提示按鈕
+    // 狀態：at[格子]＝放在那裡的碎紙編號（null＝空）；碎紙 k 的正確位置就是格子 k
+    var at = []; for (var k = 0; k < N; k++) at.push(null);
+    var trayOrder = []; for (k = 0; k < N; k++) trayOrder.push(k);
+    for (var j = N - 1; j > 0; j--) { var r = Math.floor(Math.random() * (j + 1)); var tmp = trayOrder[j]; trayOrder[j] = trayOrder[r]; trayOrder[r] = tmp; }
     function bgPos(k) { return (k % COLS) / (COLS - 1) * 100 + '% ' + Math.floor(k / COLS) / (ROWS - 1) * 100 + '%'; }
-    var style = 'background-image:url(&quot;' + src + '&quot;);background-size:' + COLS * 100 + '% ' + ROWS * 100 + '%;';
-    P.art.innerHTML = '<div class="memo-board" id="memo-board">' + order.map(function (q, i) { return '<button type="button" class="memo-slot" data-slot="' + i + '" aria-label="位置 ' + (i + 1) + '"></button>'; }).join('') + '</div>';
-    P.tools.innerHTML = '<div class="memo-tray" id="memo-tray">' + order.map(function (k) { return '<button type="button" class="memo-piece" data-piece="' + k + '" style="' + style + 'background-position:' + bgPos(k) + '" aria-label="碎紙"></button>'; }).join('') + '</div>' +
-      '<span class="party-count" id="memo-count">0 / ' + N + '</span>';
-    await new Promise(function (resolve) {
-      var pick = null, placed = 0, miss = 0;
-      var slots = P.art.querySelectorAll('.memo-slot');
-      function clearHint() { slots.forEach(function (s) { s.classList.remove('hint'); }); }
-      P.tools.addEventListener('click', function (e) {
-        var b = e.target.closest('.memo-piece');
-        if (!b || b.classList.contains('used')) return;
-        P.tools.querySelectorAll('.memo-piece').forEach(function (x) { x.classList.toggle('on', x === b); });
-        pick = Number(b.getAttribute('data-piece')); miss = 0; clearHint();
+    function paint(el, k) {   // 把碎紙 k 的圖案畫在元素上
+      el.style.backgroundImage = 'url("' + src + '")'; el.style.backgroundSize = COLS * 100 + '% ' + ROWS * 100 + '%'; el.style.backgroundPosition = bgPos(k);
+    }
+    P.art.innerHTML = '<div class="memo-board" id="memo-board">' + at.map(function (_, i) { return '<button type="button" class="memo-slot" data-slot="' + i + '" aria-label="位置 ' + (i + 1) + '"></button>'; }).join('') + '</div>';
+    P.tools.innerHTML = '<div class="memo-tray" id="memo-tray"></div>' +
+      '<div class="memo-bar"><span class="party-count" id="memo-count">0 / ' + N + '</span><button type="button" class="btn" id="memo-hint">💡 提示</button></div>';
+    var board = P.art.querySelector('#memo-board'), tray = P.tools.querySelector('#memo-tray'), slots = board.querySelectorAll('.memo-slot');
+    var sel = null;   // 目前選起來的碎紙：{ k, from: 'tray'｜格子編號 }
+    function onBoard(k) { return at.indexOf(k) >= 0; }
+    function draw() {
+      slots.forEach(function (sl, i) {
+        var k = at[i];
+        sl.classList.toggle('filled', k != null); sl.classList.remove('hint', 'wrong');
+        if (k != null) { paint(sl, k); sl.setAttribute('data-piece-on', String(k)); }
+        else { sl.style.backgroundImage = ''; sl.removeAttribute('data-piece-on'); }
+        sl.classList.toggle('on', !!sel && sel.from === i);
       });
-      P.art.addEventListener('click', function (e) {
-        var s = e.target.closest('.memo-slot');
-        if (!s || pick == null || s.classList.contains('done')) return;
-        if (Number(s.getAttribute('data-slot')) !== pick) {
-          s.classList.remove('shake'); void s.offsetWidth; s.classList.add('shake');
-          if (++miss >= 2) slots[pick].classList.add('hint');   // 錯兩次：亮出正確位置
-          return;
-        }
-        s.classList.add('done'); s.setAttribute('style', style.replace(/&quot;/g, '"') + 'background-position:' + bgPos(pick));
-        var pc = P.tools.querySelector('.memo-piece[data-piece="' + pick + '"]'); pc.classList.add('used'); pc.classList.remove('on');
-        pick = null; clearHint(); placed++;
-        P.tools.querySelector('#memo-count').textContent = placed + ' / ' + N;
-        if (placed >= N) setTimeout(resolve, reduceMotion ? 100 : 500);
-      });
-      // 數字的格子位置對應拼圖的位置（第 k 個格子＝第 k 片）
-      slots.forEach(function (s, i) { s.setAttribute('data-slot', String(i)); });
+      tray.innerHTML = trayOrder.filter(function (k) { return !onBoard(k); }).map(function (k) {
+        return '<button type="button" class="memo-piece' + (sel && sel.from === 'tray' && sel.k === k ? ' on' : '') + '" data-piece="' + k + '" aria-label="碎紙"></button>';
+      }).join('');
+      tray.querySelectorAll('.memo-piece').forEach(function (b) { paint(b, Number(b.getAttribute('data-piece'))); });
+      var filled = at.filter(function (x) { return x != null; }).length, right = at.filter(function (x, i) { return x === i; }).length;
+      P.tools.querySelector('#memo-count').textContent = filled + ' / ' + N;
+      if (filled === N && right < N) P.sub.textContent = '還有 ' + (N - right) + ' 片位置不對，拖一拖換個位置，或按「💡 提示」';
+      return right === N;
+    }
+    /** 把碎紙 k（從 from 拿起）放到 to（格子編號，或 'tray' 收回） */
+    function move(k, from, to) {
+      if (to === 'tray') { if (from !== 'tray') at[from] = null; return; }
+      if (from === to) return;
+      var other = at[to];
+      at[to] = k;
+      if (from !== 'tray') at[from] = other;          // 從地圖上拖過來：兩片交換
+      // 從下面拿上來、目標格子已經有一片：那一片回到下面（other 不在地圖上就會出現在下面）
+    }
+    var finish;
+    var done = new Promise(function (r) { finish = r; });
+    function after() { sel = null; if (draw()) { P.tools.querySelector('#memo-hint').disabled = true; setTimeout(finish, reduceMotion ? 100 : 500); } }
+    // 點選：先點碎紙（下面或地圖上的），再點格子；選起地圖上的碎紙後點下面＝收回
+    function tapAt(target) {
+      var slot = target.closest && target.closest('.memo-slot'), piece = target.closest && target.closest('.memo-piece'), inTray = target.closest && target.closest('#memo-tray');
+      if (piece) { var pk = Number(piece.getAttribute('data-piece')); sel = sel && sel.from === 'tray' && sel.k === pk ? null : { k: pk, from: 'tray' }; draw(); return; }
+      if (slot) {
+        var i = Number(slot.getAttribute('data-slot'));
+        if (sel) { move(sel.k, sel.from, i); after(); return; }
+        if (at[i] != null) { sel = { k: at[i], from: i }; draw(); }
+        return;
+      }
+      if (inTray && sel && sel.from !== 'tray') { move(sel.k, sel.from, 'tray'); after(); }
+    }
+    // 拖曳：按住碎紙移動超過 8px 就變成拖曳，放開的地方是格子就放上去、是下面就收回
+    var drag = null;
+    P.shade.addEventListener('pointerdown', function (e) {
+      var piece = e.target.closest('.memo-piece'), slot = e.target.closest('.memo-slot.filled');
+      if (!piece && !slot) return;
+      var k = piece ? Number(piece.getAttribute('data-piece')) : at[Number(slot.getAttribute('data-slot'))];
+      drag = { k: k, from: piece ? 'tray' : Number(slot.getAttribute('data-slot')), x: e.clientX, y: e.clientY, el: null, src: piece || slot, id: e.pointerId };
     });
+    P.shade.addEventListener('pointermove', function (e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      if (!drag.el) {
+        if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) < 8) return;
+        var w = slots[0].getBoundingClientRect();
+        drag.el = document.createElement('div'); drag.el.className = 'memo-drag'; paint(drag.el, drag.k);
+        drag.el.style.width = w.width + 'px'; drag.el.style.height = w.height + 'px';
+        document.body.appendChild(drag.el); drag.src.classList.add('lifting');
+        try { P.shade.setPointerCapture(e.pointerId); } catch (err) { /* 有些瀏覽器不支援 */ }
+      }
+      e.preventDefault();
+      drag.el.style.left = e.clientX + 'px'; drag.el.style.top = e.clientY + 'px';
+      slots.forEach(function (sl) { sl.classList.remove('over'); });
+      var under = document.elementFromPoint(e.clientX, e.clientY), os = under && under.closest('.memo-slot');
+      if (os) os.classList.add('over');
+    });
+    function endDrag(e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      var d = drag; drag = null;
+      if (!d.el) return;   // 沒有移動：當作點一下（交給 click 處理）
+      d.el.remove(); d.src.classList.remove('lifting'); slots.forEach(function (sl) { sl.classList.remove('over'); });
+      var under = document.elementFromPoint(e.clientX, e.clientY), os = under && under.closest('.memo-slot');
+      if (os) move(d.k, d.from, Number(os.getAttribute('data-slot')));
+      else if (d.from !== 'tray') move(d.k, d.from, 'tray');   // 從地圖拖到外面：收回下面
+      d.dragged = true; P.shade._skipClick = true; setTimeout(function () { P.shade._skipClick = false; }, 0);
+      after();
+    }
+    P.shade.addEventListener('pointerup', endDrag);
+    P.shade.addEventListener('pointercancel', function (e) { if (drag && drag.el) { drag.el.remove(); drag.src.classList.remove('lifting'); } drag = null; });
+    P.shade.addEventListener('click', function (e) {
+      if (P.shade._skipClick) return;
+      if (e.target.closest('#memo-hint')) { hint(); return; }
+      tapAt(e.target);
+    });
+    // 提示：先標出一片放錯的；都沒放錯，就亮出一片碎紙和它的位置
+    function hint() {
+      draw();
+      var wrong = at.findIndex(function (x, i) { return x != null && x !== i; });
+      if (wrong >= 0) { slots[wrong].classList.add('wrong'); P.sub.textContent = '💡 亮紅框的這片放錯了，拖去別的地方試試看！'; return; }
+      var k = trayOrder.filter(function (x) { return !onBoard(x); })[0];
+      if (k == null) return;
+      sel = { k: k, from: 'tray' }; draw();
+      slots[k].classList.add('hint');
+      P.sub.textContent = '💡 這片碎紙（已經幫你選好了）要放在亮黃框的位置！';
+    }
+    draw();
+    await done;
     P.art.insertAdjacentHTML('beforeend', '<p class="memo-text">最重要的寶……</p>');
     P.title.textContent = '🗺️ 拼好了！'; P.sub.textContent = '沉船、大星星、歪歪的箭頭、三個箱子……還有一個小枕頭？';
     P.tools.innerHTML = '<button type="button" class="btn primary charge-btn" id="scene-ok">一定是藏寶圖！</button>';
