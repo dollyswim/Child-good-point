@@ -2323,6 +2323,7 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .box-one em { font-style: normal; font-size: .7rem; font-weight: 700; color: #5a3a1a; line-height: 1.35; }
 .box-one.on { border-color: #ff9f1a; box-shadow: 0 0 0 3px rgba(255, 159, 26, .4); }
 .btn-ico { width: 24px; height: 24px; vertical-align: middle; }
+.box-art { display: block; width: 56px; height: 56px; object-fit: contain; }
 /* 開場、離開、通關 */
 .water-open .we-card { position: relative; z-index: 3; }
 .water-open .wo-beach { position: absolute; inset: 0; background: center / cover no-repeat; animation: fade-in .6s ease-out both; }

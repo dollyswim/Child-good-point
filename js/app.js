@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.17-157';
+  var APP_VERSION = '2026.11.17-158';
   var store;
   try {
     store = new CGP.Store();
@@ -949,7 +949,7 @@
       rel: true,
       guide: { cls: 'water-npc', label: '漁夫爺爺', img: 'images/water/npc/fisherman.webp', iw: 640, ih: 640, w: 62 },
       spots: {
-        memo: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc water-bottle', label: '神秘的牛奶瓶', emoji: '🍼', w: 50 }, hint: '撿到的牛奶瓶裡有好多碎紙條……走到第 8 格拼拼看！' },
+        memo: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc water-bottle', label: '神秘的牛奶瓶', emoji: '🍼', img: 'images/water/items/bottle.webp', iw: 512, ih: 512, w: 64 }, hint: '撿到的牛奶瓶裡有好多碎紙條……走到第 8 格拼拼看！' },
         potion: { type: 'water', guide: [0, 0], cam: [0, -60], hint: '漁夫爺爺在第 16 格的木平台等你！' },
         feed: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '小白鯨', img: 'images/water/npc/beluga.webp', iw: 640, ih: 640, w: 150 }, hint: '小白鯨好像肚子餓了……走到第 34 格餵牠吃魚！' },
         shark: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '大鯊魚', img: 'images/water/npc/shark.webp', iw: 640, ih: 640, w: 190 }, hint: '大鯊魚守在第 48 格，要擲出 11 或 12 才讓你過！' },
@@ -1691,8 +1691,8 @@
     seabed: '',          // D-2 明亮海底（餵白鯨、鯊魚）
     lanternBg: '',       // D-3 燈籠魚找東西的海底（明亮版，黑暗由程式疊上）
     room: '',            // D-4 健忘怪房間
-    bottle: '', potion: 'images/water/items/potion.webp', fish: 'images/water/items/fish.webp', bucket: 'images/water/items/fish_bucket.webp',
-    blanket: ''
+    bottle: 'images/water/items/bottle.webp', potion: 'images/water/items/potion.webp', fish: 'images/water/items/fish.webp', bucket: 'images/water/items/fish_bucket.webp',
+    blanket: 'images/water/items/blanket.webp'
   };
   function kidImg(child) { return 'images/characters/' + charIdOf(child) + '.webp'; }
   function waterImg(src, alt, cls, emoji) {
@@ -1951,7 +1951,7 @@
 
   // 第 56 格：在黑暗中，拖著燈籠魚的燈照亮一小圈，找回 10 樣東西（計畫第 4.3 節；光圈直徑先用畫面寬度 1/8）
   var LANTERN_ITEMS = [['coral', '珊瑚', ''], ['scallop', '扇貝', ''], ['starfish', '海星', ''], ['conch', '海螺', ''], ['pearl', '珍珠', ''],
-    ['seaglass', '海玻璃', '🟢'], ['stone', '小石片', ''], ['driftwood', '漂流木', ''], ['seaweed', '海草束', '🌿'], ['bell', '銅鈴', '']];
+    ['seaglass', '海玻璃', ''], ['stone', '小石片', ''], ['driftwood', '漂流木', ''], ['seaweed', '海草束', ''], ['bell', '銅鈴', '']];
   var LANTERN_SPOTS = [[14, 22], [32, 74], [50, 32], [72, 20], [86, 62], [20, 52], [62, 82], [42, 56], [80, 40], [10, 84]];
   var LANTERN_LIGHT = 1 / 8;   // 照亮的圓直徑＝畫面寬度的 1/8（2026-11-16 家長決定，試玩後可調）
   async function waterLantern(child) {
@@ -2123,7 +2123,7 @@
     P.title.textContent = '🍼 這個瓶架……'; P.sub.textContent = '把路上撿到的牛奶瓶放到窗邊的瓶架上';
     layer.innerHTML = '<button type="button" class="boss-spot rack-spot" id="rack-spot" style="left:72%;top:40%"><span>🪟</span><small>空的瓶架</small></button>';
     P.tools.innerHTML = '<button type="button" class="btn primary" id="use-bottle">' + (WATER_ART.bottle ? '<img src="' + WATER_ART.bottle + '" alt="" class="btn-ico">' : '🍼 ') + '拿出牛奶瓶</button>';
-    await new Promise(function (r) { P.tools.querySelector('#use-bottle').onclick = function () { layer.querySelector('#rack-spot').classList.add('match'); setTimeout(r, reduceMotion ? 50 : 700); }; });
+    await new Promise(function (r) { P.tools.querySelector('#use-bottle').onclick = function () { var rk = layer.querySelector('#rack-spot'); rk.classList.add('match'); if (WATER_ART.bottle) rk.querySelector('span').innerHTML = '<img src="' + WATER_ART.bottle + '" alt="" class="box-art" draggable="false">'; setTimeout(r, reduceMotion ? 50 : 700); }; });
     await talkSeq([line(me, '牛奶瓶的瓶底，跟瓶架的圓圈剛好一樣大！'), line(WHO.monster('surprised'), '啊啊啊！這不是我的牛奶瓶嗎？！'),
       line(WHO.monster('surprised'), '我怕忘記重要的事情，就把紙條塞進瓶子裡……'), line(WHO.monster('surprised'), '結果我忘記把瓶子放在哪裡！'),
       line(me, '所以我們找到的不是藏寶圖，是你的備忘紙！'), line(M, '對！我還畫了回家的路，怕連家也忘記！'), line(M, '我記得放在箱子裡，可是忘記是哪個！箱子會自己換班嗎？')]);
@@ -2146,7 +2146,8 @@
         };
       });
     });
-    layer.querySelector('.box-one[data-b="2"]').classList.add('open');
+    var moonBox = layer.querySelector('.box-one[data-b="2"]'); moonBox.classList.add('open');
+    if (WATER_ART.blanket) moonBox.querySelector('span').innerHTML = '<img src="' + WATER_ART.blanket + '" alt="小被被" class="box-art" draggable="false">';
     P.shade.remove();
     await talkSeq([line(me, '原來「最重要的寶……」是寶貝小被被！'), line(WHO.monster('blanket'), '找到啦！小被被，你都沒長高，我怎麼會找不到你！'), line(WHO.monster('blanket'), '它從我小時候就陪著我，有它就安心了。')]);
     // 通關：⭐3＋第一次 3 個神秘寶箱（之後 10 星）
@@ -3788,7 +3789,7 @@
     luckyMedal: { name: '好運金牌', img: 'images/items/lucky_medal.webp', note: '地圖上啟用' },
     wings: { name: '飛行翼', img: 'images/items/flying_wings.webp', note: '地圖上使用' },
     door: { name: '傳送門', img: 'images/items/magic_door.webp', note: '地圖上使用（水島不能用）' },
-    submarine: { name: '潛水艇', icon: '🚤', img: '', note: '只能在水島使用' },
+    submarine: { name: '潛水艇', icon: '🚤', img: 'images/items/submarine.webp', note: '只能在水島使用' },
     airplane: { name: '呼叫專機', img: 'images/items/airplane.webp', note: '其他島嶼開放後可用' },
     goldenKey: { name: '黃金鑰匙', img: 'images/items/golden_key.webp', note: '開神秘寶箱' },
     magnet: { name: '寶物磁鐵', img: 'images/items/treasure_magnet.webp', note: '地圖上使用' },

@@ -68,7 +68,7 @@
     { id: 'starCall', name: '星星呼喚', icon: '🌠', img: 'images/minigame/star.webp', price: 50, desc: '馬上玩一局「抓住星星」（不占每天 1 次，每天最多用 1 個）' },   // 2026-11-08 新增
     { id: 'pineHide', name: '松果躲躲', icon: '🌰', img: 'images/wood/leaf_pinecone.webp', price: 50, desc: '馬上玩一局「落葉找松果」（不占每天 1 次，每天最多用 1 個）' },   // 2026-11-08 新增（比照星星呼喚，和星星呼喚各自計算）
     { id: 'door', name: '傳送門', icon: '🚪', img: 'images/items/magic_door.webp', price: 200, desc: '傳送到本島指定的格子（水島不能用）' },
-    { id: 'submarine', name: '潛水艇', icon: '🚤', img: '', price: 200, hold: 3, desc: '只能在水島用：從第 25 格以後直接開到水中的指定格子', island: 'water' }   // 2026-11-16 新增（正式圖 E-30 到貨後填 img）
+    { id: 'submarine', name: '潛水艇', icon: '🚤', img: 'images/items/submarine.webp', price: 200, hold: 3, desc: '只能在水島用：從第 25 格以後直接開到水中的指定格子', island: 'water' }   // 2026-11-16 新增（2026-11-17 正式圖 E-30 驗收通過）
   ];
   function treasureHold(id) { var t = TREASURES.find(function (x) { return x.id === id; }); return (t && t.hold) || TREASURE_HOLD_LIMIT; }
 
