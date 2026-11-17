@@ -132,13 +132,14 @@ Room for 34 stops, no tiles, no numbers, no characters, no text, no UI.
 ```
 Vertical 1080x1350 game map background, Water Island "Underwater Cave". Fixed isometric 2.5D view.
 A cozy underwater cave with rounded stone pillars, gentle stalactites, a calm underground waterway and warm glowing amber and pink minerals.
-One clear pale sandy path enters from a cave entrance and makes a smooth S-shaped route through the scenery,
+One clear path of smooth, flat, pale cream-grey cave rock floor (worn smooth like a natural stone walkway, with soft subtle cracks and a little fine sand in the seams, gently lit by the warm glowing minerals; not yellow beach sand) enters from a cave entrance and makes a smooth S-shaped route through the scenery,
+the path must stay clearly lighter than the darker cave surroundings so tiles placed on it are easy to see,
 ending at a broken wooden hatch of a sunken ship whose cute rounded bow can be seen between pillars.
 On one wall, faint glowing old route drawings made of simple shapes (no letters).
 Side caves are only narrow dark cracks or rock walls, never paths of the same width.
 Room for 24 stops, no tiles, no numbers, no characters, no text, no UI. Warm and safe, not scary.
 ```
-中文重點：溫暖安全的水下洞穴，圓潤石柱、鐘乳石、地下水道、暖橘與粉紅發光礦物；S 形主路；終點是沉船破開的木艙門，柱子間看得到圓潤船首；牆上有發光的舊航線圖（只用圖形，不要字）；岔洞只是窄縫，不要像路。
+中文重點：溫暖安全的水下洞穴，圓潤石柱、鐘乳石、地下水道、暖橘與粉紅發光礦物；S 形主路；終點是沉船破開的木艙門，柱子間看得到圓潤船首；牆上有發光的舊航線圖（只用圖形，不要字）；岔洞只是窄縫，不要像路。**路面（2026-11-17 家長決定）**：不用沙灘黃，改成洞穴裡平滑、平坦的淡米灰色岩石地面（像被水磨平的天然石板步道，有淡淡的細紋、石縫裡一點細沙，被暖色礦物光照亮）；一定要比周圍深色洞穴亮，格子放上去才清楚。
 
 ### S4 沉船（83～100）
 ```
