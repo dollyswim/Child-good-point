@@ -1065,6 +1065,7 @@ async function main() {
     for (const sp of ['bed', 'cupboard', 'desk', 'crate', 'wardrobe']) { await talkUntil('.boss-spot[data-spot="' + sp + '"]:not(.seen)'); await q.click('.boss-spot[data-spot="' + sp + '"]'); }
     await talkUntil('.order-card');
     for (let k = 0; k < 4; k++) { await q.click('.order-card[data-c="' + k + '"]'); await q.click('.order-slot[data-o="' + k + '"]'); }
+    if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, '40-water-cards.png') });
     await q.click('#order-check');
     await talkUntil('#use-bottle');
     await q.click('#use-bottle');

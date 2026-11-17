@@ -193,7 +193,8 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 用「角色與小圖」共用風格。
 
 > ✅ 2026-11-17 第三批已收（Gemini）：E-1 玻璃牛奶瓶（重畫版：經典瓶身、捲紙、瓶底牛奶滴浮雕）→ `images/water/items/bottle.webp`；E-9 海玻璃（重畫版：霧面）→ `images/water/find/seaglass.webp`；E-12 海草束 → `images/water/find/seaweed.webp`；E-25 小被被（與 C-7 一致）→ `images/water/items/blanket.webp`；E-30 潛水艇 → `images/items/submarine.webp`。都只去除與外框相連的白底。
-> ⏳ 還沒交：E-14、E-15 筆記本，E-16～E-19 紙卡，E-20～E-23 收納箱，E-24 扳手，E-26 水窪（E-27、E-28 第二版選做）。
+> ✅ 2026-11-17 第四批已收（Gemini）：E-15 筆記本翻開 → `images/water/items/notebook_open.webp`（頁面文字由 App 寫）；E-16～E-19 紙卡（弄髒、清洗、晾乾、收好）→ `images/water/items/card_soiled／card_wash／card_dry／card_store.webp`。
+> ⏳ 還沒交：E-14 筆記本闔上，E-20～E-23 收納箱，E-24 扳手，E-26 水窪（E-27、E-28 第二版選做）。
 
 ### 第 4、8、16 格
 | 代號 | 物件 | 提示詞 |

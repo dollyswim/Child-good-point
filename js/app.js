@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.17-158';
+  var APP_VERSION = '2026.11.17-159';
   var store;
   try {
     store = new CGP.Store();
@@ -2046,7 +2046,8 @@
     { id: 'wardrobe', label: '衣櫃', emoji: '🚪', x: 52, y: 66, card: 3, say: '衣櫃門縫夾著一張紙！' },
     { id: 'rack', label: '窗邊的瓶架', emoji: '🪟', x: 82, y: 66, say: '窗台上有一個空空的圓形瓶架……原本放什麼呢？先記下來。' }
   ];
-  var BOSS_CARDS = [['soiled', '弄髒了', '🟤'], ['wash', '洗一洗', '🫧'], ['dry', '晾乾', '☀️'], ['store', '收好', '📥']];
+  var BOSS_CARDS = [['soiled', '弄髒了', '🟤'], ['wash', '洗一洗', '🫧'], ['dry', '晾乾', '☀️'], ['store', '收好', '📥']];   // 2026-11-17 E-16～E-19 正式圖：images/water/items/card_<id>.webp
+  function bossCard(c) { var k = BOSS_CARDS[c]; return '<img class="card-art" src="images/water/items/card_' + k[0] + '.webp" alt="" draggable="false"><small>' + k[1] + '</small>'; }
   var BOSS_BOXES = [['star', '星星箱', '⭐', '箱子裡有扳手和起子，叮叮噹噹的。'], ['shell', '貝殼箱', '🐚', '箱子摸起來濕濕的，旁邊有一小灘水。'], ['moon', '月亮箱', '🌙', '箱子乾乾的，裡面也沒有工具。']];
   async function waterBoss(child) {
     var M = WHO.monster(), me = WHO.me(child), stage = wstate(child).water.bossStage || 0;
@@ -2073,8 +2074,12 @@
           if (s.card != null) cards++;
           if (s.notebook) {
             notebook = true;
+            var book = document.createElement('div'); book.className = 'boss-book';   // E-15 翻開的筆記本：頁面上的字由 App 寫
+            book.innerHTML = '<img src="images/water/items/notebook_open.webp" alt="" draggable="false"><p class="bb-l">重要事情<br>千萬不能<br>忘記！</p><p class="bb-r">記得帶<br>筆記本。</p>';
+            layer.appendChild(book);
             await talkSeq([line(me, '筆記本封面寫著：「健忘怪的重要事情！千萬不能忘記！」'), line(me, '第一頁寫著：「記得帶筆記本。」'),
               line(M, '太好了，提醒得真清楚！……筆記本在哪？'), line(me, '就在我手上啊！'), line(M, '喔喔喔！原來在這裡！')]);
+            book.remove();
           }
           prog();
           if (cards >= 4 && notebook) setTimeout(resolve, 300);
@@ -2089,7 +2094,7 @@
       await say(M, '昨天好像拿去洗了……還是拿去游泳？');
       var deck = [0, 1, 2, 3]; do { deck.sort(function () { return Math.random() - .5; }); } while (deck.join() === '0,1,2,3');
       layer.innerHTML = '<div class="order-row">' + [0, 1, 2, 3].map(function (i) { return '<button type="button" class="order-slot" data-o="' + i + '"></button>' + (i < 3 ? '<span class="order-arrow">→</span>' : ''); }).join('') + '</div>';
-      P.tools.innerHTML = '<div class="order-deck">' + deck.map(function (c) { return '<button type="button" class="order-card" data-c="' + c + '"><span>' + BOSS_CARDS[c][2] + '</span><small>' + BOSS_CARDS[c][1] + '</small></button>'; }).join('') + '</div>' +
+      P.tools.innerHTML = '<div class="order-deck">' + deck.map(function (c) { return '<button type="button" class="order-card" data-c="' + c + '">' + bossCard(c) + '</button>'; }).join('') + '</div>' +
         '<button type="button" class="btn primary" id="order-check" disabled>看看順不順</button>';
       await new Promise(function (resolve) {
         var pick = null, put = [null, null, null, null];
@@ -2111,7 +2116,7 @@
             P.tools.querySelector('.order-card[data-c="' + put[o] + '"]').classList.remove('used'); put[o] = null; s.innerHTML = ''; sync(); return;
           }
           if (pick == null) return;
-          put[o] = pick; s.innerHTML = '<span>' + BOSS_CARDS[pick][2] + '</span><small>' + BOSS_CARDS[pick][1] + '</small>';
+          put[o] = pick; s.innerHTML = bossCard(pick);
           var c = P.tools.querySelector('.order-card[data-c="' + pick + '"]'); c.classList.add('used'); c.classList.remove('on'); pick = null; sync();
         });
       });

@@ -2317,6 +2317,13 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .order-card { display: grid; justify-items: center; padding: 6px 2px; border: 2px solid #ead9b6; border-radius: 12px; background: #fffaf0; cursor: pointer; }
 .order-card.on { border-color: #ff9f1a; box-shadow: 0 0 0 3px rgba(255, 159, 26, .4); }
 .order-card.used { visibility: hidden; }
+.card-art { display: block; width: 100%; max-width: 64px; aspect-ratio: 1; object-fit: contain; }
+.order-slot .card-art { max-width: 92%; }
+.boss-book { position: absolute; left: 50%; top: 46%; width: min(86%, 340px); transform: translate(-50%, -50%); z-index: 30; pointer-events: none; animation: boss-book-in .3s ease-out; }
+@keyframes boss-book-in { from { opacity: 0; transform: translate(-50%, -46%) scale(.9); } }
+.boss-book img { display: block; width: 100%; }
+.boss-book p { position: absolute; top: 24%; width: 30%; margin: 0; text-align: center; font-weight: 900; font-size: clamp(.62rem, 3vw, .85rem); line-height: 1.6; color: #4a5a8a; }
+.boss-book .bb-l { left: 16%; } .boss-book .bb-r { right: 16%; color: #6b4426; }
 .box-row { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-around; padding: 0 4%; }
 .box-one { width: 29%; display: grid; justify-items: center; gap: 2px; padding: 10px 4px; border: 3px solid #b88a55; border-radius: 14px; background: #f1d9ae; cursor: pointer; }
 .box-one span { font-size: 2rem; } .box-one small { font-weight: 900; color: #6b4426; }
