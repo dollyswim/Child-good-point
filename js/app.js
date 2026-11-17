@@ -237,7 +237,7 @@
       var homeFresh = store.getChildren().map(function (c) { return { child: c, list: store.checkAchievements(c.id) }; });   // 首頁成就欄顯示最新狀態
       html = renderHome();
     }
-    if (r.name !== 'map') ui.doorPick = null;
+    if (r.name !== 'map') { ui.doorPick = null; ui.sceneView = null; ui.pawnHold = null; }
     if (r.name !== 'settings') {
       if (store.isParentUnlocked()) store.lockParent();   // 離開設定就上鎖
       ui.pinMode = null;
@@ -777,8 +777,9 @@
   function worldXY(region, tile) { return { x: tile.gx, y: tile.gy }; }
   var REGION_NO = ['第一區', '第二區', '第三區', '第四區'];
   /** 長地圖背景：已開放的區域放背景圖，其餘用雲霧遮住、顯示「即將開放」 */
-  function mapStrips(board) {
+  function mapStrips(board, scene) {
     return board.regions.map(function (r, i) {
+      if (scene && r !== scene) return '';   // 水島（多場景）：只放目前這個場景的背景
       var top = 'top:' + r.stripY + 'px';
       if (r.available && r.background) {
         return '<picture class="map-strip" style="' + top + '"><source srcset="' + r.background.webp + '" type="image/webp">' +
@@ -984,9 +985,9 @@
     return true;
   }
   /** 還沒完成的劇情：導遊站在劇情地點（頭上有「！」），點他會提示要去哪一格 */
-  function storyDecor(board, player) {
+  function storyDecor(board, player, scene) {
     var cfg = ISLAND_STORY[board.id];
-    return storyOpen(board, player).map(function (id) {
+    return storyOpen(board, player).filter(function (id) { return !scene || board.tiles[GAME.STORIES[id].tile].regionId === scene.id; }).map(function (id) {
       var sp = cfg.spots[id], g = storyXY(board, id, sp.guide);
       var lever = sp.lever ? storyXY(board, id, sp.lever) : null;
       return '<div class="story-guide ' + cfg.guide.cls + '" data-tap="guide" data-story="' + id + '" style="left:' + g.x.toFixed(1) + 'px;top:' + g.y.toFixed(1) + 'px;width:' + cfg.guide.w + 'px;z-index:' + Math.round(g.y / 6) + '" role="img" aria-label="' + cfg.guide.label + '（需要幫忙）">' +
@@ -1539,8 +1540,13 @@
   function renderMap(child) {
     var player = store.getPlayer(child.id);
     var board = store.getBoard(child.id);
-    var region = regionOf(board, board.tiles[player.pos]);
-    var W = board.world.width, H = board.world.height;   // 長地圖總覽尺寸
+    // 水島（多場景）：一次只顯示一個場景。顯示哪個場景：移動演出中的位置 → 家長／孩子切換瀏覽的場景 → 角色所在場景
+    var hold = ui.pawnHold && ui.pawnHold.childId === child.id ? ui.pawnHold.n : null;
+    var shownN = hold != null ? hold : player.pos;
+    var scene = board.scenes ? (hold == null && ui.sceneView && ui.sceneView.childId === child.id ? board.regions[ui.sceneView.idx] : regionOf(board, board.tiles[shownN])) : null;
+    var region = scene || regionOf(board, board.tiles[player.pos]);
+    function inScene(n) { return !scene || board.tiles[n].regionId === scene.id; }
+    var W = board.world.width, H = board.world.height;   // 長地圖總覽尺寸（水島＝單一場景尺寸）
     var bag = player.bag;
     var canPlay = store.canPlayToday(child.id);
     var used = store.getRollsToday(child.id);
@@ -1558,11 +1564,12 @@
     var lim = store.getItemLimitsToday(child.id);
     var ended = store.isAdventureEnded(child.id);
     var reason = ended ? '🏁 今天的冒險已經結束了，明天見！' : !canPlay ? '🔒 今日冒險還沒出發，先回任務頁按「進入今日冒險」'
-      : picking ? '🚪 傳送門：點地圖上的格子選擇要去的地方'
+      : picking ? (ui.pickKind === 'sub' ? '🚤 潛水艇：點地圖上的格子選擇要開到哪裡（可以用 ◀ ▶ 換場景）' : '🚪 傳送門：點地圖上的格子選擇要去的地方')
+      : store.waterTaskHere(child.id) ? '⭐ 先完成「' + GAME.STORIES[store.waterTaskHere(child.id)].name + '」才能繼續前進：點擲骰或地圖上的角色開始'
       : atEnd ? (board.tiles[player.pos].type === 'end' ? '🏁 已抵達' + (board.goalName || '終點') + '、通關' + board.name + '！' + (store.flightReady(child.id) ? '飛行員阿翔在城堡旁等你，點他搭「飛行者」前往「' + store.flightReady(child.id).name + '」' : GAME.nextIsland(player.island) ? '下次出發前往「' + GAME.BOARDS[GAME.nextIsland(player.island)].name + '」' : '下次出發從起點開始新的一輪') : '🚪 已抵達目前開放區域的終點！下次出發從起點開始新的一輪')
         : noRolls ? '今天的 ' + limit + ' 次骰子用完了，明天再來！' + (lim.move && (bag.skates || bag.wings) ? '（前進道具今天還可以用 ' + lim.move + ' 次）' : '')
           : (!bag.d6 && !bag.d12 && !bag.skates ? '背包是空的，點左下角的商店用能量星星購買骰子' : '選一個道具出發吧！');
-    var tiles = board.tiles.map(function (t) {   // 長地圖：所有已開放區域的格子都顯示
+    var tiles = board.tiles.filter(function (t) { return inScene(t.n); }).map(function (t) {   // 長地圖：所有已開放區域的格子都顯示（水島：目前場景的格子）
       var p = worldXY(region, t);
       if (t.type === 'start') {
         return '<div class="mstart' + (t.id === player.tileId ? ' here' : '') + '" data-tile="' + t.id + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px" aria-hidden="true">' +
@@ -1576,7 +1583,7 @@
         (sw ? ' title="能源開關：走到這裡幫能源塔充電"' : TILE_LABEL[shown] ? ' title="' + TILE_LABEL[shown] + '"' : '') + '>' + tileArt(shown, 'mtile-icon') +
         (sw ? '<span class="switch-ico" aria-hidden="true">⚡</span>' : '') + '</div>';
     }).join('');
-    var pp = worldXY(region, board.tiles[player.pos]);
+    var pp = worldXY(region, board.tiles[shownN]), pawnShown = inScene(shownN);
     return pageHeader(board.name, child, 'map') +
       '<main class="page map-page">' +
       '<section class="hud">' +
@@ -1586,32 +1593,33 @@
       '</section>' +
       '<p class="region-name">🏝️ ' + REGION_NO[board.regions.indexOf(region)] + '・' + h(region.name) + '</p>' +
       '<section class="map-view' + (picking ? ' picking' : '') + '" id="map-view" aria-label="' + h(board.name) + '地圖，可拖曳與縮放">' +
-      '<div class="map-world" id="map-world" style="width:' + W + 'px;height:' + H + 'px" data-w="' + W + '" data-h="' + H + '">' +
-      mapStrips(board) +
+      '<div class="map-world" id="map-world" style="width:' + W + 'px;height:' + H + 'px" data-w="' + W + '" data-h="' + H + '"' + (scene ? ' data-scene="' + scene.id + '"' : '') + '>' +
+      mapStrips(board, scene) +
       towerDecor(board, player) +
-      storyDecor(board, player) + pilotDecor(child, board) +
+      storyDecor(board, player, scene) + pilotDecor(child, board) + waterDecor(child, board, player, scene) +
       tiles +
-      store.getMapChests(child.id).map(function (c) {
+      store.getMapChests(child.id).filter(function (c) { return inScene(c.n); }).map(function (c) {
         var cp = worldXY(region, board.tiles[c.n]);
         return '<div class="map-chest" data-chest="' + c.n + '" style="left:' + cp.x.toFixed(1) + 'px;top:' + cp.y.toFixed(1) + 'px" title="神秘寶箱"><img src="images/items/mystery_chest.webp" alt="神秘寶箱" width="256" height="256" draggable="false"></div>';
       }).join('') +
-      '<div class="pawn" id="pawn" data-char="' + h(characterId(child)) + '" data-pos="' + player.pos + '" data-tile="' + h(player.tileId) + '" style="left:' + pp.x.toFixed(1) + 'px;top:' + pp.y.toFixed(1) + 'px">' +
-      '<div class="pawn-inner">' + characterArt(child) + '</div></div>' +
+      (pawnShown ? '<div class="pawn" id="pawn" data-char="' + h(characterId(child)) + '" data-pos="' + shownN + '" data-tile="' + h(board.tiles[shownN].id) + '" style="left:' + pp.x.toFixed(1) + 'px;top:' + pp.y.toFixed(1) + 'px">' +
+      '<div class="pawn-inner">' + characterArt(child) + '</div></div>' : '') +
       '</div>' +
       '<div class="map-ctrl"><button type="button" data-map="in" aria-label="放大">＋</button><button type="button" data-map="out" aria-label="縮小">－</button>' +
       '<button type="button" data-map="follow" aria-label="回到角色位置">🎯</button></div>' +
+      (scene ? sceneNav(board, scene) : '') +
       '<button type="button" class="map-shop" data-action="open-shop"' + (canPlay ? '' : ' disabled') + ' aria-label="星星商店">' + SHOP_ART + '<b>商店</b></button>' +
       '<div class="dice-overlay" id="dice-overlay" hidden><div class="die-face" id="die-face">?</div></div>' +
       '</section>' +
       '<p class="map-hint">' + reason + '</p>' +
-      (picking ? '<button type="button" class="btn block" data-action="cancel-door">取消傳送門</button>' : '') +
+      (picking ? '<button type="button" class="btn block" data-action="cancel-door">' + (ui.pickKind === 'sub' ? '取消潛水艇' : '取消傳送門') + '</button>' : '') +
       (canPlay && pending ? '<button type="button" class="btn primary block" data-action="roll" data-kind="' + pending.die + '">🎲 已擲出 ' + pending.value + '，點這裡繼續</button>' : '') +
       (player.medalArmed ? '<p class="medal-on">🥇 好運金牌已啟用：下一次停在寶箱或機會格，效果發生 2 次</p>' : '') +
       (canPlay && store.getPendingMinigame(child.id) ? '<button type="button" class="btn primary block mg-resume" data-action="play-minigame">🎮 今天的小遊戲還沒玩完，點這裡開始</button>' : '') +
       '<section class="dice-bar">' +
       act('d6', '6 面骰', bag.d6, !canPlay || noRolls || !bag.d6 || !!pending || picking) +
       act('d12', '12 面骰', bag.d12, !canPlay || noRolls || !bag.d12 || !!pending || picking) +
-      act('skates', '溜冰鞋 +3', bag.skates, !canPlay || !bag.skates || !lim.move || !!pending || picking, lim.move ? '' : '・今天已用完') +
+      (board.id === 'water' ? belugaAct(child, player, !canPlay || !!pending || picking) : act('skates', '溜冰鞋 +3', bag.skates, !canPlay || !bag.skates || !lim.move || !!pending || picking, lim.move ? '' : '・今天已用完')) +
       '</section>' +
       itemBar(child, player, { canPlay: canPlay, atEnd: atEnd, pending: !!pending, picking: picking, quota: quota }) +
       (canPlay ? '<button type="button" class="btn block end-day" data-action="end-day"' + (pending || picking ? ' disabled' : '') + '>🏁 結束今日冒險</button>' : '') +
@@ -1623,6 +1631,27 @@
       }).join('') + '</div>' +
       '<a class="btn block" href="#adventure-' + h(child.id) + '">‹ 回冒險大廳</a>' +
       '</main>';
+  }
+
+  /** 水島（多場景）：◀ ▶ 瀏覽其他場景（只看不移動；角色移動時會自動回到角色所在場景） */
+  function sceneNav(board, scene) {
+    var i = board.regions.indexOf(scene), n = board.regions.length;
+    return '<div class="scene-nav"><button type="button" data-scene-go="-1" aria-label="上一個場景"' + (i ? '' : ' disabled') + '>◀</button>' +
+      '<span>' + (i + 1) + ' / ' + n + '</span><button type="button" data-scene-go="1" aria-label="下一個場景"' + (i < n - 1 ? '' : ' disabled') + '>▶</button></div>';
+  }
+  /** 小白鯨載我前進（水島：餵過小白鯨後每天 3 次；佔用溜冰鞋的位置，水島不能用溜冰鞋） */
+  function belugaAct(child, player, off) {
+    var friend = !!player.story.feed, left = store.belugaRidesLeft(child.id);
+    return '<button class="dice-btn beluga" data-action="beluga-ride" data-kind="beluga"' + (off || !friend || !left ? ' disabled' : '') + '>' +
+      '<span class="item-art dice-icon"><img src="' + WATER_NPC.beluga + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></span><b>小白鯨載我</b><small>' +
+      (!friend ? '先在第 34 格和牠當朋友' : left ? '今天還可以 ' + left + ' 次' : '牠游累了，明天再來') + '</small></button>';
+  }
+  /** 水島地圖上的 NPC（迎接漁夫、魚桶、牛奶瓶提示等由劇情另外放；這裡放第 100 格健忘怪的門口標記） */
+  var WATER_NPC = { fisherman: 'images/water/npc/fisherman.webp', beluga: 'images/water/npc/beluga.webp', shark: 'images/water/npc/shark.webp', lantern: 'images/water/npc/anglerfish.webp',
+    monster: 'images/water/npc/monster_confused.webp', monsterSurprised: 'images/water/npc/monster_surprised.webp', monsterBlanket: 'images/water/npc/monster_blanket.webp' };
+  function waterDecor(child, board, player, scene) {
+    if (board.id !== 'water' || typeof waterMapDecor !== 'function') return '';
+    return waterMapDecor(child, board, player, scene);
   }
 
   // ---------- 鏡頭：拖曳、雙指縮放、跟隨角色 ----------
@@ -1673,9 +1702,10 @@
     }
     var tap = null;   // 傳送門：手指幾乎沒移動就放開＝點選格子
     view.addEventListener('pointerdown', function (e) {
-      if (e.target.closest('.map-ctrl, .map-shop')) return;
+      if (e.target.closest('.map-ctrl, .map-shop, .scene-nav')) return;
       view.setPointerCapture(e.pointerId);
       pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      if (e.target.closest('.scene-nav')) { delete pts[e.pointerId]; return; }
       tap = Object.keys(pts).length === 1 ? { x: e.clientX, y: e.clientY, el: e.target.closest('[data-tap]') } : null;   // 地圖接管觸控後點擊不會傳到地圖上的東西，改在放開時判斷
       last = null;
     });
@@ -1702,6 +1732,16 @@
     }
     view.addEventListener('pointerup', up); view.addEventListener('pointercancel', up);
     view.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY); }, { passive: false });
+    view.querySelectorAll('[data-scene-go]').forEach(function (btn) {
+      btn.onclick = function () {
+        var board = store.getBoard(child.id), cur = board.regions.findIndex(function (r) { return r.id === world.dataset.scene; });
+        var idx = Math.max(0, Math.min(board.regions.length - 1, cur + Number(btn.getAttribute('data-scene-go'))));
+        var home = board.regions.indexOf(regionOf(board, board.tiles[store.getPlayer(child.id).pos]));
+        ui.sceneView = idx === home ? null : { childId: child.id, idx: idx };
+        if (ui.cam) ui.cam.manual = idx !== home;
+        render();
+      };
+    });
     view.querySelectorAll('[data-map]').forEach(function (btn) {
       btn.onclick = function () {
         var k = btn.getAttribute('data-map');
@@ -1816,6 +1856,11 @@
     if (ui.cam) ui.cam.manual = false;
     for (var i = 0; i < path.length; i++) {
       var t = board.tiles[path[i]], p = worldXY(regionOf(board, t), t);
+      if (board.scenes) {   // 水島：走到另一個場景 → 淡出、換場景、淡入（約 0.4 秒，不多算格子）
+        var wd = document.getElementById('map-world');
+        if (wd && wd.dataset.scene !== t.regionId) { await switchScene(child, path[i]); pawn = document.getElementById('pawn'); if (!pawn) return; }
+        ui.pawnHold = { childId: child.id, n: path[i] };
+      }
       pawn.style.left = p.x.toFixed(1) + 'px'; pawn.style.top = p.y.toFixed(1) + 'px';
       pawn.dataset.pos = path[i]; pawn.dataset.tile = t.id;
       markHere(t.id);
@@ -1828,6 +1873,16 @@
     pawnIdle();
   }
 
+  /** 水島：換場景（先載好下一張背景再切換；失敗也照樣切，背景晚一點出現） */
+  async function switchScene(child, n) {
+    var board = store.getBoard(child.id), sc = regionOf(board, board.tiles[n]), wd = document.getElementById('map-world');
+    if (wd) { wd.classList.add('scene-out'); await sleep(reduceMotion ? 0 : 220); }
+    await preloadImages([sc.background.webp], 3000);
+    ui.pawnHold = { childId: child.id, n: n }; ui.sceneView = null;
+    render();
+    var nw = document.getElementById('map-world');
+    if (nw && !reduceMotion) { nw.classList.add('scene-in'); await sleep(20); nw.classList.remove('scene-in'); await sleep(220); }
+  }
   async function showDie(value, sides) {
     var ov = document.getElementById('dice-overlay'), face = document.getElementById('die-face');
     if (!ov) return;
@@ -1852,6 +1907,16 @@
     if (!hit) return;
     var n = Number(hit.dataset.n), p = store.getPlayer(child.id), end = store.getBoard(child.id).tiles.length - 1;
     if (n === p.pos) { toast('你已經在這一格了'); return; }
+    if (ui.pickKind === 'sub') {   // 水島潛水艇：第 25～99 格、不能跳過還沒完成的關卡
+      var g = store.waterGate(child.id);
+      if (n < 25 || n >= end) { toast('潛水艇只能開到第 25～' + (end - 1) + ' 格', 'neg'); return; }
+      if (g > 0 && n > g) { toast('第 ' + g + ' 格的關卡還沒完成，\n潛水艇最遠只能到第 ' + g + ' 格', 'neg'); return; }
+      confirmThen('用 🚤 潛水艇開到第 ' + n + ' 格？', '出發', false, function () {
+        ui.doorPick = null; ui.pickKind = null;
+        setTimeout(function () { playMove(child.id, 'submarine', n); }, 0);
+      });
+      return;
+    }
     if (n >= end) { toast('傳送門不能傳送到終點木門', 'neg'); return; }
     var dl = store.doorLimit(child.id);   // 不能跳過還沒完成的任務格
     if (dl && n > dl.tile) { toast('第 ' + dl.tile + ' 格的任務「' + dl.name + '」還沒完成，\n傳送門最遠只能到第 ' + dl.tile + ' 格', 'neg'); return; }
@@ -1887,6 +1952,9 @@
     var child = store.getChild(childId);
     if (kind !== 'door' && store.flightReady(childId)) { pilotTalk(child); return; }   // 金島終點：要去木島請找阿翔（不扣骰子、不算次數）
     var fromIsland = store.getPlayer(childId).island;   // 換島過場用：從哪座島出發
+    var wt = kind !== 'door' && store.waterTaskHere(childId);   // 水島：停在還沒完成的關卡 → 先開任務（不擲骰、不扣次數）
+    if (wt) { runStory(child, wt); return; }
+    ui.sceneView = null;
     var isDie = kind === 'd6' || kind === 'd12' || kind === 'magic';
     var res, pr = null;
     var towerBefore = goldMaxOf(store.getPlayer(childId));   // 走過第 80 格的那一次播放通電動畫
@@ -1908,9 +1976,12 @@
       } else if (kind === 'skates') { res = store.useSkates(childId); toast('🛼 溜冰鞋前進 3 格！', 'pos'); }
       else if (kind === 'wings') { res = store.useWings(childId); toast('🪽 飛行翼起飛！', 'pos'); }
       else if (kind === 'door') { res = store.useDoor(childId, arg); toast('🚪 傳送門傳送到第 ' + arg + ' 格！', 'pos'); }
+      else if (kind === 'beluga') { res = store.belugaRide(childId); toast('🐳 小白鯨載你游了 ' + res.value + ' 格！' + (res.ridesLeft ? '' : '牠游累了，明天再載你。'), 'pos'); }
+      else if (kind === 'submarine') { res = store.useSubmarine(childId, arg); toast('🚤 潛水艇開到第 ' + arg + ' 格！', 'pos'); }
       else throw new Error('不明的移動方式');
     } catch (err) { ui.busy = false; toast(err.message, 'neg'); render(); return; }
     var ev = res.event;
+    if (store.getBoard(childId).scenes) ui.pawnHold = { childId: childId, n: res.travel || res.lap ? 0 : res.from };   // 水島：演出時角色從出發的格子開始走
     try {
       if (res.travel) {   // 通關後前往下一座島：換成新島嶼的地圖，從起點出發
         if (res.travel.island === 'wood') { await flightScene(child, { from: '金島', island: 'wood', name: res.travel.name }); }   // 沒按專機按鈕、直接擲骰：一樣搭專機過去
@@ -1936,7 +2007,7 @@
         await sleep(500);
         await hopAlong(child, back.backPath);
       }
-    } finally { ui.busy = false; }
+    } finally { ui.busy = false; ui.pawnHold = null; }
     render();
     if (towerBefore < TOWER_LIT_AT && goldMaxOf(store.getPlayer(childId)) >= TOWER_LIT_AT && document.getElementById('gold-tower')) {
       ui.busy = true; document.body.classList.add('pawn-acting');   // 演出期間暫停骰子
@@ -3097,8 +3168,10 @@
     }
     if (bag.magicDice) btn('magicDice', 'roll', '神奇骰子', magicUsed ? '今天已用・×' + bag.magicDice : '×' + bag.magicDice + '・不占次數', busy || magicUsed);
     var lim = store.getItemLimitsToday(child.id);   // 前進類合計每天 5 次、傳送門每天 1 次
-    if (bag.wings) btn('wings', 'use-item', '飛行翼 +20', '×' + bag.wings + (lim.move ? '・今天剩 ' + lim.move + ' 次' : '・今天已用完'), busy || !lim.move);
-    if (bag.door) btn('door', 'pick-door', '傳送門', '×' + bag.door + (lim.door ? '・今天剩 ' + lim.door + ' 次' : '・今天已用完'), busy || !lim.door);
+    var inWater = player.island === 'water';
+    if (bag.wings && !inWater) btn('wings', 'use-item', '飛行翼 +20', '×' + bag.wings + (lim.move ? '・今天剩 ' + lim.move + ' 次' : '・今天已用完'), busy || !lim.move);
+    if (bag.submarine && inWater) btn('submarine', 'pick-sub', '潛水艇', '×' + bag.submarine + (player.pos < 25 ? '・潛到海裡才能用' : lim.sub ? '・今天剩 ' + lim.sub + ' 次' : '・今天已用完'), busy || !lim.sub || player.pos < 25);
+    if (bag.door && !inWater) btn('door', 'pick-door', '傳送門', '×' + bag.door + (lim.door ? '・今天剩 ' + lim.door + ' 次' : '・今天已用完'), busy || !lim.door);
     if (bag.luckyMedal) btn('luckyMedal', 'activate-medal', '好運金牌', player.medalArmed ? '已啟用・×' + bag.luckyMedal : '×' + bag.luckyMedal + '・點我啟用', !!player.medalArmed);
     var L = store.getLimits();
     if (bag.pineHide) { var phUsed = store._usesToday(child.id, ['pineHide']) >= L.pineHide; btn('pineHide', 'use-pinehide', '松果躲躲', phUsed ? '今天已用・×' + bag.pineHide : '×' + bag.pineHide + '・玩一局', busy || phUsed || !!store.getPendingMinigame(child.id)); }
@@ -3127,13 +3200,13 @@
       '<div class="treasure-grid">' + GAME.TREASURES.map(function (t) {
         var chk = store.canBuyTreasure(child.id, t.id);
         return '<div class="treasure-card' + (chk.ok ? ' can' : '') + '" data-treasure="' + t.id + '">' +
-          '<span class="item-art treasure-art"><img src="' + t.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async" draggable="false"></span>' +
+          '<span class="item-art treasure-art">' + (t.img ? '<img src="' + t.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async" draggable="false">' : '<span class="bag-emoji">' + t.icon + '</span>') + '</span>' +
           '<span class="treasure-main"><b>' + h(t.name) + '</b><small>' + h(t.desc) + '</small>' +
           '<span class="treasure-meta"><span class="treasure-price"><i class="coin" aria-hidden="true">點</i>' + t.price + ' 點</span><span class="treasure-own">背包 ×' + (bag[t.id] || 0) + '</span></span></span>' +
           '<button class="btn ' + (chk.ok ? 'primary' : '') + ' small treasure-buy" data-action="buy-treasure" data-id="' + t.id + '"' + (chk.ok ? '' : ' disabled') + '>' +
           (chk.ok ? '兌換' : h(chk.reason)) + '</button></div>';
       }).join('') + '</div>' +
-      '<p class="muted small">用生活點數兌換，放進冒險背包；每週最多 ' + GAME.TREASURE_WEEKLY_LIMIT + ' 件，同款最多持有 ' + GAME.TREASURE_HOLD_LIMIT + ' 件。不消耗能量星星。</p></section>';
+      '<p class="muted small">用生活點數兌換，放進冒險背包；每週最多 ' + GAME.TREASURE_WEEKLY_LIMIT + ' 件，同款最多持有 ' + GAME.TREASURE_HOLD_LIMIT + ' 件' + (GAME.TREASURES.some(function (t) { return t.hold; }) ? '（潛水艇 3 件）' : '') + '。不消耗能量星星。</p></section>';
   }
 
   /** 冒險大廳的背包：顯示持有的道具（使用方式在地圖上；寶物效果逐步開放） */
@@ -3145,7 +3218,8 @@
     magicDice: { name: '神奇骰子', img: 'images/items/magic_dice.webp', note: '地圖上使用' },
     luckyMedal: { name: '好運金牌', img: 'images/items/lucky_medal.webp', note: '地圖上啟用' },
     wings: { name: '飛行翼', img: 'images/items/flying_wings.webp', note: '地圖上使用' },
-    door: { name: '傳送門', img: 'images/items/magic_door.webp', note: '地圖上使用' },
+    door: { name: '傳送門', img: 'images/items/magic_door.webp', note: '地圖上使用（水島不能用）' },
+    submarine: { name: '潛水艇', icon: '🚤', img: '', note: '只能在水島使用' },
     airplane: { name: '呼叫專機', img: 'images/items/airplane.webp', note: '其他島嶼開放後可用' },
     goldenKey: { name: '黃金鑰匙', img: 'images/items/golden_key.webp', note: '開神秘寶箱' },
     magnet: { name: '寶物磁鐵', img: 'images/items/treasure_magnet.webp', note: '地圖上使用' },
@@ -3489,7 +3563,9 @@
     ['door', '🚪 傳送門', ''],
     ['magic', '✨ 神奇骰子', ''],
     ['starCall', '🌠 星星呼喚', ''],
-    ['pineHide', '🌰 松果躲躲', '']
+    ['pineHide', '🌰 松果躲躲', ''],
+    ['beluga', '🐳 小白鯨載著前進（水島）', '餵過小白鯨後才有，不用骰子、不算擲骰次數'],
+    ['sub', '🚤 潛水艇（水島）', '']
   ];
   function settingsLimits() {
     var L = store.getLimits(), D = window.CGP.DEFAULT_LIMITS, max = window.CGP.LIMIT_MAX;
@@ -4155,8 +4231,10 @@
           });
           break;
         }
-        case 'pick-door': ui.doorPick = childId; render(); break;
-        case 'cancel-door': ui.doorPick = null; render(); break;
+        case 'pick-door': ui.doorPick = childId; ui.pickKind = 'door'; render(); break;
+        case 'pick-sub': ui.doorPick = childId; ui.pickKind = 'sub'; render(); break;
+        case 'cancel-door': ui.doorPick = null; ui.pickKind = null; render(); break;
+        case 'beluga-ride': playMove(childId, 'beluga'); break;
         case 'activate-medal':
           confirmThen('啟用 🥇 好運金牌？\n下一次停在寶箱或機會格時，效果會發生 2 次。', '啟用', false, function () {
             store.activateMedal(childId); toast('🥇 好運金牌已啟用！', 'pos');
