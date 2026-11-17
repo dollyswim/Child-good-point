@@ -67,8 +67,10 @@
     { id: 'wings', name: '飛行翼', icon: '🪽', img: 'images/items/flying_wings.webp', price: 100, desc: '向前飛行 20 格（和溜冰鞋合計每天最多 5 次）' },
     { id: 'starCall', name: '星星呼喚', icon: '🌠', img: 'images/minigame/star.webp', price: 50, desc: '馬上玩一局「抓住星星」（不占每天 1 次，每天最多用 1 個）' },   // 2026-11-08 新增
     { id: 'pineHide', name: '松果躲躲', icon: '🌰', img: 'images/wood/leaf_pinecone.webp', price: 50, desc: '馬上玩一局「落葉找松果」（不占每天 1 次，每天最多用 1 個）' },   // 2026-11-08 新增（比照星星呼喚，和星星呼喚各自計算）
-    { id: 'door', name: '傳送門', icon: '🚪', img: 'images/items/magic_door.webp', price: 200, desc: '傳送到本島指定的格子（每天最多 1 次）' }
+    { id: 'door', name: '傳送門', icon: '🚪', img: 'images/items/magic_door.webp', price: 200, desc: '傳送到本島指定的格子（水島不能用）' },
+    { id: 'submarine', name: '潛水艇', icon: '🚤', img: '', price: 200, hold: 3, desc: '只能在水島用：從第 25 格以後直接開到水中的指定格子', island: 'water' }   // 2026-11-16 新增（正式圖 E-30 到貨後填 img）
   ];
+  function treasureHold(id) { var t = TREASURES.find(function (x) { return x.id === id; }); return (t && t.hold) || TREASURE_HOLD_LIMIT; }
 
   var SHOP = [
     { id: 'd6', name: '6 面骰', icon: '🎲', img: 'images/items/dice_6.webp', price: 5, desc: '擲出 1～6 步' },
@@ -102,6 +104,7 @@
   var REGION03 = (typeof module !== 'undefined' && module.exports) ? require('./board-gold-03.js') : root.CGP_GOLD_REGION03;
   var REGION04 = (typeof module !== 'undefined' && module.exports) ? require('./board-gold-04.js') : root.CGP_GOLD_REGION04;
   var WOOD_DATA = (typeof module !== 'undefined' && module.exports) ? require('./board-wood.js') : root.CGP_WOOD_BOARD;
+  var WATER_DATA = (typeof module !== 'undefined' && module.exports) ? require('./board-water.js') : root.CGP_WATER_BOARD;
   /**
    * 金島長地圖（總覽座標 1080×5400，左上為原點，由下往上走）：四張 1080×1350 背景由上到下為
    * 第四區（y 0）、第三區（1350）、第二區（2700）、第一區（4050）。格子的 gx、gy 為總覽座標；x、y 為所在背景圖內 0～1。
@@ -222,6 +225,35 @@
       guideSpots: WOOD_DATA.guideSpots, partyLawn: WOOD_DATA.partyLawn };
   }
   if (woodOn) BOARDS.wood = buildWood();
+  /**
+   * 水島（2026-11-17 接入，Codex 正式圖；計畫見 docs/water/WATER_ISLAND_PLAN.md）：4 張獨立場景（各 1080×1350，不接成長圖），
+   * 格子的 gx、gy 是所在場景內的座標，regionId＝場景代號；畫面一次只顯示一個場景（board.scenes＝true）。
+   * WATER_OPEN＝false：程式與地圖已接好，但劇情插圖、過場圖還沒到齊，孩子還不能前往。預覽用 window.__cgpWaterOpen = true。
+   */
+  var WATER_OPEN = false;
+  var waterOn = (WATER_OPEN || !!root.__cgpWaterOpen) && !root.__cgpWaterClosed;
+  var WATER_SCENES = [['water-01', '珊瑚淺灘', 0, 24, 'images/water/scene01_v2.webp'], ['water-02', '深海世界', 25, 58, 'images/water/scene02_v2.webp'],
+    ['water-03', '水下洞穴', 59, 82, 'images/water/scene03.webp'], ['water-04', '沉船', 83, 100, 'images/water/scene04.webp']].map(function (r) {
+    return { id: r[0], name: r[1], from: r[2], to: r[3], stripY: 0, available: true, background: { webp: r[4], jpg: r[4] }, size: { width: 1080, height: 1350 } };
+  });
+  // 水島格子類型（計畫第 3 節；劇情格底層為一般格）
+  var WATER_TYPES = (function () {
+    var o = { 100: 'end' }, add = function (type, list) { list.forEach(function (n) { o[n] = type; }); };
+    add('chest', [6, 14, 23, 28, 38, 52, 64, 74, 88, 96]);
+    add('chance', [3, 11, 19, 26, 36, 44, 54, 60, 72, 80, 84, 94]);
+    add('fate', [12, 20, 32, 46, 66, 76, 90]);
+    add('minigame', [7, 15, 33, 40, 51, 68]);
+    return o;
+  })();
+  function buildWater() {
+    var tiles = WATER_DATA.tiles.map(function (t) {
+      return { n: t.n, id: t.id, regionId: t.regionId, gx: t.gx, gy: t.gy, x: t.gx / 1080, y: t.gy / 1350, type: t.n === 0 ? 'start' : (WATER_TYPES[t.n] || 'normal') };
+    });
+    return { id: 'water', name: '水島', goalName: '健忘怪的沉船', totalTiles: 100, world: { width: 1080, height: 1350 }, scenes: true,
+      regions: WATER_SCENES, tiles: tiles, npcSpots: WATER_DATA.npcSpots };
+  }
+  if (waterOn) BOARDS.water = buildWater();
+  if (!waterOn) TREASURES = TREASURES.filter(function (t) { return t.island !== 'water'; });   // 水島還沒開放：商店先不賣潛水艇
   function registerBoard(id, board) { board.id = id; BOARDS[id] = board; return board; }
   /** 下一座已開放的島（沒有其他已開放的島時回傳 null＝留在原島繞下一輪） */
   function nextIsland(id) {
@@ -254,6 +286,7 @@
     if (!p.islands || typeof p.islands !== 'object') p.islands = {};           // 其他島的保存進度 { 島: { laps, maxReached } }
     if (!p.islandClears || typeof p.islandClears !== 'object') p.islandClears = {};   // 金島以外的通關次數（金島沿用 goldClears）
     if (!p.story || typeof p.story !== 'object') p.story = {};   // 劇情完成日期 { ore, rail, tower, pinecone, flowers, invite, party }
+    if (!p.water || typeof p.water !== 'object') p.water = {};   // 水島故事進度：seen（沿路對話）、bucket（魚桶）、bottle（牛奶瓶）、welcomed、bossStage
     // 位置以穩定格子 ID 為準；舊存檔只有整數格號時對應到同號的格子（第 n 格 → gold-01-00n）
     var board = BOARDS[p.island] || GOLD;
     var idx = p.tileId ? board.tiles.findIndex(function (t) { return t.id === p.tileId; }) : -1;
@@ -398,6 +431,7 @@
    * 次數用完轉換的寶箱要等到之後的日子才出現；里程碑的下次進入地圖就出現。
    * @returns 這次新出現的寶箱數
    */
+  var WATER_NO_CHEST = [8, 16, 34, 48, 49, 56, 100];   // 水島：關卡格與鯊魚過關後的第 49 格不放神秘寶箱
   Store.prototype.placeMapChests = function (childId) {
     var p = this.getPlayer(childId), today = this.today(), self = this;
     var tiles = this.getBoard(childId).tiles, last = tiles.length - 2;
@@ -408,7 +442,7 @@
       if (p.pos + 2 > last) return;                          // 前方沒有位置：等下一區開放
       var used = self.data.adventure.mapChests.filter(function (x) { return x.childId === childId && x.tileId && x.island === p.island; }).map(function (x) { return x.n; });
       var free = [];
-      for (var t = p.pos + 2; t <= last; t++) if (used.indexOf(t) < 0) free.push(t);
+      for (var t = p.pos + 2; t <= last; t++) if (used.indexOf(t) < 0 && !(p.island === 'water' && WATER_NO_CHEST.indexOf(t) >= 0)) free.push(t);
       if (!free.length) return;
       var n = free[rint(self.random, 0, free.length - 1)];
       c.n = n; c.tileId = tiles[n].id; c.hinted = false;
@@ -596,7 +630,7 @@
     var item = TREASURES.find(function (x) { return x.id === itemId; });
     if (!item) return { ok: false, reason: '沒有這個寶物' };
     if (this.getTreasureBoughtThisWeek(childId) >= TREASURE_WEEKLY_LIMIT) return { ok: false, reason: '本週已兌換 ' + TREASURE_WEEKLY_LIMIT + ' 件' };
-    if ((this.getPlayer(childId).bag[itemId] || 0) >= TREASURE_HOLD_LIMIT) return { ok: false, reason: '已持有 ' + TREASURE_HOLD_LIMIT + ' 件' };
+    if ((this.getPlayer(childId).bag[itemId] || 0) >= treasureHold(itemId)) return { ok: false, reason: '已持有 ' + treasureHold(itemId) + ' 件' };
     var lack = item.price - this.getTotal(childId);
     if (lack > 0) return { ok: false, reason: '還差 ' + lack + ' 點' };
     return { ok: true, reason: '' };
@@ -617,9 +651,10 @@
   Store.prototype._advance = function (childId, steps) {
     var p = this.getPlayer(childId);
     var end = this.getBoard(childId).tiles.length - 1;
-    var path = [];
+    var path = [], gate = this.waterGate(childId);
     // 抵達目前開放區域的最後一格（第 30 格木門）即停止，多餘步數捨棄
-    for (var i = 0; i < steps && p.pos < end; i++) { p.pos++; path.push(p.pos); }
+    // 水島：走到還沒完成的必要關卡也停下，剩下的步數作廢（2026-11-16 家長決定）
+    for (var i = 0; i < steps && p.pos < end && p.pos !== gate; i++) { p.pos++; path.push(p.pos); }
     p.tileId = this.getBoard(childId).tiles[p.pos].id;
     if (p.pos > p.maxReached) p.maxReached = p.pos;
     this._found = (this._found || 0) + this._collectAt(childId, path);   // 經過或停在神秘寶箱的格子就撿起來
@@ -694,7 +729,7 @@
         p.tileId = this.getBoard(childId).tiles[p.pos].id;
         this._found = (this._found || 0) + this._collectAt(childId, ev.backPath);
         ev.text = T.back.replace('{n}', ev.backPath.length);
-      } else if (card.id === 'roadblock' && p.bag.shield > 0 && p.pos < this.getBoard(childId).tiles.length - 1) {
+      } else if (card.id === 'roadblock' && p.bag.shield > 0 && p.pos < this.getBoard(childId).tiles.length - 1 && p.pos !== this.waterGate(childId)) {
         // 防護罩推開路障：前進 1 格（落點不觸發事件，和往回退一樣）
         var rb = T.roadblocks[Math.floor(rand() * T.roadblocks.length)];
         p.bag.shield--;
@@ -755,23 +790,32 @@
       ev.title = '🚪 抵達' + lastR.name + '的終點！';
       ev.text = '你走完金島第 1～' + lastR.to + ' 格了！' + (nextR ? '前方的「' + nextR.name + '」即將開放。' : '') + '\n下次出發會從起點開始新的一輪，寶箱也會重新放滿！';
     } else if (tile.type === 'end') {
-      // 島嶼通關：第一次＝神秘寶箱 ×1（免鑰匙）（金島另得「金島通關」成就）；之後＝ +10 能量星星；
-      // 下一次移動前往下一座已開放的島（沒有就從起點開始新的一輪）
-      var bd = this.getBoard(childId), isGold = p.island === 'gold';
-      var count = isGold ? ++p.goldClears : (p.islandClears[p.island] = (p.islandClears[p.island] || 0) + 1);
-      var first = count === 1, nx = nextIsland(p.island);
-      ev.title = '🏁 恭喜通關' + bd.name + '！';
-      ev.clear = { count: count, first: first, island: p.island, name: bd.name, goal: bd.goalName || '', next: nx ? BOARDS[nx].name : '' };
-      if (first) {
-        p.bag.giftMysteryChest++; ev.items.giftMysteryChest = 1;
-        this._logItem(childId, 'grant', 'giftMysteryChest', 1, bd.name + '通關', '第一次通關');
-        ev.text = '你走完' + bd.name + ' ' + (bd.tiles.length - 1) + ' 格' + (bd.goalName ? '，抵達' + bd.goalName : '') + '了！\n通關獎勵：🎁 神秘寶箱 ×1（不用鑰匙）' + (isGold ? '＋ 🏅 成就「金島通關」' : '');
-      } else {
-        ev.stars = GOLD_CLEAR_STARS; this._ledger(childId, GOLD_CLEAR_STARS, bd.name + '通關（第 ' + count + ' 次）');
-        ev.text = '第 ' + count + ' 次通關' + bd.name + '！通關獎勵：⭐' + GOLD_CLEAR_STARS + ' 能量星星';
-      }
-      ev.text += nx ? '\n下次出發會前往「' + BOARDS[nx].name + '」！' : '\n下次出發會從起點開始新的一輪。';
+      if (p.island === 'water' && !p.story.blanket) {   // 水島：第 100 格先幫健忘怪找到寶貝，才算通關（finishWaterBoss）
+        ev.waterBoss = true; ev.title = '🚪 健忘怪的家'; ev.text = '門裡好像有人在翻箱倒櫃……「我的寶貝跑去哪裡了？」';
+      } else this._clearIsland(childId, ev);
     }
+    return ev;
+  };
+
+  /**
+   * 島嶼通關：第一次＝神秘寶箱（免鑰匙；水島 3 個＝健忘怪贈送，其他島 1 個）（金島另得「金島通關」成就）；之後＝ +10 能量星星；
+   * 下一次移動前往下一座已開放的島（沒有就從起點開始新的一輪）
+   */
+  Store.prototype._clearIsland = function (childId, ev) {
+    var p = this.getPlayer(childId), bd = this.getBoard(childId), isGold = p.island === 'gold';
+    var count = isGold ? ++p.goldClears : (p.islandClears[p.island] = (p.islandClears[p.island] || 0) + 1);
+    var first = count === 1, nx = nextIsland(p.island), gift = p.island === 'water' ? 3 : 1;
+    ev.title = '🏁 恭喜通關' + bd.name + '！';
+    ev.clear = { count: count, first: first, island: p.island, name: bd.name, goal: bd.goalName || '', next: nx ? BOARDS[nx].name : '' };
+    if (first) {
+      p.bag.giftMysteryChest += gift; ev.items.giftMysteryChest = gift;
+      this._logItem(childId, 'grant', 'giftMysteryChest', gift, bd.name + '通關', '第一次通關');
+      ev.text = '你走完' + bd.name + ' ' + (bd.tiles.length - 1) + ' 格' + (bd.goalName ? '，抵達' + bd.goalName : '') + '了！\n通關獎勵：🎁 神秘寶箱 ×' + gift + '（不用鑰匙）' + (isGold ? '＋ 🏅 成就「金島通關」' : '');
+    } else {
+      ev.stars = GOLD_CLEAR_STARS; this._ledger(childId, GOLD_CLEAR_STARS, bd.name + '通關（第 ' + count + ' 次）');
+      ev.text = '第 ' + count + ' 次通關' + bd.name + '！通關獎勵：⭐' + GOLD_CLEAR_STARS + ' 能量星星';
+    }
+    ev.text += nx ? '\n下次出發會前往「' + BOARDS[nx].name + '」！' : '\n下次出發會從起點開始新的一輪。';
     return ev;
   };
 
@@ -878,6 +922,9 @@
     { id: 'streak7', cat: 'life', icon: '📅', name: '連續 7 天冒險', desc: '連續 7 天出發冒險', check: function (s, c) {
       return longestStreak(s.data.adventure.settlements.filter(function (x) { return x.childId === c; }).map(function (x) { return x.date; })) >= 7; } }
   ]);
+  // 水島開放後才出現的成就（2026-11-17）
+  if (waterOn) ACHIEVEMENTS.splice(ACHIEVEMENTS.findIndex(function (a) { return a.id === 'woodClear1'; }) + 1, 0,
+  { id: 'waterClear1', cat: 'adventure', icon: '🌊', name: '水島通關', desc: '幫健忘怪找回小被被，完成水島冒險', check: function (s, c) { return (s.getPlayer(c).islandClears.water || 0) >= 1; } });
   /** 「抓住星星」單局最多抓到幾顆 */
   /** 落葉找松果單局最佳成績：key＝caught（找到的松果）或 squirrels（翻到的松鼠）；含封存結轉 */
   function bestLeaf(s, c, key) {
@@ -1025,6 +1072,7 @@
     if (die !== 'd6' && die !== 'd12' && die !== 'magic') throw new Error('沒有這種骰子');
     var p = this.getPlayer(childId);
     if (p.pendingRoll) throw new Error('先完成上一次擲骰');
+    this._requireNoWaterTask(childId);
     var end = this.getBoard(childId).tiles.length - 1;
     var needLap = p.pos >= end;   // 第二區開放前：在木門時這次從起點開始下一輪（檢查都通過才執行）
     var kind = 'base';
@@ -1151,7 +1199,9 @@
   Store.prototype.getItemLimitsToday = function (childId) {
     var L = this.getLimits();
     return { move: Math.max(0, L.move - this._usesToday(childId, ['skates', 'wings'])),
-      door: Math.max(0, L.door - this._usesToday(childId, ['door'])) };
+      door: Math.max(0, L.door - this._usesToday(childId, ['door'])),
+      beluga: Math.max(0, L.beluga - this._usesToday(childId, ['beluga'])),   // 水島：小白鯨載著前進
+      sub: Math.max(0, L.sub - this._usesToday(childId, ['submarine'])) };
   };
   Store.prototype._useMoveItem = function (childId, item) {
     this._requirePlay(childId);
@@ -1159,6 +1209,7 @@
     if (p.pendingRoll) throw new Error('先完成上一次擲骰');
     var end = this.getBoard(childId).tiles.length - 1;
     var needLap = p.pos >= end;
+    if (p.island === 'water') throw new Error('在水裡不能用' + MOVE_ITEMS[item].name + '喔！');
     if (!(p.bag[item] > 0)) throw new Error('背包裡沒有' + MOVE_ITEMS[item].name);
     if (!this.getItemLimitsToday(childId).move) throw new Error('今天的前進道具（溜冰鞋、飛行翼）已經用了 ' + this.getLimits().move + ' 次，明天再用！');
     this._markDayStart(childId);
@@ -1193,6 +1244,7 @@
     this._requirePlay(childId);
     var p = this.getPlayer(childId);
     if (p.pendingRoll) throw new Error('先完成上一次擲骰');
+    if (p.island === 'water') throw new Error('在水裡不能用傳送門喔！');
     var tiles = this.getBoard(childId).tiles, end = tiles.length - 1;
     n = Math.floor(Number(n));
     if (!(n >= 1 && n < end)) throw new Error('傳送門不能傳送到這一格');
@@ -1252,7 +1304,11 @@
     ore: { island: 'gold', tile: 5, name: '礦工求助' }, rail: { island: 'gold', tile: 30, name: '礦車轉轍' }, tower: { island: 'gold', tile: 80, name: '能源主塔' },
     // 2026-11-09 家長決定：木島劇情改成「森林派對」（木島尚未上線，沒有既有存檔，代號直接換新）
     pinecone: { island: 'wood', tile: 8, name: '撿回松果' }, flowers: { island: 'wood', tile: 40, name: '採花摘莓果' },
-    invite: { island: 'wood', tile: 65, name: '派對邀請卡' }, party: { island: 'wood', tile: 92, name: '森林派對' }
+    invite: { island: 'wood', tile: 65, name: '派對邀請卡' }, party: { island: 'wood', tile: 92, name: '森林派對' },
+    // 2026-11-16 水島「深海失落的寶藏」：6 個必要關卡（走到就停、剩下步數作廢，完成前不能往前）
+    memo: { island: 'water', tile: 8, name: '神秘藏寶圖', gate: true }, potion: { island: 'water', tile: 16, name: '漁夫的潛水藥水', gate: true },
+    feed: { island: 'water', tile: 34, name: '餵小白鯨', gate: true }, shark: { island: 'water', tile: 48, name: '大鯊魚攔路', gate: true },
+    lantern: { island: 'water', tile: 56, name: '燈籠魚找東西', gate: true }, blanket: { island: 'water', tile: 100, name: '健忘怪的小被被', gate: true }
   };
   /** 某座島的劇情代號（依 STORIES 的順序） */
   function storiesOf(island) { return Object.keys(STORIES).filter(function (k) { return STORIES[k].island === island; }); }
@@ -1289,10 +1345,148 @@
     if (offer && yes) {
       storiesOf(p.island).forEach(function (id) { delete p.story[id]; });
       if (p.island === 'gold') { p.maxReached = p.pos || 0; p.towerIntro = false; }   // 能源塔看「走到過第幾格」，一起歸零才會再沒電
+      if (p.island === 'water') p.water = { welcomed: !!p.water.welcomed, rulesSeen: !!p.water.rulesSeen };   // 魚桶、牛奶瓶、沿路對話都重來
       this._logItem(childId, 'story-reset', p.island, 1, offer.name, '任務重新開始');
     }
     this.save();
     return !!(offer && yes);
+  };
+  // ---------- 水島（2026-11-16 家長決定的規則；計畫 docs/water/WATER_ISLAND_PLAN.md） ----------
+  /** 前方（不含目前這格）第一個還沒完成的水島關卡格號；不是水島或都完成了回傳 -1 */
+  Store.prototype.waterGate = function (childId) {
+    var p = this.getPlayer(childId);
+    if (p.island !== 'water') return -1;
+    var best = -1;
+    storiesOf('water').forEach(function (id) {
+      var t = STORIES[id].tile;
+      if (!p.story[id] && t > p.pos && (best < 0 || t < best)) best = t;
+    });
+    return best;
+  };
+  /** 停在還沒完成的水島關卡上：回傳劇情代號（要先完成才能前進），否則 null */
+  Store.prototype.waterTaskHere = function (childId) {
+    var p = this.getPlayer(childId);
+    if (p.island !== 'water') return null;
+    var id = storiesOf('water').filter(function (k) { return STORIES[k].tile === p.pos && !p.story[k]; })[0];
+    return id || null;
+  };
+  Store.prototype._requireNoWaterTask = function (childId) {
+    var id = this.waterTaskHere(childId);
+    if (id) throw new Error('先完成「' + STORIES[id].name + '」才能繼續前進喔！');
+  };
+  /** 水島故事進度（沿路對話、魚桶、牛奶瓶、健忘怪進行到第幾階段） */
+  Store.prototype.waterState = function (childId) { return this.getPlayer(childId).water; };
+  Store.prototype.setWaterFlag = function (childId, key, val) {
+    if (['bucket', 'bottle', 'welcomed', 'bossStage', 'rulesSeen'].indexOf(key) < 0) throw new Error('沒有這個水島紀錄');
+    this.getPlayer(childId).water[key] = val;
+    this.save();
+  };
+  /** 沿路短對話（A 類）看過了：同一輪不再播（重置任務後會再播） */
+  Store.prototype.markWaterNote = function (childId, id) {
+    var w = this.getPlayer(childId).water;
+    if (!w.seen || typeof w.seen !== 'object') w.seen = {};
+    if (w.seen[id]) return false;
+    w.seen[id] = true;
+    this.save();
+    return true;
+  };
+  var SHARK_PASS = 11, SHARK_SHIELD_STARS = 10;
+  /** 鯊魚把關後：完成關卡、移到第 49 格（不走點數步數） */
+  Store.prototype._passShark = function (childId) {
+    var p = this.getPlayer(childId), tiles = this.getBoard(childId).tiles;
+    var first = this.completeStory(childId, 'shark');
+    p.pos = STORIES.shark.tile + 1; p.tileId = tiles[p.pos].id;
+    if (p.pos > p.maxReached) p.maxReached = p.pos;
+    this._found = this._collectAt(childId, [p.pos]);
+    return first;
+  };
+  /** 鯊魚：免費的關卡專用 12 面骰（不進背包、不算每日次數，可以無限重擲），11 或 12 過關，只移到第 49 格 */
+  Store.prototype.sharkTry = function (childId) {
+    this._requirePlay(childId);
+    if (this.waterTaskHere(childId) !== 'shark') throw new Error('現在不在鯊魚關卡');
+    var value = rint(this.random, 1, 12), pass = value >= SHARK_PASS, first = false;
+    this._logItem(childId, 'shark', 'd12', 1, '鯊魚關卡', '擲出 ' + value);
+    if (pass) first = this._passShark(childId);
+    this.save();
+    return { value: value, pass: pass, first: first, pos: this.getPlayer(childId).pos, found: pass ? this._found : 0 };
+  };
+  /** 鯊魚：自願用 1 個防護罩過關，移到第 49 格並補 10 顆能量星星 */
+  Store.prototype.sharkShield = function (childId) {
+    this._requirePlay(childId);
+    if (this.waterTaskHere(childId) !== 'shark') throw new Error('現在不在鯊魚關卡');
+    var p = this.getPlayer(childId);
+    if (!(p.bag.shield > 0)) throw new Error('背包裡沒有防護罩');
+    p.bag.shield--;
+    this._logItem(childId, 'use', 'shield', 1, '背包', '鯊魚關卡');
+    this._ledger(childId, SHARK_SHIELD_STARS, '鯊魚關卡：用防護罩過關補償');
+    var first = this._passShark(childId);
+    this.save();
+    return { pass: true, shield: true, stars: SHARK_SHIELD_STARS, first: first, pos: p.pos, found: this._found };
+  };
+  /** 第 100 格：幫健忘怪找到小被被 → 完成關卡（⭐3）並通關（第一次 3 個神秘寶箱，之後 10 星） */
+  Store.prototype.finishWaterBoss = function (childId) {
+    this._requirePlay(childId);
+    if (this.waterTaskHere(childId) !== 'blanket') throw new Error('現在不在健忘怪的家');
+    var p = this.getPlayer(childId);
+    this.completeStory(childId, 'blanket');
+    p.water.bossStage = 0;
+    var ev = { tile: p.pos, type: 'end', title: '', text: '', stars: 0, items: {}, extraPath: [], backPath: [] };
+    this._clearIsland(childId, ev);
+    this.save();
+    return ev;
+  };
+  /** 小白鯨今天還能載幾次（水島、已經餵過小白鯨才有） */
+  Store.prototype.belugaRidesLeft = function (childId) {
+    var p = this.getPlayer(childId);
+    if (p.island !== 'water' || !p.story.feed) return 0;
+    return this.getItemLimitsToday(childId).beluga;
+  };
+  /** 小白鯨載著前進：1～6 步由小白鯨決定（和 6 面骰相同機率），不用骰子、不算擲骰次數，每天另外計算 */
+  Store.prototype.belugaRide = function (childId) {
+    this._requirePlay(childId);
+    var p = this.getPlayer(childId);
+    if (p.pendingRoll) throw new Error('先完成上一次擲骰');
+    if (p.island !== 'water' || !p.story.feed) throw new Error('要先和小白鯨當朋友喔！');
+    this._requireNoWaterTask(childId);
+    if (!this.belugaRidesLeft(childId)) throw new Error('小白鯨今天游累了，明天再載你！');
+    var end = this.getBoard(childId).tiles.length - 1, needLap = p.pos >= end;
+    this._markDayStart(childId);
+    var travel = needLap ? this._startNext(childId) : null;
+    var from = p.pos, value = rint(this.random, 1, 6);
+    this._found = 0;
+    var path = this._advance(childId, value);
+    this._logItem(childId, 'use', 'beluga', 1, '小白鯨', '第 ' + from + ' → ' + p.pos + ' 格');
+    var event = this._resolveTile(childId, 0);
+    this.save();
+    return { die: 'beluga', value: value, from: from, path: path, event: event, found: this._found, lap: needLap, travel: travel, ridesLeft: this.belugaRidesLeft(childId) };
+  };
+  /** 潛水艇（寶物）：只能在水島、已經下潛（第 25 格以後）時用，開到第 25～99 格；不能跳過還沒完成的關卡；每天次數依家長設定 */
+  var SUB_FROM = 25;
+  Store.prototype.useSubmarine = function (childId, n) {
+    this._requirePlay(childId);
+    var p = this.getPlayer(childId);
+    if (p.pendingRoll) throw new Error('先完成上一次擲骰');
+    if (p.island !== 'water') throw new Error('潛水艇只能在水島使用');
+    this._requireNoWaterTask(childId);
+    var tiles = this.getBoard(childId).tiles, end = tiles.length - 1;
+    if (p.pos < SUB_FROM) throw new Error('要先潛到海裡（第 ' + SUB_FROM + ' 格以後）才能開潛水艇');
+    n = Math.floor(Number(n));
+    if (!(n >= SUB_FROM && n < end)) throw new Error('潛水艇只能開到第 ' + SUB_FROM + '～' + (end - 1) + ' 格');
+    if (n === p.pos) throw new Error('你已經在這一格了');
+    if (!(p.bag.submarine > 0)) throw new Error('背包裡沒有潛水艇');
+    if (!this.getItemLimitsToday(childId).sub) throw new Error('潛水艇每天只能用 ' + this.getLimits().sub + ' 次，明天再用！');
+    var gate = this.waterGate(childId);
+    if (gate > 0 && n > gate) throw new Error('第 ' + gate + ' 格的關卡還沒完成，潛水艇最遠只能到第 ' + gate + ' 格');
+    this._markDayStart(childId);
+    var from = p.pos;
+    p.bag.submarine--;
+    p.pos = n; p.tileId = tiles[n].id;
+    if (n > p.maxReached) p.maxReached = n;
+    this._logItem(childId, 'use', 'submarine', 1, '背包', '第 ' + from + ' → ' + n + ' 格');
+    this._found = this._collectAt(childId, [n]);
+    var event = this._resolveTile(childId, 0);
+    this.save();
+    return { die: 'submarine', value: 0, from: from, path: [n], event: event, found: this._found };
   };
   /** 能源主塔：技師已經主動求助過（只出現一次） */
   Store.prototype.markTowerIntro = function (childId) {
@@ -1324,7 +1518,7 @@
     return this.getBonusQuota(childId);
   };
 
-  var api = { CARD_TEXT: CARD_TEXT, LEAF_GAME: LEAF_GAME, LEAF_MAX_FOUND: LEAF_MAX_FOUND, leafStars: leafStars, minigameOf: minigameOf, STORIES: STORIES, storiesOf: storiesOf, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, buildWood: buildWood, WOOD_OPEN: WOOD_OPEN, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { CARD_TEXT: CARD_TEXT, LEAF_GAME: LEAF_GAME, LEAF_MAX_FOUND: LEAF_MAX_FOUND, leafStars: leafStars, minigameOf: minigameOf, STORIES: STORIES, storiesOf: storiesOf, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, buildWood: buildWood, WOOD_OPEN: WOOD_OPEN, buildWater: buildWater, WATER_OPEN: WATER_OPEN, WATER_TYPES: WATER_TYPES, SHARK_PASS: SHARK_PASS, SHARK_SHIELD_STARS: SHARK_SHIELD_STARS, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

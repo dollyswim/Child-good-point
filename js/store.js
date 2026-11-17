@@ -46,7 +46,7 @@
   var ITEM_KINDS = ['bonus', 'penalty', 'task'];
   var SCORE_TYPES = ['bonus', 'penalty', 'task']; // 計入今日淨得分的紀錄類型
   // 2026-11-09 家長決定：冒險世界每日使用上限的預設值（設定裡可調 0～LIMIT_MAX）
-  var DEFAULT_LIMITS = { dice: 3, minigame: 1, move: 5, door: 1, magic: 1, starCall: 1, pineHide: 1 };
+  var DEFAULT_LIMITS = { dice: 3, minigame: 1, move: 5, door: 1, magic: 1, starCall: 1, pineHide: 1, beluga: 3, sub: 1 };   // beluga／sub：水島小白鯨、潛水艇（2026-11-16）
   var LIMIT_MAX = 10;
   var EXTRA_STARS_MAX = 20;   // 加分時另外給的能量星星上限
   var STAR_REWARD_DEFAULT = { name: '愛的飛高高', cost: 5 };   // 能量星星兌換的預設獎勵
@@ -58,7 +58,7 @@
   };
   var SPECIAL_TASK_POINTS = 20;
   /** 冒險背包的道具代號（穩定、唯一；不以中文名稱判斷） */
-  var BAG_KEYS = ['d6', 'd12', 'skates', 'shield', 'magicDice', 'luckyMedal', 'wings', 'door', 'airplane', 'goldenKey', 'magnet', 'rerollTicket', 'bonusPlay', 'starCall', 'pineHide',
+  var BAG_KEYS = ['d6', 'd12', 'skates', 'shield', 'magicDice', 'luckyMedal', 'wings', 'door', 'airplane', 'goldenKey', 'magnet', 'rerollTicket', 'bonusPlay', 'starCall', 'pineHide', 'submarine',
     'chest', 'giftMysteryChest', 'mysteryChest']; // 寶箱庫存：一般寶箱、神諭祝福的神秘寶箱（免鑰匙）、地圖撿到的神秘寶箱（要鑰匙）
   function emptyBag() { var b = {}; BAG_KEYS.forEach(function (k) { b[k] = 0; }); return b; }
   var SPECIAL_TASK_DAYS = 3;
@@ -419,6 +419,11 @@
               var o = {}, src2 = p.story && typeof p.story === 'object' ? p.story : {};
               Object.keys(src2).forEach(function (k) { if (/^\d{4}-\d{2}-\d{2}$/.test(src2[k])) o[k] = src2[k]; });
               return o;
+            })(),
+            water: (function () {   // 水島故事進度（2026-11-17）
+              var w = p.water && typeof p.water === 'object' ? p.water : {}, seen = {};
+              if (w.seen && typeof w.seen === 'object') Object.keys(w.seen).forEach(function (k) { if (/^[a-z0-9]{1,16}$/.test(k) && w.seen[k]) seen[k] = true; });
+              return { seen: seen, bucket: !!w.bucket, bottle: !!w.bottle, welcomed: !!w.welcomed, rulesSeen: !!w.rulesSeen, bossStage: Math.max(0, Math.min(3, toInt(w.bossStage, 0))) };
             })(),
             // 換島：其他島的保存進度 { 島: { laps, maxReached } }、金島以外的通關次數 { 島: 次數 }
             islands: (function () {

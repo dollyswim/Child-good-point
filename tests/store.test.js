@@ -1578,7 +1578,7 @@ test('飛行翼：前進 20 格、到第 30 格就停、落點觸發事件、不
   assert.equal(store.getPlayer(a.id).pos, END, '42 → 62 → 82 → 100：最後一格就停');
   assert.equal(store.getRollsToday(a.id), 0);
   bag.wings = 1; bag.skates = 1;
-  assert.deepEqual(store.getItemLimitsToday(a.id), { move: 0, door: 1 }, '今天已用 5 次前進道具');
+  assert.deepEqual(store.getItemLimitsToday(a.id), { move: 0, door: 1, beluga: 3, sub: 1 }, '今天已用 5 次前進道具');
   assert.throws(() => store.useWings(a.id), /已經用了 5 次/, '前進類每天最多 5 次');
   assert.throws(() => store.useSkates(a.id), /已經用了 5 次/, '溜冰鞋和飛行翼合計');
   assert.deepEqual([bag.wings, bag.skates], [1, 1], '超過上限不消耗');
@@ -2336,14 +2336,14 @@ test('家長重置今天的次數上限：骰子、小遊戲、前進道具、�
   if (!store.getMinigameToday(a.id)) store.data.adventure.minigames.push({ id: 'daily', childId: a.id, date: store.today(), status: 'done', caught: 3, stars: 1, ts: 1 });
   store.useStarCall(a.id); store.finishMinigame(a.id, 3);
   assert.equal(store.getRollsLeft(a.id), 0);
-  assert.deepEqual(store.getItemLimitsToday(a.id), { move: 0, door: 0 });
+  assert.deepEqual(store.getItemLimitsToday(a.id), { move: 0, door: 0, beluga: 3, sub: 1 });
   assert.ok(store.magicUsedToday(a.id) && store.getMinigameToday(a.id));
   const bag = JSON.stringify(p.bag);
   assert.throws(() => store.resetDailyLimits(a.id), /家長密碼/);
   store.allowPinReset();
   store.resetDailyLimits(a.id);
   assert.equal(store.getRollsLeft(a.id), 3, '骰子 3 次重新計算');
-  assert.deepEqual(store.getItemLimitsToday(a.id), { move: 5, door: 1 });
+  assert.deepEqual(store.getItemLimitsToday(a.id), { move: 5, door: 1, beluga: 3, sub: 1 });
   assert.ok(!store.magicUsedToday(a.id), '神奇骰子可以再用');
   assert.equal(store.getMinigameToday(a.id), null, '小遊戲可以再玩 1 次');
   assert.equal(store._usesToday(a.id, ['starCall']), 0, '星星呼喚可以再用');
@@ -2608,7 +2608,7 @@ test('加分時另外給能量星星：馬上入帳、只限加分、上限 20�
 
 test('冒險每日上限：全部孩子共用、0～10、要家長密碼；擲骰、小遊戲、前進道具、傳送門、神奇骰子、星星呼喚、松果躲躲都照設定', () => {
   const { store, a, push } = p3Store();
-  assert.deepEqual(store.getLimits(), { dice: 3, minigame: 1, move: 5, door: 1, magic: 1, starCall: 1, pineHide: 1 }, '預設＝原本的規則');
+  assert.deepEqual(store.getLimits(), { dice: 3, minigame: 1, move: 5, door: 1, magic: 1, starCall: 1, pineHide: 1, beluga: 3, sub: 1 }, '預設＝原本的規則');
   assert.throws(() => store.setLimits({ dice: 5 }), /家長密碼/);
   store.allowPinReset();
   assert.equal(store.setLimits({ dice: 99, minigame: -3 }).dice, 10, '最多 10');
@@ -2823,4 +2823,167 @@ test('換島不受任務影響：不管任務有沒有做、有沒有重置，�
     store.setPlayerTile(a.id, END); store.data.adventure.rolls = []; p.bag.d6 = 3; store.random = () => 0.1;
     assert.equal(store.rollDice(a.id, 'd6').travel.island, 'gold', '沒回答詢問也能換島');
   } finally { delete G.BOARDS.wood; }
+});
+
+// ---------- 水島（2026-11-17）：預設還沒開放，測試裡自己 registerBoard，用完再刪 ----------
+function waterStore(island = 'water', pos = 0) {
+  const ctx = p3Store();
+  G.registerBoard('water', G.buildWater());
+  const p = ctx.store.getPlayer(ctx.a.id);
+  p.island = island; ctx.store.setPlayerTile(ctx.a.id, pos);
+  p.bag.d6 = 20; p.bag.d12 = 5;
+  ctx.store.data.adventure.rolls = [];
+  return Object.assign(ctx, { p, roll: (n) => { ctx.store.data.adventure.rolls = []; ctx.store.random = () => face(n); return ctx.store.rollDice(ctx.a.id, 'd6'); } });
+}
+const doneUpTo = (p, ids) => ids.forEach((k) => { p.story[k] = '2026-11-06'; });
+
+test('水島地圖：101 格、4 個場景 25／34／24／18、格子類型照計畫、6 個必要關卡', () => {
+  const B = G.buildWater();
+  assert.equal(B.tiles.length, 101);
+  assert.ok(B.scenes);
+  assert.deepEqual(B.regions.map((r) => B.tiles.filter((t) => t.regionId === r.id).length), [25, 34, 24, 18]);
+  const cnt = (ty) => B.tiles.filter((t) => t.type === ty).length;
+  assert.deepEqual([cnt('chest'), cnt('chance'), cnt('fate'), cnt('minigame'), cnt('end'), cnt('start')], [10, 12, 7, 6, 1, 1]);
+  assert.deepEqual(G.storiesOf('water').map((k) => G.STORIES[k].tile), [8, 16, 34, 48, 56, 100]);
+  G.storiesOf('water').forEach((k) => { const t = G.STORIES[k].tile; if (t < 100) assert.equal(B.tiles[t].type, 'normal', '關卡格底層是一般格'); });
+  assert.deepEqual([B.tiles[49].type, B.tiles[0].id, B.tiles[100].id], ['normal', 'water-01-start', 'water-04-100']);
+  assert.ok(!G.BOARDS.water, '預設還沒開放');
+});
+
+test('水島關卡：走到就停、剩下步數作廢；完成前不能前進（骰子、小白鯨、潛水艇都一樣）', () => {
+  const { store, a, p, roll } = waterStore('water', 6);
+  try {
+    const r = roll(6);
+    assert.deepEqual([r.path, p.pos], [[7, 8], 8], '6 點只走到第 8 格就停');
+    assert.equal(r.event.type, 'normal', '關卡格本身沒有停格事件');
+    assert.equal(store.waterTaskHere(a.id), 'memo');
+    assert.throws(() => roll(3), /先完成「神秘藏寶圖」/);
+    store.completeStory(a.id, 'memo');
+    assert.equal(store.waterTaskHere(a.id), null);
+    assert.deepEqual(roll(3).path, [9, 10, 11], '完成後照常前進');
+    // 其他前進方式（機會卡前進、小白鯨）共用同一段前進程式，也會停在關卡
+    store.setPlayerTile(a.id, 15);
+    assert.deepEqual(store._advance(a.id, 5), [16], '從 15 前進 5：停在第 16 格漁夫關卡');
+  } finally { delete G.BOARDS.water; }
+});
+
+test('從木島進水島：那一擲從水島起點走，經過第 4 格、超過 8 停在第 8 格；水島不能用溜冰鞋、飛行翼、傳送門', () => {
+  const ctx = p3Store();
+  G.registerBoard('wood', G.buildWood()); G.registerBoard('water', G.buildWater());
+  try {
+    const { store, a } = ctx, p = store.getPlayer(a.id);
+    p.island = 'wood'; store.setPlayerTile(a.id, END); p.bag.d12 = 2; p.bag.skates = 1; p.bag.wings = 1; p.bag.door = 1;
+    store.random = () => face(12, 12);
+    const r = store.rollDice(a.id, 'd12');
+    assert.deepEqual([r.travel.island, p.island, r.path], ['water', 'water', [1, 2, 3, 4, 5, 6, 7, 8]]);
+    store.completeStory(a.id, 'memo');
+    assert.throws(() => store.useSkates(a.id), /在水裡不能用溜冰鞋/);
+    assert.throws(() => store.useWings(a.id), /在水裡不能用飛行翼/);
+    assert.throws(() => store.useDoor(a.id, 10), /在水裡不能用傳送門/);
+    assert.deepEqual([p.bag.skates, p.bag.wings, p.bag.door], [1, 1, 1], '道具沒有被扣');
+  } finally { delete G.BOARDS.wood; delete G.BOARDS.water; }
+});
+
+test('鯊魚關卡：免費 12 面骰 11／12 才過、可無限重擲、不算擲骰次數；過關只到第 49 格；防護罩過關補 10 星', () => {
+  const { store, a, p, roll } = waterStore('water', 45);
+  try {
+    doneUpTo(p, ['memo', 'potion', 'feed']);
+    const r = roll(6);
+    assert.deepEqual([r.path, p.pos], [[46, 47, 48], 48], '45 擲 6：停在 48，剩下 3 步作廢');
+    const rolls = store.data.adventure.rolls.length, d12 = p.bag.d12, stars = store.getStarBalance(a.id);
+    store.random = () => face(10, 12);
+    assert.deepEqual([store.sharkTry(a.id).pass, p.pos], [false, 48], '10 點沒過');
+    store.random = () => face(11, 12);
+    const ok = store.sharkTry(a.id);
+    assert.deepEqual([ok.pass, ok.value, p.pos, !!p.story.shark], [true, 11, 49, true], '11 點過關，只移到第 49 格');
+    assert.deepEqual([store.data.adventure.rolls.length, p.bag.d12], [rolls, d12], '不算擲骰次數、不用背包骰子');
+    assert.equal(store.getStarBalance(a.id), stars + G.STORY_STARS, '過關 ⭐3');
+    assert.throws(() => store.sharkTry(a.id), /不在鯊魚關卡/);
+    // 防護罩途徑
+    delete p.story.shark; store.setPlayerTile(a.id, 48); p.bag.shield = 0;
+    assert.throws(() => store.sharkShield(a.id), /沒有防護罩/);
+    p.bag.shield = 1; const s0 = store.getStarBalance(a.id);
+    const sh = store.sharkShield(a.id);
+    assert.deepEqual([sh.pass, p.pos, p.bag.shield], [true, 49, 0]);
+    assert.equal(store.getStarBalance(a.id), s0 + G.SHARK_SHIELD_STARS + G.STORY_STARS, '補 10 星＋關卡 ⭐3');
+  } finally { delete G.BOARDS.water; }
+});
+
+test('小白鯨載著前進：餵過才有、1～6 步、不用骰子不算擲骰、每天 3 次隔天恢復、遇到關卡一樣停', () => {
+  const { store, a, p, setDate, big } = waterStore('water', 34);
+  try {
+    doneUpTo(p, ['memo', 'potion']);
+    assert.equal(store.belugaRidesLeft(a.id), 0);
+    assert.throws(() => store.belugaRide(a.id), /要先和小白鯨當朋友/);
+    store.completeStory(a.id, 'feed');
+    assert.equal(store.belugaRidesLeft(a.id), 3);
+    const d6 = p.bag.d6, used = store.getRollsToday(a.id);
+    store.random = () => face(2);
+    const r = store.belugaRide(a.id);
+    assert.deepEqual([r.die, r.value, p.pos, r.ridesLeft], ['beluga', 2, 36, 2]);
+    assert.deepEqual([p.bag.d6, store.getRollsToday(a.id)], [d6, used], '不用骰子、不算擲骰');
+    store.random = () => face(6);
+    assert.deepEqual(store.belugaRide(a.id).path, [37, 38, 39, 40, 41, 42]);
+    assert.deepEqual(store.belugaRide(a.id).path, [43, 44, 45, 46, 47, 48], '遇到鯊魚關卡也停');
+    assert.throws(() => store.belugaRide(a.id), /先完成「大鯊魚攔路」|游累了/);
+    doneUpTo(p, ['shark']);
+    assert.throws(() => store.belugaRide(a.id), /游累了/);
+    setDate('2026-11-07T10:00:00'); store.recordItem(a.id, big.id); store.settleToday(a.id);
+    assert.equal(store.belugaRidesLeft(a.id), 3, '隔天恢復');
+  } finally { delete G.BOARDS.water; }
+});
+
+test('潛水艇：只在水島第 25 格以後、到 25～99、不能跳過未完成關卡、每天 1 次；持有上限 3', () => {
+  const { store, a, p } = waterStore('water', 20);
+  try {
+    doneUpTo(p, ['memo', 'potion', 'feed', 'shark']);
+    p.bag.submarine = 2;
+    assert.throws(() => store.useSubmarine(a.id, 30), /第 25 格以後/);
+    store.setPlayerTile(a.id, 30);
+    assert.throws(() => store.useSubmarine(a.id, 60), /第 56 格的關卡還沒完成/);
+    assert.throws(() => store.useSubmarine(a.id, 100), /25～99/);
+    const r = store.useSubmarine(a.id, 50);
+    assert.deepEqual([r.die, p.pos, p.bag.submarine], ['submarine', 50, 1]);
+    assert.throws(() => store.useSubmarine(a.id, 40), /每天只能用 1 次/);
+    const sub = G.TREASURES.find((t) => t.id === 'submarine');
+    assert.equal(sub, undefined, '水島還沒開放時商店不賣潛水艇');
+  } finally { delete G.BOARDS.water; }
+});
+
+test('水島第 100 格：先幫健忘怪找到小被被才通關；第一次 3 個神秘寶箱＋⭐3，之後 10 星；完成後下一擲回金島', () => {
+  const { store, a, p, roll } = waterStore('water', 97);
+  try {
+    doneUpTo(p, ['memo', 'potion', 'feed', 'shark', 'lantern']);
+    const r = roll(6);
+    assert.deepEqual([p.pos, !!r.event.waterBoss, !!r.event.clear], [100, true, false], '到第 100 格還沒通關');
+    assert.equal(p.islandClears.water || 0, 0);
+    assert.throws(() => roll(3), /先完成「健忘怪的小被被」/);
+    const gift = p.bag.giftMysteryChest, stars = store.getStarBalance(a.id);
+    const ev = store.finishWaterBoss(a.id);
+    assert.deepEqual([ev.clear.first, ev.clear.island, ev.items.giftMysteryChest, p.bag.giftMysteryChest - gift, p.islandClears.water], [true, 'water', 3, 3, 1]);
+    assert.equal(store.getStarBalance(a.id), stars + G.STORY_STARS);
+    assert.throws(() => store.finishWaterBoss(a.id), /不在健忘怪的家/);
+    const t = roll(2);
+    assert.equal(t.travel.island, 'gold', '水島之後（火島未做）回金島');
+    // 第二輪：沒有重置任務 → 走到 100 直接通關 10 星
+    p.island = 'water'; store.setPlayerTile(a.id, 97);
+    const r2 = roll(6);
+    assert.deepEqual([!!r2.event.waterBoss, r2.event.clear.count, r2.event.stars], [false, 2, G.GOLD_CLEAR_STARS]);
+  } finally { delete G.BOARDS.water; }
+});
+
+test('水島重置任務：6 關、魚桶、牛奶瓶、沿路對話重來（迎接紀錄保留）；存檔重開保留水島進度', () => {
+  const { store, a, p, storage } = waterStore('water', 0);
+  try {
+    doneUpTo(p, ['memo', 'potion']);
+    store.setWaterFlag(a.id, 'bucket', true); store.setWaterFlag(a.id, 'welcomed', true); store.setWaterFlag(a.id, 'bottle', true);
+    assert.equal(store.markWaterNote(a.id, 'n4'), true);
+    assert.equal(store.markWaterNote(a.id, 'n4'), false, '看過不再播');
+    assert.throws(() => store.setWaterFlag(a.id, 'hack', 1), /沒有這個水島紀錄/);
+    const s2 = new Store({ storage, seed: false, now: () => new Date('2026-11-06T10:00:00') });
+    assert.deepEqual(s2.getPlayer(a.id).water, { seen: { n4: true }, bucket: true, bottle: true, welcomed: true, rulesSeen: false, bossStage: 0 }, '存檔重開保留');
+    p.storyAsk = 'water';
+    assert.equal(store.answerStoryReset(a.id, true), true);
+    assert.deepEqual([p.story.memo, p.story.potion, p.water.bucket, p.water.welcomed, p.water.seen], [undefined, undefined, undefined, true, undefined]);
+  } finally { delete G.BOARDS.water; }
 });
