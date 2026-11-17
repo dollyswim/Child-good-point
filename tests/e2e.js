@@ -1035,6 +1035,14 @@ async function main() {
     await idle();
     st = await P();
     assert.deepEqual([st.pos, !!st.story.shark], [49, true], '鯊魚過關只到第 49 格');
+    // 第二版：餵過小白鯨就能用呼喚貝殼，小白鯨出來一下就離開，不改存檔
+    await q.waitForSelector('[data-action="call-beluga"]');
+    const before = JSON.stringify(await P());
+    await q.click('[data-action="call-beluga"]');
+    await q.waitForSelector('.beluga-call');
+    if (SHOT_DIR) { await q.waitForTimeout(1300); await q.screenshot({ path: path.join(SHOT_DIR, '42-water-call-beluga.png') }); }
+    await q.waitForSelector('.beluga-call', { state: 'detached', timeout: 5000 });
+    assert.equal(JSON.stringify(await P()), before, '呼喚貝殼不給獎勵、不改存檔');
     // 4. 燈籠魚：第 55 格擲 1 → 56 → 黑暗中拖燈照亮東西再點
     await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 55); s.save(); }, kid);
     await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('#pawn');

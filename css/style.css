@@ -2354,3 +2354,12 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 @keyframes wt-go { from { transform: translateX(-90%) scale(1); } to { transform: translateX(-10%) scale(.7); } }
 @keyframes fade-in { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .potion-img, .wt-beluga, .feed-beluga.yum, .memo-slot.shake { animation: none; } .shark-big, .lantern-dark { transition: none; } }
+
+/* 小白鯨呼喚貝殼（水島第二版）：白鯨從左邊游進來，冒出愛心泡泡，3 秒後離開 */
+.beluga-call { position: fixed; left: 0; right: 0; bottom: 34%; height: 50%; z-index: 900; pointer-events: none; overflow: hidden; }
+.bc-beluga { position: absolute; left: 50%; bottom: 0; width: min(46vw, 220px); transform: translateX(-50%); animation: bc-swim 3s ease-in-out forwards; }
+.bc-beluga img { display: block; width: 100%; filter: drop-shadow(0 6px 10px rgba(0, 40, 80, .25)); }
+.bc-bubble { position: absolute; bottom: 10%; height: auto; opacity: 0; animation: bc-bubble 2s ease-out forwards; }
+@keyframes bc-swim { 0% { transform: translateX(-160%); } 25% { transform: translateX(-50%) rotate(-4deg); } 45% { transform: translateX(-50%) translateY(-8px) rotate(3deg); } 70% { transform: translateX(-50%) rotate(-2deg); } 100% { transform: translateX(120%); } }
+@keyframes bc-bubble { 0% { opacity: 0; transform: translateY(0) scale(.5); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-220px) scale(1.1); } }
+@media (prefers-reduced-motion: reduce) { .bc-beluga { animation: none; } .bc-bubble { animation-duration: .01s; } }

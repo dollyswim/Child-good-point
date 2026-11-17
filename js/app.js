@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.17-162';
+  var APP_VERSION = '2026.11.17-163';
   var store;
   try {
     store = new CGP.Store();
@@ -1909,7 +1909,23 @@
     P.shade.remove();
     wflag(child, 'bucket', false);   // 魚桶空了
     waterDone(child, 'feed');
-    await talkSeq([line(B, '好飽好飽！謝謝你！我們是好朋友了！'), line(B, '以後我每天可以載你游 ' + store.getLimits().beluga + ' 次喔！按「小白鯨載我」就可以了！')]);
+    await talkSeq([line(B, '好飽好飽！謝謝你！我們是好朋友了！'), line(B, '以後我每天可以載你游 ' + store.getLimits().beluga + ' 次喔！按「小白鯨載我」就可以了！'),
+      line(B, '還有這個貝殼送你！在水島想我的時候吹一吹，我就會游過來陪你玩！', { choices: [{ label: '🐚 收下呼喚貝殼', val: true, primary: true }] })]);
+  }
+
+  // 第二版：小白鯨呼喚貝殼（2026-11-17 家長決定現在做）。餵過小白鯨（story.feed）就有，只限水島、不限次數、不給獎勵，也不存檔
+  var CALL_LINES = ['咕嚕～我來了！', '一起游泳好開心！', '噗噗～送你愛心泡泡！', '你今天也很棒喔！', '我在這裡～要加油喔！'];
+  var callBusy = false;
+  function callBeluga() {
+    if (callBusy) return;
+    callBusy = true;
+    var el = document.createElement('div');
+    el.className = 'beluga-call'; el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = '<div class="bc-beluga"><img src="' + WATER_NPC.beluga + '" alt="" draggable="false"></div>' +
+      Array.from({ length: 6 }, function (_, i) { return '<img class="bc-bubble" src="images/water/items/heart_bubble.webp" alt="" draggable="false" style="left:' + (18 + i * 12 + Math.random() * 6).toFixed(0) + '%;animation-delay:' + (0.5 + i * 0.22).toFixed(2) + 's;width:' + (34 + Math.random() * 22).toFixed(0) + 'px">'; }).join('');
+    document.body.appendChild(el);
+    toast('🐳 ' + CALL_LINES[Math.floor(Math.random() * CALL_LINES.length)], 'pos');
+    setTimeout(function () { el.remove(); callBusy = false; }, reduceMotion ? 1200 : 3000);
   }
 
   // 第 48 格：大鯊魚（免費 12 面骰擲到 11 或 12 才過；或用防護罩，過關後補 10 星）
@@ -3753,6 +3769,7 @@
     var lim = store.getItemLimitsToday(child.id);   // 前進類合計每天 5 次、傳送門每天 1 次
     var inWater = player.island === 'water';
     if (bag.wings && !inWater) btn('wings', 'use-item', '飛行翼 +20', '×' + bag.wings + (lim.move ? '・今天剩 ' + lim.move + ' 次' : '・今天已用完'), busy || !lim.move);
+    if (inWater && player.story.feed) btn('callShell', 'call-beluga', '呼喚貝殼', '叫小白鯨出來玩', st.pending || st.picking);
     if (bag.submarine && inWater) btn('submarine', 'pick-sub', '潛水艇', '×' + bag.submarine + (player.pos < 25 ? '・潛到海裡才能用' : lim.sub ? '・今天剩 ' + lim.sub + ' 次' : '・今天已用完'), busy || !lim.sub || player.pos < 25);
     if (bag.door && !inWater) btn('door', 'pick-door', '傳送門', '×' + bag.door + (lim.door ? '・今天剩 ' + lim.door + ' 次' : '・今天已用完'), busy || !lim.door);
     if (bag.luckyMedal) btn('luckyMedal', 'activate-medal', '好運金牌', player.medalArmed ? '已啟用・×' + bag.luckyMedal : '×' + bag.luckyMedal + '・點我啟用', !!player.medalArmed);
@@ -3803,6 +3820,7 @@
     wings: { name: '飛行翼', img: 'images/items/flying_wings.webp', note: '地圖上使用' },
     door: { name: '傳送門', img: 'images/items/magic_door.webp', note: '地圖上使用（水島不能用）' },
     submarine: { name: '潛水艇', icon: '🚤', img: 'images/items/submarine.webp', note: '只能在水島使用' },
+    callShell: { name: '呼喚貝殼', icon: '🐚', img: 'images/water/items/call_shell.webp', note: '只能在水島使用' },
     airplane: { name: '呼叫專機', img: 'images/items/airplane.webp', note: '其他島嶼開放後可用' },
     goldenKey: { name: '黃金鑰匙', img: 'images/items/golden_key.webp', note: '開神秘寶箱' },
     magnet: { name: '寶物磁鐵', img: 'images/items/treasure_magnet.webp', note: '地圖上使用' },
@@ -4818,6 +4836,7 @@
         case 'pick-sub': ui.doorPick = childId; ui.pickKind = 'sub'; render(); break;
         case 'cancel-door': ui.doorPick = null; ui.pickKind = null; render(); break;
         case 'beluga-ride': playMove(childId, 'beluga'); break;
+        case 'call-beluga': callBeluga(); break;
         case 'activate-medal':
           confirmThen('啟用 🥇 好運金牌？\n下一次停在寶箱或機會格時，效果會發生 2 次。', '啟用', false, function () {
             store.activateMedal(childId); toast('🥇 好運金牌已啟用！', 'pos');
