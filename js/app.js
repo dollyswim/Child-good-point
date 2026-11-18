@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-182';
+  var APP_VERSION = '2026.11.18-183';
   var store;
   try {
     store = new CGP.Store();
@@ -2280,7 +2280,6 @@
           if (cards >= 4 && notebook) setTimeout(resolve, 300);
         });
       });
-      await say(M, '那些不是垃圾，是我的記憶出去放風了！');
       wflag(child, 'bossStage', 1); stage = 1;
     }
     // 階段二：把 4 張紙卡排成昨天的順序
@@ -2368,11 +2367,16 @@
     });
     await talkSeq([line(me, '牛奶瓶的瓶底，跟瓶架的圓圈剛好一樣大！'), line(WHO.monster('surprised'), '啊啊啊！這不是我的牛奶瓶嗎？！'),
       line(WHO.monster('surprised'), '我怕忘記重要的事情，就把紙條塞進瓶子裡……'), line(WHO.monster('surprised'), '結果我忘記把瓶子放在哪裡！'),
-      line(me, '所以我們找到的不是藏寶圖，是你的備忘紙！'), line(M, '對！我還畫了回家的路，怕連家也忘記！'), line(M, '對了，我好像晾乾之後，就把寶貝放在地上的箱子裡了！')]);
+      line(me, '所以我們找到的不是藏寶圖，是你的備忘紙！'), line(M, '對！我還畫了回家的路，怕連家也忘記！'), line(M, '等等，你說什麼……寶圖？給我看一下……'),
+      line(M, '對了，我好像晾乾之後，就把寶貝放在地上的箱子裡了！')]);   // 2026-11-18 家長加「等等，你說什麼……寶圖？」
     // 健忘怪站起來，地上的三個箱子露出來 → 直接在房間裡點箱子
     layer.innerHTML = '';
     var seatImg = P.art.querySelector('#monster-seat');
-    if (seatImg) { seatImg.classList.add('stand'); await sleep(reduceMotion ? 50 : 800); seatImg.remove(); }
+    if (seatImg) {   // 2026-11-18 家長：不要移走的動畫 → 躺著的圖淡出，換成站在房間裡的健忘怪
+      seatImg.classList.add('fade'); await sleep(reduceMotion ? 50 : 500); seatImg.remove();
+      P.art.querySelector('#boss-floor').insertAdjacentHTML('beforeend', '<img class="monster-stand" id="monster-stand" src="' + WATER_NPC.monster + '" alt="" draggable="false">');
+      await sleep(reduceMotion ? 50 : 500);
+    }
     var floor = P.art.querySelector('#boss-floor'); floor.classList.add('ready');
     floor.querySelectorAll('.floor-box').forEach(function (x, i) { x.disabled = false; x.style.left = FLOOR_BOX_OPEN_X[i] + '%'; });   // 箱子稍微分開
     await sleep(reduceMotion ? 0 : 450);
@@ -2402,12 +2406,12 @@
     P.title.textContent = '🌙 找到了！'; P.sub.textContent = '月亮箱裡有……'; P.tools.innerHTML = '';
     await new Promise(function (r) { setTimeout(r, reduceMotion ? 300 : 1800); });   // 先讓孩子看到小被被從箱子裡冒出來，再關掉視窗
     P.shade.remove();
-    await talkSeq([line(me, '原來「最重要的寶……」是寶貝小被被！'), line(WHO.monster('blanket'), '找到啦！小被被，你都沒長高，我怎麼會找不到你！'), line(WHO.monster('blanket'), '它從我小時候就陪著我，有它就安心了。')]);
+    await talkSeq([line(WHO.monster('blanket'), '找到啦！小被被，你都沒長高，我怎麼會找不到你！'), line(me, '原來最重要的寶……是小被被！'), line(WHO.monster('blanket'), '它從我小時候就陪著我，有它就安心了。')]);   // 2026-11-18 家長：前兩句互換
     // 通關：⭐3＋第一次 3 個神秘寶箱（之後 10 星）
     var ev = child.preview ? { clear: { first: true, next: '金島' }, text: '\n通關獎勵：🎁 神秘寶箱 ×3（不用鑰匙）（預覽，沒有存檔）' } : store.finishWaterBoss(child.id);
     if (ev.clear.first) {
-      await talkSeq([line(me, '下面好像還有東西，那是什麼？'), line(M, '喔，那三個大箱子喔？'), line(M, '太佔空間了啦！'), line(M, '我每次經過都會踢到小拇指！'),
-        line(WHO.monster('blanket'), '這個留下，亮晶晶的給你們！你幫我搬走好不好？', { choices: [{ label: '🎁 收下 3 個神秘寶箱', val: true, primary: true }] })]);
+      await talkSeq([line(me, '下面好像還有東西，那是什麼？'), line(M, '哦？那個東西喔？'), line(M, '太佔空間了啦！'), line(M, '我每次經過都會踢到小拇指！'),
+        line(WHO.monster('blanket'), '這個留下，亮晶晶的給你們！你幫我搬走好不好？', { choices: [{ label: '🎁 收下神秘禮物', val: true, primary: true }] })]);
     } else await talkSeq([line(WHO.monster('blanket'), '這次換我請你吃星星糖！', { choices: [{ label: '⭐ 收下 ' + GAME.GOLD_CLEAR_STARS + ' 顆能量星星', val: true, primary: true }] })]);
     await talkSeq([line(M, '謝謝你！我一定會記得你的！'), line(M, '……欸？你叫什麼名字？'), line(me, '我是你的冒險朋友！'),
       line(M, '（拿起筆記本寫）「第一件事：出門前檢查小被被。」'), line(M, '「第二件事：記得看第一件事。」'), line(WHO.beluga(), '我送你回岸邊！')]);
