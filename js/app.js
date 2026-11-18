@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-187';
+  var APP_VERSION = '2026.11.18-188';
   var store;
   try {
     store = new CGP.Store();
@@ -2379,17 +2379,18 @@
     var mp = await memoPrepare(WATER_ART.memo || memoPlaceholder(), 5, 4), mapEl = document.createElement('div');
     mapEl.className = 'boss-map'; mapEl.innerHTML = '<img src="' + mp.src + '" alt="藏寶圖" draggable="false">';
     layer.appendChild(mapEl);
-    await talkSeq([line(M, '對，這是我畫的……喔！這三個大框框好像是那三個箱子！')]);
+    await talkSeq([line(M, '對，這是我畫的……喔！這三個大框框好像是那三個箱子！', { img: '' })]);   // 不顯示大頭像，免得擋住地圖上的三個框框
     mapEl.remove();
-    await talkSeq([line(M, '對了，我好像晾乾之後，就把寶貝放在地上的箱子裡了！'), line(M, '（健忘怪跳起來）可是放在哪裡呢？')]);
-    // 健忘怪站起來，地上的三個箱子露出來 → 直接在房間裡點箱子
+    await talkSeq([line(M, '對了，我好像晾乾之後，就把寶貝放在地上的箱子裡了！')]);
+    // 2026-11-18 家長：說「可是放在哪裡呢？」之前，背景的健忘怪就換成站著（淡出→站在房間裡跳一下）
     layer.innerHTML = '';
     var seatImg = P.art.querySelector('#monster-seat');
-    if (seatImg) {   // 2026-11-18 家長：不要移走的動畫 → 躺著的圖淡出，換成站在房間裡的健忘怪
-      seatImg.classList.add('fade'); await sleep(reduceMotion ? 50 : 500); seatImg.remove();
-      P.art.querySelector('#boss-floor').insertAdjacentHTML('beforeend', '<img class="monster-stand" id="monster-stand" src="' + WATER_NPC.monster + '" alt="" draggable="false">');
+    if (seatImg) {
+      seatImg.classList.add('fade'); await sleep(reduceMotion ? 50 : 400); seatImg.remove();
+      P.art.querySelector('#boss-floor').insertAdjacentHTML('beforeend', '<img class="monster-stand jump" id="monster-stand" src="' + WATER_NPC.monster + '" alt="" draggable="false">');
       await sleep(reduceMotion ? 50 : 500);
     }
+    await talkSeq([line(M, '（健忘怪跳起來）可是放在哪裡呢？')]);
     var floor = P.art.querySelector('#boss-floor'); floor.classList.add('ready');
     floor.querySelectorAll('.floor-box').forEach(function (x, i) { x.disabled = false; x.style.left = FLOOR_BOX_OPEN_X[i] + '%'; });   // 箱子稍微分開
     await sleep(reduceMotion ? 0 : 450);
@@ -2433,15 +2434,23 @@
   // 2026-11-17 F 節正式圖（Codex，810×1080）：開場 F-1～F-3、通關送回岸 F-4、出發去下一座島 F-5（水島圖不放進 SHELL）
   var WATER_TRIP = ['f1_exit', 'f2_out', 'f3_beach', 'f4_return', 'f5_depart'].map(function (n) { return 'images/water/trip/' + n + '.webp'; });
   /** 白鯨送回岸＋「水島冒險完成！」卡片（F-4：騎在小白鯨背上滑向沙灘） */
+  /** 從通關說明取出獎勵（例：「🎁 神秘寶箱 ×3」或「⭐10 能量星星」），配上現有道具圖 */
+  function wendPrize(text) {
+    var m = /通關獎勵：([^\n]*)/.exec(text || ''), r = (m ? m[1] : '').replace(/（[^）]*）/g, '').replace(/＋.*$/, '').trim();
+    var star = /^⭐/.test(r), name = r.replace(/^(🎁|⭐)\s*/u, '');
+    return '<img src="images/items/' + (star ? 'star' : 'mystery_chest') + '.webp" alt="" aria-hidden="true" width="256" height="256">' +
+      '<b>' + h(name).replace(/×\s*(\d+)/, '<em>×$1</em>') + '</b>';
+  }
   function waterEnding(child, ev) {
     return new Promise(function (resolve) {
       var el = document.createElement('div');
       el.className = 'flight water-trip' + (reduceMotion ? ' still' : ''); el.id = 'water-ending'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '水島冒險完成');
       el.innerHTML = '<div class="wt-photo" style="background-image:url(' + WATER_TRIP[3] + ')"></div>' +
-        '<div class="fl-card" data-testid="water-end-card"><div class="we-crown"><img src="' + BADGE_IMG.waterClear1 + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></div><h2>🌊 水島冒險完成！</h2><p>' + h(child.name) + ' 幫健忘怪找回了小被被，小白鯨把你送回珊瑚淺灘。</p>' +
-        '<p>' + h(ev.text.split('\n').slice(1).join('\n')).replace(/\n/g, '<br>') + '</p>' +
-        (ev.clear.next ? '<p class="muted small">下一座島還在準備中，下次出發會先回到「' + h(ev.clear.next) + '」繼續冒險。</p>' : '') +
-        '<button type="button" class="btn primary block" data-we-ok>太棒了！</button></div>';
+        // 2026-11-18 家長：精簡版完成彈窗——只留徽章、標題、通關獎勵、按鈕（獎勵內容照 ev.text，不改規則）
+        '<div class="fl-card wend-card" data-testid="water-end-card"><div class="wend-badge"><img src="' + BADGE_IMG.waterClear1 + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></div>' +
+        '<h2 class="wend-title">水島冒險完成！</h2>' +
+        '<div class="wend-reward"><span class="wend-label">⭐ 通關獎勵 ⭐</span><div class="wend-prize">' + wendPrize(ev.text) + '</div></div>' +
+        '<button type="button" class="btn primary block wend-ok" data-we-ok>太棒了！</button></div>';
       document.body.appendChild(el);
       el.querySelector('[data-we-ok]').onclick = function () { el.remove(); render(); if (!child.preview) announceAchievements(child.id); resolve(); };
     });
