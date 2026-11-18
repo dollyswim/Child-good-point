@@ -2405,3 +2405,6 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .water-trip .fl-card { animation: wt-card-in .5s 1.8s ease-out both; }   /* 先看 1.8 秒過場圖（小白鯨在畫面下方），卡片再出現 */
 @keyframes wt-card-in { from { opacity: 0; transform: translateY(24px); } }
 @media (prefers-reduced-motion: reduce) { .water-trip .fl-card { animation: none; } }
+
+/* 燈籠魚找完：洞口那一角暖光一閃一閃（其他地方仍然是黑的） */
+.lantern-panel .cave-lit .lantern-fish { filter: drop-shadow(0 0 10px rgba(255, 236, 150, .9)); }

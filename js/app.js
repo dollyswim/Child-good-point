@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.17-168';
+  var APP_VERSION = '2026.11.18-169';
   var store;
   try {
     store = new CGP.Store();
@@ -2097,7 +2097,8 @@
   var LANTERN_ITEMS = [['coral', '珊瑚', ''], ['scallop', '扇貝', ''], ['starfish', '海星', ''], ['conch', '海螺', ''], ['pearl', '珍珠', ''],
     ['seaglass', '海玻璃', ''], ['stone', '小石片', ''], ['driftwood', '漂流木', ''], ['seaweed', '海草束', ''], ['bell', '銅鈴', '']];
   var LANTERN_SPOTS = [[14, 22], [32, 74], [50, 32], [72, 20], [86, 62], [20, 52], [62, 82], [42, 56], [80, 40], [10, 84]];
-  var LANTERN_LIGHT = 1 / 8;   // 照亮的圓直徑＝畫面寬度的 1/8（2026-11-16 家長決定，試玩後可調）
+  var LANTERN_LIGHT = 3 / 8;   // 照亮的圓直徑＝畫面寬度的 3/8（2026-11-16 家長定 1/8；2026-11-18 試玩後改大 3 倍）
+  var LANTERN_CAVE = [84, 46];  // D-3 右邊石拱洞口的位置（畫面百分比）：全部找到後，光聚到這裡
   async function waterLantern(child) {
     var L = WHO.lantern();
     await talkSeq([line(L, '嗚嗚……我的東西掉了一地，這裡好黑，我一個人找不到……'), line(WHO.me(child), '我來幫你！拖著你的燈，我們一起找！')]);
@@ -2115,8 +2116,8 @@
     var lx = 50, ly = 50, boost = 1, found = 0, hintLv = 0, timers = [];
     function radius() { return art.clientWidth * LANTERN_LIGHT / 2 * boost; }
     function place() {
-      var W = art.clientWidth, H = art.clientHeight, x = lx / 100 * W, y = ly / 100 * H, r = radius();
-      dark.style.background = 'radial-gradient(circle at ' + x + 'px ' + y + 'px, rgba(8,18,46,0) 0, rgba(8,18,46,0) ' + r + 'px, rgba(8,18,46,.97) ' + (r + 10) + 'px)';
+      var W = art.clientWidth, H = art.clientHeight, x = lx / 100 * W, y = ly / 100 * H, r = radius(), edge = place.soft ? r * 0.6 : 10;
+      dark.style.background = 'radial-gradient(circle at ' + x + 'px ' + y + 'px, rgba(8,18,46,0) 0, rgba(8,18,46,0) ' + r + 'px, rgba(8,18,46,.97) ' + (r + edge) + 'px)';
       fish.style.left = x + 'px'; fish.style.top = y + 'px';
     }
     function moveTo(e) {
@@ -2169,12 +2170,20 @@
         var dx = LANTERN_SPOTS[i][0] - lx, dy = LANTERN_SPOTS[i][1] - ly;
         var dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? '右邊' : '左邊') : (dy > 0 ? '下面' : '上面');
         if (hintLv === 1) speak('好像在' + dir + '……');
-        else if (hintLv === 2) { boost = 2; place(); speak('我用力發光！'); setTimeout(function () { boost = 1; place(); }, 5000); }
+        else if (hintLv === 2) { boost = 1.5; place(); speak('我用力發光！'); setTimeout(function () { boost = 1; place(); }, 5000); }
         else speak('往' + dir + '游！' + (dir === '右邊' ? '➡️' : dir === '左邊' ? '⬅️' : dir === '下面' ? '⬇️' : '⬆️'));
       };
     });
-    dark.classList.add('bright');
-    P.title.textContent = '✨ 全部找到了！'; P.sub.textContent = '燈籠魚的燈越來越亮，照出了一個洞口！';
+    // 2026-11-18 家長：不要整片變亮——燈籠魚游到洞口，光只聚在洞口那一角，其他地方仍然黑黑的
+    var sx = lx, sy = ly, steps = reduceMotion ? 1 : 30;
+    place.soft = true;
+    for (var st = 1; st <= steps; st++) {
+      var t = st / steps, e2 = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      lx = sx + (LANTERN_CAVE[0] - sx) * e2; ly = sy + (LANTERN_CAVE[1] - sy) * e2; boost = 1 - 0.12 * t; place();
+      await sleep(40);
+    }
+    art.classList.add('cave-lit');
+    P.title.textContent = '✨ 全部找到了！'; P.sub.textContent = '燈籠魚游到角落，照出了一個洞口！';
     P.tools.innerHTML = '<button type="button" class="btn primary charge-btn" id="scene-ok">🎉 太好了！</button>';
     await new Promise(function (r) { P.tools.querySelector('#scene-ok').onclick = function () { P.shade.remove(); r(); }; });
     waterDone(child, 'lantern');
