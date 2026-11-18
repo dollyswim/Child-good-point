@@ -2281,11 +2281,26 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .feed-one img { width: 100%; height: 100%; object-fit: contain; }
 .feed-one.got { transform: translate(0, -260%) scale(.3); opacity: 0; transition: transform .45s ease-in, opacity .45s; pointer-events: none; }
 /* 鯊魚 */
-.shark-big { position: absolute; left: 50%; top: 6%; width: 62%; transform: translateX(-50%); transition: transform .9s ease-in; }
-.shark-big img { width: 100%; height: auto; }
+.shark-big { position: absolute; left: 50%; top: 4%; height: 94%; aspect-ratio: 1; transform: translateX(-50%); transition: transform .9s ease-in; }   /* 依圖片高度縮放：鯊魚整隻都在框內 */
+.shark-big img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .shark-big.aside { transform: translateX(60%) scale(.8); }
-.shark-die { position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%); min-width: 64px; padding: 8px 14px; border-radius: 16px; background: #fff; font-size: 1.8rem; font-weight: 900; text-align: center; color: #23709f; box-shadow: 0 4px 10px rgba(0, 0, 0, .2); }
+/* 大鯊魚視窗（2026-11-18 排版優化）：只影響 .shark-panel */
+.scene-panel.shark-panel { width: min(calc(100vw - 24px), 400px); max-height: calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); touch-action: pan-y; overscroll-behavior: contain; gap: 8px; }
+.shark-panel .party-art { aspect-ratio: auto; width: 100%; height: min(calc((min(100vw - 24px, 400px) - 34px) * 2 / 3), 30vh); height: min(calc((min(100vw - 24px, 400px) - 34px) * 2 / 3), 30dvh); flex: none; }   /* 3:2（比原本 4:3 矮約 11%）；手機很矮時再縮圖片，不壓到下面的字 */
+.shark-panel #scene-title { font-size: clamp(1.35rem, 6.4vw, 1.7rem); line-height: 1.2; color: #8a4f12; }
+.shark-panel #scene-sub { font-size: clamp(1rem, 4.6vw, 1.15rem); font-weight: 900; color: #5a3a1a; padding: 4px 14px; border-radius: 99px; background: #fff3d6; border: 2px solid #f1d58f; line-height: 1.4; }
+.shark-panel #scene-sub em { font-style: normal; color: #e0352b; font-size: 1.15em; }
+.shark-result { width: 100%; display: grid; justify-items: center; gap: 4px; padding: 8px 0 10px; border-radius: 16px; background: linear-gradient(#e3f5fd, #c9eaf8); }
+.shark-result-label { font-size: .85rem; font-weight: 800; color: #2f6f97; }
+.shark-die { min-width: 1.6em; padding: 0 .35em; border-radius: 18px; background: #fff; font-size: clamp(64px, 19vw, 80px); line-height: 1.15; font-weight: 900; text-align: center; color: #1f5fbf; box-shadow: 0 4px 10px rgba(0, 60, 110, .2); }
 .shark-die.win { background: #ffe27a; color: #8a4f12; }
+.shark-panel .shark-roll, .shark-panel .shark-shield { width: 100%; min-height: 56px; display: flex; align-items: center; justify-content: center; gap: 10px; box-sizing: border-box; }
+.shark-panel .shark-roll { font-size: clamp(20px, 6vw, 24px); font-weight: 900; }
+.shark-panel .shark-roll img, .shark-panel .shark-shield img { width: 40px; height: 40px; object-fit: contain; flex: none; }
+.shark-panel .shark-shield { padding: 8px 12px; }
+.shark-panel .shark-shield span { display: grid; gap: 2px; text-align: left; }
+.shark-panel .shark-shield b { font-size: clamp(16px, 5vw, 19px); color: #6b4426; }
+.shark-panel .shark-shield small { font-size: clamp(12px, 3.6vw, 14px); color: #8a6a3a; }
 /* 燈籠魚：黑暗中找東西 */
 .lantern-panel .party-art { touch-action: none; user-select: none; -webkit-user-select: none; }
 .lantern-bg-ph { position: absolute; inset: 0; background: radial-gradient(circle at 30% 70%, #3f8f8a 0 12%, transparent 13%), radial-gradient(circle at 75% 30%, #6e5a9a 0 10%, transparent 11%), linear-gradient(#2a6f8f, #1f5a6f); }

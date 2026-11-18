@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-171';
+  var APP_VERSION = '2026.11.18-172';
   var store;
   try {
     store = new CGP.Store();
@@ -2059,16 +2059,18 @@
   // 第 48 格：大鯊魚（免費 12 面骰擲到 11 或 12 才過；或用防護罩，過關後補 10 星）
   async function waterShark(child) {
     await talkSeq([line(WHO.shark(), '站住！這條路是我守的！'), line(WHO.shark(), '想過去？擲出 11 或 12 我就讓你過！擲幾次都可以，不收錢～')]);
-    var P = partyPanel({ title: '大鯊魚攔路！', sub: '擲鯊魚骰（免費、可以一直擲），擲出 11 或 12 就能過關' }, null, 'water-panel shark-panel');
+    // 2026-11-18 家長：排版優化（圖片 → 標題 → 過關條件 → 本次擲骰結果 → 再擲一次 → 防護罩），精簡說明文字；規則不變
+    var P = partyPanel({ title: '大鯊魚擋路！', sub: '' }, null, 'water-panel shark-panel');
+    P.sub.innerHTML = '擲出 <em>11</em> 或 <em>12</em>，就能通過！';
     P.art.innerHTML = (WATER_ART.seabed ? '<img class="party-bg" src="' + WATER_ART.seabed + '" alt="" draggable="false">' : '') +
-      '<div class="shark-big" id="shark-big">' + waterImg(WATER_NPC.shark, '大鯊魚') + '</div><div class="shark-die" id="shark-die" aria-live="polite">🎲</div>';
+      '<div class="shark-big" id="shark-big">' + waterImg(WATER_NPC.shark, '大鯊魚') + '</div>';
     var shieldN = wstate(child).bag.shield;
-    P.tools.innerHTML = '<button type="button" class="btn primary charge-btn" id="shark-roll">🎲 擲鯊魚骰（免費）</button>' +
-      (shieldN ? '<button type="button" class="btn" id="shark-shield">🛡️ 用 1 個防護罩過關（補 ⭐' + GAME.SHARK_SHIELD_STARS + '）</button>' : '') +
-      '<small class="muted" id="shark-tip">不算每天的擲骰次數，也不用背包裡的骰子</small>';
-    var FAIL = ['鯊魚搖搖頭：「還不夠喔！」', '差一點點！再擲一次！', '鯊魚打了個呵欠：「再試試看～」', '鯊魚甩甩尾巴：「再來！」'];
+    P.tools.innerHTML = '<div class="shark-result"><span class="shark-result-label">本次擲骰結果</span><div class="shark-die" id="shark-die" aria-live="polite">？</div></div>' +
+      '<button type="button" class="btn primary shark-roll" id="shark-roll"><img src="images/items/dice_12.webp" alt="" aria-hidden="true" draggable="false"><span id="shark-roll-text">擲骰子！</span></button>' +
+      (shieldN ? '<button type="button" class="btn shark-shield" id="shark-shield"><img src="images/items/shield.webp" alt="" aria-hidden="true" draggable="false">' +
+        '<span><b>使用防護罩直接過關</b><small>消耗 1 個・回補 ⭐' + GAME.SHARK_SHIELD_STARS + '</small></span></button>' : '');
     var res = await new Promise(function (resolve) {
-      var busy = false, k = 0, die = P.art.querySelector('#shark-die');
+      var busy = false, die = P.tools.querySelector('#shark-die');
       P.tools.querySelector('#shark-roll').onclick = async function () {
         if (busy) return; busy = true;
         var r;
@@ -2076,7 +2078,8 @@
         for (var i = 0; i < (reduceMotion ? 1 : 6); i++) { die.textContent = 1 + Math.floor(Math.random() * 12); await sleep(60); }
         die.textContent = r.value;
         die.classList.toggle('win', r.pass);
-        P.sub.textContent = r.pass ? '🎉 擲出 ' + r.value + '！鯊魚讓開了！' : '擲出 ' + r.value + '……' + FAIL[k++ % FAIL.length];
+        if (r.pass) P.sub.textContent = '🎉 擲出 ' + r.value + '！鯊魚讓開了！';
+        else P.tools.querySelector('#shark-roll-text').textContent = '再擲一次！';
         busy = false;
         if (r.pass) { P.art.querySelector('#shark-big').classList.add('aside'); setTimeout(function () { resolve(r); }, reduceMotion ? 300 : 1200); }
       };

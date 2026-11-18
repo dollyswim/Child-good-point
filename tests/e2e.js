@@ -1047,7 +1047,8 @@ async function main() {
     await q.click('.dice-btn.d6');
     await talkUntil('#shark-roll');
     await setRand(F12(10)); await q.click('#shark-roll');
-    await q.waitForFunction(() => /擲出 10/.test(document.getElementById('scene-sub').textContent));
+    await q.waitForFunction(() => document.getElementById('shark-die').textContent === '10' && /再擲一次/.test(document.getElementById('shark-roll').textContent));
+    if (SHOT_DIR) await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, '47-water-shark.png') });
     assert.equal((await P()).pos, 48);
     await setRand(F12(11)); await q.click('#shark-roll');
     await idle();
