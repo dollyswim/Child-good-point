@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-196';
+  var APP_VERSION = '2026.11.18-197';
   var store;
   try {
     store = new CGP.Store();
@@ -4986,6 +4986,10 @@
           var onNow = GAME.WATER_TRIAL;
           confirmThen(onNow ? '關閉水島試玩模式？\n還在水島的孩子會回到金島起點。' : '打開水島試玩模式？\n只有這台裝置看得到水島。', onNow ? '關閉' : '打開', false, function () {
             try { if (onNow) localStorage.removeItem('cgp-water-trial'); else localStorage.setItem('cgp-water-trial', '1'); } catch (err) { toast('這台裝置無法儲存設定', 'neg'); return; }
+            if (onNow) {   // 關掉：還在水島的孩子回到金島起點（不然會停在不存在的地圖上）
+              store.getChildren().forEach(function (c) { var wp = store.getPlayer(c.id); if (wp.island === 'water') { wp.island = 'gold'; wp.pendingRoll = null; wp.storyAsk = null; store.setPlayerTile(c.id, 0); } });
+              store.save();
+            }
             location.reload();
           });
           break;

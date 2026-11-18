@@ -290,8 +290,6 @@
     if (!p.islandClears || typeof p.islandClears !== 'object') p.islandClears = {};   // 金島以外的通關次數（金島沿用 goldClears）
     if (!p.story || typeof p.story !== 'object') p.story = {};   // 劇情完成日期 { ore, rail, tower, pinecone, flowers, invite, party }
     if (!p.water || typeof p.water !== 'object') p.water = {};   // 水島故事進度：seen（沿路對話）、bucket（魚桶）、bottle（牛奶瓶）、welcomed、bossStage、folkMet（看過結尾昏倒的火島居民；重置任務會清掉）
-    // 水島試玩模式關掉時，還在水島的孩子回到金島起點（不然會停在不存在的地圖上）
-    if (p.island === 'water' && !BOARDS.water) { p.island = 'gold'; p.pos = 0; p.tileId = null; p.pendingRoll = null; }
     // 位置以穩定格子 ID 為準；舊存檔只有整數格號時對應到同號的格子（第 n 格 → gold-01-00n）
     var board = BOARDS[p.island] || GOLD;
     var idx = p.tileId ? board.tiles.findIndex(function (t) { return t.id === p.tileId; }) : -1;

@@ -2988,9 +2988,3 @@ test('水島重置任務：6 關、魚桶、牛奶瓶、沿路對話重來（迎
   } finally { delete G.BOARDS.water; }
 });
 
-test('水島試玩模式關掉：還在水島的孩子回到金島起點', () => {
-  const { store, a, p } = waterStore('water', 30);
-  delete G.BOARDS.water;
-  const q = store.getPlayer(a.id);
-  assert.deepEqual([q.island, q.pos, store.getBoard(a.id).id], ['gold', 0, 'gold']);
-});
