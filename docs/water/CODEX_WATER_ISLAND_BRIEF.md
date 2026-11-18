@@ -178,6 +178,7 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 ## D. 任務視窗場景（4 張，橫式 4:3、1200×900、畫滿不要白底）
 
 > ✅ 2026-11-17 D 節 4 張已收（Codex）→ `images/water/task/memo_map.webp`、`open_water.webp`、`search_cave.webp`、`cabin_room.webp`（轉 webp）。D-1 下方空白由 App 先寫「最重要的寶……」再切 20 片，長得一樣的碎紙互相算對；D-4 的搜查點對準家具，圖裡沒有木箱，原「木箱」搜查點改成「布簾」。
+> 2026-11-18：第 48 格鯊魚改用家長提供的較深藍色海底 → `images/water/task/shark_deep.webp`（1200×900）；D-2 只留給第 34 格餵小白鯨。
 
 共用風格用「地圖與場景」那段，再加 `horizontal 4:3 composition, full scene`。
 

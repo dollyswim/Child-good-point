@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-174';
+  var APP_VERSION = '2026.11.18-175';
   var store;
   try {
     store = new CGP.Store();
@@ -1690,7 +1690,8 @@
   var WATER_ART = {
     // 2026-11-17 D 節正式圖（Codex）驗收通過；水島圖不放進 SHELL，第一次用到才下載
     memo: 'images/water/task/memo_map.webp',        // D-1 備忘藏寶圖 1200×900（拼圖底圖；下方空白由 App 寫「最重要的寶……」再切片）
-    seabed: 'images/water/task/open_water.webp',    // D-2 明亮海底（餵白鯨、鯊魚）
+    seabed: 'images/water/task/open_water.webp',    // D-2 明亮海底（餵白鯨）
+    sharkBg: 'images/water/task/shark_deep.webp',   // 2026-11-18 家長提供：較深的藍色海底（只給第 48 格鯊魚惡霸用）
     lanternBg: 'images/water/task/search_cave.webp', // D-3 燈籠魚找東西的海底（明亮版，黑暗由程式疊上）
     room: 'images/water/task/cabin_room.webp',      // D-4 健忘怪房間
     bottle: 'images/water/items/bottle.webp', potion: 'images/water/items/potion.webp', fish: 'images/water/items/fish.webp', bucket: 'images/water/items/fish_bucket.webp',
@@ -2064,7 +2065,7 @@
     // 2026-11-18 家長：排版優化（圖片 → 標題 → 過關條件 → 本次擲骰結果 → 再擲一次 → 防護罩），精簡說明文字；規則不變
     var P = partyPanel({ title: '鯊魚惡霸擋路！', sub: '' }, null, 'water-panel shark-panel');
     P.sub.innerHTML = '擲出 <em>11</em> 或 <em>12</em>，就能通過！';
-    P.art.innerHTML = (WATER_ART.seabed ? '<img class="party-bg" src="' + WATER_ART.seabed + '" alt="" draggable="false">' : '') +
+    P.art.innerHTML = '<img class="party-bg" src="' + (WATER_ART.sharkBg || WATER_ART.seabed) + '" alt="" draggable="false">' +
       '<div class="shark-big" id="shark-big">' + waterImg(WATER_NPC.shark, '大鯊魚') + '</div>';
     var shieldN = wstate(child).bag.shield;
     // 2026-11-18 家長：視窗出現時先顯示提示，按「開始擲骰！」才進入擲骰畫面（沒有防護罩就不提防護罩）
