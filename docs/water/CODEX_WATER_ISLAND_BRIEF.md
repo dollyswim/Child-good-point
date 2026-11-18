@@ -285,6 +285,8 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 
 ## H. 水島結尾銜接火島（2026-11-18 新增，Gemini）
 
+> ✅ 2026-11-18 已收：C-9a～c 火島居民 → `images/water/ending/fire_folk_faint／fire_folk_panic／fire_folk_calm.webp`；E-32 破舊小船選黏土風那張（和居民同框那張右半）→ `wreck_boat.webp`。⏳ F-6 划船去火島等火島開放前再畫。
+
 劇情：小白鯨送回珊瑚淺灘 → 沙灘上有破舊小船和昏倒的火島居民 → 居民醒來說火山冒黑煙、轟隆巨響 → 漁夫答應划船載孩子去火島。**不要畫出生氣怪或火箭**（之後火島才揭曉）。
 到貨後填進 `js/app.js` 的 `FIRE_FOLK`、`WATER_END_ART`。
 

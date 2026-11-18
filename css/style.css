@@ -2500,11 +2500,13 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 @media (prefers-reduced-motion: reduce) { .water-trip .we-card { animation: none; } }
 
 /* 水島結尾：珊瑚淺灘上的破小船和昏倒的火島居民（正式圖到貨前用表情符號佔位） */
-.wend-shore { position: absolute; left: 0; right: 0; top: 30%; height: 22%; z-index: 1; pointer-events: none; animation: fade-in .6s ease-out both; }
-.wend-boat { position: absolute; left: 8%; bottom: 0; width: 46%; display: grid; place-items: end center; }
+.wend-shore { position: absolute; left: 0; right: 0; top: 41%; height: 22%; z-index: 1; pointer-events: none; animation: fade-in .6s ease-out both; }
+.wend-boat { position: absolute; left: 2%; bottom: 4%; width: 44%; display: grid; place-items: end center; }
 .wend-boat img { width: 100%; height: auto; filter: drop-shadow(0 6px 8px rgba(60, 40, 10, .35)); }
-.wend-folk { position: absolute; right: 10%; bottom: 0; width: 34%; display: grid; place-items: end center; transition: transform .4s; }
+.wend-folk { position: absolute; left: 44%; bottom: 0; width: 34%; display: grid; place-items: end center; transition: transform .4s; }
 .wend-folk img { width: 100%; height: auto; filter: drop-shadow(0 6px 8px rgba(60, 40, 10, .35)); }
 .wend-folk.faint .folk-ph { transform: rotate(-80deg); }
 .folk-ph { font-size: clamp(56px, 18vw, 90px); line-height: 1; filter: drop-shadow(0 6px 8px rgba(60, 40, 10, .35)); }
 .water-trip .wo-beach { position: absolute; inset: 0; background: center / cover no-repeat; animation: fade-in .6s ease-out both; }
+
+.wend-folk.faint { width: 46%; left: 40%; } .wend-folk.panic { width: 40%; } .wend-folk.calm { width: 32%; }

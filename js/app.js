@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-190';
+  var APP_VERSION = '2026.11.18-191';
   var store;
   try {
     store = new CGP.Store();
@@ -2437,8 +2437,8 @@
   // 2026-11-18 家長：水島結尾銜接火島——小白鯨送回珊瑚淺灘 → 沙灘上的破小船和昏倒的火島居民 → 居民說火山冒黑煙 → 漁夫答應載你去火島
   // （不提生氣怪、火箭實驗。火島還沒開放時，漁夫說船要先修好，孩子照舊先回金島）。每次通關都演，第二次以後可以略過。
   // 正式圖到貨後把檔名填進 FIRE_FOLK／WATER_END_ART（白底圖去背）；空白時用表情符號佔位
-  var FIRE_FOLK = { faint: '', panic: '', calm: '' };   // C-9 火島居民：昏倒閉眼、醒來驚慌、恢復平靜
-  var WATER_END_ART = { boat: '', toFire: '' };          // E-32 破舊小船（白底去背）、F-6 漁夫划船前往冒黑煙的火山島（直式 3:4）
+  var FIRE_FOLK = { faint: 'images/water/ending/fire_folk_faint.webp', panic: 'images/water/ending/fire_folk_panic.webp', calm: 'images/water/ending/fire_folk_calm.webp' };   // C-9 火島居民（2026-11-18 家長 Gemini 圖）：昏倒、驚慌、平靜
+  var WATER_END_ART = { boat: 'images/water/ending/wreck_boat.webp', toFire: '' };          // E-32 破舊小船（白底去背）、F-6 漁夫划船前往冒黑煙的火山島（直式 3:4）
   function fireFolkArt(k) {
     return FIRE_FOLK[k] ? '<img src="' + FIRE_FOLK[k] + '" alt="" draggable="false">' : '<span class="folk-ph" aria-hidden="true">' + ({ faint: '😵', panic: '😨', calm: '🙂' })[k] + '</span>';
   }
@@ -2455,7 +2455,7 @@
         for (var n = 0; n < 30 && document.querySelector('#water-talk [data-talk]'); n++) { var bs = document.querySelectorAll('#water-talk [data-talk]'); bs[bs.length - 1].click(); }
       };
       function talk(lines) { return skipped ? Promise.resolve() : talkSeq(lines); }
-      var me = WHO.me(child), F = WHO.fisher(), folk = function (k) { return { who: '火島居民', img: FIRE_FOLK[k] }; };
+      var me = WHO.me(child), F = WHO.fisher(), folk = function () { return { who: '火島居民', img: '' }; };   // 居民已經在畫面上，不另外顯示大頭像
       (async function () {
         if (!skipped) await sleep(reduceMotion ? 300 : 1600);   // 小白鯨送回岸邊（F-4）
         // 珊瑚淺灘（F-3）：破小船＋昏倒的居民
