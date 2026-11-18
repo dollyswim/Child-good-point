@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-170';
+  var APP_VERSION = '2026.11.18-171';
   var store;
   try {
     store = new CGP.Store();
@@ -2188,7 +2188,7 @@
     await new Promise(function (r) { P.tools.querySelector('#scene-ok').onclick = function () { P.shade.remove(); r(); }; });
     waterDone(child, 'lantern');
     await talkSeq([line(L, '謝謝你幫忙！唔？我們好像來到海底洞穴入口了。'), line(WHO.me(child), '燈籠魚，我們在找這張地圖上的沉船，你有看過嗎？'),
-      line(L, '這個海底洞穴裡好像有一艘沉船，不知道是不是你要找的沉船。')]);   // 2026-11-18 家長改台詞
+      line(L, '這個海底洞穴裡好像有一艘沉船，不知道是不是你要找的沉船。'), line(WHO.me(child), '好，那我進去看看！')]);   // 2026-11-18 家長改台詞
   }
 
   // 第 100 格：健忘怪的家（三階段：搜索 → 整理昨天 → 牛奶瓶真相與選箱），每完成一階段存檔（計畫第 5.3 節）
