@@ -947,7 +947,7 @@ async function main() {
     console.log('✔ 木島正式地圖與樹洞結局：100 格與背景、小精靈站位、第 100 格對話 → 5 張第一人稱滑梯 → 木島冒險完成、獎勵不重複、第二次可略過；回金島過場可略過');
   }
 
-  // ---------- 水島（2026-11-17；預設未開放，water: true 才開）：入島、漁夫迎接、必要關卡、鯊魚、燈籠魚、健忘怪、通關回金島 ----------
+  // ---------- 水島（2026-11-17；預設未開放，water: true 才開）：入島、漁夫迎接、必要關卡、鯊魚、燈籠魚、萊莫、通關回金島 ----------
   {
     const c = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', story: true, wood: true, water: true });
     await c.addInitScript(() => { window.__cgpFastEnding = true; });
@@ -1095,7 +1095,7 @@ async function main() {
     await q.click('#scene-ok');
     await idle();
     assert.ok((await P()).story.lantern, '燈籠魚找齊 10 樣');
-    // 5. 健忘怪：第 99 格擲 1 → 100 → 三階段 → 通關 3 箱 → 白鯨送回岸
+    // 5. 萊莫：第 99 格擲 1 → 100 → 三階段 → 通關 3 箱 → 白鯨送回岸
     await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 99); s.save(); }, kid);
     await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('#pawn');
     const gift0 = (await P()).gift;
@@ -1138,7 +1138,7 @@ async function main() {
     if (SHOT_DIR) { await q.waitForTimeout(500); await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, 'water-boxes.png') }); }
     await q.click('#box-open');
     await q.waitForSelector('#water-talk');
-    assert.match(await q.locator('#water-talk .we-line').innerText(), /扳手/, '開錯箱子：健忘怪用對話框提醒（看得到）');
+    assert.match(await q.locator('#water-talk .we-line').innerText(), /扳手/, '開錯箱子：萊莫用對話框提醒（看得到）');
     await q.locator('#water-talk [data-talk]').last().click();
     assert.equal((await P()).clears, 0, '選錯箱子不會通關');
     await q.click('.floor-box[data-b="2"]'); await q.click('#box-open');
@@ -1195,7 +1195,7 @@ async function main() {
     await q.mouse.click(folkBox.x + folkBox.width / 2, folkBox.y + folkBox.height * .6);
     await q.waitForFunction(() => /謝謝/.test(document.body.innerText), null, { timeout: 5000 });
     await c.close();
-    console.log('✔ 水島：入島開場、漁夫迎接與魚桶、沿路對話、水島道具限制、關卡停下、拼圖、鯊魚 11／12 到 49、燈籠魚黑暗找東西、健忘怪三階段與 3 箱、小白鯨送回金島、第二次通關漁夫短版、重置後完整劇情可略過、起點火島居民道謝');
+    console.log('✔ 水島：入島開場、漁夫迎接與魚桶、沿路對話、水島道具限制、關卡停下、拼圖、鯊魚 11／12 到 49、燈籠魚黑暗找東西、萊莫三階段與 3 箱、小白鯨送回金島、第二次通關漁夫短版、重置後完整劇情可略過、起點火島居民道謝');
   }
 
   // ---------- 一般冒險事件視窗（2026-11-09）：卡片式、單一視窗整合多個事件；內容沿用事件原文 ----------

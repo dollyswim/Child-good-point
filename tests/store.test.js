@@ -2950,19 +2950,19 @@ test('潛水艇：只在水島第 25 格以後、到 25～99、不能跳過未�
   } finally { delete G.BOARDS.water; }
 });
 
-test('水島第 100 格：先幫健忘怪找到小被被才通關；第一次 3 個神祕寶箱＋⭐3，之後 10 星；完成後下一擲回金島', () => {
+test('水島第 100 格：先幫萊莫找到小被被才通關；第一次 3 個神祕寶箱＋⭐3，之後 10 星；完成後下一擲回金島', () => {
   const { store, a, p, roll } = waterStore('water', 97);
   try {
     doneUpTo(p, ['memo', 'potion', 'feed', 'shark', 'lantern']);
     const r = roll(6);
     assert.deepEqual([p.pos, !!r.event.waterBoss, !!r.event.clear], [100, true, false], '到第 100 格還沒通關');
     assert.equal(p.islandClears.water || 0, 0);
-    assert.throws(() => roll(3), /先完成「健忘怪的小被被」/);
+    assert.throws(() => roll(3), /先完成「萊莫的小被被」/);
     const gift = p.bag.giftMysteryChest, stars = store.getStarBalance(a.id);
     const ev = store.finishWaterBoss(a.id);
     assert.deepEqual([ev.clear.first, ev.clear.island, ev.items.giftMysteryChest, p.bag.giftMysteryChest - gift, p.islandClears.water], [true, 'water', 3, 3, 1]);
     assert.equal(store.getStarBalance(a.id), stars + G.STORY_STARS);
-    assert.throws(() => store.finishWaterBoss(a.id), /不在健忘怪的家/);
+    assert.throws(() => store.finishWaterBoss(a.id), /不在萊莫的家/);
     const t = roll(2);
     assert.equal(t.travel.island, 'gold', '水島之後（火島未做）回金島');
     // 第二輪：沒有重置任務 → 走到 100 直接通關 10 星

@@ -179,7 +179,8 @@
         title: String(c.title || ''),
         badge: String(c.badge || ''),
         weeklyGoal: Math.max(0, toInt(c.weeklyGoal, 0)),
-        createdAt: toInt(c.createdAt, Date.now())
+        createdAt: toInt(c.createdAt, Date.now()),
+        tester: !!c.tester   // 2026-11-18：水島試玩模式建立的「測試」孩子（不受每日上限）
       };
     });
     var childIdSet = new Set(d.children.map(function (c) { return c.id; }));
@@ -717,7 +718,8 @@
       title: String(input.title || '').trim(),
       badge: String(input.badge || ''),
       weeklyGoal: Math.max(0, toInt(input.weeklyGoal, 0)),
-      createdAt: this.now().getTime()
+      createdAt: this.now().getTime(),
+      tester: !!input.tester
     };
     this.data.children.push(c);
     if (this._initMilestones) this._initMilestones();   // 新孩子：里程碑從起始點數開始算
@@ -1469,11 +1471,14 @@
 
   // ----- 冒險世界每日使用上限（2026-11-09 家長決定：設定裡可調 0～10，全部孩子共用） -----
   /** @returns {{ dice, minigame, move, door, magic, starCall, pineHide }} 目前的上限（沒設定的用預設） */
-  Store.prototype.getLimits = function () {
+  Store.prototype.getLimits = function (childId) {
     var set = (this.data.settings && this.data.settings.limits) || {}, out = {};
-    Object.keys(DEFAULT_LIMITS).forEach(function (k) { out[k] = set[k] != null ? set[k] : DEFAULT_LIMITS[k]; });
+    var tester = childId && this.isTester(childId);   // 測試孩子：各種每日上限都不限（999）
+    Object.keys(DEFAULT_LIMITS).forEach(function (k) { out[k] = tester ? 999 : set[k] != null ? set[k] : DEFAULT_LIMITS[k]; });
     return out;
   };
+  /** 水島試玩模式建立的測試孩子 */
+  Store.prototype.isTester = function (childId) { var c = this.getChild(childId); return !!(c && c.tester); };
   /** 家長修改每日上限（需家長密碼解鎖）；patch 裡沒有的項目不變；reset：全部恢復預設 */
   Store.prototype.setLimits = function (patch, reset) {
     if (this._requireParent) this._requireParent();

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-197';
+  var APP_VERSION = '2026.11.18-198';
   var store;
   try {
     store = new CGP.Store();
@@ -947,14 +947,14 @@
     // 2026-11-17 水島：6 個必要關卡，各關的 NPC 站在地圖預留的空地（board.npcSpots）；任務本身在 waterTask() 裡
     water: {
       rel: true,
-      guide: { cls: 'water-npc', label: '漁夫爺爺', img: 'images/water/npc/fisherman.webp', iw: 640, ih: 640, w: 62 },
+      guide: { cls: 'water-npc', label: '漁夫爺爺', img: 'images/water/npc/fisherman.webp', iw: 640, ih: 640, w: 90 },   // 2026-11-18：地圖上的人身高統一約 85px（技師、小精靈、飛行員）
       spots: {
         memo: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc water-bottle', label: '神祕的牛奶瓶', emoji: '🍼', img: 'images/water/items/bottle.webp', iw: 512, ih: 512, w: 64 }, hint: '撿到的牛奶瓶裡有好多碎紙條……走到第 8 格拼拼看！' },
         potion: { type: 'water', guide: [0, 0], cam: [0, -60], hint: '漁夫爺爺在第 16 格的木平台等你！' },
         feed: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '小白鯨', img: 'images/water/npc/beluga.webp', iw: 640, ih: 640, w: 150 }, hint: '小白鯨好像肚子餓了……走到第 34 格餵牠吃魚！' },
         shark: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '大鯊魚', img: 'images/water/npc/shark_v2.webp', iw: 640, ih: 640, w: 190 }, hint: '大鯊魚守在第 48 格，要擲出 11 或 12 才讓你過！' },
         lantern: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '燈籠魚', img: 'images/water/npc/anglerfish.webp', iw: 640, ih: 640, w: 100 }, hint: '燈籠魚的東西掉了一地……走到第 56 格幫牠找！' },
-        blanket: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '健忘怪', img: 'images/water/npc/monster_confused.webp', iw: 640, ih: 640, w: 100 }, hint: '門裡有人在翻箱倒櫃……走到第 100 格看看！' }
+        blanket: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '萊莫', img: 'images/water/npc/monster_confused.webp', iw: 640, ih: 640, w: 100 }, hint: '門裡有人在翻箱倒櫃……走到第 100 格看看！' }
       }
     }
   };
@@ -1582,7 +1582,7 @@
     var bag = player.bag;
     var canPlay = store.canPlayToday(child.id);
     var used = store.getRollsToday(child.id);
-    var limit = store.getLimits().dice;   // 2026-11-09：每日上限依家長設定
+    var limit = store.getLimits(child.id).dice;   // 2026-11-09：每日上限依家長設定（測試孩子不限）
     var end = board.tiles.length - 1;
     var atEnd = player.pos >= end;
     var quota = store.getBonusQuota(child.id);
@@ -1618,6 +1618,7 @@
     var pp = worldXY(region, board.tiles[shownN]), pawnShown = inScene(shownN);
     return pageHeader(board.name, child, 'map') +
       '<main class="page map-page">' +
+      (GAME.WATER_TRIAL || store.isTester(child.id) ? '<p class="trial-banner" data-testid="trial-banner">🧪 試玩模式' + (store.isTester(child.id) ? '・測試孩子不受每日上限' : '・只在這台裝置') + '</p>' : '') +   // 2026-11-18 家長：試玩模式要標明
       '<section class="hud">' +
       '<span class="hud-cell"><small>能量星星</small><b class="gold" data-testid="stars">' + STAR_IMG + ' ' + num(store.getStarBalance(child.id)) + '</b></span>' +
       '<span class="hud-cell"><small>今日骰子</small><b data-testid="rolls">' + used + ' / ' + limit + '</b>' + (quota.rolls ? '<small class="hud-bonus">再來 +' + quota.rolls + '</small>' : '') + '</span>' +
@@ -1678,7 +1679,7 @@
       '<span class="item-art dice-icon"><img src="' + WATER_NPC.beluga + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></span><b>小白鯨載我</b><small>' +
       (!friend ? '先在第 34 格和牠當朋友' : left ? '今天還可以 ' + left + ' 次' : '牠游累了，明天再來') + '</small></button>';
   }
-  /** 水島地圖上的 NPC（迎接漁夫、魚桶、牛奶瓶提示等由劇情另外放；這裡放第 100 格健忘怪的門口標記） */
+  /** 水島地圖上的 NPC（迎接漁夫、魚桶、牛奶瓶提示等由劇情另外放；這裡放第 100 格萊莫的門口標記） */
   var WATER_NPC = { fisherman: 'images/water/npc/fisherman.webp', beluga: 'images/water/npc/beluga.webp', shark: 'images/water/npc/shark_v2.webp',   // 2026-11-18 家長換新圖（壞笑露牙的鯊魚惡霸；換檔名讓快取立刻生效）
     lantern: 'images/water/npc/anglerfish.webp',
     monster: 'images/water/npc/monster_confused.webp', monsterSurprised: 'images/water/npc/monster_surprised.webp', monsterBlanket: 'images/water/npc/monster_blanket.webp' };
@@ -1725,7 +1726,7 @@
     seabed: 'images/water/task/open_water.webp',    // D-2 明亮海底（餵白鯨）
     sharkBg: 'images/water/task/shark_deep.webp',   // 2026-11-18 家長提供：較深的藍色海底（只給第 48 格鯊魚惡霸用）
     lanternBg: 'images/water/task/search_cave.webp', // D-3 燈籠魚找東西的海底（明亮版，黑暗由程式疊上）
-    room: 'images/water/task/cabin_room.webp',      // D-4 健忘怪房間
+    room: 'images/water/task/cabin_room.webp',      // D-4 萊莫房間
     bottle: 'images/water/items/bottle.webp', potion: 'images/water/items/potion.webp', fish: 'images/water/items/fish.webp', bucket: 'images/water/items/fish_bucket.webp',
     blanket: 'images/water/items/blanket.webp'
   };
@@ -1762,7 +1763,7 @@
     beluga: function () { return { who: '小白鯨', img: WATER_NPC.beluga }; },
     shark: function () { return { who: '大鯊魚', img: WATER_NPC.shark }; },
     lantern: function () { return { who: '燈籠魚', img: WATER_NPC.lantern }; },
-    monster: function (k) { return { who: '健忘怪', big: true, img: k === 'surprised' ? WATER_NPC.monsterSurprised : k === 'blanket' ? WATER_NPC.monsterBlanket : WATER_NPC.monster }; },
+    monster: function (k) { return { who: '萊莫', big: true, img: k === 'surprised' ? WATER_NPC.monsterSurprised : k === 'blanket' ? WATER_NPC.monsterBlanket : WATER_NPC.monster }; },
     me: function (child) { return { who: child.name, img: kidImg(child), me: true }; }
   };
   function line(w, text, extra) { return Object.assign({}, w, { text: text }, extra || {}); }
@@ -2236,7 +2237,7 @@
       line(L, '這個海底洞穴裡好像有一艘沉船，不知道是不是你要找的沉船。'), line(WHO.me(child), '好，那我進去看看！')]);   // 2026-11-18 家長改台詞
   }
 
-  // 第 100 格：健忘怪的家（三階段：搜索 → 整理昨天 → 牛奶瓶真相與選箱），每完成一階段存檔（計畫第 5.3 節）
+  // 第 100 格：萊莫的家（三階段：搜索 → 整理昨天 → 牛奶瓶真相與選箱），每完成一階段存檔（計畫第 5.3 節）
   var BOSS_SPOTS = [
     // 2026-11-17 位置對準 D-4 正式圖的家具（x、y＝中心、w、h＝可點範圍，都是畫面百分比）；圖裡沒有木箱，改成布簾
     // 2026-11-18 家長：不顯示文字標籤（會擋住家具），改成透明可點範圍＋手勢游標，另有提示按鈕
@@ -2245,20 +2246,20 @@
     { id: 'desk', label: '書桌', emoji: '🪑', x: 54, y: 46, w: 31, h: 18, card: 2, notebook: true, say: '桌上有墨跡，側邊抽屜露出筆記本的一角，桌腳旁還有一張紙！' },
     { id: 'curtain', label: '布簾', emoji: '🪟', x: 95, y: 30, w: 10, h: 46, card: 1, say: '把布簾掀開一點……後面藏著一張紙！' },
     { id: 'wardrobe', label: '衣櫃', emoji: '🚪', x: 80, y: 37, w: 21, h: 46, card: 3, say: '衣櫃門縫夾著一張紙！' },
-    { id: 'seat', label: '健忘怪坐的地方', emoji: '📦', x: 50, y: 76, w: 52, h: 36, say: '三個箱子被健忘怪的大屁股壓住了……大概是他的座位吧？', monster: '嗯？我坐在什麼上面？……先別管了，快幫我找！' },
+    { id: 'seat', label: '萊莫坐的地方', emoji: '📦', x: 50, y: 76, w: 52, h: 36, say: '三個箱子被萊莫的大屁股壓住了……大概是他的座位吧？', monster: '嗯？我坐在什麼上面？……先別管了，快幫我找！' },
     { id: 'rack', label: '窗邊的瓶架', emoji: '🫙', x: 52, y: 28, w: 16, h: 12, say: '窗台上有一個空空的圓形瓶架……原本放什麼呢？先記下來。' }
   ];
-  var FLOOR_BOX_X = [37, 50, 63], FLOOR_BOX_OPEN_X = [30, 50, 70];   // 地上三個箱子的中心 x（畫面百分比）：健忘怪躺著時併排靠在一起，站起來後分開一點方便點
+  var FLOOR_BOX_X = [37, 50, 63], FLOOR_BOX_OPEN_X = [30, 50, 70];   // 地上三個箱子的中心 x（畫面百分比）：萊莫躺著時併排靠在一起，站起來後分開一點方便點
   var MONSTER_SEAT_PH = false;   // true＝正方形佔位圖（用高度）；false＝C-8 橫圖（用寬度）
-  var MONSTER_SEAT = 'images/water/npc/monster_lying_v2.webp';   // C-8 健忘怪橫躺在三個箱子上發呆（2026-11-18 家長 Gemini 圖；v2 補去手臂和頭之間被圍住的白底）
+  var MONSTER_SEAT = 'images/water/npc/monster_lying_v2.webp';   // C-8 萊莫橫躺在三個箱子上發呆（2026-11-18 家長 Gemini 圖；v2 補去手臂和頭之間被圍住的白底）
   var BOSS_CARDS = [['soiled', '弄髒了', '🟤'], ['wash', '洗一洗', '🫧'], ['dry', '晾乾', '☀️'], ['store', '收好', '📥']];   // 2026-11-17 E-16～E-19 正式圖：images/water/items/card_<id>.webp
   function bossCard(c) { var k = BOSS_CARDS[c]; return '<img class="card-art" src="images/water/items/card_' + k[0] + '.webp" alt="" draggable="false"><small>' + k[1] + '</small>'; }
   var BOSS_BOXES = [['star', '星星箱', '⭐', '箱子裡有扳手和起子，叮叮噹噹的。', 'wrench'], ['shell', '貝殼箱', '🐚', '箱子摸起來濕濕的，旁邊有一小灘水。', 'puddle'], ['moon', '月亮箱', '🌙', '箱子乾乾的，裡面也沒有工具。', '']];   // 第 5 欄：點開後出現的證據圖（E-24 扳手、E-26 水窪）
   async function waterBoss(child) {
     var M = WHO.monster(), me = WHO.me(child), stage = wstate(child).water.bossStage || 0;
     if (!stage) await talkSeq([line(M, '不見了！我的寶貝不見了！到底放到哪去了？'), line(me, '你在找什麼？是寶物嗎？我幫你一起找吧？'), line(M, '太好了！我一直找不到我的寶……咦……我剛才要找什麼？是寶物嗎？'), line(M, '好像在床底下……不對！在冰箱裡！')]);
-    var P = partyPanel({ title: '健忘怪的家', sub: '' }, null, 'water-panel boss-panel');
-    // 2026-11-18 家長：三個箱子一開始就在地上，健忘怪半躺在箱子上發呆（站起來之後才在房間裡直接選箱子）
+    var P = partyPanel({ title: '萊莫的家', sub: '' }, null, 'water-panel boss-panel');
+    // 2026-11-18 家長：三個箱子一開始就在地上，萊莫半躺在箱子上發呆（站起來之後才在房間裡直接選箱子）
     P.art.innerHTML = (WATER_ART.room ? '<img class="party-bg" src="' + WATER_ART.room + '" alt="" draggable="false">' : '<div class="room-ph"></div>') +
       '<div class="boss-floor" id="boss-floor">' + BOSS_BOXES.map(function (b, i) {
         return '<button type="button" class="floor-box" data-b="' + i + '" aria-label="' + b[1] + '" style="left:' + FLOOR_BOX_X[i] + '%" disabled><img src="images/water/items/box_' + b[0] + '.webp" alt="" class="box-art" draggable="false">' +
@@ -2306,9 +2307,9 @@
             var book = document.createElement('div'); book.className = 'boss-book';   // E-15 翻開的筆記本：頁面上的字由 App 寫
             // E-14 先闔上看封面，再換 E-15 翻開
             book.className = 'boss-book closed';
-            book.innerHTML = '<img src="images/water/items/notebook_closed.webp" alt="" draggable="false"><p class="bb-cover">健忘怪的<br>重要事情！<br>千萬不能<br>忘記！</p>';
+            book.innerHTML = '<img src="images/water/items/notebook_closed.webp" alt="" draggable="false"><p class="bb-cover">萊莫的<br>重要事情！<br>千萬不能<br>忘記！</p>';
             layer.appendChild(book);
-            await talkSeq([line(me, '筆記本封面寫著：「健忘怪的重要事情！千萬不能忘記！」')]);
+            await talkSeq([line(me, '筆記本封面寫著：「萊莫的重要事情！千萬不能忘記！」')]);
             book.className = 'boss-book';
             book.innerHTML = '<img src="images/water/items/notebook_open.webp" alt="" draggable="false"><p class="bb-l">重要事情<br>千萬不能<br>忘記！</p><p class="bb-r">記得帶<br>筆記本。</p>';
             await talkSeq([line(me, '第一頁寫著：「記得帶筆記本。」'),
@@ -2407,14 +2408,14 @@
     await talkSeq([line(me, '牛奶瓶的瓶底，跟瓶架的圓圈剛好一樣大！'), line(WHO.monster('surprised'), '啊啊啊！這不是我的牛奶瓶嗎？！'),
       line(WHO.monster('surprised'), '我怕忘記重要的事情，就把紙條塞進瓶子裡……'), line(WHO.monster('surprised'), '結果我忘記把瓶子放在哪裡！'),
       line(me, '所以我們找到的不是藏寶圖，是你的備忘紙！'), line(M, '對！我還畫了回家的路，怕連家也忘記！'), line(M, '等等，你說什麼……寶圖？給我看一下……')]);
-    // 2026-11-18 家長：放大顯示藏寶圖（第 8 格拼好的那張，含「最重要的寶……」），健忘怪認出三個大框框就是三個箱子
+    // 2026-11-18 家長：放大顯示藏寶圖（第 8 格拼好的那張，含「最重要的寶……」），萊莫認出三個大框框就是三個箱子
     var mp = await memoPrepare(WATER_ART.memo || memoPlaceholder(), 5, 4), mapEl = document.createElement('div');
     mapEl.className = 'boss-map'; mapEl.innerHTML = '<img src="' + mp.src + '" alt="藏寶圖" draggable="false">';
     layer.appendChild(mapEl);
     await talkSeq([line(M, '對，這是我畫的……喔！這三個大框框好像是那三個箱子！', { img: '' })]);   // 不顯示大頭像，免得擋住地圖上的三個框框
     mapEl.remove();
     await talkSeq([line(M, '對了，我好像晾乾之後，就把寶貝放在地上的箱子裡了！')]);
-    // 2026-11-18 家長：說「可是放在哪裡呢？」之前，背景的健忘怪就換成站著（淡出→站在房間裡跳一下）
+    // 2026-11-18 家長：說「可是放在哪裡呢？」之前，背景的萊莫就換成站著（淡出→站在房間裡跳一下）
     layer.innerHTML = '';
     var seatImg = P.art.querySelector('#monster-seat');
     if (seatImg) {
@@ -2422,7 +2423,7 @@
       P.art.querySelector('#boss-floor').insertAdjacentHTML('beforeend', '<img class="monster-stand jump" id="monster-stand" src="' + WATER_NPC.monster + '" alt="" draggable="false">');
       await sleep(reduceMotion ? 50 : 500);
     }
-    await talkSeq([line(M, '（健忘怪跳起來）可是放在哪裡呢？')]);
+    await talkSeq([line(M, '（萊莫跳起來）可是放在哪裡呢？')]);
     var floor = P.art.querySelector('#boss-floor'); floor.classList.add('ready');
     floor.querySelectorAll('.floor-box').forEach(function (x, i) { x.disabled = false; x.style.left = FLOOR_BOX_OPEN_X[i] + '%'; });   // 箱子稍微分開
     await sleep(reduceMotion ? 0 : 450);
@@ -2439,7 +2440,7 @@
         P.tools.innerHTML = '<button type="button" class="btn primary charge-btn" id="box-open">打開' + BOSS_BOXES[chosen][1] + '</button>';
         P.tools.querySelector('#box-open').onclick = function () {
           if (BOSS_BOXES[chosen][0] === 'moon') { resolve(); return; }
-          // 開錯：健忘怪用對話框說（原本的提示條被視窗擋住看不到）
+          // 開錯：萊莫用對話框說（原本的提示條被視窗擋住看不到）
           say(M, chosen === 0 ? '不對不對！星星箱裡有扳手，會叮叮噹噹吵醒寶貝！' : '不對不對！貝殼箱濕濕的，寶貝要放在乾乾的地方！');
         };
       });
@@ -2571,9 +2572,9 @@
     var s = board.npcSpots && board.npcSpots['0'];
     if (!s) return '';
     // 2026-11-18 家長：通關過水島後，獲救的火島居民站在起點旁，點了會跟孩子道謝（不給獎勵）
-    var folk = ((player.islandClears || {}).water || 0) >= 1 ? '<div class="story-guide water-npc fire-folk-npc" data-tap="folk" style="left:' + (s[0] + 64) + 'px;top:' + (s[1] + 6) + 'px;width:130px;z-index:' + Math.round(s[1] / 6) + '" role="img" aria-label="火島居民：點我說話">' + waterImg(FIRE_FOLK.calm, '') + '</div>' : '';
+    var folk = ((player.islandClears || {}).water || 0) >= 1 ? '<div class="story-guide water-npc fire-folk-npc" data-tap="folk" style="left:' + (s[0] + 70) + 'px;top:' + s[1] + 'px;width:90px;z-index:' + Math.round(s[1] / 6) + '" role="img" aria-label="火島居民：點我說話">' + waterImg(FIRE_FOLK.calm, '') + '</div>' : '';
     if (player.water.welcomed) return folk;
-    return folk + '<div class="story-guide water-npc" style="left:' + s[0] + 'px;top:' + s[1] + 'px;width:62px;z-index:' + Math.round(s[1] / 6) + '" role="img" aria-label="漁夫爺爺">' + waterImg(WATER_NPC.fisherman, '') + '</div>';
+    return folk + '<div class="story-guide water-npc" style="left:' + s[0] + 'px;top:' + s[1] + 'px;width:90px;z-index:' + Math.round(s[1] / 6) + '" role="img" aria-label="漁夫爺爺">' + waterImg(WATER_NPC.fisherman, '') + '</div>';
   }
 
   // ---------- 鏡頭：拖曳、雙指縮放、跟隨角色 ----------
@@ -2979,7 +2980,7 @@
     var clearEv = ev && ev.clear ? ev : (ev && ev.then && ev.then.clear ? ev.then : null);
     if (clearEv && clearEv.clear.island === 'wood') { await woodEnding(child, clearEv); return; }   // 木島：樹洞溜滑梯結局
     if (clearEv && clearEv.clear.island === 'water') { await waterEnding(child, clearEv); return; }   // 水島（第二輪以後直接通關）：小白鯨送回岸
-    if (ev && ev.waterBoss) return;   // 水島第 100 格：健忘怪的任務已在上面演出
+    if (ev && ev.waterBoss) return;   // 水島第 100 格：萊莫的任務已在上面演出
     if (clearEv) { await mapFireworks(); showClear(child, clearEv); return; }
     var mgEv = ev && ev.minigame ? ev : (ev && ev.then && ev.then.minigame ? ev.then : null);
     if (mgEv) { openMinigame(childId, head + '・停在第 ' + store.getPlayer(childId).pos + ' 格'); return; }
@@ -4119,7 +4120,7 @@
     if (bag.submarine && inWater) btn('submarine', 'pick-sub', '潛水艇', '×' + bag.submarine + (player.pos < 25 ? '・潛到海裡才能用' : lim.sub ? '・今天剩 ' + lim.sub + ' 次' : '・今天已用完'), busy || !lim.sub || player.pos < 25);
     if (bag.door && !inWater) btn('door', 'pick-door', '傳送門', '×' + bag.door + (lim.door ? '・今天剩 ' + lim.door + ' 次' : '・今天已用完'), busy || !lim.door);
     if (bag.luckyMedal) btn('luckyMedal', 'activate-medal', '好運金牌', player.medalArmed ? '已啟用・×' + bag.luckyMedal : '×' + bag.luckyMedal + '・點我啟用', !!player.medalArmed);
-    var L = store.getLimits();
+    var L = store.getLimits(child.id);
     if (bag.pineHide) { var phUsed = store._usesToday(child.id, ['pineHide']) >= L.pineHide; btn('pineHide', 'use-pinehide', '松果躲躲', phUsed ? '今天已用・×' + bag.pineHide : '×' + bag.pineHide + '・玩一局', busy || phUsed || !!store.getPendingMinigame(child.id)); }
     if (bag.starCall) { var scUsed = store._usesToday(child.id, ['starCall']) >= L.starCall; btn('starCall', 'use-starcall', '星星呼喚', scUsed ? '今天已用・×' + bag.starCall : '×' + bag.starCall + '・玩一局', busy || scUsed || !!store.getPendingMinigame(child.id)); }
     if (bag.bonusPlay) btn('bonusPlay', 'activate-bonus', '再來 3 次', '×' + bag.bonusPlay + '・點我啟用', busy);
@@ -4391,15 +4392,13 @@
         '<button class="btn small" data-action="edit-child" data-id="' + h(c.id) + '">編輯</button>' +
         '<button class="btn small danger" data-action="delete-child" data-id="' + h(c.id) + '">刪除</button></li>';
     }).join('');
-    // 2026-11-18 家長：設定頁（要家長密碼）裡直接預覽水島各關，不用記網址；預覽不動存檔、不給星星
-    var WATER_PREVIEW = [['open', '🏝️ 開場'], ['memo', '🗺️ 拼藏寶圖'], ['potion', '🧪 潛水藥水'], ['feed', '🐳 餵小白鯨'], ['shark', '🦈 鯊魚惡霸'], ['lantern', '🏮 燈籠魚'], ['boss', '🛏️ 健忘怪房間＋結尾']];
-    var trialOn = GAME.WATER_TRIAL, kids = store.getChildren();
-    var preview = '<section class="card water-preview"><h2>🌊 預覽水島</h2><p class="muted small">家長試玩用：直接打開水島的任務視窗，不會改存檔、不會給星星。</p>' +
-      '<div class="wp-grid">' + WATER_PREVIEW.map(function (w) { return '<a class="btn small" href="?preview=water-' + w[0] + '#home">' + w[1] + '</a>'; }).join('') + '</div>' +
-      (GAME.WATER_OPEN ? '' : '<h3 class="wp-sub">🧪 水島試玩模式（只限這台裝置）</h3><p class="muted small">打開後，這台裝置上的水島會開放，可以用「測試」孩子從第 0 格完整玩到結尾。孩子如果也用這台裝置玩，試玩期間他們也看得到水島；試完請關掉。</p>' +
-        '<button type="button" class="btn block' + (trialOn ? '' : ' primary') + '" data-action="water-trial">' + (trialOn ? '關閉水島試玩模式' : '打開水島試玩模式') + '</button>' +
-        (trialOn ? '<p class="muted small">把孩子直接傳送到水島第 0 格（會改這個孩子的冒險位置，建議先「＋ 新增孩子」建一個「測試」）：</p><div class="wp-grid">' +
-          kids.map(function (c) { return '<button type="button" class="btn small" data-action="water-teleport" data-id="' + h(c.id) + '">🏝️ ' + h(c.name) + '</button>'; }).join('') + '</div>' : '')) +
+    // 2026-11-18 家長：有了試玩模式，各關的小預覽按鈕拿掉；試玩用「測試」孩子（⭐1000、不受每日上限）
+    var testers = store.getChildren().filter(function (c) { return c.tester; });
+    var preview = GAME.WATER_OPEN ? '' : '<section class="card water-preview"><h2>🧪 水島試玩模式（只限這台裝置）</h2>' +
+      '<p class="muted small">打開後這台裝置的水島會開放。建立「測試」孩子（送 ⭐1000、不受每日擲骰與道具上限、不用先結算），傳送到水島第 0 格，就能從頭玩到結尾。孩子如果也用這台裝置，試玩期間他們也看得到水島；試完請關掉並刪除測試孩子。</p>' +
+      '<button type="button" class="btn block' + (GAME.WATER_TRIAL ? '' : ' primary') + '" data-action="water-trial">' + (GAME.WATER_TRIAL ? '關閉水島試玩模式' : '打開水島試玩模式') + '</button>' +
+      (GAME.WATER_TRIAL ? (testers.length ? '' : '<button type="button" class="btn block" data-action="tester-add">＋ 建立測試孩子（⭐1000）</button>') +
+        '<div class="wp-grid">' + testers.map(function (c) { return '<button type="button" class="btn small" data-action="water-teleport" data-id="' + h(c.id) + '">🏝️ 傳送「' + h(c.name) + '」到水島第 0 格</button>'; }).join('') + '</div>' : '') +
       '</section>';
     return replay + '<ul class="rows">' + (list || '<li class="muted">還沒有孩子</li>') + '</ul>' +
       '<button class="btn primary block" data-action="add-child">＋ 新增孩子</button>' + preview;
@@ -4994,9 +4993,15 @@
           });
           break;
         }
+        case 'tester-add': {
+          var tk = store.addChild({ name: '測試', tester: true });
+          store._ledger(tk.id, 1000, '試玩模式：測試孩子起始星星');
+          store.save(); toast('🧪 已建立測試孩子（⭐1000）', 'pos'); render();
+          break;
+        }
         case 'water-teleport': {
           var tc = store.getChild(el.getAttribute('data-id'));
-          if (!tc || !GAME.BOARDS.water) break;
+          if (!tc || !tc.tester || !GAME.BOARDS.water) break;
           confirmThen('把「' + tc.name + '」傳送到水島第 0 格？\n（試玩用；會改這個孩子目前的冒險位置）', '傳送', true, function () {
             var tp = store.getPlayer(tc.id); tp.island = 'water'; tp.pendingRoll = null; tp.storyAsk = null; store.setPlayerTile(tc.id, 0); store.save();
             toast('🏝️ ' + tc.name + ' 已在水島起點，進冒險地圖就會遇到漁夫爺爺', 'pos'); render();
@@ -5367,7 +5372,7 @@
 
   render();
 
-  // 家長預覽用（2026-11-17）：?preview=water-memo（拼圖）、water-potion、water-feed、water-shark、water-lantern（燈籠魚）、water-boss（健忘怪）、water-open（開場）
+  // 家長預覽用（2026-11-17）：?preview=water-memo（拼圖）、water-potion、water-feed、water-shark、water-lantern（燈籠魚）、water-boss（萊莫）、water-open（開場）
   (function () {
     var m = /[?&]preview=water-(memo|potion|feed|shark|lantern|boss|open)\b/.exec(location.search);
     if (!m) return;

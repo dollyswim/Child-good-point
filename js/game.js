@@ -252,7 +252,7 @@
     var tiles = WATER_DATA.tiles.map(function (t) {
       return { n: t.n, id: t.id, regionId: t.regionId, gx: t.gx, gy: t.gy, x: t.gx / 1080, y: t.gy / 1350, type: t.n === 0 ? 'start' : (WATER_TYPES[t.n] || 'normal') };
     });
-    return { id: 'water', name: '水島', goalName: '健忘怪的沉船', totalTiles: 100, world: { width: 1080, height: 1350 }, scenes: true,
+    return { id: 'water', name: '水島', goalName: '萊莫的沉船', totalTiles: 100, world: { width: 1080, height: 1350 }, scenes: true,
       regions: WATER_SCENES, tiles: tiles, npcSpots: WATER_DATA.npcSpots };
   }
   if (waterOn) BOARDS.water = buildWater();
@@ -318,6 +318,7 @@
   };
   /** 今天是否可以玩（已解鎖並結算） */
   Store.prototype.canPlayToday = function (childId) {
+    if (this.isTester && this.isTester(childId)) return !this.isAdventureEnded(childId);   // 測試孩子不用先結算
     return !!this.getSettlement(childId) && !this.isAdventureEnded(childId);
   };
   /** 今天的冒險是否已按「結束今日冒險」 */
@@ -757,7 +758,7 @@
       function pickGame() { return minigameOf(island, self.random) === 'leaf'; }   // 開新的一場時才決定玩哪一種
       var leaf = false;
       ev.title = '🎮 小遊戲';
-      var todays = this.getMinigamesToday(childId), lim = this.getLimits().minigame;   // 2026-11-09：每日小遊戲次數依家長設定
+      var todays = this.getMinigamesToday(childId), lim = this.getLimits(childId).minigame;   // 2026-11-09：每日小遊戲次數依家長設定
       var mg = todays.filter(function (m) { return m.status === 'pending'; })[0] || (todays.length >= lim ? todays[0] || { status: 'done' } : null);
       if (!mg) {
         leaf = pickGame();
@@ -793,15 +794,15 @@
       ev.title = '🚪 抵達' + lastR.name + '的終點！';
       ev.text = '你走完金島第 1～' + lastR.to + ' 格了！' + (nextR ? '前方的「' + nextR.name + '」即將開放。' : '') + '\n下次出發會從起點開始新的一輪，寶箱也會重新放滿！';
     } else if (tile.type === 'end') {
-      if (p.island === 'water' && !p.story.blanket) {   // 水島：第 100 格先幫健忘怪找到寶貝，才算通關（finishWaterBoss）
-        ev.waterBoss = true; ev.title = '🚪 健忘怪的家'; ev.text = '門裡好像有人在翻箱倒櫃……「我的寶貝跑去哪裡了？」';
+      if (p.island === 'water' && !p.story.blanket) {   // 水島：第 100 格先幫萊莫找到寶貝，才算通關（finishWaterBoss）
+        ev.waterBoss = true; ev.title = '🚪 萊莫的家'; ev.text = '門裡好像有人在翻箱倒櫃……「我的寶貝跑去哪裡了？」';
       } else this._clearIsland(childId, ev);
     }
     return ev;
   };
 
   /**
-   * 島嶼通關：第一次＝神祕寶箱（免鑰匙；水島 3 個＝健忘怪贈送，其他島 1 個）（金島另得「金島通關」成就）；之後＝ +10 能量星星；
+   * 島嶼通關：第一次＝神祕寶箱（免鑰匙；水島 3 個＝萊莫贈送，其他島 1 個）（金島另得「金島通關」成就）；之後＝ +10 能量星星；
    * 下一次移動前往下一座已開放的島（沒有就從起點開始新的一輪）
    */
   Store.prototype._clearIsland = function (childId, ev) {
@@ -927,7 +928,7 @@
   ]);
   // 水島開放後才出現的成就（2026-11-17）
   if (waterOn) ACHIEVEMENTS.splice(ACHIEVEMENTS.findIndex(function (a) { return a.id === 'woodClear1'; }) + 1, 0,
-  { id: 'waterClear1', cat: 'adventure', icon: '🌊', name: '水島通關', desc: '幫健忘怪找回小被被，完成水島冒險', check: function (s, c) { return (s.getPlayer(c).islandClears.water || 0) >= 1; } });
+  { id: 'waterClear1', cat: 'adventure', icon: '🌊', name: '水島通關', desc: '幫萊莫找回小被被，完成水島冒險', check: function (s, c) { return (s.getPlayer(c).islandClears.water || 0) >= 1; } });
   /** 「抓住星星」單局最多抓到幾顆 */
   /** 落葉找松果單局最佳成績：key＝caught（找到的松果）或 squirrels（翻到的松鼠）；含封存結轉 */
   function bestLeaf(s, c, key) {
@@ -1059,12 +1060,12 @@
   };
   /** 今天還能擲幾次（基本 3 次剩餘＋額外次數；不含神奇骰子） */
   Store.prototype.getRollsLeft = function (childId) {
-    return Math.max(0, this.getLimits().dice - this.getRollsToday(childId)) + this.getBonusQuota(childId).rolls;
+    return Math.max(0, this.getLimits(childId).dice - this.getRollsToday(childId)) + this.getBonusQuota(childId).rolls;
   };
   /** 今天的神奇骰子是否已經用到上限（預設每天 1 顆，家長可調） */
   Store.prototype.magicUsedToday = function (childId) {
     var today = this.today();
-    return this.data.adventure.rolls.filter(function (r) { return r.childId === childId && r.date === today && r.kind === 'magic' && !r.limitReset; }).length >= this.getLimits().magic;
+    return this.data.adventure.rolls.filter(function (r) { return r.childId === childId && r.date === today && r.kind === 'magic' && !r.limitReset; }).length >= this.getLimits(childId).magic;
   };
   /**
    * 第一步：擲出點數（計入次數、消耗骰子），還沒前進。
@@ -1081,10 +1082,10 @@
     var kind = 'base';
     if (die === 'magic') {
       if (!(p.bag.magicDice > 0)) throw new Error('背包裡沒有神奇骰子');
-      if (this.magicUsedToday(childId)) throw new Error('神奇骰子每天最多用 ' + this.getLimits().magic + ' 顆，明天再來！');
+      if (this.magicUsedToday(childId)) throw new Error('神奇骰子每天最多用 ' + this.getLimits(childId).magic + ' 顆，明天再來！');
       kind = 'magic';
     } else {
-      var diceLim = this.getLimits().dice;
+      var diceLim = this.getLimits(childId).dice;
       if (this.getRollsToday(childId) >= diceLim) {
         if (this.getBonusQuota(childId).rolls > 0) kind = 'bonus';
         else throw new Error(diceLim ? '今天已經擲了 ' + diceLim + ' 次骰子，明天再來！' : '家長設定今天不能擲骰子');
@@ -1200,7 +1201,7 @@
   };
   /** 今天前進類道具與傳送門還能用幾次 */
   Store.prototype.getItemLimitsToday = function (childId) {
-    var L = this.getLimits();
+    var L = this.getLimits(childId);
     return { move: Math.max(0, L.move - this._usesToday(childId, ['skates', 'wings'])),
       door: Math.max(0, L.door - this._usesToday(childId, ['door'])),
       beluga: Math.max(0, L.beluga - this._usesToday(childId, ['beluga'])),   // 水島：小白鯨載著前進
@@ -1214,7 +1215,7 @@
     var needLap = p.pos >= end;
     if (p.island === 'water') throw new Error('在水裡不能用' + MOVE_ITEMS[item].name + '喔！');
     if (!(p.bag[item] > 0)) throw new Error('背包裡沒有' + MOVE_ITEMS[item].name);
-    if (!this.getItemLimitsToday(childId).move) throw new Error('今天的前進道具（溜冰鞋、飛行翼）已經用了 ' + this.getLimits().move + ' 次，明天再用！');
+    if (!this.getItemLimitsToday(childId).move) throw new Error('今天的前進道具（溜冰鞋、飛行翼）已經用了 ' + this.getLimits(childId).move + ' 次，明天再用！');
     this._markDayStart(childId);
     var travel = needLap ? this._startNext(childId) : null;
     var from = p.pos;
@@ -1253,7 +1254,7 @@
     if (!(n >= 1 && n < end)) throw new Error('傳送門不能傳送到這一格');
     if (n === p.pos) throw new Error('你已經在這一格了');
     if (!(p.bag.door > 0)) throw new Error('背包裡沒有傳送門');
-    if (!this.getItemLimitsToday(childId).door) throw new Error('傳送門每天只能用 ' + this.getLimits().door + ' 次，明天再用！');
+    if (!this.getItemLimitsToday(childId).door) throw new Error('傳送門每天只能用 ' + this.getLimits(childId).door + ' 次，明天再用！');
     var lim = this.doorLimit(childId);
     if (lim && n > lim.tile) throw new Error('第 ' + lim.tile + ' 格的任務「' + lim.name + '」還沒完成，傳送門最遠只能到第 ' + lim.tile + ' 格');
     this._markDayStart(childId);
@@ -1273,7 +1274,7 @@
     var p = this.getPlayer(childId);
     if (!(p.bag.starCall > 0)) throw new Error('背包裡沒有星星呼喚');
     if (this.getPendingMinigame(childId)) throw new Error('先把還沒玩完的小遊戲玩完');
-    if (this._usesToday(childId, ['starCall']) >= this.getLimits().starCall) throw new Error('星星呼喚每天只能用 ' + this.getLimits().starCall + ' 個，明天再用！');
+    if (this._usesToday(childId, ['starCall']) >= this.getLimits(childId).starCall) throw new Error('星星呼喚每天只能用 ' + this.getLimits(childId).starCall + ' 個，明天再用！');
     p.bag.starCall--;
     var mg = { id: uid(), childId: childId, date: this.today(), tile: p.pos, status: 'pending', bonus: true, starCall: true, caught: 0, stars: 0, ts: this.now().getTime() };
     this.data.adventure.minigames.push(mg);
@@ -1287,7 +1288,7 @@
     var p = this.getPlayer(childId);
     if (!(p.bag.pineHide > 0)) throw new Error('背包裡沒有松果躲躲');
     if (this.getPendingMinigame(childId)) throw new Error('先把還沒玩完的小遊戲玩完');
-    if (this._usesToday(childId, ['pineHide']) >= this.getLimits().pineHide) throw new Error('松果躲躲每天只能用 ' + this.getLimits().pineHide + ' 個，明天再用！');
+    if (this._usesToday(childId, ['pineHide']) >= this.getLimits(childId).pineHide) throw new Error('松果躲躲每天只能用 ' + this.getLimits(childId).pineHide + ' 個，明天再用！');
     p.bag.pineHide--;
     var mg = { id: uid(), childId: childId, date: this.today(), tile: p.pos, status: 'pending', bonus: true, starCall: true, game: 'leaf', caught: 0, stars: 0, ts: this.now().getTime() };
     this.data.adventure.minigames.push(mg);
@@ -1311,7 +1312,7 @@
     // 2026-11-16 水島「深海失落的寶藏」：6 個必要關卡（走到就停、剩下步數作廢，完成前不能往前）
     memo: { island: 'water', tile: 8, name: '神祕藏寶圖', gate: true }, potion: { island: 'water', tile: 16, name: '漁夫的潛水藥水', gate: true },
     feed: { island: 'water', tile: 34, name: '餵小白鯨', gate: true }, shark: { island: 'water', tile: 48, name: '大鯊魚攔路', gate: true },
-    lantern: { island: 'water', tile: 56, name: '燈籠魚找東西', gate: true }, blanket: { island: 'water', tile: 100, name: '健忘怪的小被被', gate: true }
+    lantern: { island: 'water', tile: 56, name: '燈籠魚找東西', gate: true }, blanket: { island: 'water', tile: 100, name: '萊莫的小被被', gate: true }
   };
   /** 某座島的劇情代號（依 STORIES 的順序） */
   function storiesOf(island) { return Object.keys(STORIES).filter(function (k) { return STORIES[k].island === island; }); }
@@ -1377,7 +1378,7 @@
     var id = this.waterTaskHere(childId);
     if (id) throw new Error('先完成「' + STORIES[id].name + '」才能繼續前進喔！');
   };
-  /** 水島故事進度（沿路對話、魚桶、牛奶瓶、健忘怪進行到第幾階段） */
+  /** 水島故事進度（沿路對話、魚桶、牛奶瓶、萊莫進行到第幾階段） */
   Store.prototype.waterState = function (childId) { return this.getPlayer(childId).water; };
   Store.prototype.setWaterFlag = function (childId, key, val) {
     if (['bucket', 'bottle', 'welcomed', 'bossStage', 'rulesSeen', 'folkMet'].indexOf(key) < 0) throw new Error('沒有這個水島紀錄');
@@ -1426,10 +1427,10 @@
     this.save();
     return { pass: true, shield: true, stars: SHARK_SHIELD_STARS, first: first, pos: p.pos, found: this._found };
   };
-  /** 第 100 格：幫健忘怪找到小被被 → 完成關卡（⭐3）並通關（第一次 3 個神祕寶箱，之後 10 星） */
+  /** 第 100 格：幫萊莫找到小被被 → 完成關卡（⭐3）並通關（第一次 3 個神祕寶箱，之後 10 星） */
   Store.prototype.finishWaterBoss = function (childId) {
     this._requirePlay(childId);
-    if (this.waterTaskHere(childId) !== 'blanket') throw new Error('現在不在健忘怪的家');
+    if (this.waterTaskHere(childId) !== 'blanket') throw new Error('現在不在萊莫的家');
     var p = this.getPlayer(childId);
     this.completeStory(childId, 'blanket');
     p.water.bossStage = 0;
@@ -1477,7 +1478,7 @@
     if (!(n >= SUB_FROM && n < end)) throw new Error('潛水艇只能開到第 ' + SUB_FROM + '～' + (end - 1) + ' 格');
     if (n === p.pos) throw new Error('你已經在這一格了');
     if (!(p.bag.submarine > 0)) throw new Error('背包裡沒有潛水艇');
-    if (!this.getItemLimitsToday(childId).sub) throw new Error('潛水艇每天只能用 ' + this.getLimits().sub + ' 次，明天再用！');
+    if (!this.getItemLimitsToday(childId).sub) throw new Error('潛水艇每天只能用 ' + this.getLimits(childId).sub + ' 次，明天再用！');
     var gate = this.waterGate(childId);
     if (gate > 0 && n > gate) throw new Error('第 ' + gate + ' 格的關卡還沒完成，潛水艇最遠只能到第 ' + gate + ' 格');
     this._markDayStart(childId);

@@ -2519,3 +2519,4 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 
 .water-preview { margin-top: 14px; } .wp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; } .wp-grid .btn { text-align: center; }
 .wp-sub { margin: 16px 0 4px; font-size: 1rem; } .water-preview .btn.block { margin: 6px 0; }
+.trial-banner { margin: 0 0 8px; padding: 6px 12px; border-radius: 99px; background: #fff1c2; border: 2px dashed #e0a21c; color: #8a5a00; font-weight: 900; text-align: center; font-size: .9rem; }

@@ -92,7 +92,7 @@ single subject, no text, no watermark, plain white background
 | 小白鯨 | 34、42（S2）、62（S3） | 240×180 | 路旁水域 |
 | 大鯊魚 | 48（S2） | 300×220 | 路的側邊，不能蓋到 48、49 格 |
 | 燈籠魚 | 56（S2） | 160×160 | 靠近 58 的洞口 |
-| 健忘怪房門 | 100（S4） | 300×200 | 門前空地中間保持空曠 |
+| 萊莫房門 | 100（S4） | 300×200 | 門前空地中間保持空曠 |
 
 ---
 
@@ -165,16 +165,16 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 | C-2 | 小白鯨 | `A cute chubby baby beluga whale, white with a soft blue tint, big round friendly eyes, smiling, small flippers, gentle pose, side 3/4 view, horizontal` 中文：圓胖的小白鯨，白色帶淡藍、大眼睛、微笑、小鰭，3/4 側面，橫式 |
 | C-3 | 大鯊魚 | `A big but playful cartoon shark guarding a path, rounded body, light gray-blue, mischievous grin with no sharp teeth showing, arms-like fins crossed like a gatekeeper, side 3/4 view, horizontal` 中文：調皮的大鯊魚守門員，圓潤身體、灰藍色、壞壞的笑**但不露尖牙**，鰭像手一樣交叉擋路，3/4 側面，橫式 |
 | C-4 | 燈籠魚 | `A cute shy little anglerfish, round body, soft purple, a glowing warm yellow lantern on its head clearly separated above the body, big shy eyes, blushing, no sharp teeth` 中文：害羞的小燈籠魚，圓身體、淡紫色、頭上溫暖黃色發光燈籠、害羞大眼、臉紅、不露尖牙 |
-| C-5 | 健忘怪（迷糊） | `A cute round chubby forgetful monster, blue-purple fluffy body, short round horns, a crooked little hat, mismatched socks, big confused eyes, scratching its head with one hand, friendly and silly` 中文：圓胖的健忘怪，藍紫色毛茸茸、短圓角、歪帽子、左右不同的襪子，一手抓頭、一臉迷糊 |
-| C-6 | 健忘怪（驚喜） | 同 C-5 角色、同角度，`both hands on cheeks, mouth wide open in a happy surprise, sparkling eyes` 中文：雙手捧臉、張嘴驚喜、眼睛發亮 |
-| C-7 | 健忘怪（抱被被） | 同 C-5 角色，`hugging a soft cream-colored blanket with a big yellow star patch tightly, eyes closed, cheek pressed against it, very happy and relieved` 中文：緊緊抱著有黃色大星星布章的奶油色小被被，閉眼貼臉，非常安心 |
+| C-5 | 萊莫（迷糊） | `A cute round chubby forgetful monster, blue-purple fluffy body, short round horns, a crooked little hat, mismatched socks, big confused eyes, scratching its head with one hand, friendly and silly` 中文：圓胖的萊莫，藍紫色毛茸茸、短圓角、歪帽子、左右不同的襪子，一手抓頭、一臉迷糊 |
+| C-6 | 萊莫（驚喜） | 同 C-5 角色、同角度，`both hands on cheeks, mouth wide open in a happy surprise, sparkling eyes` 中文：雙手捧臉、張嘴驚喜、眼睛發亮 |
+| C-7 | 萊莫（抱被被） | 同 C-5 角色，`hugging a soft cream-colored blanket with a big yellow star patch tightly, eyes closed, cheek pressed against it, very happy and relieved` 中文：緊緊抱著有黃色大星星布章的奶油色小被被，閉眼貼臉，非常安心 |
 
-> ✅ 2026-11-17 已收：C-1 漁夫、C-2 小白鯨、C-3 鯊魚、C-4 燈籠魚（Gemini），已去背存為 `images/water/npc/fisherman.webp`、`beluga.webp`、`shark.webp`、`anglerfish.webp`（640×640，只去除與外框相連的白底；燈籠魚另去掉燈旁淡黃光暈與燈桿內側白底，燈泡保留）。C-5～C-7 健忘怪也已收（2026-11-17）：`monster_confused.webp`（迷糊）、`monster_surprised.webp`（驚喜）、`monster_blanket.webp`（抱小被被）。**C 節全部完成。** 2026-11-18：C-3 鯊魚換成家長提供的新圖（壞笑露牙的鯊魚惡霸，已去背）→ `images/water/npc/shark_v2.webp`，舊的 `shark.webp` 已刪除。 小被被定案外觀：奶油色、中間一顆黃色大星星，E-25 要畫成一樣。
+> ✅ 2026-11-17 已收：C-1 漁夫、C-2 小白鯨、C-3 鯊魚、C-4 燈籠魚（Gemini），已去背存為 `images/water/npc/fisherman.webp`、`beluga.webp`、`shark.webp`、`anglerfish.webp`（640×640，只去除與外框相連的白底；燈籠魚另去掉燈旁淡黃光暈與燈桿內側白底，燈泡保留）。C-5～C-7 萊莫也已收（2026-11-17）：`monster_confused.webp`（迷糊）、`monster_surprised.webp`（驚喜）、`monster_blanket.webp`（抱小被被）。**C 節全部完成。** 2026-11-18：C-3 鯊魚換成家長提供的新圖（壞笑露牙的鯊魚惡霸，已去背）→ `images/water/npc/shark_v2.webp`，舊的 `shark.webp` 已刪除。 小被被定案外觀：奶油色、中間一顆黃色大星星，E-25 要畫成一樣。
 
 > ✅ 2026-11-18 C-8 已收（Gemini）→ `images/water/npc/monster_lying_v2.webp`（去白底、900 寬；含手臂和頭之間被圍住的白底），疊在併排的三個箱子上。
-> 2026-11-18 新增 **C-8 健忘怪橫躺發呆（橫圖）**：給第 100 格房間用，App 把三個箱子（E-20～E-22）併排放在地上，這張疊在箱子上，看起來像健忘怪躺在箱子上。**不要畫箱子**。檔名放 `images/water/npc/monster_lying.webp`，到貨後把 `js/app.js` 的 `MONSTER_SEAT` 換成新檔、`MONSTER_SEAT_PH` 改成 false。
+> 2026-11-18 新增 **C-8 萊莫橫躺發呆（橫圖）**：給第 100 格房間用，App 把三個箱子（E-20～E-22）併排放在地上，這張疊在箱子上，看起來像萊莫躺在箱子上。**不要畫箱子**。檔名放 `images/water/npc/monster_lying.webp`，到貨後把 `js/app.js` 的 `MONSTER_SEAT` 換成新檔、`MONSTER_SEAT_PH` 改成 false。
 > 提示詞：`The same forgetful monster character as the reference image (same purple body, horns, beanie hat, striped socks, same proportions and 3D clay style), lying lazily on his back / half-reclining sideways along a long low flat surface, body stretched horizontally across the frame, head and shoulders slightly raised on the left, legs stretched out to the right, one hand scratching his head, dazed spaced-out face, eyes looking up and around as if trying to remember what he was looking for. The surface he lies on is NOT drawn (no boxes, no bench, no furniture); his back and bottom form a flat line along the lower edge. Wide horizontal 3:2 composition, plain white background, no text, no shadow on the ground`
-> 中文：同一隻健忘怪（附 C-5 當參考），懶洋洋地橫躺／半躺，身體橫向伸展，頭和肩膀在左邊微微抬起、腳伸向右邊，一手抓頭，恍神發呆、眼睛往上東張西望像在想自己在找什麼。**底下躺的東西不要畫**（不要箱子、椅子），背和屁股貼著畫面下緣成一直線。橫式 3:2、白底、不要字、不要地面影子。
+> 中文：同一隻萊莫（附 C-5 當參考），懶洋洋地橫躺／半躺，身體橫向伸展，頭和肩膀在左邊微微抬起、腳伸向右邊，一手抓頭，恍神發呆、眼睛往上東張西望像在想自己在找什麼。**底下躺的東西不要畫**（不要箱子、椅子），背和屁股貼著畫面下緣成一直線。橫式 3:2、白底、不要字、不要地面影子。
 
 > C-5～C-7 必須是**同一個角色、同樣比例和角度**，只換動作表情（先做 C-5，再請同一個對話改成 C-6、C-7）。小被被的樣子要和 E-25 一致。
 
@@ -192,7 +192,7 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 | D-1 | 第 8 格「神祕藏寶圖」 | `A hand-drawn memo map on old cream paper, drawn by a clumsy cute monster with crayon-like lines: a cute sunken ship, a big yellow star, wobbly arrows, three simple box outlines side by side, and a small pillow drawing in a corner. The star is not on any box and not connected to any box. Leave a blank strip at the bottom for text. Flat top-down view of the paper filling the frame, no letters` 中文：奶油色舊紙上的手繪備忘圖（蠟筆風、歪歪扭扭）：沉船、大黃星星、歪箭頭、三個並排的箱子輪廓、角落一個小枕頭。**星星不能畫在箱子上或連到箱子**；下方留空白給 App 寫字。紙張正面俯視、畫滿整張（App 會切成 20 片） |
 | D-2 | 第 34 格餵白鯨、第 48 格鯊魚 | `A bright open underwater area with soft light rays, sandy seabed, a few coral clumps around the edges, large calm open water in the middle, no animals` 中文：明亮開闊的海底，光束、沙地，珊瑚只在邊緣，中間大片空水域，不要動物（白鯨、鯊魚由 App 疊上） |
 | D-3 | 第 56 格燈籠魚找東西 | `A detailed seabed corner near a cave entrance, evenly and clearly lit (not dark), sand, rounded rocks, coral, seaweed, old roots and shells with many little hiding nooks spread across the whole image, the cave mouth on one side, no animals and no small loose objects` 中文：洞穴口旁邊的海底角落，**畫成正常明亮、看得清楚的版本**（不要畫成黑暗）：沙地、圓石、珊瑚、海草、老樹根，整張圖各處都有可以藏東西的小角落，一側是洞口；**不要動物、不要小物件**。漆黑效果和燈光由 App 疊上去（孩子用燈籠魚的燈照亮一小圈找東西），所以背景本身要亮、細節要清楚 |
-| D-4 | 第 100 格健忘怪房間 | `A cozy messy cabin room inside a sunken ship, filled with a magical dry air bubble, warm lantern light. A small bed with a slipper under it, a plain cupboard with a snowflake sticker on its door, a wooden desk with ink smudges and a closed side drawer, a wardrobe with its door slightly open, a round window with an empty little bottle rack (a round ring-shaped holder) on the windowsill, a curtain in one corner, and an empty floor area at the bottom center for three boxes. No characters, no boxes, no blanket, no paper notes` 中文：沉船裡溫馨又亂的房間，有魔法乾燥氣泡、暖色燈光：小床（床下一隻拖鞋）、門上貼雪花的普通櫃子、有墨跡和側抽屜（關著）的木書桌、門半開的衣櫃、圓窗＋窗台上**空的小瓶架**（圓環狀）、角落一片布簾、下方中央留空地放三個箱子。**不要角色、箱子、被子、紙條**（都由 App 疊上） |
+| D-4 | 第 100 格萊莫房間 | `A cozy messy cabin room inside a sunken ship, filled with a magical dry air bubble, warm lantern light. A small bed with a slipper under it, a plain cupboard with a snowflake sticker on its door, a wooden desk with ink smudges and a closed side drawer, a wardrobe with its door slightly open, a round window with an empty little bottle rack (a round ring-shaped holder) on the windowsill, a curtain in one corner, and an empty floor area at the bottom center for three boxes. No characters, no boxes, no blanket, no paper notes` 中文：沉船裡溫馨又亂的房間，有魔法乾燥氣泡、暖色燈光：小床（床下一隻拖鞋）、門上貼雪花的普通櫃子、有墨跡和側抽屜（關著）的木書桌、門半開的衣櫃、圓窗＋窗台上**空的小瓶架**（圓環狀）、角落一片布簾、下方中央留空地放三個箱子。**不要角色、箱子、被子、紙條**（都由 App 疊上） |
 
 ---
 
@@ -229,7 +229,7 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 | E-12 | 海草束 | `a small bundle of green seaweed` |
 | E-13 | 舊銅鈴 | `a small old brass bell` |
 
-### 第 100 格健忘怪房間
+### 第 100 格萊莫房間
 | 代號 | 物件 | 提示詞 |
 |---|---|---|
 | E-14 | 筆記本（闔上） | `a small chubby notebook with a soft blue cover, the cover is blank, a ribbon bookmark` 中文：圓胖小筆記本、淡藍封面（**封面空白**，字由 App 寫）、有書籤帶 |
@@ -320,4 +320,4 @@ C-9b、C-9c 請在同一個對話裡接著 C-9a 改，保持同一個角色。
 - 不能有文字、格子、角色、事件圖示出現在地圖背景。
 - 角色：同一角色多張時比例一致；上半身可以裁成半身大圖。
 - 小圖：輪廓清楚、縮小看得懂；同一組（紙卡、箱子）風格一致。
-- 健忘怪的故事線索：備忘圖的星星不指向任何箱子；瓶底和瓶架對得上；紙卡不露出被子全貌。
+- 萊莫的故事線索：備忘圖的星星不指向任何箱子；瓶底和瓶架對得上；紙卡不露出被子全貌。
