@@ -2518,3 +2518,4 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 @media (prefers-reduced-motion: reduce) { .pawn.riding .pawn-ride:not(.leave), .pawn.riding .pawn-inner { animation: none; } }
 
 .water-preview { margin-top: 14px; } .wp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; } .wp-grid .btn { text-align: center; }
+.wp-sub { margin: 16px 0 4px; font-size: 1rem; } .water-preview .btn.block { margin: 6px 0; }

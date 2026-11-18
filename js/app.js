@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-195';
+  var APP_VERSION = '2026.11.18-196';
   var store;
   try {
     store = new CGP.Store();
@@ -4393,8 +4393,14 @@
     }).join('');
     // 2026-11-18 家長：設定頁（要家長密碼）裡直接預覽水島各關，不用記網址；預覽不動存檔、不給星星
     var WATER_PREVIEW = [['open', '🏝️ 開場'], ['memo', '🗺️ 拼藏寶圖'], ['potion', '🧪 潛水藥水'], ['feed', '🐳 餵小白鯨'], ['shark', '🦈 鯊魚惡霸'], ['lantern', '🏮 燈籠魚'], ['boss', '🛏️ 健忘怪房間＋結尾']];
+    var trialOn = GAME.WATER_TRIAL, kids = store.getChildren();
     var preview = '<section class="card water-preview"><h2>🌊 預覽水島</h2><p class="muted small">家長試玩用：直接打開水島的任務視窗，不會改存檔、不會給星星。</p>' +
-      '<div class="wp-grid">' + WATER_PREVIEW.map(function (w) { return '<a class="btn small" href="?preview=water-' + w[0] + '#home">' + w[1] + '</a>'; }).join('') + '</div></section>';
+      '<div class="wp-grid">' + WATER_PREVIEW.map(function (w) { return '<a class="btn small" href="?preview=water-' + w[0] + '#home">' + w[1] + '</a>'; }).join('') + '</div>' +
+      (GAME.WATER_OPEN ? '' : '<h3 class="wp-sub">🧪 水島試玩模式（只限這台裝置）</h3><p class="muted small">打開後，這台裝置上的水島會開放，可以用「測試」孩子從第 0 格完整玩到結尾。孩子如果也用這台裝置玩，試玩期間他們也看得到水島；試完請關掉。</p>' +
+        '<button type="button" class="btn block' + (trialOn ? '' : ' primary') + '" data-action="water-trial">' + (trialOn ? '關閉水島試玩模式' : '打開水島試玩模式') + '</button>' +
+        (trialOn ? '<p class="muted small">把孩子直接傳送到水島第 0 格（會改這個孩子的冒險位置，建議先「＋ 新增孩子」建一個「測試」）：</p><div class="wp-grid">' +
+          kids.map(function (c) { return '<button type="button" class="btn small" data-action="water-teleport" data-id="' + h(c.id) + '">🏝️ ' + h(c.name) + '</button>'; }).join('') + '</div>' : '')) +
+      '</section>';
     return replay + '<ul class="rows">' + (list || '<li class="muted">還沒有孩子</li>') + '</ul>' +
       '<button class="btn primary block" data-action="add-child">＋ 新增孩子</button>' + preview;
   }
@@ -4976,6 +4982,23 @@
         case 'tips-done': store.setFlag('tipsDone', true); render(); break;
         case 'tips-show': store.setFlag('tipsDone', false); toast('首頁會重新顯示新手任務'); render(); break;
         case 'tour-replay': openTour(); break;
+        case 'water-trial': {   // 水島試玩模式：只存在這台裝置；切換後重新載入，讓島嶼設定生效
+          var onNow = GAME.WATER_TRIAL;
+          confirmThen(onNow ? '關閉水島試玩模式？\n還在水島的孩子會回到金島起點。' : '打開水島試玩模式？\n只有這台裝置看得到水島。', onNow ? '關閉' : '打開', false, function () {
+            try { if (onNow) localStorage.removeItem('cgp-water-trial'); else localStorage.setItem('cgp-water-trial', '1'); } catch (err) { toast('這台裝置無法儲存設定', 'neg'); return; }
+            location.reload();
+          });
+          break;
+        }
+        case 'water-teleport': {
+          var tc = store.getChild(el.getAttribute('data-id'));
+          if (!tc || !GAME.BOARDS.water) break;
+          confirmThen('把「' + tc.name + '」傳送到水島第 0 格？\n（試玩用；會改這個孩子目前的冒險位置）', '傳送', true, function () {
+            var tp = store.getPlayer(tc.id); tp.island = 'water'; tp.pendingRoll = null; tp.storyAsk = null; store.setPlayerTile(tc.id, 0); store.save();
+            toast('🏝️ ' + tc.name + ' 已在水島起點，進冒險地圖就會遇到漁夫爺爺', 'pos'); render();
+          });
+          break;
+        }
         case 'limit-step': {
           var lk = el.getAttribute('data-key'), lv = store.getLimits()[lk] + Number(el.getAttribute('data-d'));
           store.setLimits((function () { var o = {}; o[lk] = lv; return o; })());

@@ -2987,3 +2987,10 @@ test('水島重置任務：6 關、魚桶、牛奶瓶、沿路對話重來（迎
     assert.deepEqual([p.story.memo, p.story.potion, p.water.bucket, p.water.welcomed, p.water.seen, p.water.folkMet], [undefined, undefined, undefined, true, undefined, undefined], '重置後火島居民那段會再完整演一次');
   } finally { delete G.BOARDS.water; }
 });
+
+test('水島試玩模式關掉：還在水島的孩子回到金島起點', () => {
+  const { store, a, p } = waterStore('water', 30);
+  delete G.BOARDS.water;
+  const q = store.getPlayer(a.id);
+  assert.deepEqual([q.island, q.pos, store.getBoard(a.id).id], ['gold', 0, 'gold']);
+});
