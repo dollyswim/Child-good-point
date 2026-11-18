@@ -2437,7 +2437,7 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .boss-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
 .rack-spot span { position: absolute; inset: 0; display: grid; place-items: center; }
 .boss-panel .rack-spot { overflow: visible; }
-.rack-bottle { position: absolute; left: 50%; bottom: 30%; height: 130%; width: auto; max-width: none; transform: translateX(-50%); filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .3)); }   /* 縮小、立在瓶架上，整支都看得到 */
+.boss-layer .rack-spot .rack-bottle { position: absolute; left: 50%; bottom: 30%; height: 130%; width: auto; max-width: none; object-fit: contain; transform: translateX(-50%); filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .3)); }   /* 縮小、立在瓶架上，整支都看得到 */
 .boss-panel .boss-spot.boss-hit.target { animation: rack-glow 1s ease-in-out infinite; }
 @keyframes rack-glow { 50% { box-shadow: 0 0 0 3px rgba(255, 230, 120, .95) inset, 0 0 20px 6px rgba(255, 220, 90, .9); background: rgba(255, 245, 190, .3); } }
 .rack-arrow { position: absolute; z-index: 3; transform: translate(-50%, -150%); font-style: normal; font-size: 30px; line-height: 1; color: #ffd23f; text-shadow: 0 0 6px #fff, 0 2px 4px rgba(120, 60, 0, .6); pointer-events: none; animation: rack-arrow .8s ease-in-out infinite; }
