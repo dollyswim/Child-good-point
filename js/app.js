@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-177';
+  var APP_VERSION = '2026.11.18-178';
   var store;
   try {
     store = new CGP.Store();
@@ -2220,7 +2220,7 @@
   var BOSS_BOXES = [['star', '星星箱', '⭐', '箱子裡有扳手和起子，叮叮噹噹的。', 'wrench'], ['shell', '貝殼箱', '🐚', '箱子摸起來濕濕的，旁邊有一小灘水。', 'puddle'], ['moon', '月亮箱', '🌙', '箱子乾乾的，裡面也沒有工具。', '']];   // 第 5 欄：點開後出現的證據圖（E-24 扳手、E-26 水窪）
   async function waterBoss(child) {
     var M = WHO.monster(), me = WHO.me(child), stage = wstate(child).water.bossStage || 0;
-    if (!stage) await talkSeq([line(M, '不見了！我的寶貝不見了啦！'), line(me, '我們有藏寶圖，也在找寶藏！'), line(M, '太好了！你們有沒有看到……我剛才要找什麼？'), line(M, '好像在床底下……不對！在冰箱裡！')]);
+    if (!stage) await talkSeq([line(M, '不見了！我的寶貝不見了！到底放到哪去了？'), line(me, '你在找什麼？是寶物嗎？我幫你一起找吧？'), line(M, '太好了！我一直找不到我的寶……咦……我剛才要找什麼？是寶物嗎？'), line(M, '好像在床底下……不對！在冰箱裡！')]);
     var P = partyPanel({ title: '健忘怪的家', sub: '' }, null, 'water-panel boss-panel');
     P.art.innerHTML = (WATER_ART.room ? '<img class="party-bg" src="' + WATER_ART.room + '" alt="" draggable="false">' : '<div class="room-ph"></div>') + '<div class="boss-layer" id="boss-layer"></div>';
     var layer = P.art.querySelector('#boss-layer');
@@ -2248,7 +2248,7 @@
         layer.addEventListener('click', async function (e) {
           var b = e.target.closest('.boss-spot'); if (!b || b.classList.contains('seen')) return;
           var s = BOSS_SPOTS.filter(function (x) { return x.id === b.getAttribute('data-spot'); })[0];
-          b.classList.add('seen');
+          b.classList.add('seen'); b.innerHTML = '<i class="boss-check" aria-hidden="true">✓</i>';   // 找過的家具打小勾勾
           await say(me, s.say);
           if (s.monster) await say(M, s.monster);
           if (s.card != null) cards++;
@@ -2276,7 +2276,7 @@
     // 階段二：把 4 張紙卡排成昨天的順序
     if (stage < 2) {
       P.title.textContent = '🗂️ 昨天發生了什麼事？'; P.sub.textContent = '點一張紙卡，再點空格，排出昨天的順序';
-      await say(M, '昨天好像拿去洗了……還是拿去游泳？');
+      await talkSeq([line(M, '哎呀，這四頁紙片好像是從筆記本裡掉出來的……原本我好像寫了什麼重要的事。'), line(me, '紙片順序好像亂了，我們一起幫你重新排好，看看到底寫什麼吧！')]);   // 2026-11-18 家長改台詞
       var deck = [0, 1, 2, 3]; do { deck.sort(function () { return Math.random() - .5; }); } while (deck.join() === '0,1,2,3');
       layer.innerHTML = '<div class="order-row">' + [0, 1, 2, 3].map(function (i) { return '<button type="button" class="order-slot" data-o="' + i + '"></button>' + (i < 3 ? '<span class="order-arrow">→</span>' : ''); }).join('') + '</div>';
       P.tools.innerHTML = '<div class="order-deck">' + deck.map(function (c) { return '<button type="button" class="order-card" data-c="' + c + '">' + bossCard(c) + '</button>'; }).join('') + '</div>' +
@@ -2318,16 +2318,19 @@
       wflag(child, 'bossStage', 2); stage = 2;
     }
     // 階段三：牛奶瓶真相 → 選對收納箱
+    await talkSeq([line(me, '（看看手中的牛奶瓶）這個瓶架……怎麼好像……')]);   // 2026-11-18 家長：先對話再放牛奶瓶
     P.title.textContent = '🍼 這個瓶架……'; P.sub.textContent = '把路上撿到的牛奶瓶放到窗邊的瓶架上';
     // 2026-11-18 家長：要拖曳牛奶瓶到瓶架上（也可以先點牛奶瓶再點瓶架）；拖到別的地方會彈回來
     P.sub.textContent = '把下面的牛奶瓶拖到窗邊的瓶架上';
-    layer.innerHTML = '<button type="button" class="boss-spot boss-hit rack-spot" id="rack-spot" aria-label="窗邊的瓶架" style="left:52%;top:28%;width:16%;height:12%"><span></span></button>';
+    layer.innerHTML = '<button type="button" class="boss-spot boss-hit rack-spot target" id="rack-spot" aria-label="窗邊的瓶架" style="left:52%;top:28%;width:16%;height:12%"><span></span></button>' +
+      '<i class="rack-arrow" id="rack-arrow" aria-hidden="true" style="left:52%;top:28%">⬇</i>';   // 醒目提示：瓶架發亮＋箭頭閃爍
     P.tools.innerHTML = '<div class="bottle-tray"><button type="button" class="bottle-drag" id="use-bottle" aria-label="牛奶瓶"><img src="' + WATER_ART.bottle + '" alt="" draggable="false"></button><small>按住牛奶瓶，拖到瓶架上</small></div>';
     await new Promise(function (r) {
       var rk = layer.querySelector('#rack-spot'), bt = P.tools.querySelector('#use-bottle'), picked = false, drag = null, done = false;
       function onRack(x, y) { var R = rk.getBoundingClientRect(), m = 14; return x >= R.left - m && x <= R.right + m && y >= R.top - m && y <= R.bottom + m; }
       function put() {
         if (done) return; done = true;
+        rk.classList.remove('target'); var ar = layer.querySelector('#rack-arrow'); if (ar) ar.remove();
         rk.classList.add('match'); rk.querySelector('span').innerHTML = '<img src="' + WATER_ART.bottle + '" alt="" class="rack-bottle" draggable="false">';
         P.tools.querySelector('.bottle-tray').style.visibility = 'hidden'; P.sub.textContent = '剛好放得進去！';
         setTimeout(r, reduceMotion ? 50 : 700);
