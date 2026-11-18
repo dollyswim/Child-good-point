@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-175';
+  var APP_VERSION = '2026.11.18-176';
   var store;
   try {
     store = new CGP.Store();
@@ -2128,8 +2128,9 @@
     var lx = 50, ly = 50, boost = 1, found = 0, hintLv = 0, timers = [];
     function radius() { return art.clientWidth * LANTERN_LIGHT / 2 * boost; }
     function place() {
-      var W = art.clientWidth, H = art.clientHeight, x = lx / 100 * W, y = ly / 100 * H, r = radius(), edge = place.soft ? r * 0.6 : 10;
-      dark.style.background = 'radial-gradient(circle at ' + x + 'px ' + y + 'px, rgba(8,18,46,0) 0, rgba(8,18,46,0) ' + r + 'px, rgba(8,18,46,.97) ' + (r + edge) + 'px)';
+      // 2026-11-18 家長：照亮的地方要有漸層 → 中心全亮，半徑 55% 起慢慢變暗，到 1.3 倍半徑全黑（找東西的判定範圍不變）
+      var W = art.clientWidth, H = art.clientHeight, x = lx / 100 * W, y = ly / 100 * H, r = radius(), out = place.soft ? 1.6 : 1.3;
+      dark.style.background = 'radial-gradient(circle at ' + x + 'px ' + y + 'px, rgba(8,18,46,0) 0, rgba(8,18,46,0) ' + (r * .55) + 'px, rgba(8,18,46,.35) ' + (r * .85) + 'px, rgba(8,18,46,.75) ' + (r * 1.1) + 'px, rgba(8,18,46,.97) ' + (r * out) + 'px)';
       fish.style.left = x + 'px'; fish.style.top = y + 'px';
     }
     function moveTo(e) {
