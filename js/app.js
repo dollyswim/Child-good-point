@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-186';
+  var APP_VERSION = '2026.11.18-187';
   var store;
   try {
     store = new CGP.Store();
@@ -2261,7 +2261,14 @@
           b.classList.add('seen'); b.innerHTML = '<i class="boss-check" aria-hidden="true">✓</i>';   // 找過的家具打小勾勾
           await say(me, s.say);
           if (s.monster) await say(M, s.monster);
-          if (s.card != null) cards++;
+          if (s.card != null) {   // 2026-11-18 家長：找到紙片時跳出那張紙片的圖，孩子才知道是後面排順序用的
+            cards++; prog();
+            var cardEl = document.createElement('div'); cardEl.className = 'boss-card-pop';
+            cardEl.innerHTML = '<img src="images/water/items/card_' + BOSS_CARDS[s.card][0] + '.webp" alt="" draggable="false"><b>' + BOSS_CARDS[s.card][1] + '</b>';
+            layer.appendChild(cardEl);
+            await say(me, '找到一張紙片（第 ' + cards + ' 張）！上面畫著「' + BOSS_CARDS[s.card][1] + '」。');
+            cardEl.remove();
+          }
           if (s.notebook) {
             notebook = true;
             var book = document.createElement('div'); book.className = 'boss-book';   // E-15 翻開的筆記本：頁面上的字由 App 寫

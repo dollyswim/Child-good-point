@@ -2483,3 +2483,8 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 /* 健忘怪看藏寶圖：放大顯示在房間中央 */
 .boss-layer > .boss-map { position: absolute; left: 50%; top: 50%; width: 90%; transform: translate(-50%, -50%) rotate(-2deg); z-index: 30; pointer-events: none; border-radius: 6px; box-shadow: 0 8px 22px rgba(40, 20, 0, .5); animation: boss-book-in .35s ease-out; }
 .boss-layer > .boss-map img { display: block; width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+
+/* 找到紙片：房間中央跳出那張紙片 */
+.boss-layer > .boss-card-pop { position: absolute; left: 50%; top: 48%; width: 42%; transform: translate(-50%, -50%) rotate(-3deg); z-index: 30; pointer-events: none; display: grid; justify-items: center; gap: 2px; padding: 8px 8px 6px; border-radius: 14px; background: #fffaf0; box-shadow: 0 8px 20px rgba(40, 20, 0, .45); animation: boss-book-in .35s ease-out; }
+.boss-card-pop img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
+.boss-card-pop b { font-weight: 900; color: #6b4426; font-size: .95rem; }
