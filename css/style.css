@@ -2290,6 +2290,9 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .shark-panel #scene-title { font-size: clamp(1.35rem, 6.4vw, 1.7rem); line-height: 1.2; color: #8a4f12; }
 .shark-panel #scene-sub { font-size: clamp(1rem, 4.6vw, 1.15rem); font-weight: 900; color: #5a3a1a; padding: 4px 14px; border-radius: 99px; background: #fff3d6; border: 2px solid #f1d58f; line-height: 1.4; }
 .shark-panel #scene-sub em { font-style: normal; color: #e0352b; font-size: 1.15em; }
+.shark-main { display: grid; gap: 8px; width: 100%; } .shark-main[hidden], .shark-panel #scene-sub[hidden] { display: none; }
+.shark-intro { display: grid; gap: 10px; width: 100%; }
+.shark-intro p { margin: 0; padding: 12px 14px; border-radius: 16px; background: #fff3d6; border: 2px solid #f1d58f; font-size: clamp(1rem, 4.6vw, 1.15rem); font-weight: 900; color: #5a3a1a; line-height: 1.5; }
 .shark-result { width: 100%; display: grid; justify-items: center; gap: 4px; padding: 8px 0 10px; border-radius: 16px; background: linear-gradient(#e3f5fd, #c9eaf8); }
 .shark-result-label { font-size: .85rem; font-weight: 800; color: #2f6f97; }
 .shark-die { min-width: 1.6em; padding: 0 .35em; border-radius: 18px; background: #fff; font-size: clamp(64px, 19vw, 80px); line-height: 1.15; font-weight: 900; text-align: center; color: #1f5fbf; box-shadow: 0 4px 10px rgba(0, 60, 110, .2); }

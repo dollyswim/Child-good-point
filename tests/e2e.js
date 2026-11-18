@@ -1045,7 +1045,11 @@ async function main() {
     await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('#pawn');
     await setRand(F6(1));
     await q.click('.dice-btn.d6');
-    await talkUntil('#shark-roll');
+    await talkUntil('#shark-start');
+    assert.match(await q.locator('#shark-intro').innerText(), /擲出 11 或 12，就能快速通過/, '先顯示提示（沒有防護罩就不提防護罩）');
+    if (SHOT_DIR) await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, '47a-water-shark-intro.png') });
+    await q.click('#shark-start');
+    await q.waitForSelector('#shark-roll', { state: 'visible' });
     await setRand(F12(10)); await q.click('#shark-roll');
     await q.waitForFunction(() => document.getElementById('shark-die').textContent === '10' && /再擲一次/.test(document.getElementById('shark-roll').textContent));
     if (SHOT_DIR) await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, '47-water-shark.png') });

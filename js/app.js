@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-172';
+  var APP_VERSION = '2026.11.18-173';
   var store;
   try {
     store = new CGP.Store();
@@ -2058,17 +2058,23 @@
 
   // 第 48 格：大鯊魚（免費 12 面骰擲到 11 或 12 才過；或用防護罩，過關後補 10 星）
   async function waterShark(child) {
-    await talkSeq([line(WHO.shark(), '站住！這條路是我守的！'), line(WHO.shark(), '想過去？擲出 11 或 12 我就讓你過！擲幾次都可以，不收錢～')]);
+    await talkSeq([line(WHO.shark(), '是誰想偷偷經過我的地盤？'), line(WHO.shark(), '想通過？你試試看！'),
+      line(WHO.beluga(), '哇！是鯊魚惡霸，我們要用最快的速度游過去才行！')]);   // 2026-11-18 家長改台詞
     // 2026-11-18 家長：排版優化（圖片 → 標題 → 過關條件 → 本次擲骰結果 → 再擲一次 → 防護罩），精簡說明文字；規則不變
     var P = partyPanel({ title: '大鯊魚擋路！', sub: '' }, null, 'water-panel shark-panel');
     P.sub.innerHTML = '擲出 <em>11</em> 或 <em>12</em>，就能通過！';
     P.art.innerHTML = (WATER_ART.seabed ? '<img class="party-bg" src="' + WATER_ART.seabed + '" alt="" draggable="false">' : '') +
       '<div class="shark-big" id="shark-big">' + waterImg(WATER_NPC.shark, '大鯊魚') + '</div>';
     var shieldN = wstate(child).bag.shield;
-    P.tools.innerHTML = '<div class="shark-result"><span class="shark-result-label">本次擲骰結果</span><div class="shark-die" id="shark-die" aria-live="polite">？</div></div>' +
+    // 2026-11-18 家長：視窗出現時先顯示提示，按「開始擲骰！」才進入擲骰畫面（沒有防護罩就不提防護罩）
+    P.tools.innerHTML = '<div class="shark-intro" id="shark-intro"><p>💡 ' + (shieldN ? '擲出 11、12，或是使用防護罩，就能快速通過！' : '擲出 11 或 12，就能快速通過！') + '</p>' +
+      '<button type="button" class="btn primary shark-roll" id="shark-start">開始擲骰！</button></div><div class="shark-main" id="shark-main" hidden>' +
+      '<div class="shark-result"><span class="shark-result-label">本次擲骰結果</span><div class="shark-die" id="shark-die" aria-live="polite">？</div></div>' +
       '<button type="button" class="btn primary shark-roll" id="shark-roll"><img src="images/items/dice_12.webp" alt="" aria-hidden="true" draggable="false"><span id="shark-roll-text">擲骰子！</span></button>' +
       (shieldN ? '<button type="button" class="btn shark-shield" id="shark-shield"><img src="images/items/shield.webp" alt="" aria-hidden="true" draggable="false">' +
-        '<span><b>使用防護罩直接過關</b><small>消耗 1 個・回補 ⭐' + GAME.SHARK_SHIELD_STARS + '</small></span></button>' : '');
+        '<span><b>使用防護罩直接過關</b><small>消耗 1 個・回補 ⭐' + GAME.SHARK_SHIELD_STARS + '</small></span></button>' : '') + '</div>';
+    P.sub.hidden = true;
+    P.tools.querySelector('#shark-start').onclick = function () { P.tools.querySelector('#shark-intro').remove(); P.tools.querySelector('#shark-main').hidden = false; P.sub.hidden = false; };
     var res = await new Promise(function (resolve) {
       var busy = false, die = P.tools.querySelector('#shark-die');
       P.tools.querySelector('#shark-roll').onclick = async function () {
