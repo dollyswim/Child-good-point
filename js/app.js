@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-173';
+  var APP_VERSION = '2026.11.18-174';
   var store;
   try {
     store = new CGP.Store();
@@ -952,7 +952,7 @@
         memo: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc water-bottle', label: '神秘的牛奶瓶', emoji: '🍼', img: 'images/water/items/bottle.webp', iw: 512, ih: 512, w: 64 }, hint: '撿到的牛奶瓶裡有好多碎紙條……走到第 8 格拼拼看！' },
         potion: { type: 'water', guide: [0, 0], cam: [0, -60], hint: '漁夫爺爺在第 16 格的木平台等你！' },
         feed: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '小白鯨', img: 'images/water/npc/beluga.webp', iw: 640, ih: 640, w: 150 }, hint: '小白鯨好像肚子餓了……走到第 34 格餵牠吃魚！' },
-        shark: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '大鯊魚', img: 'images/water/npc/shark.webp', iw: 640, ih: 640, w: 190 }, hint: '大鯊魚守在第 48 格，要擲出 11 或 12 才讓你過！' },
+        shark: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '大鯊魚', img: 'images/water/npc/shark_v2.webp', iw: 640, ih: 640, w: 190 }, hint: '大鯊魚守在第 48 格，要擲出 11 或 12 才讓你過！' },
         lantern: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '燈籠魚', img: 'images/water/npc/anglerfish.webp', iw: 640, ih: 640, w: 100 }, hint: '燈籠魚的東西掉了一地……走到第 56 格幫牠找！' },
         blanket: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '健忘怪', img: 'images/water/npc/monster_confused.webp', iw: 640, ih: 640, w: 100 }, hint: '門裡有人在翻箱倒櫃……走到第 100 格看看！' }
       }
@@ -1677,7 +1677,8 @@
       (!friend ? '先在第 34 格和牠當朋友' : left ? '今天還可以 ' + left + ' 次' : '牠游累了，明天再來') + '</small></button>';
   }
   /** 水島地圖上的 NPC（迎接漁夫、魚桶、牛奶瓶提示等由劇情另外放；這裡放第 100 格健忘怪的門口標記） */
-  var WATER_NPC = { fisherman: 'images/water/npc/fisherman.webp', beluga: 'images/water/npc/beluga.webp', shark: 'images/water/npc/shark.webp', lantern: 'images/water/npc/anglerfish.webp',
+  var WATER_NPC = { fisherman: 'images/water/npc/fisherman.webp', beluga: 'images/water/npc/beluga.webp', shark: 'images/water/npc/shark_v2.webp',   // 2026-11-18 家長換新圖（壞笑露牙的鯊魚惡霸；換檔名讓快取立刻生效）
+    lantern: 'images/water/npc/anglerfish.webp',
     monster: 'images/water/npc/monster_confused.webp', monsterSurprised: 'images/water/npc/monster_surprised.webp', monsterBlanket: 'images/water/npc/monster_blanket.webp' };
   function waterDecor(child, board, player, scene) {
     if (board.id !== 'water' || typeof waterMapDecor !== 'function') return '';
@@ -2061,7 +2062,7 @@
     await talkSeq([line(WHO.shark(), '是誰想偷偷經過我的地盤？'), line(WHO.shark(), '想通過？你試試看！'),
       line(WHO.beluga(), '哇！是鯊魚惡霸，我們要用最快的速度游過去才行！')]);   // 2026-11-18 家長改台詞
     // 2026-11-18 家長：排版優化（圖片 → 標題 → 過關條件 → 本次擲骰結果 → 再擲一次 → 防護罩），精簡說明文字；規則不變
-    var P = partyPanel({ title: '大鯊魚擋路！', sub: '' }, null, 'water-panel shark-panel');
+    var P = partyPanel({ title: '鯊魚惡霸擋路！', sub: '' }, null, 'water-panel shark-panel');
     P.sub.innerHTML = '擲出 <em>11</em> 或 <em>12</em>，就能通過！';
     P.art.innerHTML = (WATER_ART.seabed ? '<img class="party-bg" src="' + WATER_ART.seabed + '" alt="" draggable="false">' : '') +
       '<div class="shark-big" id="shark-big">' + waterImg(WATER_NPC.shark, '大鯊魚') + '</div>';
@@ -2084,10 +2085,10 @@
         for (var i = 0; i < (reduceMotion ? 1 : 6); i++) { die.textContent = 1 + Math.floor(Math.random() * 12); await sleep(60); }
         die.textContent = r.value;
         die.classList.toggle('win', r.pass);
-        if (r.pass) P.sub.textContent = '🎉 擲出 ' + r.value + '！鯊魚讓開了！';
+        if (r.pass) P.sub.textContent = '🎉 擲出 ' + r.value + '！快游過去！';
         else P.tools.querySelector('#shark-roll-text').textContent = '再擲一次！';
         busy = false;
-        if (r.pass) { P.art.querySelector('#shark-big').classList.add('aside'); setTimeout(function () { resolve(r); }, reduceMotion ? 300 : 1200); }
+        if (r.pass) setTimeout(function () { resolve(r); }, reduceMotion ? 300 : 1200);   // 2026-11-18 家長：擲出 11、12 時鯊魚留在原地，不做讓開的動畫
       };
       var sb = P.tools.querySelector('#shark-shield');
       if (sb) sb.onclick = function () {
@@ -2098,7 +2099,8 @@
     });
     P.shade.remove();
     if (res.first) toast('⭐ 完成任務「大鯊魚攔路」：+' + GAME.STORY_STARS + ' 能量星星' + (res.shield ? '，防護罩補償 +' + res.stars : ''), 'pos');
-    await talkSeq([line(WHO.shark(), res.shield ? '哇，防護罩好厲害！過去吧！' : '好運氣！我讓你過去～'), line(WHO.me(child), '謝謝大鯊魚！')]);
+    await talkSeq(res.shield ? [line(WHO.shark(), '哇，防護罩好厲害！過去吧！'), line(WHO.me(child), '謝謝大鯊魚！')]
+      : [line(WHO.shark(), '等等！你去哪裡！'), line(WHO.me(child), '我們趕路，先走囉～')]);   // 2026-11-18 家長改台詞（擲出 11、12）
     if (!child.preview) await hopAlong(child, [GAME.STORIES.shark.tile + 1]);
   }
 
