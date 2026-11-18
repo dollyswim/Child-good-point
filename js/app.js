@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-192';
+  var APP_VERSION = '2026.11.18-193';
   var store;
   try {
     store = new CGP.Store();
@@ -2439,7 +2439,7 @@
   // （不提生氣怪、火箭實驗。火島還沒開放時，漁夫說船要先修好，孩子照舊先回金島）。每次通關都演，第二次以後可以略過。
   // 正式圖到貨後把檔名填進 FIRE_FOLK／WATER_END_ART（白底圖去背）；空白時用表情符號佔位
   var FOLK_THANKS = ['謝謝你救了我！等火島安全了，一定請你來玩！', '謝謝你和漁夫爺爺！我現在好多了。', '火山的黑煙……不知道大家還好嗎？謝謝你願意幫忙！'];
-  var FIRE_FOLK = { faint: 'images/water/ending/fire_folk_faint.webp', panic: 'images/water/ending/fire_folk_panic.webp', calm: 'images/water/ending/fire_folk_calm.webp' };   // C-9 火島居民（2026-11-18 家長 Gemini 圖）：昏倒、驚慌、平靜
+  var FIRE_FOLK = { faint: 'images/water/ending/fire_folk_faint.webp', panic: 'images/water/ending/fire_folk_panic.webp', calm: 'images/water/ending/fire_folk_calm_v2.webp' };   // C-9 火島居民（2026-11-18 家長 Gemini 圖）：昏倒、驚慌、平靜
   var WATER_END_ART = { boat: 'images/water/ending/wreck_boat.webp', toFire: '' };          // E-32 破舊小船（白底去背）、F-6 漁夫划船前往冒黑煙的火山島（直式 3:4）
   function fireFolkArt(k) {
     return FIRE_FOLK[k] ? '<img src="' + FIRE_FOLK[k] + '" alt="" draggable="false">' : '<span class="folk-ph" aria-hidden="true">' + ({ faint: '😵', panic: '😨', calm: '🙂' })[k] + '</span>';
@@ -2540,7 +2540,7 @@
     var s = board.npcSpots && board.npcSpots['0'];
     if (!s) return '';
     // 2026-11-18 家長：通關過水島後，獲救的火島居民站在起點旁，點了會跟孩子道謝（不給獎勵）
-    var folk = ((player.islandClears || {}).water || 0) >= 1 ? '<div class="story-guide water-npc fire-folk-npc" data-tap="folk" style="left:' + (s[0] + 64) + 'px;top:' + s[1] + 'px;width:62px;z-index:' + Math.round(s[1] / 6) + '" role="img" aria-label="火島居民：點我說話">' + waterImg(FIRE_FOLK.calm, '') + '</div>' : '';
+    var folk = ((player.islandClears || {}).water || 0) >= 1 ? '<div class="story-guide water-npc fire-folk-npc" data-tap="folk" style="left:' + (s[0] + 64) + 'px;top:' + (s[1] + 6) + 'px;width:130px;z-index:' + Math.round(s[1] / 6) + '" role="img" aria-label="火島居民：點我說話">' + waterImg(FIRE_FOLK.calm, '') + '</div>' : '';
     if (player.water.welcomed) return folk;
     return folk + '<div class="story-guide water-npc" style="left:' + s[0] + 'px;top:' + s[1] + 'px;width:62px;z-index:' + Math.round(s[1] / 6) + '" role="img" aria-label="漁夫爺爺">' + waterImg(WATER_NPC.fisherman, '') + '</div>';
   }
