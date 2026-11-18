@@ -2976,14 +2976,14 @@ test('水島重置任務：6 關、魚桶、牛奶瓶、沿路對話重來（迎
   const { store, a, p, storage } = waterStore('water', 0);
   try {
     doneUpTo(p, ['memo', 'potion']);
-    store.setWaterFlag(a.id, 'bucket', true); store.setWaterFlag(a.id, 'welcomed', true); store.setWaterFlag(a.id, 'bottle', true);
+    store.setWaterFlag(a.id, 'bucket', true); store.setWaterFlag(a.id, 'welcomed', true); store.setWaterFlag(a.id, 'bottle', true); store.setWaterFlag(a.id, 'folkMet', true);
     assert.equal(store.markWaterNote(a.id, 'n4'), true);
     assert.equal(store.markWaterNote(a.id, 'n4'), false, '看過不再播');
     assert.throws(() => store.setWaterFlag(a.id, 'hack', 1), /沒有這個水島紀錄/);
     const s2 = new Store({ storage, seed: false, now: () => new Date('2026-11-06T10:00:00') });
-    assert.deepEqual(s2.getPlayer(a.id).water, { seen: { n4: true }, bucket: true, bottle: true, welcomed: true, rulesSeen: false, bossStage: 0 }, '存檔重開保留');
+    assert.deepEqual(s2.getPlayer(a.id).water, { seen: { n4: true }, bucket: true, bottle: true, welcomed: true, rulesSeen: false, bossStage: 0, folkMet: true }, '存檔重開保留');
     p.storyAsk = 'water';
     assert.equal(store.answerStoryReset(a.id, true), true);
-    assert.deepEqual([p.story.memo, p.story.potion, p.water.bucket, p.water.welcomed, p.water.seen], [undefined, undefined, undefined, true, undefined]);
+    assert.deepEqual([p.story.memo, p.story.potion, p.water.bucket, p.water.welcomed, p.water.seen, p.water.folkMet], [undefined, undefined, undefined, true, undefined, undefined], '重置後火島居民那段會再完整演一次');
   } finally { delete G.BOARDS.water; }
 });

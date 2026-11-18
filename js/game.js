@@ -286,7 +286,7 @@
     if (!p.islands || typeof p.islands !== 'object') p.islands = {};           // 其他島的保存進度 { 島: { laps, maxReached } }
     if (!p.islandClears || typeof p.islandClears !== 'object') p.islandClears = {};   // 金島以外的通關次數（金島沿用 goldClears）
     if (!p.story || typeof p.story !== 'object') p.story = {};   // 劇情完成日期 { ore, rail, tower, pinecone, flowers, invite, party }
-    if (!p.water || typeof p.water !== 'object') p.water = {};   // 水島故事進度：seen（沿路對話）、bucket（魚桶）、bottle（牛奶瓶）、welcomed、bossStage
+    if (!p.water || typeof p.water !== 'object') p.water = {};   // 水島故事進度：seen（沿路對話）、bucket（魚桶）、bottle（牛奶瓶）、welcomed、bossStage、folkMet（看過結尾昏倒的火島居民；重置任務會清掉）
     // 位置以穩定格子 ID 為準；舊存檔只有整數格號時對應到同號的格子（第 n 格 → gold-01-00n）
     var board = BOARDS[p.island] || GOLD;
     var idx = p.tileId ? board.tiles.findIndex(function (t) { return t.id === p.tileId; }) : -1;
@@ -1377,7 +1377,7 @@
   /** 水島故事進度（沿路對話、魚桶、牛奶瓶、健忘怪進行到第幾階段） */
   Store.prototype.waterState = function (childId) { return this.getPlayer(childId).water; };
   Store.prototype.setWaterFlag = function (childId, key, val) {
-    if (['bucket', 'bottle', 'welcomed', 'bossStage', 'rulesSeen'].indexOf(key) < 0) throw new Error('沒有這個水島紀錄');
+    if (['bucket', 'bottle', 'welcomed', 'bossStage', 'rulesSeen', 'folkMet'].indexOf(key) < 0) throw new Error('沒有這個水島紀錄');
     this.getPlayer(childId).water[key] = val;
     this.save();
   };

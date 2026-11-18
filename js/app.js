@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-191';
+  var APP_VERSION = '2026.11.18-192';
   var store;
   try {
     store = new CGP.Store();
@@ -1067,6 +1067,7 @@
     var kind = el.getAttribute('data-tap');
     if (kind === 'pick') { collectPick(el); return; }
     if (kind === 'pilot') { pilotTalk(child); return; }
+    if (kind === 'folk') { techTalk(child, 3200, FOLK_THANKS[Math.floor(Math.random() * FOLK_THANKS.length)], el); return; }
     if (kind === 'guide') {
       var id = el.getAttribute('data-story'), cfg = ISLAND_STORY[GAME.STORIES[id].island];
       if (store.waterTaskHere(child.id) === id) { runStory(child, id); return; }
@@ -2437,6 +2438,7 @@
   // 2026-11-18 家長：水島結尾銜接火島——小白鯨送回珊瑚淺灘 → 沙灘上的破小船和昏倒的火島居民 → 居民說火山冒黑煙 → 漁夫答應載你去火島
   // （不提生氣怪、火箭實驗。火島還沒開放時，漁夫說船要先修好，孩子照舊先回金島）。每次通關都演，第二次以後可以略過。
   // 正式圖到貨後把檔名填進 FIRE_FOLK／WATER_END_ART（白底圖去背）；空白時用表情符號佔位
+  var FOLK_THANKS = ['謝謝你救了我！等火島安全了，一定請你來玩！', '謝謝你和漁夫爺爺！我現在好多了。', '火山的黑煙……不知道大家還好嗎？謝謝你願意幫忙！'];
   var FIRE_FOLK = { faint: 'images/water/ending/fire_folk_faint.webp', panic: 'images/water/ending/fire_folk_panic.webp', calm: 'images/water/ending/fire_folk_calm.webp' };   // C-9 火島居民（2026-11-18 家長 Gemini 圖）：昏倒、驚慌、平靜
   var WATER_END_ART = { boat: 'images/water/ending/wreck_boat.webp', toFire: '' };          // E-32 破舊小船（白底去背）、F-6 漁夫划船前往冒黑煙的火山島（直式 3:4）
   function fireFolkArt(k) {
@@ -2456,8 +2458,16 @@
       };
       function talk(lines) { return skipped ? Promise.resolve() : talkSeq(lines); }
       var me = WHO.me(child), F = WHO.fisher(), folk = function () { return { who: '火島居民', img: '' }; };   // 居民已經在畫面上，不另外顯示大頭像
+      var met = !!wstate(child).water.folkMet;   // 2026-11-18 家長：看過居民那段、又沒重置任務 → 改成漁夫問要不要搭船去火島
       (async function () {
         if (!skipped) await sleep(reduceMotion ? 300 : 1600);   // 小白鯨送回岸邊（F-4）
+        if (met) {
+          if (sk && sk.parentNode) sk.remove();
+          el.insertAdjacentHTML('beforeend', '<div class="wo-beach" style="background-image:url(' + WATER_TRIP[2] + ')"></div>');
+          await talkSeq(fireOpen ? [line(F, '要不要搭我的船去火島看看？', { choices: [{ label: '🛶 好！', val: true, primary: true }] })]
+            : [line(F, '我的船還在修，修好就載你去火島！')]);   // 火島開放前不問
+          showCard(); return;
+        }
         // 珊瑚淺灘（F-3）：破小船＋昏倒的居民
         el.insertAdjacentHTML('beforeend', '<div class="wo-beach" style="background-image:url(' + WATER_TRIP[2] + ')"></div>' +
           '<div class="wend-shore"><span class="wend-boat">' + (WATER_END_ART.boat ? '<img src="' + WATER_END_ART.boat + '" alt="" draggable="false">' : '<span class="folk-ph" aria-hidden="true">🛶</span>') + '</span>' +
@@ -2471,12 +2481,16 @@
         pose('calm');
         await talk([line(folk('calm'), '大家都很害怕，我只好划船逃出來……'), line(F, '火島？我知道那個地方！不過最近那裡好像不太平靜。'),
           line(me, '我想去火島看看發生了什麼事！'), line(F, '好吧！我划船載你過去！')].concat(fireOpen ? [] : [line(F, '不過我的船得先修一修，修好就來接你！')]));
+        wflag(child, 'folkMet', true);
         if (sk && sk.parentNode) sk.remove();
+        showCard();
+      })();
+      function showCard() {
         el.insertAdjacentHTML('beforeend', islandCard({ testid: 'water-end-card', badge: BADGE_IMG.waterClear1, title: '水島冒險完成！', quote: '「火山口冒出黑煙……<br>火島到底發生了什麼事？」',
           first: ev.clear.first, chest: 3, chestName: '神祕寶箱', ach: '水島通關', soon: false,
           next: fireOpen ? '下次出發，漁夫爺爺會划船載你去「火島」！' : '漁夫爺爺修好船就載你去火島！在那之前，下次出發先回「' + h(ev.clear.next || '金島') + '」。', ok: 'data-we-ok' }));
         el.querySelector('[data-we-ok]').onclick = function () { el.remove(); document.body.classList.remove('pawn-acting'); render(); if (!child.preview) announceAchievements(child.id); resolve(); };
-      })();
+      }
     });
   }
   /** 木島 → 水島開場：木島滑梯最後一張 → F-1 出口亮起 → F-2 衝出樹洞 → F-3 落在沙灘＋歡迎卡片（第二次以後可略過） */
@@ -2522,10 +2536,13 @@
   }
   /** 地圖上的水島裝飾：起點旁的迎接漁夫與魚桶（還沒迎接時） */
   function waterMapDecor(child, board, player, scene) {
-    if (!scene || scene.id !== 'water-01' || player.water.welcomed) return '';
+    if (!scene || scene.id !== 'water-01') return '';
     var s = board.npcSpots && board.npcSpots['0'];
     if (!s) return '';
-    return '<div class="story-guide water-npc" style="left:' + s[0] + 'px;top:' + s[1] + 'px;width:62px;z-index:' + Math.round(s[1] / 6) + '" role="img" aria-label="漁夫爺爺">' + waterImg(WATER_NPC.fisherman, '') + '</div>';
+    // 2026-11-18 家長：通關過水島後，獲救的火島居民站在起點旁，點了會跟孩子道謝（不給獎勵）
+    var folk = ((player.islandClears || {}).water || 0) >= 1 ? '<div class="story-guide water-npc fire-folk-npc" data-tap="folk" style="left:' + (s[0] + 64) + 'px;top:' + s[1] + 'px;width:62px;z-index:' + Math.round(s[1] / 6) + '" role="img" aria-label="火島居民：點我說話">' + waterImg(FIRE_FOLK.calm, '') + '</div>' : '';
+    if (player.water.welcomed) return folk;
+    return folk + '<div class="story-guide water-npc" style="left:' + s[0] + 'px;top:' + s[1] + 'px;width:62px;z-index:' + Math.round(s[1] / 6) + '" role="img" aria-label="漁夫爺爺">' + waterImg(WATER_NPC.fisherman, '') + '</div>';
   }
 
   // ---------- 鏡頭：拖曳、雙指縮放、跟隨角色 ----------
