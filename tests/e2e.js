@@ -899,7 +899,7 @@ async function main() {
     assert.equal(await q.locator('#wood-ending img[src*=characters]').count(), 0, '第一人稱：不顯示角色');
     await q.waitForSelector('[data-testid=wood-end-card]', { timeout: 10000 });
     const card = await q.locator('[data-testid=wood-end-card]').innerText();
-    assert.match(card, /木島冒險完成！[\s\S]*究竟會通往什麼地方呢[\s\S]*神秘寶箱 ×1[\s\S]*成就「木島通關」[\s\S]*下一座島還在準備中，敬請期待！[\s\S]*下次出發會先回到「金島」繼續冒險。/);
+    assert.match(card, /木島冒險完成！[\s\S]*究竟會通往什麼地方呢[\s\S]*神祕寶箱 ×1[\s\S]*成就「木島通關」[\s\S]*下一座島還在準備中，敬請期待！[\s\S]*下次出發會先回到「金島」繼續冒險。/);
     assert.ok(await q.evaluate((cid) => window.__cgpStore.getAchievements(cid).find((a) => a.id === 'woodClear1').done, id), '解鎖成就「木島通關」');
     assert.doesNotMatch(card, /水島|珊瑚/, '不提前揭露水島');
     assert.ok(await q.locator('[data-testid=wood-end-card] .we-crown img').evaluate((i) => /badge_woodClear1v2\.webp$/.test(i.src) && i.complete && i.naturalWidth === 256), '完成畫面用木島通關徽章圖');
@@ -907,7 +907,7 @@ async function main() {
     await q.click('[data-we-ok]');
     await q.waitForSelector('#wood-ending', { state: 'detached' });
     assert.equal(await q.locator('#ach-theater').count(), 0, '木島通關已在卡片上顯示，不再跳成就劇場');
-    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.giftMysteryChest, id), 1, '神秘寶箱只發 1 個');
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.giftMysteryChest, id), 1, '神祕寶箱只發 1 個');
     // 第一次回金島：完整播放、不能略過
     await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.getPlayer(cid).bag.d6 = 3; s.random = () => 0.1; s.save(); }, id);
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
@@ -926,6 +926,7 @@ async function main() {
     await q.waitForSelector('#wood-ending [data-we-skip]', { timeout: 15000 });
     await q.click('[data-we-skip]');
     await q.waitForSelector('[data-testid=wood-end-card]');
+    if (SHOT_DIR) { await q.waitForTimeout(500); await q.screenshot({ path: path.join(SHOT_DIR, 'wood-end-card-repeat.png') }); }
     assert.match(await q.locator('[data-testid=wood-end-card]').innerText(), /能量星星 \+10/);
     assert.deepEqual(await q.evaluate((cid) => { const p = window.__cgpStore.getPlayer(cid); return [p.islandClears.wood, p.bag.giftMysteryChest]; }, id), [2, 1]);
     await q.click('[data-we-ok]');
@@ -1144,9 +1145,9 @@ async function main() {
     if (SHOT_DIR) { await q.waitForTimeout(800); await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, '41-water-box-open.png') }); }
     await talkUntil('[data-testid=water-end-card]', 20000);
     if (SHOT_DIR) { await q.waitForTimeout(800); await q.screenshot({ path: path.join(SHOT_DIR, '45a-water-end-photo.png') }); await q.waitForTimeout(1800); await q.screenshot({ path: path.join(SHOT_DIR, '45-water-end.png') }); }
-    assert.match(await q.locator('[data-testid=water-end-card]').innerText(), /水島冒險完成[\s\S]*神秘寶箱 ×3/);
+    assert.match(await q.locator('[data-testid=water-end-card]').innerText(), /水島冒險完成[\s\S]*神祕寶箱 ×3/);
     st = await P();
-    assert.deepEqual([st.clears, st.gift - gift0, !!st.story.blanket], [1, 3, true], '第一次通關：3 個神秘寶箱');
+    assert.deepEqual([st.clears, st.gift - gift0, !!st.story.blanket], [1, 3, true], '第一次通關：3 個神祕寶箱');
     await q.click('[data-we-ok]');
     // 6. 下一擲：小白鯨送行 → 回金島
     await q.evaluate((cid) => { window.__cgpStore.data.adventure.rolls = []; }, kid);
@@ -1202,14 +1203,14 @@ async function main() {
     assert.match(t, /遇到小麻煩！[\s\S]*停在第 11 格[\s\S]*命運卡｜路障[\s\S]*這次沒有影響，下次繼續前進/);
     assert.ok(await q.locator('#confirm .ev.ev-block .ev-card.ev-block').count());
     await shot('block'); await close();
-    // 3. 沿路撿到神秘寶箱＋命運卡路障（同一個視窗）：第 8 格擲 3，經過第 10 格的神秘寶箱，停在第 11 格命運格
+    // 3. 沿路撿到神祕寶箱＋命運卡路障（同一個視窗）：第 8 格擲 3，經過第 10 格的神祕寶箱，停在第 11 格命運格
     const bag0 = await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.mysteryChest || 0, id);
     t = await roll(8, [2.5 / 6, 0.95, 0.6], 10);
-    assert.match(t, /冒險新發現！[\s\S]*擲出 3・停在第 11 格[\s\S]*神秘寶箱 ×1[\s\S]*黃金鑰匙[\s\S]*命運卡｜路障/);
+    assert.match(t, /冒險新發現！[\s\S]*擲出 3・停在第 11 格[\s\S]*神祕寶箱 ×1[\s\S]*黃金鑰匙[\s\S]*命運卡｜路障/);
     assert.equal(await q.locator('#confirm .ev-card').count(), 2, '兩個事件放在同一個視窗');
     assert.match(await q.locator('#confirm .ev-art img').getAttribute('src'), /mystery_chest/, '主圖用本次獲得的獎勵');
     await shot('multi'); await close();
-    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.mysteryChest || 0, id), bag0 + 1, '神秘寶箱只收 1 個，關閉視窗不會重複發放');
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.mysteryChest || 0, id), bag0 + 1, '神祕寶箱只收 1 個，關閉視窗不會重複發放');
     // 4. 特殊任務（較長的文字）：第 12 格擲 2 → 第 14 格
     t = await roll(12, [1.5 / 6, 0.3]);
     assert.match(t, /命運卡出現！[\s\S]*命運卡｜特殊任務[\s\S]*已加到任務頁/);
@@ -1217,11 +1218,11 @@ async function main() {
     if (vp.height === 800 && vp.width === 360) {
       const types = await q.evaluate((cid) => window.__cgpStore.getBoard(cid).tiles.map((t) => t.type), id);
       // （區域終點木門只在後面區域還沒開放時才存在；金島四區都已開放，這個事件目前不會發生，不另外測）
-      // 5. 今天的小遊戲已經玩完：停在小遊戲格 → 機會轉成神秘寶箱（不開始小遊戲）
+      // 5. 今天的小遊戲已經玩完：停在小遊戲格 → 機會轉成神祕寶箱（不開始小遊戲）
       const mgTile = types.indexOf('minigame');
       await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.minigames.push({ id: 'done1', childId: cid, date: s.today(), tile: 7, status: 'done', caught: 0, stars: 0, ts: 1 }); s.save(); }, id);
       t = await roll(mgTile - 1, [0.5 / 6]);
-      assert.match(t, /成功前進！[\s\S]*停在第 \d+ 格[\s\S]*小遊戲[\s\S]*今天的小遊戲已經玩完了[\s\S]*神秘寶箱/);
+      assert.match(t, /成功前進！[\s\S]*停在第 \d+ 格[\s\S]*小遊戲[\s\S]*今天的小遊戲已經玩完了[\s\S]*神祕寶箱/);
       assert.equal(await q.locator('#mg').count(), 0, '不會開始小遊戲');
       await shot('minigame-over'); await close();
       // 6. 機會卡礦車前進 2 格，接著停在命運格（路障）：按「上車！」→ 同一個視窗兩張卡
@@ -1239,7 +1240,7 @@ async function main() {
     }
     await c.close();
   }
-  console.log('✔ 一般冒險事件視窗：命運卡後退、路障、撿到神秘寶箱＋命運卡合併一個視窗、特殊任務、小遊戲次數用完、礦車接著停在命運格；手機、矮螢幕、桌面都不超出畫面');
+  console.log('✔ 一般冒險事件視窗：命運卡後退、路障、撿到神祕寶箱＋命運卡合併一個視窗、特殊任務、小遊戲次數用完、礦車接著停在命運格；手機、矮螢幕、桌面都不超出畫面');
 
   // ---------- Phase 4 第 2 步：小遊戲「抓住星星」 ----------
   {
@@ -1433,20 +1434,20 @@ async function main() {
     await q.waitForSelector('[data-testid=blessing]');
     assert.equal(await q.locator('.bless-kind').count(), 5);
     await q.waitForFunction(() => [...document.querySelectorAll('.bless-art img')].length === 5 && [...document.querySelectorAll('.bless-art img')].every((i) => i.complete && i.naturalWidth > 0), null, { timeout: 8000 });   // 5 張獎勵圖都載入
-    // 送小樂 神秘寶箱 ×2＋鼓勵的話；再送幸運星
+    // 送小樂 神祕寶箱 ×2＋鼓勵的話；再送幸運星
     await q.click('.bless-kid:has(input[value="' + k2 + '"])');
     await q.click('.bless-kind:has(input[value=mysteryChest])');
     await q.selectOption('#bless-qty', '2');
     await q.fill('#bless-msg', '今天主動收玩具，好棒！');
     await q.click('[data-action=blessing-send]');
-    assert.match(await q.locator('#confirm').innerText(), /小樂[\s\S]*神秘寶箱 ×2[\s\S]*主動收玩具/);
+    assert.match(await q.locator('#confirm').innerText(), /小樂[\s\S]*神祕寶箱 ×2[\s\S]*主動收玩具/);
     await q.click('#confirm [data-yes]');
     await q.waitForSelector('.bless-hist li');
     await q.click('.bless-kind:has(input[value=luckyStar])');
     await q.click('[data-action=blessing-send]');
     await q.click('#confirm [data-yes]');
     await q.waitForFunction(() => document.querySelectorAll('.bless-hist li').length === 2);
-    assert.match(await q.locator('.bless-hist').innerText(), /幸運星 ×1 → 小樂[\s\S]*神秘寶箱 ×2 → 小樂[\s\S]*主動收玩具/);
+    assert.match(await q.locator('.bless-hist').innerText(), /幸運星 ×1 → 小樂[\s\S]*神祕寶箱 ×2 → 小樂[\s\S]*主動收玩具/);
     assert.deepEqual(await q.evaluate((id) => [window.__cgpStore.getPlayer(id).bag.giftMysteryChest, window.__cgpStore.getStarBalance(id)], k2), [2, 10]);
     assert.equal(await q.evaluate((id) => window.__cgpStore.getPlayer(id).bag.giftMysteryChest, k1), 0, '小安不受影響');
     // 收回當天送錯的：送一般寶箱 ×1 → 按「收回」→ 背包歸零、紀錄顯示已收回、孩子不會看到
@@ -1480,22 +1481,22 @@ async function main() {
     await q.click('[data-action=pin-submit]');
     await q.waitForSelector('.tabs');
     assert.ok(await q.evaluate(() => window.__cgpStore.checkParentPin('5678')));
-    // 孩子端：進冒險大廳看到神諭祝福 → 收下 → 背包開神秘寶箱
+    // 孩子端：進冒險大廳看到神諭祝福 → 收下 → 背包開神祕寶箱
     await q.goto(url + '#adventure-' + k2);
     await q.waitForSelector('#confirm .bless-box');
     const bt = await q.locator('#confirm .bless-box').innerText();
-    assert.match(bt, /神諭祝福[\s\S]*神秘寶箱 ×2[\s\S]*主動收玩具[\s\S]*幸運星 ×1[\s\S]*\+10 能量星星/);
+    assert.match(bt, /神諭祝福[\s\S]*神祕寶箱 ×2[\s\S]*主動收玩具[\s\S]*幸運星 ×1[\s\S]*\+10 能量星星/);
     assert.equal(await q.locator('#confirm .star-rain i').count(), 10, '幸運星：10 顆星星動畫');
     await q.click('#confirm [data-yes]');
     await q.waitForFunction(() => !document.querySelector('#confirm[open]'));
     await q.reload(); await q.waitForSelector('.map-card');
     assert.equal(await q.locator('#confirm[open]').count(), 0, '收下後不再跳出');
     await q.goto(url + '#map-' + k2); await q.waitForSelector('[data-testid=item-bar]');
-    assert.match(await q.locator('.chest-btn[data-kind=giftMysteryChest]').innerText(), /神秘寶箱[\s\S]*×2/);
+    assert.match(await q.locator('.chest-btn[data-kind=giftMysteryChest]').innerText(), /神祕寶箱[\s\S]*×2/);
     await q.evaluate(() => { window.__cgpStore.random = () => 0.5; });
     await q.click('.chest-btn[data-kind=giftMysteryChest]');
     await q.waitForSelector('#confirm [data-testid=event]');   // 背包開寶箱：和擲骰事件同一種卡片式視窗
-    assert.match(await q.locator('#confirm .ev').innerText(), /^打開神秘寶箱！\n+[\s\S]*×1\n已收入冒險背包[\s\S]*繼續冒險！$/);
+    assert.match(await q.locator('#confirm .ev').innerText(), /^打開神祕寶箱！\n+[\s\S]*×1\n已收入冒險背包[\s\S]*繼續冒險！$/);
     assert.equal(await q.locator('#confirm .ev-card.ev-reward').count(), 1);
     assert.equal(await q.locator('#confirm .ev-sub').count(), 0, '開背包寶箱沒有骰子資訊');
     if (SHOT_DIR) await q.locator('#confirm .ev').screenshot({ path: path.join(SHOT_DIR, 'event-bag-chest.png') });
@@ -1503,7 +1504,7 @@ async function main() {
     assert.match(await q.locator('.chest-btn[data-kind=giftMysteryChest]').innerText(), /×1/);
     const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(over <= 0);
-    console.log('✔ 寶物商店 Phase 3：家長密碼（設定、上鎖、錯誤、忘記重設）、神諭祝福發送與紀錄、孩子領取、神秘寶箱開箱');
+    console.log('✔ 寶物商店 Phase 3：家長密碼（設定、上鎖、錯誤、忘記重設）、神諭祝福發送與紀錄、孩子領取、神祕寶箱開箱');
     await c10.close();
   }
 
@@ -1590,7 +1591,7 @@ async function main() {
     await c12.close();
   }
 
-  // ---------- 寶物商店 Phase 4B：地圖神秘寶箱、黃金鑰匙、寶物磁鐵、里程碑 ----------
+  // ---------- 寶物商店 Phase 4B：地圖神祕寶箱、黃金鑰匙、寶物磁鐵、里程碑 ----------
   {
     const c13 = await browser.newContext({ ...devices['Pixel 5'], viewport: { width: 360, height: 800 }, serviceWorkers: 'block' });
     const q = await c13.newPage();
@@ -1610,17 +1611,17 @@ async function main() {
     });
     await q.goto(url + '#map-' + id);
     await q.waitForSelector('.map-chest[data-chest="3"]');
-    assert.match(await q.locator('#toast').innerText(), /附近似乎藏著神秘寶物/);
+    assert.match(await q.locator('#toast').innerText(), /附近似乎藏著神祕寶物/);
     // 寶物磁鐵：列出前後 5 格內的寶箱
     await q.click('.item-btn[data-kind=magnet]');
     await q.waitForSelector('#confirm .magnet-box');
-    assert.match(await q.locator('#confirm .magnet-box').innerText(), /第 3 格・神秘寶箱[\s\S]*前方 2 格[\s\S]*第 5 格・一般寶箱/);
+    assert.match(await q.locator('#confirm .magnet-box').innerText(), /第 3 格・神祕寶箱[\s\S]*前方 2 格[\s\S]*第 5 格・一般寶箱/);
     await q.click('#confirm [data-no]');
-    // 溜冰鞋經過第 3 格 → 撿到神秘寶箱
+    // 溜冰鞋經過第 3 格 → 撿到神祕寶箱
     await q.evaluate(() => { window.__cgpStore.random = () => 0.3; });
     await q.click('.dice-btn.skates');
     await q.waitForSelector('#confirm[open]', { timeout: 10000 });
-    assert.match(await q.locator('#confirm .ev').innerText(), /冒險新發現！[\s\S]*前進 3 格・停在第 4 格[\s\S]*神秘寶箱 ×1[\s\S]*黃金鑰匙打開[\s\S]*繼續冒險！/);
+    assert.match(await q.locator('#confirm .ev').innerText(), /冒險新發現！[\s\S]*前進 3 格・停在第 4 格[\s\S]*神祕寶箱 ×1[\s\S]*黃金鑰匙打開[\s\S]*繼續冒險！/);
     await q.click('#confirm [data-yes]');
     assert.equal(await q.locator('.map-chest').count(), 0);
     // 背包：沒有鑰匙打不開；有鑰匙就能開
@@ -1632,7 +1633,7 @@ async function main() {
     await q.reload(); await q.waitForSelector('.chest-btn[data-kind=mysteryChest]');
     await q.click('.chest-btn[data-kind=mysteryChest]');
     await q.waitForSelector('#confirm [data-testid=event]');
-    assert.match(await q.locator('#confirm .ev').innerText(), /打開神秘寶箱！[\s\S]*用掉 1 把黃金鑰匙/);
+    assert.match(await q.locator('#confirm .ev').innerText(), /打開神祕寶箱！[\s\S]*用掉 1 把黃金鑰匙/);
     await q.click('#confirm [data-yes]');
     // 寶物磁鐵吸走第 5 格一般寶箱 → 地圖上那格的寶箱圖示消失（變普通石板）；新的一輪重新放滿
     await q.evaluate((cid) => { const s = window.__cgpStore; s.getPlayer(cid).bag.magnet = 1; s.random = () => 0.1; s.save(); }, id);
@@ -1656,7 +1657,7 @@ async function main() {
     await q.click('.score-btn:has-text("超級幫忙")');
     await q.waitForFunction(() => /黃金鑰匙/.test(document.getElementById('toast').textContent));
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.goldenKey, id), 1);
-    console.log('✔ 寶物商店 Phase 4B：地圖神秘寶箱與提示、經過撿到、寶物磁鐵選單、鑰匙開箱、里程碑黃金鑰匙');
+    console.log('✔ 寶物商店 Phase 4B：地圖神祕寶箱與提示、經過撿到、寶物磁鐵選單、鑰匙開箱、里程碑黃金鑰匙');
     await c13.close();
   }
 
@@ -1800,7 +1801,8 @@ async function main() {
     await q.locator('#map-view').screenshot({ path: SHOT_DIR ? path.join(SHOT_DIR, 'gold-fireworks.png') : path.join(require('os').tmpdir(), 'fw.png') });
     await q.waitForSelector('#clear-screen', { timeout: 10000 });
     assert.equal(await q.locator('.map-fireworks').count(), 0, '煙火結束後移除');
-    assert.match(await q.locator('#clear-screen').innerText(), /恭喜通關金島[\s\S]*神秘寶箱 ×1[\s\S]*金島通關/);
+    assert.match(await q.locator('#clear-screen').innerText(), /金島冒險完成[\s\S]*神祕寶箱 ×1[\s\S]*金島通關/);
+    if (SHOT_DIR) { await q.waitForTimeout(800); await q.screenshot({ path: path.join(SHOT_DIR, 'gold-clear-card.png') }); }
     await q.click('#clear-screen [data-clear-ok]');
     await q.waitForFunction(() => !document.getElementById('clear-screen'));
     assert.equal(await q.locator('#pawn').getAttribute('data-tile'), 'gold-04-100');
@@ -2191,7 +2193,7 @@ async function main() {
         await q.evaluate(() => { window.__cgpStore.random = () => 0.99; }); // 重新整理後才固定亂數（擲出 12）
         await q.click('[data-action=roll][data-kind=d12]');
         await q.waitForSelector('#clear-screen', { timeout: 8000 });
-        assert.match(await q.locator('#clear-screen').innerText(), /恭喜通關金島/);
+        assert.match(await q.locator('#clear-screen').innerText(), /金島冒險完成/);
         await q.click('#clear-screen [data-clear-ok]');
         await q.waitForFunction(() => !document.getElementById('clear-screen'));
         assert.equal(await q.locator('#pawn').getAttribute('data-tile'), 'gold-04-100');

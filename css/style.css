@@ -2492,16 +2492,9 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 /* 健忘怪跳起來 */
 .boss-floor .monster-stand.jump { animation: fade-in .3s ease-out both, monster-jump .6s .3s ease-out; }
 @keyframes monster-jump { 35% { transform: translateY(-18%); } 60% { transform: translateY(0); } 78% { transform: translateY(-5%); } }
-/* 水島冒險完成：精簡版彈窗（徽章 → 標題 → 獎勵卡 → 按鈕） */
-.fl-card.wend-card { gap: 14px; padding: 18px 18px 20px; background: #fffaf0; border: 3px solid #f1d58f; margin-bottom: calc(env(safe-area-inset-bottom) + 4vh); }
-.wend-badge { margin-top: -62px; line-height: 0; }
-.wend-badge img { width: clamp(110px, 34vw, 140px); height: auto; filter: drop-shadow(0 6px 10px rgba(30, 80, 40, .35)); }
-.fl-card .wend-title { margin: 0; padding: 6px 18px; border-radius: 16px; background: linear-gradient(#c98a4b, #9c6230); color: #fff6d8; font-size: clamp(1.4rem, 7vw, 1.75rem); font-weight: 900; text-shadow: 0 2px 0 #6b3e16; box-shadow: 0 4px 0 #6b3e16; }
-.wend-reward { width: 100%; box-sizing: border-box; display: grid; justify-items: center; gap: 8px; padding: 12px 10px 14px; border-radius: 20px; background: linear-gradient(#e3f5fd, #c9eaf8); }
-.wend-label { padding: 3px 16px; border-radius: 99px; background: #2f7fc9; color: #fff; font-weight: 900; font-size: .95rem; }
-.wend-prize { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; box-sizing: border-box; padding: 8px 12px; border-radius: 99px; background: #fff; box-shadow: 0 3px 8px rgba(0, 60, 110, .15); }
-.wend-prize img { width: 52px; height: 52px; object-fit: contain; }
-.wend-prize b { font-size: clamp(1.3rem, 6.4vw, 1.6rem); font-weight: 900; color: #5a3a1a; white-space: nowrap; }
-.wend-prize em { font-style: normal; color: #e0352b; margin-left: 4px; }
-.fl-card .wend-ok { font-size: 1.25rem; min-height: 54px; }
 @media (prefers-reduced-motion: reduce) { .boss-floor .monster-stand.jump { animation: none; } }
+
+/* 三座島通關卡片統一木島版：金島、水島的卡片也疊在背景上 */
+.clear-screen .we-card, .water-trip .we-card { position: relative; z-index: 2; }
+.water-trip .we-card { align-self: end; margin-bottom: calc(env(safe-area-inset-bottom) + 4vh); animation: wt-card-in .5s 1.8s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .water-trip .we-card { animation: none; } }

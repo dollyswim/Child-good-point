@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-188';
+  var APP_VERSION = '2026.11.18-189';
   var store;
   try {
     store = new CGP.Store();
@@ -150,7 +150,7 @@
     var m = rec.milestone || {};
     return rec.name + p + (rec.stars ? ' ⭐' + rec.stars : '') +
       (m.keys ? '・🎉 累計得分里程碑：得到 🔑 黃金鑰匙' + (m.keys > 1 ? ' ×' + m.keys : '') : '') +
-      (m.chests ? '・🎁 地圖上會出現神秘寶箱' : '');
+      (m.chests ? '・🎁 地圖上會出現神祕寶箱' : '');
   }
 
   function avatar(child, size) {
@@ -224,7 +224,7 @@
       var child = store.getChild(r.arg);
       if (!child) { location.replace('#home'); return; }
       setCurrent(child.id);
-      if (r.name === 'map' && store.canPlayToday(child.id)) store.placeMapChests(child.id);   // 下次冒險時神秘寶箱出現在前方
+      if (r.name === 'map' && store.canPlayToday(child.id)) store.placeMapChests(child.id);   // 下次冒險時神祕寶箱出現在前方
       var freshAch = document.getElementById('clear-screen') ? [] : store.checkAchievements(child.id);   // 先檢查成就，畫面才會顯示最新狀態
       html = r.name === 'child' ? renderChild(child) : r.name === 'challenge' ? renderChallenge(child)
         : r.name === 'shop' ? renderShop(child) : r.name === 'map' ? renderMap(child) : renderAdventure(child);
@@ -261,7 +261,7 @@
         }
         if (!storyResetAsk(mc)) towerIntro(mc);
       }, 600); }
-      if (store.takeChestHint(r.arg)) notes.push('✨ 附近似乎藏著神秘寶物……');
+      if (store.takeChestHint(r.arg)) notes.push('✨ 附近似乎藏著神祕寶物……');
       var wp = store.getPlayer(r.arg); if (wp.island === 'wood' && wp.pos >= 85) preloadImages(WOOD_SLIDES.concat(GAME.WATER_OPEN || window.__cgpWaterOpen ? WATER_TRIP.slice(0, 3) : []));   // 快到樹洞了：先在背景載入滑梯圖
     }
     if (r.name === 'home' && !store.data.flags.tourSeen && !onboardOff()) setTimeout(openTour, 300);   // 第一次打開：新手導覽
@@ -949,7 +949,7 @@
       rel: true,
       guide: { cls: 'water-npc', label: '漁夫爺爺', img: 'images/water/npc/fisherman.webp', iw: 640, ih: 640, w: 62 },
       spots: {
-        memo: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc water-bottle', label: '神秘的牛奶瓶', emoji: '🍼', img: 'images/water/items/bottle.webp', iw: 512, ih: 512, w: 64 }, hint: '撿到的牛奶瓶裡有好多碎紙條……走到第 8 格拼拼看！' },
+        memo: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc water-bottle', label: '神祕的牛奶瓶', emoji: '🍼', img: 'images/water/items/bottle.webp', iw: 512, ih: 512, w: 64 }, hint: '撿到的牛奶瓶裡有好多碎紙條……走到第 8 格拼拼看！' },
         potion: { type: 'water', guide: [0, 0], cam: [0, -60], hint: '漁夫爺爺在第 16 格的木平台等你！' },
         feed: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '小白鯨', img: 'images/water/npc/beluga.webp', iw: 640, ih: 640, w: 150 }, hint: '小白鯨好像肚子餓了……走到第 34 格餵牠吃魚！' },
         shark: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '大鯊魚', img: 'images/water/npc/shark_v2.webp', iw: 640, ih: 640, w: 190 }, hint: '大鯊魚守在第 48 格，要擲出 11 或 12 才讓你過！' },
@@ -1630,7 +1630,7 @@
       tiles +
       store.getMapChests(child.id).filter(function (c) { return inScene(c.n); }).map(function (c) {
         var cp = worldXY(region, board.tiles[c.n]);
-        return '<div class="map-chest" data-chest="' + c.n + '" style="left:' + cp.x.toFixed(1) + 'px;top:' + cp.y.toFixed(1) + 'px" title="神秘寶箱"><img src="images/items/mystery_chest.webp" alt="神秘寶箱" width="256" height="256" draggable="false"></div>';
+        return '<div class="map-chest" data-chest="' + c.n + '" style="left:' + cp.x.toFixed(1) + 'px;top:' + cp.y.toFixed(1) + 'px" title="神祕寶箱"><img src="images/items/mystery_chest.webp" alt="神祕寶箱" width="256" height="256" draggable="false"></div>';
       }).join('') +
       (pawnShown ? '<div class="pawn" id="pawn" data-char="' + h(characterId(child)) + '" data-pos="' + shownN + '" data-tile="' + h(board.tiles[shownN].id) + '" style="left:' + pp.x.toFixed(1) + 'px;top:' + pp.y.toFixed(1) + 'px">' +
       '<div class="pawn-inner">' + characterArt(child) + '</div>' + (ui.ride ? '<img class="pawn-ride" src="' + WATER_NPC.beluga + '" alt="" aria-hidden="true" draggable="false">' : '') + '</div>' : '') +
@@ -1862,7 +1862,7 @@
     await talkSeq([line(WHO.me(child), '瓶子裡的紙條好像可以拼成一張圖！我來拼拼看！')]);
     var COLS = 5, ROWS = 4, N = COLS * ROWS, prep = await memoPrepare(WATER_ART.memo || memoPlaceholder(), COLS, ROWS), src = prep.src, same = prep.same;
     function ok(i) { return at[i] != null && (at[i] === i || same(at[i], i)); }   // 長得一樣的碎紙放哪一片都算對
-    var P = partyPanel({ title: '拼回神秘的地圖！', sub: '把碎紙拖到地圖上（或先點碎紙、再點位置），放錯可以再拖去別的地方' }, null, 'water-panel memo-panel');
+    var P = partyPanel({ title: '拼回神祕的地圖！', sub: '把碎紙拖到地圖上（或先點碎紙、再點位置），放錯可以再拖去別的地方' }, null, 'water-panel memo-panel');
     // 2026-11-17 家長：要真的能拼——想放哪就放哪、可以自己調整，全部放對才完成；另有提示按鈕
     // 狀態：at[格子]＝放在那裡的碎紙編號（null＝空）；碎紙 k 的正確位置就是格子 k
     var at = []; for (var k = 0; k < N; k++) at.push(null);
@@ -2420,11 +2420,11 @@
     await new Promise(function (r) { setTimeout(r, reduceMotion ? 300 : 1800); });   // 先讓孩子看到小被被從箱子裡冒出來，再關掉視窗
     P.shade.remove();
     await talkSeq([line(WHO.monster('blanket'), '找到啦！小被被，你都沒長高，我怎麼會找不到你！'), line(me, '原來最重要的寶……是小被被！'), line(WHO.monster('blanket'), '它從我小時候就陪著我，有它就安心了。')]);   // 2026-11-18 家長：前兩句互換
-    // 通關：⭐3＋第一次 3 個神秘寶箱（之後 10 星）
-    var ev = child.preview ? { clear: { first: true, next: '金島' }, text: '\n通關獎勵：🎁 神秘寶箱 ×3（不用鑰匙）（預覽，沒有存檔）' } : store.finishWaterBoss(child.id);
+    // 通關：⭐3＋第一次 3 個神祕寶箱（之後 10 星）
+    var ev = child.preview ? { clear: { first: true, next: '金島' }, text: '\n通關獎勵：🎁 神祕寶箱 ×3（不用鑰匙）（預覽，沒有存檔）' } : store.finishWaterBoss(child.id);
     if (ev.clear.first) {
       await talkSeq([line(me, '下面好像還有東西，那是什麼？'), line(M, '哦？那個東西喔？'),
-        line(WHO.monster('blanket'), '太佔空間了啦，小被被都快沒空間放了！你幫我把這個拿走吧！', { choices: [{ label: '🎁 收下神秘禮物', val: true, primary: true }] })]);
+        line(WHO.monster('blanket'), '太佔空間了啦，小被被都快沒空間放了！你幫我把這個拿走吧！', { choices: [{ label: '🎁 收下神祕禮物', val: true, primary: true }] })]);
     } else await talkSeq([line(WHO.monster('blanket'), '這次換我請你吃星星糖！', { choices: [{ label: '⭐ 收下 ' + GAME.GOLD_CLEAR_STARS + ' 顆能量星星', val: true, primary: true }] })]);
     await talkSeq([line(M, '謝謝你！我一定會記得你的！'), line(M, '……欸？你叫什麼名字？'), line(me, '我是你的冒險朋友！'),
       line(M, '謝謝朋友，我要記下來今天的事。'), line(M, '（拿起筆記本，好像在畫著小被被、一條魚和奇怪的生物）'), line(WHO.beluga(), '既然完成任務了，我送你回到岸上吧！')]);   // 2026-11-18 家長改台詞
@@ -2434,23 +2434,14 @@
   // 2026-11-17 F 節正式圖（Codex，810×1080）：開場 F-1～F-3、通關送回岸 F-4、出發去下一座島 F-5（水島圖不放進 SHELL）
   var WATER_TRIP = ['f1_exit', 'f2_out', 'f3_beach', 'f4_return', 'f5_depart'].map(function (n) { return 'images/water/trip/' + n + '.webp'; });
   /** 白鯨送回岸＋「水島冒險完成！」卡片（F-4：騎在小白鯨背上滑向沙灘） */
-  /** 從通關說明取出獎勵（例：「🎁 神秘寶箱 ×3」或「⭐10 能量星星」），配上現有道具圖 */
-  function wendPrize(text) {
-    var m = /通關獎勵：([^\n]*)/.exec(text || ''), r = (m ? m[1] : '').replace(/（[^）]*）/g, '').replace(/＋.*$/, '').trim();
-    var star = /^⭐/.test(r), name = r.replace(/^(🎁|⭐)\s*/u, '');
-    return '<img src="images/items/' + (star ? 'star' : 'mystery_chest') + '.webp" alt="" aria-hidden="true" width="256" height="256">' +
-      '<b>' + h(name).replace(/×\s*(\d+)/, '<em>×$1</em>') + '</b>';
-  }
   function waterEnding(child, ev) {
     return new Promise(function (resolve) {
       var el = document.createElement('div');
       el.className = 'flight water-trip' + (reduceMotion ? ' still' : ''); el.id = 'water-ending'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '水島冒險完成');
       el.innerHTML = '<div class="wt-photo" style="background-image:url(' + WATER_TRIP[3] + ')"></div>' +
-        // 2026-11-18 家長：精簡版完成彈窗——只留徽章、標題、通關獎勵、按鈕（獎勵內容照 ev.text，不改規則）
-        '<div class="fl-card wend-card" data-testid="water-end-card"><div class="wend-badge"><img src="' + BADGE_IMG.waterClear1 + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></div>' +
-        '<h2 class="wend-title">水島冒險完成！</h2>' +
-        '<div class="wend-reward"><span class="wend-label">⭐ 通關獎勵 ⭐</span><div class="wend-prize">' + wendPrize(ev.text) + '</div></div>' +
-        '<button type="button" class="btn primary block wend-ok" data-we-ok>太棒了！</button></div>';
+        islandCard({ testid: 'water-end-card', badge: BADGE_IMG.waterClear1, title: '水島冒險完成！', quote: '「健忘怪找回了小被被，<br>下一次會游到哪裡呢？」',
+          first: ev.clear.first, chest: 3, chestName: '神祕寶箱', ach: '水島通關', soon: true,
+          next: ev.clear.next ? '下次出發會先回到「' + h(ev.clear.next) + '」繼續冒險。' : '下次出發會從水島起點開始新的一輪。', ok: 'data-we-ok' });
       document.body.appendChild(el);
       el.querySelector('[data-we-ok]').onclick = function () { el.remove(); render(); if (!child.preview) announceAchievements(child.id); resolve(); };
     });
@@ -2684,7 +2675,7 @@
     var anim = e.body.animate(frames, { duration: dur, fill: 'forwards', easing: 'ease-in-out' });
     return anim.finished.then(function () { if (action !== 'jump') pawnIdle(); }, function () { /* 被新的動作取消 */ });
   }
-  /** 停下來之後依事件反應：寶箱 → 開寶箱；命運、往回退、撿到神秘寶箱 → 驚訝；機會、終點 → 開心 */
+  /** 停下來之後依事件反應：寶箱 → 開寶箱；命運、往回退、撿到神祕寶箱 → 驚訝；機會、終點 → 開心 */
   function pawnReaction(res) {
     var ev = res && res.event, last = ev && ev.then ? ev.then : ev;
     if (!ev) return null;
@@ -2917,10 +2908,10 @@
   // ---------- 一般冒險事件視窗（2026-11-09 家長指定：和成就視窗同風格；只換顯示方式，不改事件內容與效果） ----------
   // 版面：主標題 → 移動結果 → 主題插圖 → 事件卡片（獎勵＝奶油黃、命運卡＝淡紫、路障＝珊瑚橘、其他＝天藍）→「繼續冒險！」
   function evStrip(t) { return String(t || '').replace(/^(?:[\u2600-\u27bf\ud83c-\udbff][\udc00-\udfff]?\ufe0f?\s*)+/, '').trim(); }   // 去掉開頭的表情符號
-  /** 把 store 回傳的事件（含礦車連鎖的 then）與沿路撿到的神秘寶箱，整理成卡片清單；文字沿用事件原文 */
+  /** 把 store 回傳的事件（含礦車連鎖的 then）與沿路撿到的神祕寶箱，整理成卡片清單；文字沿用事件原文 */
   function eventCards(ev, found) {
     var cards = [];
-    if (found) cards.push({ theme: 'reward', img: 'images/items/mystery_chest.webp', title: '神秘寶箱 ×' + found, lines: ['已放進冒險背包，用 🔑 黃金鑰匙打開'] });
+    if (found) cards.push({ theme: 'reward', img: 'images/items/mystery_chest.webp', title: '神祕寶箱 ×' + found, lines: ['已放進冒險背包，用 🔑 黃金鑰匙打開'] });
     (function add(e) {
       if (!e || e.type === 'normal' || e.type === 'start') return;
       var lines = String(e.text || '').split('\n').filter(Boolean), c;
@@ -3174,19 +3165,28 @@
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     return sleep(reduce ? 300 : 2200).then(function () { el.remove(); });
   }
+  /**
+   * 三座島共用的通關卡片（2026-11-18 家長：統一成木島的版本）：徽章 → 標題 → 一句引言 → 獎勵列表 → 下一站提示 → 太棒了
+   * o：{ testid, badge, title, quote, first, chest（神祕寶箱數量）, chestName, ach（成就名）, soon（布林：下一座島還在準備中）, next（說明文字）, ok（按鈕屬性） }
+   */
+  function islandCard(o) {
+    return '<div class="we-card" data-testid="' + o.testid + '"><div class="we-crown"><img src="' + o.badge + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></div><h2>' + h(o.title) + '</h2>' +
+      '<p class="we-q">' + o.quote + '</p>' +
+      '<ul class="clear-rewards">' + (o.first
+        ? '<li><img src="images/items/mystery_chest.webp" alt="" width="48" height="48"> ' + o.chestName + ' ×' + o.chest + '（不用鑰匙）</li>' + (o.ach ? '<li><span>🏅</span> 成就「' + h(o.ach) + '」</li>' : '')
+        : '<li>' + STAR_IMG + ' 能量星星 +' + GAME.GOLD_CLEAR_STARS + '</li>') + '</ul>' +
+      (o.soon ? '<p class="we-soon">下一座島還在準備中，敬請期待！</p>' : '') +
+      '<p class="muted small">' + o.next + '</p>' +
+      '<button type="button" class="btn primary block" ' + o.ok + '>太棒了！</button></div>';
+  }
   /** 金島通關：全螢幕慶祝畫面（動畫失敗不影響已存檔的獎勵） */
   function showClear(child, ev) {
     var el = document.createElement('div');
     el.className = 'clear-screen'; el.id = 'clear-screen';
     el.innerHTML = '<div class="confetti" aria-hidden="true">' + new Array(25).join('<i></i>') + '</div>' +
-      '<div class="clear-card"><div class="clear-crown">👑</div><h2>恭喜通關' + h(ev.clear.name || '金島') + '！</h2>' +
-      '<p class="clear-sub">' + h(child.name) + ' 抵達了' + h(ev.clear.goal || '終點') + (ev.clear.count > 1 ? '（第 ' + ev.clear.count + ' 次）' : '') + '</p>' +
-      '<span class="clear-pawn">' + characterArt(child) + '</span>' +
-      '<ul class="clear-rewards">' + (ev.clear.first
-        ? '<li><img src="images/items/mystery_chest.webp" alt="" width="48" height="48"> 神秘寶箱 ×1（不用鑰匙）</li>' + (ev.clear.island === 'gold' || !ev.clear.island ? '<li><span>🏅</span> 成就「金島通關」</li>' : '')
-        : '<li>' + STAR_IMG + ' 能量星星 +' + GAME.GOLD_CLEAR_STARS + '</li>') + '</ul>' +
-      '<p class="muted small">' + (ev.clear.next ? '下次出發會前往「' + h(ev.clear.next) + '」！' : '下次出發會從起點開始新的一輪') + '</p>' +
-      '<button type="button" class="btn primary block" data-clear-ok>太棒了！</button></div>';
+      islandCard({ testid: 'gold-end-card', badge: BADGE_IMG.goldClear1, title: '金島冒險完成！', quote: '「金冠城堡的寶藏找到了，<br>飛行員阿翔在等你呢！」',
+        first: ev.clear.first, chest: 1, chestName: '神祕寶箱', ach: ev.clear.island === 'gold' || !ev.clear.island ? '金島通關' : '', soon: !ev.clear.next,
+        next: ev.clear.next ? '下次出發會前往「' + h(ev.clear.next) + '」！' : '下次出發會從起點開始新的一輪。', ok: 'data-clear-ok' });
     document.body.appendChild(el);
     toastEl.hidden = true;   // 通關畫面已列出成就，不另外跳提示
     el.querySelector('[data-clear-ok]').onclick = function () {
@@ -3316,14 +3316,9 @@
       var skipped = false, stepWait = null;
       function finish() {
         var first = ev.clear.first;
-        el.innerHTML = '<div class="we-card" data-testid="wood-end-card"><div class="we-crown"><img src="' + BADGE_IMG.woodClear1 + '" alt="" aria-hidden="true" width="256" height="256" decoding="async"></div><h2>木島冒險完成！</h2>' +
-          '<p class="we-q">「神祕的樹洞隧道，<br>究竟會通往什麼地方呢？」</p>' +
-          '<ul class="clear-rewards">' + (first
-            ? '<li><img src="images/items/mystery_chest.webp" alt="" width="48" height="48"> 神秘寶箱 ×1（不用鑰匙）</li><li><span>🏅</span> 成就「木島通關」</li>'
-            : '<li>' + STAR_IMG + ' 能量星星 +' + GAME.GOLD_CLEAR_STARS + '</li>') + '</ul>' +
-          '<p class="we-soon">下一座島還在準備中，敬請期待！</p>' +
-          '<p class="muted small">' + (ev.clear.next ? '下次出發會先回到「' + h(ev.clear.next) + '」繼續冒險。' : '下次出發會從木島起點開始新的一輪。') + '</p>' +
-          '<button type="button" class="btn primary block" data-we-ok>太棒了！</button></div>';
+        el.innerHTML = islandCard({ testid: 'wood-end-card', badge: BADGE_IMG.woodClear1, title: '木島冒險完成！', quote: '「神祕的樹洞隧道，<br>究竟會通往什麼地方呢？」',
+          first: first, chest: 1, chestName: '神祕寶箱', ach: '木島通關', soon: true,
+          next: ev.clear.next ? '下次出發會先回到「' + h(ev.clear.next) + '」繼續冒險。' : '下次出發會從木島起點開始新的一輪。', ok: 'data-we-ok' });
         el.classList.add('done');
         el.querySelector('[data-we-ok]').onclick = function () {
           el.remove(); document.body.classList.remove('pawn-acting'); render(); announceAchievements(child.id, ['woodClear1']); resolve();   // 「木島通關」卡片上已經顯示，劇場不重複演出
@@ -3383,7 +3378,7 @@
     if (got) rows.push(['🎒', '得到的道具', got]);
     if (used) rows.push(['✨', '用掉的道具', used]);
     if (s.specialTasks.length) rows.push(['🔮', '新的特殊任務', s.specialTasks.join('、')]);
-    if (s.chests.onMap || s.chests.coming) rows.push(['🎁', '神秘寶箱', s.chests.onMap ? '地圖上還有 ' + s.chests.onMap + ' 個等你去撿' + (s.chests.coming ? '，另外 ' + s.chests.coming + ' 個下次出現' : '') : s.chests.coming + ' 個神秘寶箱下次冒險時會出現在你前方！']);
+    if (s.chests.onMap || s.chests.coming) rows.push(['🎁', '神祕寶箱', s.chests.onMap ? '地圖上還有 ' + s.chests.onMap + ' 個等你去撿' + (s.chests.coming ? '，另外 ' + s.chests.coming + ' 個下次出現' : '') : s.chests.coming + ' 個神祕寶箱下次冒險時會出現在你前方！']);
     confirmEl.innerHTML = '<div class="confirm-box summary-box"><h2>' + (justEnded ? '🏁 今天的冒險結束了！' : '📋 今日小結') + '</h2>' +
       '<p class="muted small">' + h(child.name) + '，今天辛苦了！明天繼續冒險吧～</p>' +
       '<ul class="summary-list">' + rows.map(function (r) { return '<li><span class="sum-ico">' + r[0] + '</span><b>' + r[1] + '</b><span>' + h(r[2]) + '</span></li>'; }).join('') + '</ul>' +
@@ -3986,7 +3981,7 @@
   var RARE_ITEMS = ['magicDice', 'luckyMedal', 'shield', 'wings', 'door', 'airplane', 'mysteryChest', 'giftMysteryChest'];
   /**
    * 把 { stars, items, found } 整理成獎勵清單（第一個是主獎勵，其餘是額外獎勵）
-   * found＝撿到的地圖神秘寶箱數（已收入背包）
+   * found＝撿到的地圖神祕寶箱數（已收入背包）
    */
   function rewardEntries(stars, items, found) {
     var list = [];
@@ -3997,7 +3992,7 @@
       if (e.key === 'stars') { e.name = '能量星星'; e.img = 'images/items/star.webp'; e.desc = '已存入能量星星'; return; }
       var b = BAG_INFO[e.key] || {};
       e.img = b.img || 'images/tiles/chest.webp';
-      e.name = e.key === 'mysteryChest' ? '神秘寶箱' : b.name || e.key;
+      e.name = e.key === 'mysteryChest' ? '神祕寶箱' : b.name || e.key;
       e.desc = e.key === 'mysteryChest' ? '已收入冒險背包・黃金鑰匙開啟' : '已收入冒險背包';
     });
     // 主獎勵：稀有道具優先，其次一般道具，最後才是星星
@@ -4005,7 +4000,7 @@
     function rank(e) { return e.key === 'stars' ? 2 : RARE_ITEMS.indexOf(e.key) >= 0 ? 0 : 1; }
     return list;
   }
-  /** 開箱、寶物磁鐵的結果：res＝store 回傳的 { stars, items }；rare＝神秘寶箱；note＝說明前綴 */
+  /** 開箱、寶物磁鐵的結果：res＝store 回傳的 { stars, items }；rare＝神祕寶箱；note＝說明前綴 */
   // 2026-11-09：背包開寶箱、寶物磁鐵也改用冒險事件的卡片式視窗（每樣獎勵一張奶油黃卡）；舊的獎勵彈窗已移除
   function showReward(title, res, rare, note) {
     var entries = rewardEntries(res.stars, res.items, 0);
@@ -4017,8 +4012,8 @@
   function itemBar(child, player, st) {
     var list = [];
     var bag = player.bag, busy = !st.canPlay || st.pending || st.picking;
-    // 寶箱：隨時可以開（不用出發）；地圖撿到的神秘寶箱要黃金鑰匙
-    [['chest', '一般寶箱'], ['giftMysteryChest', '神秘寶箱'], ['mysteryChest', '神秘寶箱']].forEach(function (c) {
+    // 寶箱：隨時可以開（不用出發）；地圖撿到的神祕寶箱要黃金鑰匙
+    [['chest', '一般寶箱'], ['giftMysteryChest', '神祕寶箱'], ['mysteryChest', '神祕寶箱']].forEach(function (c) {
       if (!bag[c[0]]) return;
       var b = BAG_INFO[c[0]];
       var needKey = c[0] === 'mysteryChest';
@@ -4049,7 +4044,7 @@
     if (bag.shield) btn('shield', 'item-info', '防護罩', '×' + bag.shield + '・自動抵擋', false);
     if (bag.rerollTicket) btn('rerollTicket', 'item-info', '命運重骰券', '×' + bag.rerollTicket + '・擲骰後可用', false);
     if (bag.airplane) btn('airplane', 'item-info', '呼叫專機', '×' + bag.airplane + '・其他島嶼開放後', false);
-    if (bag.goldenKey) btn('goldenKey', 'item-info', '黃金鑰匙', '×' + bag.goldenKey + '・開神秘寶箱', false);
+    if (bag.goldenKey) btn('goldenKey', 'item-info', '黃金鑰匙', '×' + bag.goldenKey + '・開神祕寶箱', false);
     var games = st.quota.games ? '<p class="medal-on">🎮 再來 3 次：今天還有 ' + st.quota.rolls + ' 次擲骰、' + st.quota.games + ' 次小遊戲</p>' : '';
     return games + (list.length ? '<section class="item-bar" data-testid="item-bar"><h3 class="item-bar-title">🎒 背包道具</h3>' + list.join('') + '</section>' : '');
   }
@@ -4057,7 +4052,7 @@
     shield: '🛡️ 防護罩：停在命運格抽到「往回退」或「路障」時會自動用掉 1 個：擋住往回退；推開路障還能前進 1 格。不用手動使用。',
     rerollTicket: '🎲 命運重骰券：擲骰後會先問你要不要重擲；重擲以新的點數為準，同一次只能用 1 張。',
     airplane: '✈️ 呼叫專機：可以直接飛到其他島嶼的入口，其他島嶼開放後才能使用。',
-    goldenKey: '🔑 黃金鑰匙：打開地圖上撿到的神秘寶箱。累計得分每 +500 點送 1 把，星星商店也有賣。'
+    goldenKey: '🔑 黃金鑰匙：打開地圖上撿到的神祕寶箱。累計得分每 +500 點送 1 把，星星商店也有賣。'
   };
 
   /** 冒險寶物商店：用生活點數兌換冒險寶物（每週 3 件、同款持有 2 件） */
@@ -4090,15 +4085,15 @@
     submarine: { name: '潛水艇', icon: '🚤', img: 'images/items/submarine.webp', note: '只能在水島使用' },
     callShell: { name: '呼喚貝殼', icon: '🐚', img: 'images/water/items/call_shell.webp', note: '只能在水島使用' },
     airplane: { name: '呼叫專機', img: 'images/items/airplane.webp', note: '其他島嶼開放後可用' },
-    goldenKey: { name: '黃金鑰匙', img: 'images/items/golden_key.webp', note: '開神秘寶箱' },
+    goldenKey: { name: '黃金鑰匙', img: 'images/items/golden_key.webp', note: '開神祕寶箱' },
     magnet: { name: '寶物磁鐵', img: 'images/items/treasure_magnet.webp', note: '地圖上使用' },
     rerollTicket: { name: '命運重骰券', img: 'images/items/reroll_ticket.webp', note: '擲骰後可用' },
     bonusPlay: { name: '再來 3 次', img: 'images/items/bonus_play.webp', note: '地圖上啟用' },
     starCall: { name: '星星呼喚', img: 'images/minigame/star.webp', note: '地圖上使用' },
     pineHide: { name: '松果躲躲', img: 'images/wood/leaf_pinecone.webp', note: '地圖上使用' },
     chest: { name: '一般寶箱', img: 'images/tiles/chest.webp', open: true },
-    giftMysteryChest: { name: '神秘寶箱', img: 'images/items/mystery_chest.webp', open: true },
-    mysteryChest: { name: '神秘寶箱（要鑰匙）', img: 'images/items/mystery_chest.webp', open: true }
+    giftMysteryChest: { name: '神祕寶箱', img: 'images/items/mystery_chest.webp', open: true },
+    mysteryChest: { name: '神祕寶箱（要鑰匙）', img: 'images/items/mystery_chest.webp', open: true }
   };
 
 
@@ -4427,7 +4422,7 @@
   /** 設定 → 冒險上限：冒險世界各項每日使用上限（0～10，全部孩子共用；2026-11-09 家長決定） */
   var LIMIT_ROWS = [
     ['dice', '🎲 每日擲骰次數', '設 0：今天不能擲骰（只能用道具前進）'],
-    ['minigame', '🎮 小遊戲次數（停在小遊戲格）', '用完後再停到小遊戲格，會轉成神秘寶箱'],
+    ['minigame', '🎮 小遊戲次數（停在小遊戲格）', '用完後再停到小遊戲格，會轉成神祕寶箱'],
     ['move', '🛼 前進道具（溜冰鞋＋飛行翼合計）', ''],
     ['door', '🚪 傳送門', ''],
     ['magic', '✨ 神奇骰子', ''],
@@ -4966,7 +4961,7 @@
         }
         case 'open-chest': {
           var cres = store.openChest(childId, id);   // 在地圖道具列開箱（先記錄獎勵，再播動畫）
-          var chestTitle = id === 'chest' ? '打開一般寶箱！' : '打開神秘寶箱！', chestNote = id === 'mysteryChest' ? '🔑 用掉 1 把黃金鑰匙' : '';
+          var chestTitle = id === 'chest' ? '打開一般寶箱！' : '打開神祕寶箱！', chestNote = id === 'mysteryChest' ? '🔑 用掉 1 把黃金鑰匙' : '';
           if (document.getElementById('pawn')) { pawnPlay('openChest').then(function () { showReward(chestTitle, cres, id !== 'chest', chestNote); render(); }); break; }
           showReward(chestTitle, cres, id !== 'chest', chestNote);
           render();

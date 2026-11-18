@@ -76,7 +76,7 @@
     { id: 'd6', name: '6 面骰', icon: '🎲', img: 'images/items/dice_6.webp', price: 5, desc: '擲出 1～6 步' },
     { id: 'd12', name: '12 面骰', icon: '🎲', img: 'images/items/dice_12.webp', price: 10, desc: '擲出 1～12 步' },
     { id: 'skates', name: '溜冰鞋', icon: '🛼', img: 'images/items/roller_skate.webp', price: 4, desc: '直接前進 3 格（不算擲骰次數；和飛行翼合計每天最多 5 次）' },
-    { id: 'goldenKey', name: '黃金鑰匙', icon: '🔑', img: 'images/items/golden_key.webp', price: 10, desc: '打開地圖上撿到的神秘寶箱' },
+    { id: 'goldenKey', name: '黃金鑰匙', icon: '🔑', img: 'images/items/golden_key.webp', price: 10, desc: '打開地圖上撿到的神祕寶箱' },
     { id: 'magnet', name: '寶物磁鐵', icon: '🧲', img: 'images/items/treasure_magnet.webp', price: 10, desc: '吸取前後 5 格內的寶箱' }
   ];
 
@@ -369,7 +369,7 @@
     Object.keys(out.items).forEach(function (k) { this._logItem(childId, 'grant', k, out.items[k], reason, out.text); }, this);
     return out;
   };
-  /** 神秘寶箱獎勵池：7 種特殊道具（呼叫專機為稀有獎勵） */
+  /** 神祕寶箱獎勵池：7 種特殊道具（呼叫專機為稀有獎勵） */
   var MYSTERY_POOL = [
     { id: 'skates', name: '溜冰鞋', icon: '🛼', weight: 18 }, { id: 'magicDice', name: '神奇骰子', icon: '🎲', weight: 18 },
     { id: 'luckyMedal', name: '好運金牌', icon: '🥇', weight: 18 }, { id: 'shield', name: '防護罩', icon: '🛡️', weight: 18 },
@@ -390,7 +390,7 @@
       result: result || '', date: this.today(), ts: this.now().getTime() });
   };
   /**
-   * 開背包裡的寶箱：kind = 'chest'（一般寶箱）或 'giftMysteryChest'（神諭祝福的神秘寶箱，免鑰匙）
+   * 開背包裡的寶箱：kind = 'chest'（一般寶箱）或 'giftMysteryChest'（神諭祝福的神祕寶箱，免鑰匙）
    * 不需要當天出發冒險；內容沿用既有獎勵池。
    */
   Store.prototype.openChest = function (childId, kind) {
@@ -401,7 +401,7 @@
     if (kind === 'mysteryChest') {
       if (!(p.bag.goldenKey > 0)) throw new Error('需要 1 把 🔑 黃金鑰匙才能打開（星星商店有賣）');
       p.bag.goldenKey--;
-      this._logItem(childId, 'use', 'goldenKey', 1, '背包', '打開神秘寶箱');
+      this._logItem(childId, 'use', 'goldenKey', 1, '背包', '打開神祕寶箱');
     }
     p.bag[kind]--;
     var res = kind === 'chest' ? this._rollRegularChest(childId, '一般寶箱') : this._rollMysteryChest(childId);
@@ -411,10 +411,10 @@
     return res;
   };
 
-  // ---------- 地圖上的神秘寶箱 ----------
-  // 2026-11-09 家長調整：次數用完轉換的神秘寶箱「總共只留 2 個」（還沒撿走的，含等待出現與已在地圖上），撿走一個才能再轉
+  // ---------- 地圖上的神祕寶箱 ----------
+  // 2026-11-09 家長調整：次數用完轉換的神祕寶箱「總共只留 2 個」（還沒撿走的，含等待出現與已在地圖上），撿走一個才能再轉
   var OVERFLOW_CHEST_DAILY = 2, MILESTONE_KEY = 500, MILESTONE_CHEST = 1000, MAGNET_RANGE = 5;
-  /** 新增一個還沒出現的神秘寶箱；source：overflow（次數用完轉換，還沒撿走的最多 2 個）、milestone、island */
+  /** 新增一個還沒出現的神祕寶箱；source：overflow（次數用完轉換，還沒撿走的最多 2 個）、milestone、island */
   Store.prototype._addMapChest = function (childId, source) {
     var today = this.today();
     if (source === 'overflow' && this.data.adventure.mapChests.filter(function (x) {
@@ -426,12 +426,12 @@
     return c;
   };
   /**
-   * 讓等待中的神秘寶箱出現在這座島上、角色還沒走到的格子：前方第 2 格到終點前一格之間隨機一格（2026-11-09 家長調整，原本前方 2～8 格），
+   * 讓等待中的神祕寶箱出現在這座島上、角色還沒走到的格子：前方第 2 格到終點前一格之間隨機一格（2026-11-09 家長調整，原本前方 2～8 格），
    * 兩個寶箱不放同一格。
    * 次數用完轉換的寶箱要等到之後的日子才出現；里程碑的下次進入地圖就出現。
    * @returns 這次新出現的寶箱數
    */
-  var WATER_NO_CHEST = [8, 16, 34, 48, 49, 56, 100];   // 水島：關卡格與鯊魚過關後的第 49 格不放神秘寶箱
+  var WATER_NO_CHEST = [8, 16, 34, 48, 49, 56, 100];   // 水島：關卡格與鯊魚過關後的第 49 格不放神祕寶箱
   Store.prototype.placeMapChests = function (childId) {
     var p = this.getPlayer(childId), today = this.today(), self = this;
     var tiles = this.getBoard(childId).tiles, last = tiles.length - 2;
@@ -451,25 +451,25 @@
     if (placed) this.save();
     return placed;
   };
-  /** 地圖上已出現、還沒撿的神秘寶箱 */
+  /** 地圖上已出現、還沒撿的神祕寶箱 */
   Store.prototype.getMapChests = function (childId) {
     var p = this.getPlayer(childId);
     return this.data.adventure.mapChests.filter(function (c) { return c.childId === childId && c.tileId && c.island === p.island; });
   };
-  /** 進入地圖時的提示「附近似乎藏著神秘寶物……」只顯示一次 */
+  /** 進入地圖時的提示「附近似乎藏著神祕寶物……」只顯示一次 */
   Store.prototype.takeChestHint = function (childId) {
     var list = this.getMapChests(childId).filter(function (c) { return !c.hinted; });
     list.forEach(function (c) { c.hinted = true; });
     if (list.length) this.save();
     return list.length;
   };
-  /** 經過或停在有神秘寶箱的格子：撿起來放進背包（未開啟，要鑰匙） */
+  /** 經過或停在有神祕寶箱的格子：撿起來放進背包（未開啟，要鑰匙） */
   Store.prototype._collectAt = function (childId, positions) {
     var p = this.getPlayer(childId), got = 0, self = this;
     this.data.adventure.mapChests = this.data.adventure.mapChests.filter(function (c) {
       if (c.childId === childId && c.tileId && c.island === p.island && positions.indexOf(c.n) >= 0) {
         p.bag.mysteryChest++; got++;
-        self._logItem(childId, 'grant', 'mysteryChest', 1, '地圖第 ' + c.n + ' 格', '撿到神秘寶箱');
+        self._logItem(childId, 'grant', 'mysteryChest', 1, '地圖第 ' + c.n + ' 格', '撿到神祕寶箱');
         return false;
       }
       return true;
@@ -478,11 +478,11 @@
   };
 
   // ---------- 寶物磁鐵 ----------
-  /** 前後 5 格內可以吸的寶物：地圖上的神秘寶箱、還沒被吸走的一般寶箱格 */
+  /** 前後 5 格內可以吸的寶物：地圖上的神祕寶箱、還沒被吸走的一般寶箱格 */
   Store.prototype.getMagnetTargets = function (childId) {
     var p = this.getPlayer(childId), tiles = this.getBoard(childId).tiles, out = [];
     this.getMapChests(childId).forEach(function (c) {
-      if (Math.abs(c.n - p.pos) <= MAGNET_RANGE) out.push({ type: 'mystery', id: c.id, n: c.n, name: '神秘寶箱' });
+      if (Math.abs(c.n - p.pos) <= MAGNET_RANGE) out.push({ type: 'mystery', id: c.id, n: c.n, name: '神祕寶箱' });
     });
     tiles.forEach(function (t) {
       if (t.type === 'chest' && t.n !== p.pos && Math.abs(t.n - p.pos) <= MAGNET_RANGE && p.looted.indexOf(t.id) < 0) out.push({ type: 'tile', id: t.id, n: t.n, name: '一般寶箱' });
@@ -502,7 +502,7 @@
       this.data.adventure.mapChests = this.data.adventure.mapChests.filter(function (c) { return c.id !== id; });
       p.bag.mysteryChest++;
       res.items.mysteryChest = 1;
-      res.text = '吸到第 ' + target.n + ' 格的 🎁 神秘寶箱！（用黃金鑰匙打開）';
+      res.text = '吸到第 ' + target.n + ' 格的 🎁 神祕寶箱！（用黃金鑰匙打開）';
     } else {
       var cr = this._rollRegularChest(childId, '寶物磁鐵');
       p.looted.push(id);
@@ -514,7 +514,7 @@
     return res;
   };
 
-  // ---------- 累計得分里程碑：每 +500 黃金鑰匙、每 +1000 神秘寶箱（不補發、不重複） ----------
+  // ---------- 累計得分里程碑：每 +500 黃金鑰匙、每 +1000 神祕寶箱（不補發、不重複） ----------
   /** 還沒有里程碑紀錄的孩子，從目前的累計得分開始算 */
   Store.prototype._initMilestones = function () {
     var self = this, ms = this.data.milestones, changed = false;
@@ -543,7 +543,7 @@
   // ---------- 神諭祝福（媽媽加碼） ----------
   var BLESSINGS = [
     { id: 'chest', name: '一般寶箱', icon: '📦', img: 'images/tiles/chest.webp', desc: '加入寶箱庫存，打開可得星星或道具' },
-    { id: 'mysteryChest', name: '神秘寶箱', icon: '🎁', img: 'images/items/mystery_chest.webp', desc: '加入寶箱庫存，不用鑰匙，打開可得特殊道具' },
+    { id: 'mysteryChest', name: '神祕寶箱', icon: '🎁', img: 'images/items/mystery_chest.webp', desc: '加入寶箱庫存，不用鑰匙，打開可得特殊道具' },
     { id: 'rerollTicket', name: '命運重骰券', icon: '🎲', img: 'images/items/reroll_ticket.webp', desc: '對剛擲出的結果重新擲一次（不占每日次數）' },
     { id: 'bonusPlay', name: '再來 3 次', icon: '🎮', img: 'images/items/bonus_play.webp', desc: '啟用當天額外 +3 次擲骰、+3 次小遊戲' },
     { id: 'luckyStar', name: '幸運星', icon: '🌟', img: 'images/minigame/star.webp', desc: '立即獲得 10 顆能量星星' }
@@ -657,7 +657,7 @@
     for (var i = 0; i < steps && p.pos < end && p.pos !== gate; i++) { p.pos++; path.push(p.pos); }
     p.tileId = this.getBoard(childId).tiles[p.pos].id;
     if (p.pos > p.maxReached) p.maxReached = p.pos;
-    this._found = (this._found || 0) + this._collectAt(childId, path);   // 經過或停在神秘寶箱的格子就撿起來
+    this._found = (this._found || 0) + this._collectAt(childId, path);   // 經過或停在神祕寶箱的格子就撿起來
     return path;
   };
 
@@ -768,7 +768,7 @@
         ev.minigame = { id: mg.id };
         ev.text = '今天的小遊戲還沒玩完，現在開始吧！';
       } else if (this._useBonus(childId, 'games')) {
-        // 再來 3 次：額外的小遊戲（不轉神秘寶箱）
+        // 再來 3 次：額外的小遊戲（不轉神祕寶箱）
         leaf = pickGame();
         mg = { id: uid(), childId: childId, date: this.today(), tile: tile.n, status: 'pending', bonus: true, caught: 0, stars: 0, ts: this.now().getTime() };
         if (leaf) mg.game = 'leaf';
@@ -776,12 +776,12 @@
         ev.minigame = { id: mg.id, bonus: true };
         ev.text = '🎮 再來 3 次：額外的小遊戲！' + (leaf ? '記住松果的位置再翻出來。' : '點星星收集能量星星。');
       } else {
-        // 今天的小遊戲次數用完 → 這次機會轉成神秘寶箱（下次冒險時出現在前方還沒走到的格子；還沒撿走的最多 2 個）
+        // 今天的小遊戲次數用完 → 這次機會轉成神祕寶箱（下次冒險時出現在前方還沒走到的格子；還沒撿走的最多 2 個）
         ev.minigameOverflow = true;
         if (this._addMapChest(childId, 'overflow')) {
           ev.overflowChest = true;
-          ev.text = '今天的小遊戲已經玩完了（每天 ' + lim + ' 次）。\n這次的機會變成了一個 🎁 神秘寶箱，下次冒險時會藏在你前方還沒走到的地方！';
-        } else ev.text = '今天的小遊戲已經玩完了（每天 ' + lim + ' 次），明天再來挑戰！\n（還有 2 個 🎁 神秘寶箱等你去撿，撿到後才會再變出新的）';
+          ev.text = '今天的小遊戲已經玩完了（每天 ' + lim + ' 次）。\n這次的機會變成了一個 🎁 神祕寶箱，下次冒險時會藏在你前方還沒走到的地方！';
+        } else ev.text = '今天的小遊戲已經玩完了（每天 ' + lim + ' 次），明天再來挑戰！\n（還有 2 個 🎁 神祕寶箱等你去撿，撿到後才會再變出新的）';
       }
       if (ev.minigame) ev.title = leaf ? '🎮 小遊戲：落葉找松果' : '🎮 小遊戲：抓住星星';
     } else if (tile.type === 'boundary') {
@@ -798,7 +798,7 @@
   };
 
   /**
-   * 島嶼通關：第一次＝神秘寶箱（免鑰匙；水島 3 個＝健忘怪贈送，其他島 1 個）（金島另得「金島通關」成就）；之後＝ +10 能量星星；
+   * 島嶼通關：第一次＝神祕寶箱（免鑰匙；水島 3 個＝健忘怪贈送，其他島 1 個）（金島另得「金島通關」成就）；之後＝ +10 能量星星；
    * 下一次移動前往下一座已開放的島（沒有就從起點開始新的一輪）
    */
   Store.prototype._clearIsland = function (childId, ev) {
@@ -810,7 +810,7 @@
     if (first) {
       p.bag.giftMysteryChest += gift; ev.items.giftMysteryChest = gift;
       this._logItem(childId, 'grant', 'giftMysteryChest', gift, bd.name + '通關', '第一次通關');
-      ev.text = '你走完' + bd.name + ' ' + (bd.tiles.length - 1) + ' 格' + (bd.goalName ? '，抵達' + bd.goalName : '') + '了！\n通關獎勵：🎁 神秘寶箱 ×' + gift + '（不用鑰匙）' + (isGold ? '＋ 🏅 成就「金島通關」' : '');
+      ev.text = '你走完' + bd.name + ' ' + (bd.tiles.length - 1) + ' 格' + (bd.goalName ? '，抵達' + bd.goalName : '') + '了！\n通關獎勵：🎁 神祕寶箱 ×' + gift + '（不用鑰匙）' + (isGold ? '＋ 🏅 成就「金島通關」' : '');
     } else {
       ev.stars = GOLD_CLEAR_STARS; this._ledger(childId, GOLD_CLEAR_STARS, bd.name + '通關（第 ' + count + ' 次）');
       ev.text = '第 ' + count + ' 次通關' + bd.name + '！通關獎勵：⭐' + GOLD_CLEAR_STARS + ' 能量星星';
@@ -825,7 +825,7 @@
     var p = this.getPlayer(childId), today = this.today();
     if (!p.dayStart || p.dayStart.date !== today) p.dayStart = { date: today, pos: p.pos };
   };
-  /** 今日小結：走了幾格、擲骰次數、能量星星、道具、小遊戲、特殊任務、神秘寶箱提示 */
+  /** 今日小結：走了幾格、擲骰次數、能量星星、道具、小遊戲、特殊任務、神祕寶箱提示 */
   Store.prototype.getDaySummary = function (childId, date) {
     date = date || this.today();
     var adv = this.data.adventure, p = this.getPlayer(childId);
@@ -908,7 +908,7 @@
       return storiesOf('wood').every(function (k) { return !!p.story[k]; }); } },
     { id: 'chest1', cat: 'collect', icon: '🧰', name: '第一個寶箱', desc: '開過第一個一般寶箱', check: function (s, c) { return s.getPlayer(c).stats.chests >= 1; } },
     { id: 'chests10', cat: 'collect', icon: '📦', name: '寶箱獵人', desc: '開過 10 個一般寶箱', check: function (s, c) { return s.getPlayer(c).stats.chests >= 10; } },
-    { id: 'mystery1', cat: 'collect', icon: '🎁', name: '一個大秘寶', desc: '打開第一個神秘寶箱', check: function (s, c) { return s.getPlayer(c).stats.mystery >= 1; } },
+    { id: 'mystery1', cat: 'collect', icon: '🎁', name: '一個大秘寶', desc: '打開第一個神祕寶箱', check: function (s, c) { return s.getPlayer(c).stats.mystery >= 1; } },
     { id: 'catch5', cat: 'collect', icon: '⭐', name: '星星捕手', desc: '「抓住星星」單局抓到 5 顆以上', check: function (s, c) { return bestCatch(s, c) >= 5; } },
     { id: 'catch10', cat: 'collect', icon: '🌟', name: '星海傳說', desc: '「抓住星星」單局抓到 20 顆以上', check: function (s, c) { return bestCatch(s, c) >= 20; } },   // 2026-11-08 由 10 顆改為 20 顆（代號沿用 catch10，保留既有紀錄）
     // 2026-11-08 家長新增：落葉找松果（小遊戲與松果躲躲，第 8 格劇情不算），徽章用遊戲裡的松果圖、松鼠圖
@@ -1140,7 +1140,7 @@
 
   /**
    * 暫時規則（第二區開放前）：在第 30 格木門時，下一次移動從起點開始新的一輪。
-   * 一般寶箱格重新放滿（磁鐵吸過的也恢復），神秘寶箱與背包不變。
+   * 一般寶箱格重新放滿（磁鐵吸過的也恢復），神祕寶箱與背包不變。
    */
   Store.prototype._newLap = function (childId) {
     var p = this.getPlayer(childId), tiles = this.getBoard(childId).tiles;
@@ -1306,7 +1306,7 @@
     pinecone: { island: 'wood', tile: 8, name: '撿回松果' }, flowers: { island: 'wood', tile: 40, name: '採花摘莓果' },
     invite: { island: 'wood', tile: 65, name: '派對邀請卡' }, party: { island: 'wood', tile: 92, name: '森林派對' },
     // 2026-11-16 水島「深海失落的寶藏」：6 個必要關卡（走到就停、剩下步數作廢，完成前不能往前）
-    memo: { island: 'water', tile: 8, name: '神秘藏寶圖', gate: true }, potion: { island: 'water', tile: 16, name: '漁夫的潛水藥水', gate: true },
+    memo: { island: 'water', tile: 8, name: '神祕藏寶圖', gate: true }, potion: { island: 'water', tile: 16, name: '漁夫的潛水藥水', gate: true },
     feed: { island: 'water', tile: 34, name: '餵小白鯨', gate: true }, shark: { island: 'water', tile: 48, name: '大鯊魚攔路', gate: true },
     lantern: { island: 'water', tile: 56, name: '燈籠魚找東西', gate: true }, blanket: { island: 'water', tile: 100, name: '健忘怪的小被被', gate: true }
   };
@@ -1423,7 +1423,7 @@
     this.save();
     return { pass: true, shield: true, stars: SHARK_SHIELD_STARS, first: first, pos: p.pos, found: this._found };
   };
-  /** 第 100 格：幫健忘怪找到小被被 → 完成關卡（⭐3）並通關（第一次 3 個神秘寶箱，之後 10 星） */
+  /** 第 100 格：幫健忘怪找到小被被 → 完成關卡（⭐3）並通關（第一次 3 個神祕寶箱，之後 10 星） */
   Store.prototype.finishWaterBoss = function (childId) {
     this._requirePlay(childId);
     if (this.waterTaskHere(childId) !== 'blanket') throw new Error('現在不在健忘怪的家');
@@ -1506,7 +1506,7 @@
     this._logItem(childId, 'use', 'luckyMedal', 1, '背包', '已啟用');
     this.save();
   };
-  /** 再來 3 次：今天額外 +3 次擲骰、+3 次小遊戲（今天沒用完就失效，不跨日、不轉神秘寶箱） */
+  /** 再來 3 次：今天額外 +3 次擲骰、+3 次小遊戲（今天沒用完就失效，不跨日、不轉神祕寶箱） */
   Store.prototype.activateBonusPlay = function (childId) {
     this._requirePlay(childId);
     var p = this.getPlayer(childId);

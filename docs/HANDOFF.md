@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-16｜App 版本 `2026.11.18-188`｜Service Worker 快取 `cgp-shell-v198`｜`main` 最新：飛行員阿翔、任務重置、派對自由擺放、對話半身大圖
+> 最後更新：2026-11-16｜App 版本 `2026.11.18-189`｜Service Worker 快取 `cgp-shell-v199`｜`main` 最新：飛行員阿翔、任務重置、派對自由擺放、對話半身大圖
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -15,7 +15,7 @@
 - 木島任務視窗預覽（不寫存檔、不給星星）：`?preview=party`（第 92 格布置派對）、`?preview=flowers`（第 40 格）、`?preview=invite`（第 65 格），例如 https://dollyswim.github.io/Child-good-point/?preview=party
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v198`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.18-188`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v199`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.18-189`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 146 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -55,7 +55,7 @@
 - **水島確認版計畫（2026-11-16）**：`docs/water/WATER_ISLAND_PLAN.md`（計畫）、`docs/water/CODEX_WATER_ISLAND_BRIEF.md`（美術提示詞）。下一步：家長確認 → Codex 交草圖與座標 → Claude 驗收。
 - **水島計畫審查（2026-11-16）**：Codex 草稿已審，結論與家長決定（4 張獨立場景、B 關卡統一鯊魚規則、沿用前兩島獎勵＋第一次 3 箱、通關後暫時回金島）見 `docs/water/WATER_PLAN_REVIEW.md`；等草稿 AI 修訂後再審一次。
 - **水島分工（2026-11-16 家長決定）**：另一個 AI 先寫水島總計畫草稿 → 交給 Claude 審查是否可執行 → 美術交給 Codex，其他部分（程式、整合、測試）由 Claude 處理。
-- 呼叫專機「飛到其他島」功能還沒做（`AIRPLANE_READY = false`，神秘寶箱暫不開出）。
+- 呼叫專機「飛到其他島」功能還沒做（`AIRPLANE_READY = false`，神祕寶箱暫不開出）。
 - 水島：由另一個 AI 製作，銜接規格見 `docs/WOOD_TO_WATER_HANDOFF.md`。
 - 分支 `wood_island_v2`、`wood_island_v2-1` 裡還有約 50MB 的審查大圖，沒有合併進 main；需要的檔案都已取出，家長可決定要不要刪分支。
 - 選做的圖：🏁／🔒／🔓（今日冒險狀態）、星星呼喚道具圖、神諭祝福標題圖；「星星捕手」「星海傳說」徽章可改銀色星星。
@@ -116,7 +116,7 @@
 
 ### 2026-11-17：水島程式完成（預設未開放 `WATER_OPEN = false`）
 - 計畫：`docs/water/WATER_ISLAND_PLAN.md`；美術：`docs/water/CODEX_WATER_ISLAND_BRIEF.md`；驗收紀錄：`docs/water/WATER_A_REVIEW.md`。四張正式地圖已接入（`images/water/scene01_v2/02_v2/03/04.webp`），座標 `data/water/water_scene0N_tiles_final.json` → `tools/gen_board_water.py` → `js/board-water.js`。
-- 資料層（`js/game.js`）：`buildWater()`（4 場景、`board.scenes = true`、格子類型 `WATER_TYPES`）；水島 6 關 `STORIES`（memo 8、potion 16、feed 34、shark 48、lantern 56、blanket 100）＋`waterGate()`（走到未完成關卡就停、餘步作廢，`_advance` 共用）、`waterTaskHere()`（停在關卡上不能前進）；`sharkTry()`（免費 d12，11／12 過關只到 49）、`sharkShield()`（防護罩＋10 星）；`finishWaterBoss()`＋`_clearIsland()`（第一次 3 個免鑰匙神秘寶箱，之後 10 星）；`belugaRide()`（每天 `limits.beluga` 次）、`useSubmarine()`（寶物 `submarine` 200 點、持有 3、`limits.sub`、25～99、不能跳過關卡）；水島不能用溜冰鞋、飛行翼、傳送門；`players[id].water`（seen、bucket、bottle、welcomed、rulesSeen、bossStage，`migrate()` 已補）；成就 `waterClear1`、商店潛水艇只在水島開放時出現。
+- 資料層（`js/game.js`）：`buildWater()`（4 場景、`board.scenes = true`、格子類型 `WATER_TYPES`）；水島 6 關 `STORIES`（memo 8、potion 16、feed 34、shark 48、lantern 56、blanket 100）＋`waterGate()`（走到未完成關卡就停、餘步作廢，`_advance` 共用）、`waterTaskHere()`（停在關卡上不能前進）；`sharkTry()`（免費 d12，11／12 過關只到 49）、`sharkShield()`（防護罩＋10 星）；`finishWaterBoss()`＋`_clearIsland()`（第一次 3 個免鑰匙神祕寶箱，之後 10 星）；`belugaRide()`（每天 `limits.beluga` 次）、`useSubmarine()`（寶物 `submarine` 200 點、持有 3、`limits.sub`、25～99、不能跳過關卡）；水島不能用溜冰鞋、飛行翼、傳送門；`players[id].water`（seen、bucket、bottle、welcomed、rulesSeen、bossStage，`migrate()` 已補）；成就 `waterClear1`、商店潛水艇只在水島開放時出現。
 - 畫面（`js/app.js`）：多場景地圖（`renderMap` 只顯示一個場景、`hopAlong` 跨場景 `switchScene()` 淡出淡入、`ui.pawnHold` 移動演出中的位置、`ui.sceneView` ◀ ▶ 瀏覽）；水島劇情區塊（`WATER_ART`、`talkSeq()`、`WATER_NOTES` 12 段沿路對話、`waterWelcome()` 漁夫迎接、`waterTask()` 六關、`waterOpening()`／`waterLeave()`／`waterEnding()` 過場）。正式插圖到貨後填 `WATER_ART` 的檔名即可。
 - 預覽（不寫存檔）：`?preview=water-memo`、`water-potion`、`water-feed`、`water-shark`、`water-lantern`、`water-boss`、`water-open`。測試或家長試玩整個水島：在瀏覽器主控台設 `window.__cgpWaterOpen = true` 再重新載入（正式開放改 `WATER_OPEN = true`）。
 - 測試：單元 +8（154 項）；E2E 新增「水島」整段（入島 → 迎接 → 第 8 格拼圖 → 鯊魚 → 燈籠魚 → 健忘怪三階段 → 3 箱 → 回金島），用 `water: true` 開啟。
@@ -148,7 +148,7 @@
   - 成就「木島通關」（`woodClear1`，`islandClears.wood >= 1`，成就共 28 項；家長 2026-11-12 決定新增）：第一次通關木島解鎖，「木島冒險完成！」畫面上方顯示它的徽章，卡片已列出所以不另外跳成就劇場。徽章 2026-11-13 換上家長提供的專屬圖 `images/badges/badge_woodClear1v2.webp`（樹洞＋燈串＋小紅旗，綠框；只去除與外框相連的白底，256×256；`BADGE_IMG.woodClear1` 另外指定檔名）。
 - **木島已開放（2026-11-13 家長決定）**：`js/game.js` 的 `WOOD_OPEN = true`。金島通關後下一次出發到木島；水島還沒做，木島通關後回到金島。金島小遊戲回到只有抓住星星（落葉找松果在木島玩）。
   - 測試：單元測試檔載入後先 `delete G.BOARDS.wood`，舊測試維持「只有金島」前提；E2E 預設注入 `__cgpWoodClosed`，木島測試傳 `wood: true`。
-  - 呼叫專機「飛到其他島」的功能還沒做（`AIRPLANE_READY = false`），做好之前神秘寶箱不開出。
+  - 呼叫專機「飛到其他島」的功能還沒做（`AIRPLANE_READY = false`），做好之前神祕寶箱不開出。
 - 傳送門不能跳過還沒完成的任務格（2026-11-12 家長決定，所有島都適用）：`store.doorLimit(childId)` 回傳前方第一個未完成的劇情任務，`useDoor()` 目的地超過它就擋下（不扣道具）；剛好傳到任務格可以，會觸發任務；往回傳送不受限。地圖點格子時 `pickDoorAt()` 先提示。
 - 成就劇場（2026-11-12 家長決定）：拿掉「查看我的成就收藏」按鈕（在地圖上跳出時按了會離開冒險畫面），只留「繼續冒險」，下方加一行說明「之後可以在「小孩」頁的「🏆 全部成就」看到」。
 - 第一次開啟再加速＋新增孩子後的引導（2026-11-10）：
@@ -171,9 +171,9 @@
   - 旗標 `flags.tourSeen`、`flags.tipsDone`（`store.setFlag()`）；新安裝為 false，舊存檔（已有孩子）migrate 時設為 true，所以現有使用者不受影響。E2E 預設注入 `__cgpNoOnboard`，專門測試傳 `onboard: true`。
 - 金島收尾（2026-11-09）：
   - 第一次安裝少下載約 1.3MB：木島／水島／火島／土島大廳插圖、木島森林派對與小精靈圖移出 `SHELL`（第一次用到才下載）；落葉找松果圖金島也用，保留。
-  - 其他島還沒開放時，神秘寶箱不開出呼叫專機（`_rollMysteryChest` 排除 airplane，其餘 6 種依原權重比例分配；已拿到的保留）。
+  - 其他島還沒開放時，神祕寶箱不開出呼叫專機（`_rollMysteryChest` 排除 airplane，其餘 6 種依原權重比例分配；已拿到的保留）。
   - 背包開寶箱、寶物磁鐵改用冒險事件的卡片式視窗（`showReward` → `eventPopup(sub, cards, { title })`），舊的 `rewardPopup` 與 `.rw` 樣式已移除。
-  - 家長確認維持預設：神秘寶箱 7 種道具機率（溜冰鞋、神奇骰子、好運金牌、防護罩各 18%，飛行翼、傳送門各 12%，呼叫專機 4%）、好運金牌只加倍能量星星。
+  - 家長確認維持預設：神祕寶箱 7 種道具機率（溜冰鞋、神奇骰子、好運金牌、防護罩各 18%，飛行翼、傳送門各 12%，呼叫專機 4%）、好運金牌只加倍能量星星。
 - 本週挑戰卡片：進行中的挑戰圖示從 🏆 換成家長提供的任務卷軸圖（`images/challenge_scroll.webp`，去雜點、裁切、256×256，顯示 44px）；已領取換成獎章圖（`images/challenge_medal.webp`）；已達成還沒領取換成打勾卷軸圖（`images/challenge_done.webp`）。三種狀態都是家長提供的圖。
 - 分頁標題木牌換成家長圖（`images/plaque/`，`js/app.js` 的 `PLAQUE_IMG`）：六頁都已換上（親子集點冒險＝首頁、小孩、本週挑戰、獎勵兌換、記分總覽、冒險大廳）；之後新增頁面沒有圖時照舊用 CSS 木牌。首頁木牌已換成含星星與副標題橫幅的新版（`images/plaque/home2.webp`，寬 720；`PLAQUE_WITH_SUB` 標記的頁面不再疊程式畫的副標題）。圖片處理：去掉小於 400px 的零星雜點、裁到圖案、寬 840 WebP；標題文字放在讀屏用的隱藏文字。
 - 「全部成就」卡片：固定三欄、徽章放大為卡片主角（可見直徑約卡片寬 56～58%）；點卡片開「我的成就」查看視窗（同成就劇場版型、徽章約 210px、無煙火音效）。
@@ -191,7 +191,7 @@
 - 孩子的代表圖示選項改成家長指定的 14 個（2026-11-09，`js/app.js` 的 `BADGES`）：🐱🦊🐳🐰🏰🦄🌌🌈🚀🦋🌸⚽️🦖🐠；已經選過舊圖示的孩子照常顯示，編輯時舊圖示會放在選項最前面保留。
 - 首頁拿掉「小孩、本週挑戰、獎勵兌換、記分總覽」四個磚塊（2026-11-09 家長決定，和底部功能列重複）；只給磚塊用的「要看誰的？」選孩子視窗（pickChild）一起移除。
 - 底部導覽列換成家長素材（2026-11-09）：`images/nav/`（木製功能列背景＋五張透明圖示），`bottomNav()` 用 `<img>` 顯示圖示、文字與通知數字由 HTML 顯示；木板用 CSS `border-image` 九宮格（兩端各 125px 等比例、中段橫向延伸），高 84px、離底 2px；後面有一層從透明漸變成頁面底色的淡出層（`::after`，不用模糊濾鏡），木板四周與下方不透出文字；「撤銷上一筆」圖層在功能列之上；選取中為 CSS 奶油金圓角底板；「小孩」右上角通知數字＝首頁「小孩」磚塊同一份資料（今天還能完成的任務數）。原始木板 PNG 2172×724 裁掉透明邊、縮成 1080×206 WebP（35KB）。五張圖示（`nav_*2.webp`）已去掉邊緣雜點、裁到圖案本身並置中，依最長邊與實際面積調成視覺一樣大（工具 scratchpad 的 navicons.py 做法：小於 150px 的獨立區塊視為雜點）。
-- 一般冒險事件視窗改版（2026-11-09 家長指定）：`js/app.js` 的 `eventCards()`（把事件與沿路撿到的神秘寶箱整理成卡片，文字沿用事件原文）＋ `eventPopup()`（主標題依類型：冒險新發現／遇到小麻煩／命運卡出現／成功前進；移動結果；主圖；卡片獎勵奶油黃、命運淡紫、路障珊瑚橘、其他天藍；「繼續冒險！」）。多個事件（含礦車連鎖 then）合併在同一個視窗。擲骰後只拿到獎勵也改用這個視窗（每樣獎勵一張奶油黃卡、好運金牌註明，原本的 `rollReward` 已移除）；`rewardPopup` 只剩背包開寶箱、寶物磁鐵使用；一般移動仍是小提示不跳視窗；區域終點標題「抵達區域終點！」（金島四區全開放，目前不會出現）；成就與通關視窗不變。素材白底：放白色圓角卡。
+- 一般冒險事件視窗改版（2026-11-09 家長指定）：`js/app.js` 的 `eventCards()`（把事件與沿路撿到的神祕寶箱整理成卡片，文字沿用事件原文）＋ `eventPopup()`（主標題依類型：冒險新發現／遇到小麻煩／命運卡出現／成功前進；移動結果；主圖；卡片獎勵奶油黃、命運淡紫、路障珊瑚橘、其他天藍；「繼續冒險！」）。多個事件（含礦車連鎖 then）合併在同一個視窗。擲骰後只拿到獎勵也改用這個視窗（每樣獎勵一張奶油黃卡、好運金牌註明，原本的 `rollReward` 已移除）；`rewardPopup` 只剩背包開寶箱、寶物磁鐵使用；一般移動仍是小提示不跳視窗；區域終點標題「抵達區域終點！」（金島四區全開放，目前不會出現）；成就與通關視窗不變。素材白底：放白色圓角卡。
 - 全站字體（2026-11-09 家長指定）：jf open 粉圓 2.0（SIL OFL 1.1），原版 TTF 直接轉 WOFF2 放 `fonts/`（約 2MB，字形未改；授權全文 `fonts/LICENSE-jf-openhuninn.txt`，再散布必須附上）；`@font-face` 加 `font-display: swap`，index.html 預先載入；字型和圖片一樣放在獨立快取 `cgp-img-v1`，只下載一次。只有一個字重，粗體由瀏覽器加粗。
 - 效能優化（2026-11-09）：`sw.js` 圖片改放獨立快取 `cgp-img-v1`（先用快取、背景確認新圖），升版只重抓程式與頁面（約 600KB，原本每次約 4.5MB）；安裝時已有的圖從舊快取搬過來；程式檔安裝改用 `cache: reload`，避免把瀏覽器暫存的舊程式存進新版。金島 4 張背景 WebP 品質 78 重壓（約 400KB → 200KB）。E2E 新增離線快取測試。CSS 派對區段已合併；全檔仍有約 140 個重複選擇器（多數在 media query 內），之後有空再整理。
 - 木島地圖 Gemini 第 1 版已驗收（2026-11-09，家長決定改請 Codex 週五重畫，不再請 Gemini 修）：格距與道路接縫通過；退回重畫：缺第 1～3 區原尺寸圖、接縫兩側樹木疊影對不上、第 93～99 格不在路上、第 65／92 格站位壓到路或欄杆。清單見 `docs/art/WOOD_MAP_REVIEW_2026-11-09.md`。
@@ -215,7 +215,7 @@
 - 家長構想：「配對翻牌」記憶玩法之後可當其他島的小遊戲。
 - 金島小遊戲（木島上線前）：各 1/2 機率抓住星星或落葉找松果（`GOLD_LEAF_CHANCE`），木島上線後金島回到抓住星星；E2E 預設注入 `window.__cgpGoldGame = 'stars'` 固定金島玩法，落葉找松果專門測試傳 `goldGame: 'leaf'`。
 - 出發後才拿到的加分（家長決定）：某天進入冒險（已結算）之後才記的加分（例如冒險中抽到特殊任務當天完成、晚上才記的加分、每日任務），留到下一次進入冒險時併入淨得分一起換星星（`settlements[].lateIds／latePoints`）；扣分留在當天不往後帶；解鎖仍只看當天淨得分 > 0；家長「重新結算今天」補發過的不再併入；只算 2026-11-07 以後的紀錄（`LATE_CARRY_FROM`）。畫面不另外顯示，直接併入星星。
-- 獲得獎勵彈窗改版（家長參考圖）：`rewardPopup` 一個元件，一般版（奶油白、暖橘、金黃）／稀有版（深紫、淺紫、金黃）同版型、只換 `.rw` 的 CSS 變數；版面：獎勵標籤 → 主標題 → 主獎勵卡（現有道具圖、名稱 ×數量、說明）→ 額外獎勵（沒有就不顯示）→「收下戰利品！」→ 骰子與停留格數。用在擲骰停在寶箱／機會格拿到東西、沿路撿到神秘寶箱、背包開寶箱、寶物磁鐵；命運卡、特殊任務等其他事件仍用文字說明。稀有：神秘寶箱、好運金牌加倍、神秘寶箱類道具。獎勵在顯示前已發放，按鈕只關閉視窗。無動畫、無 backdrop-filter。
+- 獲得獎勵彈窗改版（家長參考圖）：`rewardPopup` 一個元件，一般版（奶油白、暖橘、金黃）／稀有版（深紫、淺紫、金黃）同版型、只換 `.rw` 的 CSS 變數；版面：獎勵標籤 → 主標題 → 主獎勵卡（現有道具圖、名稱 ×數量、說明）→ 額外獎勵（沒有就不顯示）→「收下戰利品！」→ 骰子與停留格數。用在擲骰停在寶箱／機會格拿到東西、沿路撿到神祕寶箱、背包開寶箱、寶物磁鐵；命運卡、特殊任務等其他事件仍用文字說明。稀有：神祕寶箱、好運金牌加倍、神祕寶箱類道具。獎勵在顯示前已發放，按鈕只關閉視窗。無動畫、無 backdrop-filter。
 - 木島機會卡／命運卡：效果與機率不變，只換森林主題文字（藤蔓「抓住！」、發光蘑菇、青苔滑回去、森林路障）；`js/game.js` 的 `CARD_TEXT`、`js/app.js` 的 `CART_UI`，詳見 `docs/art/WOOD_ISLAND_PLAN.md`。
 
 ## 2. 目前完成的功能
@@ -228,7 +228,7 @@
 | Phase 2 | 今日淨得分 > 0 解鎖、進入冒險時結算 `ceil(淨得分/5)`＋額外星星、一天一次、冒險大廳 | ✅ |
 | Phase 3 | 星星商店、背包、每日 3 次骰子、逐格移動、寶箱／機會／小遊戲占位格、8 種冒險夥伴（家長原創） | ✅ |
 | 金島 100 格 | 長地圖四區（黃金礦港、水晶礦谷、齒輪工坊、金冠城堡）全部開放，穩定格子 ID、第 100 格全島終點與通關慶祝 | ✅ |
-| Phase 4 | 命運格與特殊任務、小遊戲「抓住星星」、寶物商店（10 種道具）、神秘寶箱＋黃金鑰匙＋寶物磁鐵、里程碑、媽媽加碼（神諭祝福） | ✅ |
+| Phase 4 | 命運格與特殊任務、小遊戲「抓住星星」、寶物商店（10 種道具）、神祕寶箱＋黃金鑰匙＋寶物磁鐵、里程碑、媽媽加碼（神諭祝福） | ✅ |
 | Phase 5 | 結束今日冒險＋今日小結、成就 27 項、家長密碼、自動備份與備份提醒、重新結算今天 | ✅ |
 | 金島劇情 | 能源主塔與技師、技師導遊、礦工求助、礦車轉轍、成就「金島小英雄」 | ✅ |
 | 待做 | 成就徽章正式圖（等 Codex）；木島（規劃 `docs/art/WOOD_ISLAND_PLAN.md`，等 Codex 全島配置草圖） | ⬜ |
@@ -273,9 +273,9 @@
 - 冒險大廳簡化：移除背包區與四個快速入口（與底部導覽重複）；結算紀錄放進綠底「今日已結算」卡內，點了才展開。背包道具（含寶箱開箱、黃金鑰匙）統一在地圖下方的「🎒 背包道具」列。
 - 星光成就劇場（2026-11-07）：新成就不再用綠色提示，改為全螢幕演出（`showAchTheater()`）：背景漸暗、金色光柱、主徽章彈跳登場、星星彩帶愛心、Web Audio 合成音效（音效開關記在 `localStorage` 的 `cgp-ach-sound`）。多個成就一次演出：「哇！一次解鎖 N 個成就！」，主徽章取最高階（`ACH_RANK`、分數金牌依分數），其他小徽章橫向排列可點選。按「查看我的成就收藏」到小孩頁面並標出新成就（`.is-new`），「繼續冒險」、返回鍵、Esc 都能關閉；其他視窗開著時排隊等候；減少動態效果時直接顯示最後畫面。成就在演出前就已存檔，動畫中斷不會重複或遺失。徽章正式圖到貨後放 `images/badges/`，在 `BADGE_IMG` 依代號加入即可（目前用程式畫的類別色徽章）。自動測試的其他流程以 `window.__cgpNoTheater` 改回文字提示。
 - 加分・扣分版面（2026-11-07）：單欄條列（`.score-list`，名稱靠左可換行、分數標籤固定靠右）；不再插入「+2　2 項」分數分類標題（排序不變）；加分／扣分切換不顯示項目數；分數篩選 48×48 正圓形可橫向捲動；撤銷列精簡為一行。樣式都在 `.scorer` 範圍內，不影響紀錄頁的同名按鈕。
-- 換島機制（2026-11-07，木島地圖到貨前先完成）：`ISLAND_ORDER` 金 → 木 → 水 → 火 → 土 → 金；島嶼地圖用 `registerBoard(id, board)` 加入 `BOARDS` 才算開放（board 需有 name、goalName、world、regions、tiles）。停在全島終點的下一次移動：有下一座已開放的島就前往該島起點（`_startNext`，回傳 `travel`），否則從起點開始新的一輪。各島進度存 `players[id].islands[島] = { laps, maxReached }`，金島以外的通關次數存 `islandClears`；金島區域成就固定看金島進度（`goldMax`）。通關獎勵各島相同（第一次神秘寶箱、之後 +10 星），「金島通關」成就只限金島。
+- 換島機制（2026-11-07，木島地圖到貨前先完成）：`ISLAND_ORDER` 金 → 木 → 水 → 火 → 土 → 金；島嶼地圖用 `registerBoard(id, board)` 加入 `BOARDS` 才算開放（board 需有 name、goalName、world、regions、tiles）。停在全島終點的下一次移動：有下一座已開放的島就前往該島起點（`_startNext`，回傳 `travel`），否則從起點開始新的一輪。各島進度存 `players[id].islands[島] = { laps, maxReached }`，金島以外的通關次數存 `islandClears`；金島區域成就固定看金島進度（`goldMax`）。通關獎勵各島相同（第一次神祕寶箱、之後 +10 星），「金島通關」成就只限金島。
 - 封存舊紀錄（2026-11-07，設定 → 備份，需家長密碼）：封存日期早於家長選的日子的**生活紀錄與冒險紀錄**（`getArchivePlan`：records、settlements、ledger、rolls、minigames、bonusQuota、dayEnds、itemLog、看過的 blessings）。預設保留最近 6 個月；本週與本月不能封存；還沒發放的額外星星紀錄、封存日前 7 天的結算（連續 7 天）、未看過的媽媽加碼、進行中的小遊戲不封存；冒險位置、背包、地圖寶箱不動。先下載封存檔 `child-points-archive-before-日期.json`，再移除；總和記入 `data.carry[孩子] = { total, earned, special, stars, bestCatch, settled, count, advCount, until }`，點數、等級、累計得分、能量星星、所有成就條件都加上結轉，完全不變。
-- 角色動畫（2026-11-07，Codex character-animation-pack-1 移植，原包說明 `docs/art/CODEX_CHARACTER_ANIMATION_README.md`）：地圖角色五種動作（`pawnIdle`、`pawnPlay('jump'|'happy'|'surprised'|'openChest')`），Web Animations API 作用在 `.pawn-inner`，特效放 `.pawn-fx`；依角色 `PAWN_PROFILE` 調整節奏與跳高。未直接引入原套件：其 `.pawn` 樣式名與 App 衝突、寶箱貼紙圖 2MB，改用現有 `images/chest.webp` 與角色圖。觸發：停著＝待機；每格＝跳格；寶箱格／背包開箱＝開寶箱；命運格、往回退、撿到神秘寶箱＝驚訝；機會格、全島終點＝開心。動畫在資料寫入之後播放；減少動態效果時不播。
+- 角色動畫（2026-11-07，Codex character-animation-pack-1 移植，原包說明 `docs/art/CODEX_CHARACTER_ANIMATION_README.md`）：地圖角色五種動作（`pawnIdle`、`pawnPlay('jump'|'happy'|'surprised'|'openChest')`），Web Animations API 作用在 `.pawn-inner`，特效放 `.pawn-fx`；依角色 `PAWN_PROFILE` 調整節奏與跳高。未直接引入原套件：其 `.pawn` 樣式名與 App 衝突、寶箱貼紙圖 2MB，改用現有 `images/chest.webp` 與角色圖。觸發：停著＝待機；每格＝跳格；寶箱格／背包開箱＝開寶箱；命運格、往回退、撿到神祕寶箱＝驚訝；機會格、全島終點＝開心。動畫在資料寫入之後播放；減少動態效果時不播。
 - 頭像就代表孩子（2026-11-08 家長決定）：介面不再顯示角色名稱（石球獸等）。設定的頭像欄位標題為「頭像」、選項只有圖；冒險大廳夥伴標籤顯示孩子名字；更換視窗標題「更換 X 的頭像」；通關畫面「X 抵達了…」。角色名稱只保留在 aria-label 給讀屏。
 - 匯出目前規則表（2026-11-08，設定 → 備份 → 匯入規則表卡片）：`CGPCsv.rulesToCSV(items, children)`，欄位與匯入相同（規則ID、規則類型、適用對象、任務或行為、點數變動、計算頻率、額外獎勵），UTF-8 BOM；規則ID＝`sourceId` 或內部 id，再匯入時更新同一條、不會重複。獎勵（兌換項目）不在規則表內。
 - 能源主塔與技師（2026-11-08 上線）：圖由家長用 Gemini 製作（白底 JPG），Claude 去背（和外框相連的白底＋家長要求去除的大塊封閉空隙，如管子圈圈、技師兩腿間；眼白、牙齒、反光等小白色保留；地面影子轉半透明）；**通電版由程式從未通電圖產生**（只把核心水晶與三個燈泡改成金黃、加半透明光暈），兩張保證對齊。檔案 `images/gold/tower_off.webp`、`tower_on.webp`、`technician.webp`。地圖 `towerDecor()`：主塔腳底 (850, 1625)、寬 180；技師 (752, 1632)、寬 54。金島最遠格子 ≥ 80 就通電（`goldMaxOf`）；經過第 80 格那一次：鏡頭移到主塔 → 閃光亮起（`towerPowerOn`）→ 技師自動說台詞約 3.6 秒 → 鏡頭回到角色；演出期間 `pawn-acting`、骰子暫停。點技師：地圖觸控在 `setupMap` 的放開判斷（地圖接管觸控，click 不會傳到技師），泡泡放在地圖視窗上不跟著縮放。
@@ -284,7 +284,7 @@
 - 金島劇情（2026-11-08 家長決定）：技師當導遊，劇情未完成時在格子旁站著、頭上閃「！」，點他會說要去哪一格。①第 5 格「礦工求助」：鏡頭移過去 → 技師說明 → 孩子點地圖上 5 顆發光礦石；②第 30 格「礦車轉轍」：按「拉下轉轍器」→ 礦車開往水晶礦谷；③能源主塔充電也算一個劇情。每個第一次完成給 ⭐3（`store.completeStory`，記在 `players[id].story = {ore, rail, tower: 日期}`，帳本「劇情：…」），三個都完成解鎖成就「金島小英雄」（`goldHero`，舊存檔金島最遠 ≥ 80 視同主塔已完成）。第 55 格「工廠起動」家長說和能源塔重複，不做。位置與台詞在 `js/app.js` 的 `ISLAND_STORY.gold`，流程 `runStory`；經過（不只停在）該格就觸發，換島移動不觸發。
 - 島嶼劇情通用架構（2026-11-08）：`ISLAND_STORY[島] = { rel, guide, spots }`，互動 `type` 有 collect（撿東西）、press（按按鈕＋effect cart／bridge）、charge（連點 10 下，共用 `chargeTower(opts)`）；`rel: true` 時座標是相對任務格子的位移。完成紀錄都在 `players[id].story`（代號各島不重複），清單與格號在 `js/game.js` 的 `STORIES`（含 `island`），`storiesOf(島)` 取某島劇情。木島 4 個任務見 `docs/art/WOOD_ISLAND_PLAN.md` 第 6 節（`pinecone` 是 `type: 'leaf'`：全螢幕落葉找松果）。
 - 小遊戲依島嶼切換（`GAME.minigameOf(島)`：wood＝leaf，其他＝stars）：停在小遊戲格時小遊戲紀錄記 `game: 'leaf'`（migrate 保留），`finishMinigame` 依 game 換算星星（`GAME.leafStars`、帳本「小遊戲：落葉找松果」）；`openMinigame` 遇到 leaf 轉給 `openLeafMinigame`，遊戲本體 `leafGame(o)`（劇情與計分共用）。規則數值在 `js/game.js` 的 `LEAF_GAME`。四個都完成解鎖「木島小英雄」（`woodHero`）。成就共 27 個（Codex 徽章 26 張；「松果躲貓貓」「怎麼都是松鼠」用遊戲圖，不用另畫）。
-- 神諭祝福收回（2026-11-08 家長決定）：設定 → 神諭祝福 → 最近發送紀錄，**當天**送出的每筆有「收回」按鈕（要家長密碼，`store.revokeBlessing(id)`）。只收回還沒用掉的：道具從背包扣（神秘寶箱扣 `giftMysteryChest`），幸運星扣星星但不讓星星變負數（帳本「收回神諭祝福：幸運星」）；已打開的寶箱、已花掉的星星不追討。默默收回：設 `seen = true`，孩子沒打開過的領取畫面不再出現，不另外提示。紀錄存在 `blessings[].revoked = {ts, taken, total}`，道具紀錄的那筆「取得」改成實際留下的份數（全收回就刪除）。
+- 神諭祝福收回（2026-11-08 家長決定）：設定 → 神諭祝福 → 最近發送紀錄，**當天**送出的每筆有「收回」按鈕（要家長密碼，`store.revokeBlessing(id)`）。只收回還沒用掉的：道具從背包扣（神祕寶箱扣 `giftMysteryChest`），幸運星扣星星但不讓星星變負數（帳本「收回神諭祝福：幸運星」）；已打開的寶箱、已花掉的星星不追討。默默收回：設 `seen = true`，孩子沒打開過的領取畫面不再出現，不另外提示。紀錄存在 `blessings[].revoked = {ts, taken, total}`，道具紀錄的那筆「取得」改成實際留下的份數（全收回就刪除）。
 - 自動備份上限：每日 7 份＋「還原前的狀態」1 份，超過自動刪最舊；設定 → 備份 → 還原資料 每份都可「刪除」（`store.deleteSnapshot(id)`，需家長密碼，不影響目前資料）。
 - 孩子 4 位以上：頁首切換列改為每排 3 位（`.kid-switch.many`，名字過長分兩行）；3 位以下維持一排。設定頁 7 個分頁改為每排 4 個自動換行，不用左右滑。
 - 新增孩子（2026-11-07）：首頁只在還沒有孩子時顯示；有孩子後改在小孩頁面設定城堡正下方（小圖示＋文字，`.add-kid`，`alignHeroLinks()` 對齊城堡中心）；設定 → 孩子也可新增。
@@ -312,7 +312,7 @@
 - 成就 23 項（冒險 5、收集 5、生活 13；2026-11-07 加「冒險開始」advStart：第一次進入今日冒險），2026-11-07 家長定稿（`docs/art/achievement_badges.csv`），定義在 `js/game.js` 的 `ACHIEVEMENTS`；外框顏色依類別：冒險綠、收集紫、生活金。紀錄 `data.achievements[childId][成就代號] = { date, ts }`，冒險、收集類達成後不會消失；**依生活紀錄計算的成就（獲得 N 分、特殊任務）標 `revocable`**：撤銷、取消勾選、刪除、修改紀錄後條件不成立就收回（`revokeAchievements`、`store.lastRevoked`），操作前用 `achievementLossIfChanged()` 預覽並提醒家長，再次達成可重新獲得；舊版的 goldClear3、goldClear5 已移除（舊紀錄留在存檔中但不顯示）。每次畫孩子相關頁面前 `store.checkAchievements()`，新達成的顯示提示。徽章先用表情符號，正式圖規格見 `docs/art/CODEX_ACHIEVEMENT_BADGES_BRIEF.md`。
 - 成就介面（2026-11-07 家長決定）：首頁「🏆 最近得到的成就」在本週進度上方，每位孩子一列、最近 3 個（沒有成就的孩子不顯示）；點一列進小孩頁面並展開「全部成就」（在最近紀錄上方，平常收起；摺疊時顯示最近得到的一個，展開只列已得到的成就）。冒險大廳不再顯示成就。底部導覽「任務」與頁面標題「今日任務」改為「小孩」（任務清單區塊仍叫「常用・今日任務」）。
 - 角色統計：`players[id].goldClears`（通關次數）、`maxReached`（最遠格子）、`stats.chests／mystery`（開過的寶箱數）。
-- 金島通關（第 100 格 `type: 'end'`）：第一次＝神秘寶箱 ×1（免鑰匙，`giftMysteryChest`）＋成就「金島通關」；之後每次 ＋10 能量星星；全螢幕慶祝畫面；下一次移動從起點開始新的一輪。已可實際走到第 100 格（E2E 從第 97 格擲骰走到終點驗證）。
+- 金島通關（第 100 格 `type: 'end'`）：第一次＝神祕寶箱 ×1（免鑰匙，`giftMysteryChest`）＋成就「金島通關」；之後每次 ＋10 能量星星；全螢幕慶祝畫面；下一次移動從起點開始新的一輪。已可實際走到第 100 格（E2E 從第 97 格擲骰走到終點驗證）。
 
 ### 備份提醒
 - `data.backup`：`lastExportAt`（最後匯出）、`since`（開始計算）、`snoozeUntil`（明天再提醒）。滿 7 天沒匯出 JSON 時首頁顯示提醒，「立即匯出」不需家長密碼（匯出不改資料）。

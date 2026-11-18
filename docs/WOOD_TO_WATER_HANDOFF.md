@@ -1,6 +1,6 @@
 # 木島 → 水島 銜接文件（WOOD_TO_WATER_HANDOFF）
 
-> 2026-11-12 建立，**2026-11-16 更新**（目前版本 `2026.11.18-188`、快取 `cgp-shell-v198`）。
+> 2026-11-12 建立，**2026-11-16 更新**（目前版本 `2026.11.18-189`、快取 `cgp-shell-v199`）。
 > 水島確認版計畫：`docs/water/WATER_ISLAND_PLAN.md`；美術提示詞：`docs/water/CODEX_WATER_ISLAND_BRIEF.md`。
 > 水島計畫審查與家長決定：`docs/water/WATER_PLAN_REVIEW.md`（以它為準）。
 > 水島分工：另一個 AI 先寫水島總計畫草稿 → Claude 審查是否可執行 → 美術交給 Codex，其他部分由 Claude 處理。
@@ -24,7 +24,7 @@
 - 位置：`store.getPlayer(childId)`（`data.adventure.players[childId]`）。
 - 欄位：`islandClears.wood`（整數，木島通關次數）。金島沿用舊欄位 `goldClears`。水島請用 `islandClears.water`（同一段程式自動處理，不用新增欄位）。
 - 寫入時機：`js/game.js` 的 `_resolveTile()` 停在 `end` 格時，**在演出開始前**就寫入並發獎勵：
-  - 第 1 次：神秘寶箱 ×1（免鑰匙，`bag.giftMysteryChest`）。
+  - 第 1 次：神祕寶箱 ×1（免鑰匙，`bag.giftMysteryChest`）。
   - 第 2 次起：能量星星 +10（`GOLD_CLEAR_STARS`）。
 - 動畫中途關掉、重新整理都不會重複或漏發；重新進入後孩子停在第 100 格，下一次移動就前往下一座島。
 - 成就「木島通關」（`woodClear1`）：`islandClears.wood >= 1` 時解鎖，顯示在木島完成卡片上。成就共 28 項。

@@ -189,7 +189,7 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 
 | 代號 | 用在 | 提示詞 |
 |---|---|---|
-| D-1 | 第 8 格「神秘藏寶圖」 | `A hand-drawn memo map on old cream paper, drawn by a clumsy cute monster with crayon-like lines: a cute sunken ship, a big yellow star, wobbly arrows, three simple box outlines side by side, and a small pillow drawing in a corner. The star is not on any box and not connected to any box. Leave a blank strip at the bottom for text. Flat top-down view of the paper filling the frame, no letters` 中文：奶油色舊紙上的手繪備忘圖（蠟筆風、歪歪扭扭）：沉船、大黃星星、歪箭頭、三個並排的箱子輪廓、角落一個小枕頭。**星星不能畫在箱子上或連到箱子**；下方留空白給 App 寫字。紙張正面俯視、畫滿整張（App 會切成 20 片） |
+| D-1 | 第 8 格「神祕藏寶圖」 | `A hand-drawn memo map on old cream paper, drawn by a clumsy cute monster with crayon-like lines: a cute sunken ship, a big yellow star, wobbly arrows, three simple box outlines side by side, and a small pillow drawing in a corner. The star is not on any box and not connected to any box. Leave a blank strip at the bottom for text. Flat top-down view of the paper filling the frame, no letters` 中文：奶油色舊紙上的手繪備忘圖（蠟筆風、歪歪扭扭）：沉船、大黃星星、歪箭頭、三個並排的箱子輪廓、角落一個小枕頭。**星星不能畫在箱子上或連到箱子**；下方留空白給 App 寫字。紙張正面俯視、畫滿整張（App 會切成 20 片） |
 | D-2 | 第 34 格餵白鯨、第 48 格鯊魚 | `A bright open underwater area with soft light rays, sandy seabed, a few coral clumps around the edges, large calm open water in the middle, no animals` 中文：明亮開闊的海底，光束、沙地，珊瑚只在邊緣，中間大片空水域，不要動物（白鯨、鯊魚由 App 疊上） |
 | D-3 | 第 56 格燈籠魚找東西 | `A detailed seabed corner near a cave entrance, evenly and clearly lit (not dark), sand, rounded rocks, coral, seaweed, old roots and shells with many little hiding nooks spread across the whole image, the cave mouth on one side, no animals and no small loose objects` 中文：洞穴口旁邊的海底角落，**畫成正常明亮、看得清楚的版本**（不要畫成黑暗）：沙地、圓石、珊瑚、海草、老樹根，整張圖各處都有可以藏東西的小角落，一側是洞口；**不要動物、不要小物件**。漆黑效果和燈光由 App 疊上去（孩子用燈籠魚的燈照亮一小圈找東西），所以背景本身要亮、細節要清楚 |
 | D-4 | 第 100 格健忘怪房間 | `A cozy messy cabin room inside a sunken ship, filled with a magical dry air bubble, warm lantern light. A small bed with a slipper under it, a plain cupboard with a snowflake sticker on its door, a wooden desk with ink smudges and a closed side drawer, a wardrobe with its door slightly open, a round window with an empty little bottle rack (a round ring-shaped holder) on the windowsill, a curtain in one corner, and an empty floor area at the bottom center for three boxes. No characters, no boxes, no blanket, no paper notes` 中文：沉船裡溫馨又亂的房間，有魔法乾燥氣泡、暖色燈光：小床（床下一隻拖鞋）、門上貼雪花的普通櫃子、有墨跡和側抽屜（關著）的木書桌、門半開的衣櫃、圓窗＋窗台上**空的小瓶架**（圓環狀）、角落一片布簾、下方中央留空地放三個箱子。**不要角色、箱子、被子、紙條**（都由 App 疊上） |
@@ -246,7 +246,7 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 | E-25 | 小被被 | `a soft cream-colored small blanket, slightly folded, with one big yellow star patch sewn on, cozy and fluffy` 中文：奶油色柔軟小被被、微微折起、縫著一個黃色大星星布章（要和 C-7 一致） |
 | E-26 | 濕痕 | `a small puddle of water with a few droplets` 中文：一小灘水和幾滴水珠（放在貝殼箱旁） |
 
-> E-16～E-19 四張要畫**同一個布包**，不要畫出被子的全貌，也不要數字、時鐘或能拼起來的邊緣。E-20～E-23 是同一款箱子，只換符號；要和神秘寶箱明顯不同（樸素木頭色）。
+> E-16～E-19 四張要畫**同一個布包**，不要畫出被子的全貌，也不要數字、時鐘或能拼起來的邊緣。E-20～E-23 是同一款箱子，只換符號；要和神祕寶箱明顯不同（樸素木頭色）。
 
 ### 水島道具（2026-11-16 新增）
 | 代號 | 物件 | 提示詞 |

@@ -1156,7 +1156,7 @@ test('Phase 4：小遊戲每天 1 次、獎勵上限 15、隔天可再玩、重�
   const r = store.rollDice(a.id, 'd12');
   assert.equal(r.event.type, 'minigame');
   assert.ok(!r.event.minigame && r.event.minigameOverflow, '今天已玩過');
-  assert.match(r.event.text, /神秘寶箱/, '今天已玩過 → 轉成神秘寶箱');
+  assert.match(r.event.text, /神祕寶箱/, '今天已玩過 → 轉成神祕寶箱');
   assert.equal(store.getPendingMinigame(a.id), null);
   // 隔天：可以再玩
   setDate('2026-11-07T10:00:00');
@@ -1357,7 +1357,7 @@ test('神諭祝福收回：當天可收回、只收回還沒用掉的、星星�
   if (store.lockParent) assert.throws(() => store.revokeBlessing(t.id), /需要家長密碼|只能收回今天/);
 });
 
-test('寶箱庫存：一般寶箱沿用地圖寶箱內容；神諭祝福的神秘寶箱免鑰匙、開出特殊道具；紀錄開箱結果', () => {
+test('寶箱庫存：一般寶箱沿用地圖寶箱內容；神諭祝福的神祕寶箱免鑰匙、開出特殊道具；紀錄開箱結果', () => {
   const { store, a } = tsStore();
   store.setParentPin('1234');
   store.sendBlessing(a.id, 'chest', 3);
@@ -1662,7 +1662,7 @@ test('Phase 4A 存檔遷移：擲骰種類、好運金牌、待前進擲骰、�
   assert.equal(migrate({ children: [{ id: 'c' }], adventure: { players: { c: {} } } }).adventure.players.c.pendingRoll, null);
 });
 
-// ---------- 寶物商店 Phase 4B：地圖神秘寶箱、黃金鑰匙、寶物磁鐵、里程碑、機會卡擴充 ----------
+// ---------- 寶物商店 Phase 4B：地圖神祕寶箱、黃金鑰匙、寶物磁鐵、里程碑、機會卡擴充 ----------
 test('機會卡擴充：小寶箱 +1～3 星、撿到溜冰鞋', () => {
   const { store, a, push } = p3Store();
   const bag = store.getPlayer(a.id).bag; bag.d6 = 2;
@@ -1676,7 +1676,7 @@ test('機會卡擴充：小寶箱 +1～3 星、撿到溜冰鞋', () => {
   assert.deepEqual(r.event.items, { skates: 1 });
 });
 
-test('神秘寶箱（次數用完轉換）：還沒撿走的最多 2 個、隔天才出現在前方還沒走到的格子（不同格）、經過就撿到、要黃金鑰匙才能開', () => {
+test('神祕寶箱（次數用完轉換）：還沒撿走的最多 2 個、隔天才出現在前方還沒走到的格子（不同格）、經過就撿到、要黃金鑰匙才能開', () => {
   const { store, a, push, setDate } = p3Store();
   const p = store.getPlayer(a.id);
   store.data.adventure.minigames.push({ id: 'm0', childId: a.id, date: store.today(), status: 'done', caught: 0, stars: 0, ts: 1 });
@@ -1705,7 +1705,7 @@ test('神秘寶箱（次數用完轉換）：還沒撿走的最多 2 個、隔�
   assert.deepEqual([p.bag.goldenKey, p.bag.mysteryChest], [0, 1]);
 });
 
-test('神秘寶箱：沒撿到一直留著；在後面時後退經過也會撿到', () => {
+test('神祕寶箱：沒撿到一直留著；在後面時後退經過也會撿到', () => {
   const { store, a, push } = p3Store();
   const p = store.getPlayer(a.id);
   store._addMapChest(a.id, 'milestone');
@@ -1722,7 +1722,7 @@ test('神秘寶箱：沒撿到一直留著；在後面時後退經過也會撿�
   assert.equal(p.bag.mysteryChest, 1, '後退經過撿到');
 });
 
-test('累計得分里程碑：每 +500 黃金鑰匙、每 +1000 神秘寶箱；不補發、不重複、新孩子從起始點數開始', () => {
+test('累計得分里程碑：每 +500 黃金鑰匙、每 +1000 神祕寶箱；不補發、不重複、新孩子從起始點數開始', () => {
   const { store } = makeStore();
   const big = store.addItem({ kind: 'bonus', name: '大', points: 300 });
   const pen = store.addItem({ kind: 'penalty', name: '扣', points: 300 });
@@ -1750,7 +1750,7 @@ test('累計得分里程碑：每 +500 黃金鑰匙、每 +1000 神秘寶箱；�
   assert.deepEqual(s2.data.milestones.c, { base: 5000, keys: 0, chests: 0 });
 });
 
-test('寶物磁鐵：吸前後 5 格內的神秘寶箱或一般寶箱格；吸過的寶箱格再停上去沒有獎勵', () => {
+test('寶物磁鐵：吸前後 5 格內的神祕寶箱或一般寶箱格；吸過的寶箱格再停上去沒有獎勵', () => {
   const { store, a, push } = p3Store();
   const p = store.getPlayer(a.id);
   p.bag.magnet = 3; p.bag.d6 = 1;
@@ -1821,7 +1821,7 @@ test('結束今日冒險：當天鎖住、作廢剩餘擲骰與再來 3 次、�
   assert.ok(store.canPlayToday(a.id), '隔天可再玩');
 });
 
-test('今日小結：走了幾格、擲骰次數、星星、道具、小遊戲、特殊任務、神秘寶箱', () => {
+test('今日小結：走了幾格、擲骰次數、星星、道具、小遊戲、特殊任務、神祕寶箱', () => {
   const { store, a, push } = p3Store();
   const p = store.getPlayer(a.id);
   p.bag.d6 = 2; p.bag.wings = 1;
@@ -1929,7 +1929,7 @@ function withEndTile(store, a, n, fn) {
   try { return fn(); } finally { tiles[n].type = orig; }
 }
 
-test('金島通關：第一次＝神秘寶箱 ×1（免鑰匙）＋成就；之後＝ +10 星；下一次移動從起點開始', () => {
+test('金島通關：第一次＝神祕寶箱 ×1（免鑰匙）＋成就；之後＝ +10 星；下一次移動從起點開始', () => {
   const { store, a } = p3Store();
   const p = store.getPlayer(a.id);
   p.bag.d6 = 3;
@@ -1975,7 +1975,7 @@ test('成就：28 項三類（冒險 8、收集 7、生活 13）；達成後記�
   assert.equal(store.getAchievements(a.id).find(x => x.id === 'reachR2').date, '2026-11-06');
 });
 
-test('成就：寶箱與神秘寶箱計數、最遠格子、連續 7 天冒險、5 個特殊任務', () => {
+test('成就：寶箱與神祕寶箱計數、最遠格子、連續 7 天冒險、5 個特殊任務', () => {
   const { store, a, setDate } = p3Store();
   const p = store.getPlayer(a.id);
   p.bag.d6 = 1;
@@ -2131,7 +2131,7 @@ test('換島：木島未開放時通關金島後繼續在金島繞圈；開放�
     p.maxReached = 0;
     assert.equal(store.revokeAchievements(a.id).length, 0, '在木島時金島區域成就不受影響');
     assert.equal(store.getAchievements(a.id).find(x => x.id === 'reachR4').done, true);
-    // 通關木島：獎勵照算（第一次神秘寶箱），不給「金島通關」；下一次回到金島
+    // 通關木島：獎勵照算（第一次神祕寶箱），不給「金島通關」；下一次回到金島
     store.data.adventure.rolls = [];                            // 測試用：重設今天的擲骰次數（每日 3 次）
     store.setPlayerTile(a.id, END - 3);
     store.random = () => 0.99;
@@ -2564,7 +2564,7 @@ test('成就「松果躲貓貓」「怎麼都是松鼠」：落葉找松果單�
   assert.deepEqual(ach, [['collect', '松果躲貓貓'], ['collect', '怎麼都是松鼠']]);
 });
 
-test('神秘寶箱（次數用完轉換）：跨天也最多留 2 個沒撿的，撿走才能再轉；位置在這座島前方還沒走到的格子隨機（不限 2～8 格）', () => {
+test('神祕寶箱（次數用完轉換）：跨天也最多留 2 個沒撿的，撿走才能再轉；位置在這座島前方還沒走到的格子隨機（不限 2～8 格）', () => {
   const { store, a, setDate } = p3Store();
   for (let i = 0; i < 2; i++) assert.ok(store._addMapChest(a.id, 'overflow'));
   setDate('2026-11-07T10:00:00');
@@ -2623,13 +2623,13 @@ test('冒險每日上限：全部孩子共用、0～10、要家長密碼；擲�
   assert.throws(() => store.rollDice(a.id, 'magic'), /每天最多用 2 顆/);
   store.data.adventure.minigames = [];                         // 測試用：清掉擲骰途中停到的小遊戲
   assert.throws(() => store.useStarCall(a.id), /每天只能用 0 個/);
-  // 小遊戲每天 2 次：第 2 次停到小遊戲格還能玩，第 3 次才轉成神秘寶箱
+  // 小遊戲每天 2 次：第 2 次停到小遊戲格還能玩，第 3 次才轉成神祕寶箱
   store.data.adventure.rolls = []; store.setLimits({ dice: 10 });
   for (const [from, n] of [[4, 0], [14, 1], [21, 2]]) {
     store.setPlayerTile(a.id, from); push(face(3), 0.9);
     const ev = store.rollDice(a.id, 'd6').event;
     if (n < 2) { assert.ok(ev.minigame, '第 ' + (n + 1) + ' 次可以玩'); store.finishMinigame(a.id, 3); }
-    else assert.ok(ev.minigameOverflow && /每天 2 次/.test(ev.text), '第 3 次轉成神秘寶箱');
+    else assert.ok(ev.minigameOverflow && /每天 2 次/.test(ev.text), '第 3 次轉成神祕寶箱');
   }
   store.setLimits({}, true);
   assert.equal(store.getLimits().dice, 3, '恢復預設');
@@ -2659,7 +2659,7 @@ test('能量星星兌換現實獎勵：扣星星不扣點數、星星不夠不�
   assert.equal(migrate(d).rewards.length, 2, '再載入不會重複加');
 });
 
-test('神秘寶箱：呼叫專機的功能還沒做，木島開放後也先不開出', () => {
+test('神祕寶箱：呼叫專機的功能還沒做，木島開放後也先不開出', () => {
   const { store, a } = tsStore();
   store.getPlayer(a.id).bag.giftMysteryChest = 2;
   store.random = () => 0.999;
@@ -2857,7 +2857,7 @@ test('水島關卡：走到就停、剩下步數作廢；完成前不能前進�
     assert.deepEqual([r.path, p.pos], [[7, 8], 8], '6 點只走到第 8 格就停');
     assert.equal(r.event.type, 'normal', '關卡格本身沒有停格事件');
     assert.equal(store.waterTaskHere(a.id), 'memo');
-    assert.throws(() => roll(3), /先完成「神秘藏寶圖」/);
+    assert.throws(() => roll(3), /先完成「神祕藏寶圖」/);
     store.completeStory(a.id, 'memo');
     assert.equal(store.waterTaskHere(a.id), null);
     assert.deepEqual(roll(3).path, [9, 10, 11], '完成後照常前進');
@@ -2950,7 +2950,7 @@ test('潛水艇：只在水島第 25 格以後、到 25～99、不能跳過未�
   } finally { delete G.BOARDS.water; }
 });
 
-test('水島第 100 格：先幫健忘怪找到小被被才通關；第一次 3 個神秘寶箱＋⭐3，之後 10 星；完成後下一擲回金島', () => {
+test('水島第 100 格：先幫健忘怪找到小被被才通關；第一次 3 個神祕寶箱＋⭐3，之後 10 星；完成後下一擲回金島', () => {
   const { store, a, p, roll } = waterStore('water', 97);
   try {
     doneUpTo(p, ['memo', 'potion', 'feed', 'shark', 'lantern']);

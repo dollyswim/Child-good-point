@@ -86,7 +86,7 @@ A big glossy purple question mark symbol made of soft clay,
 with small golden sparkles around it, magical and friendly
 ```
 
-中文：一個大大的紫色問號，軟黏土質感、有光澤，周圍有金色小閃光，神秘又親切。
+中文：一個大大的紫色問號，軟黏土質感、有光澤，周圍有金色小閃光，神祕又親切。
 
 ### 6. 小遊戲格
 
@@ -170,10 +170,10 @@ a small pile of golden stars on the counter, warm and inviting, front 3/4 view
 | # | 素材 | 用在哪裡 | 需要時間 |
 |---|---|---|---|
 | P4-1 | 命運格（水晶球） | 地圖第 11、14、21、27 格 | **現在**（目前用 🔮 代替） |
-| P4-2 | 神秘寶箱 | 地圖上的神秘寶箱、背包 | 第 3 步（**圖到才上線**） |
+| P4-2 | 神祕寶箱 | 地圖上的神祕寶箱、背包 | 第 3 步（**圖到才上線**） |
 | P4-3 | 黃金鑰匙 | 商店、背包 | 第 3 步 |
 | P4-4 | 寶物磁鐵 | 商店、背包 | 第 3 步 |
-| P4-5 | 好運金牌 | 神秘寶箱開出、背包 | 第 3 步 |
+| P4-5 | 好運金牌 | 神祕寶箱開出、背包 | 第 3 步 |
 | P4-6 | 神奇骰子 | 同上 | 第 3 步 |
 | P4-7 | 飛行翼 | 同上 | 第 3 步 |
 | P4-8 | 防護罩 | 同上 | 第 3 步 |
@@ -189,9 +189,9 @@ a tiny golden star and a little question-swirl floating in the mist, gentle glow
 mysterious but friendly
 ```
 
-中文：放在金色小底座上的可愛水晶球，球裡有粉紅與藍綠色霧氣旋轉，霧中飄著金色小星星和小漩渦，柔和發光，神秘又親切。
+中文：放在金色小底座上的可愛水晶球，球裡有粉紅與藍綠色霧氣旋轉，霧中飄著金色小星星和小漩渦，柔和發光，神祕又親切。
 
-### P4-2 神秘寶箱（外觀要和一般木頭寶箱明顯不同）
+### P4-2 神祕寶箱（外觀要和一般木頭寶箱明顯不同）
 
 ```
 A cute magical mystery chest, rounded and chunky, deep purple and midnight blue body
@@ -200,7 +200,7 @@ soft violet magic glow and tiny floating sparkles around it, a small question-ma
 of light above the lid, mysterious and exciting, clearly different from a normal wooden treasure chest
 ```
 
-中文：圓潤的魔法神秘寶箱，深紫與午夜藍箱身、銀白星星花紋，正面發光的金色鑰匙孔鎖（鎖著），淡紫光暈與小閃光，箱蓋上方有問號形狀的小光芒。
+中文：圓潤的魔法神祕寶箱，深紫與午夜藍箱身、銀白星星花紋，正面發光的金色鑰匙孔鎖（鎖著），淡紫光暈與小閃光，箱蓋上方有問號形狀的小光芒。
 
 ### P4-3 黃金鑰匙
 
@@ -209,7 +209,7 @@ A chunky cute golden key, round bow (handle) with a purple star gem in the cente
 short thick blade with simple teeth, soft shine and a tiny sparkle, tilted diagonally
 ```
 
-中文：厚實可愛的金色鑰匙，圓形握柄中央鑲一顆紫色星形寶石（呼應神秘寶箱），短而粗的鑰匙齒，斜放，帶光澤與小閃光。
+中文：厚實可愛的金色鑰匙，圓形握柄中央鑲一顆紫色星形寶石（呼應神祕寶箱），短而粗的鑰匙齒，斜放，帶光澤與小閃光。
 
 ### P4-4 寶物磁鐵
 
@@ -509,7 +509,7 @@ centered with margin, no text, no watermark. Vertical image, about 150 x 230 pro
 
 ## 已完成（不用再做）
 
-6 面骰、12 面骰、溜冰鞋、能量星星、寶箱格、機會格、小遊戲格、起點旗、終點旗、礦場木門、星星商店、五島入口插圖、神諭祝福道具 G-1 命運重骰券、G-2 再來 3 次、Phase 4 的 P4-01～P4-10（命運水晶球、神秘寶箱、黃金鑰匙、寶物磁鐵、好運金牌、神奇骰子、飛行翼、防護罩、傳送門、呼叫專機）。、「抓住星星」小遊戲背景。
+6 面骰、12 面骰、溜冰鞋、能量星星、寶箱格、機會格、小遊戲格、起點旗、終點旗、礦場木門、星星商店、五島入口插圖、神諭祝福道具 G-1 命運重骰券、G-2 再來 3 次、Phase 4 的 P4-01～P4-10（命運水晶球、神祕寶箱、黃金鑰匙、寶物磁鐵、好運金牌、神奇骰子、飛行翼、防護罩、傳送門、呼叫專機）。、「抓住星星」小遊戲背景。
 
 ---
 

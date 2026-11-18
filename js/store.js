@@ -59,7 +59,7 @@
   var SPECIAL_TASK_POINTS = 20;
   /** 冒險背包的道具代號（穩定、唯一；不以中文名稱判斷） */
   var BAG_KEYS = ['d6', 'd12', 'skates', 'shield', 'magicDice', 'luckyMedal', 'wings', 'door', 'airplane', 'goldenKey', 'magnet', 'rerollTicket', 'bonusPlay', 'starCall', 'pineHide', 'submarine',
-    'chest', 'giftMysteryChest', 'mysteryChest']; // 寶箱庫存：一般寶箱、神諭祝福的神秘寶箱（免鑰匙）、地圖撿到的神秘寶箱（要鑰匙）
+    'chest', 'giftMysteryChest', 'mysteryChest']; // 寶箱庫存：一般寶箱、神諭祝福的神祕寶箱（免鑰匙）、地圖撿到的神祕寶箱（要鑰匙）
   function emptyBag() { var b = {}; BAG_KEYS.forEach(function (k) { b[k] = 0; }); return b; }
   var SPECIAL_TASK_DAYS = 3;
   /** 8 種冒險夥伴代號：孩子的頭像與冒險棋子共用（child.avatar） */
@@ -261,7 +261,7 @@
         startDate: x.startDate, endDate: x.endDate, cancelled: !!x.cancelled, doneArchived: !!x.doneArchived, ts: toInt(x.ts, Date.now()) };
     });
 
-    // 累計得分里程碑：base＝開始計算時的累計得分；keys／chests＝已發的黃金鑰匙／神秘寶箱數
+    // 累計得分里程碑：base＝開始計算時的累計得分；keys／chests＝已發的黃金鑰匙／神祕寶箱數
     d.milestones = (function () {
       var src = d.milestones && typeof d.milestones === 'object' ? d.milestones : {}, out = {};
       Object.keys(src).forEach(function (cid) {
@@ -361,7 +361,7 @@
       dayEnds: (Array.isArray(adv.dayEnds) ? adv.dayEnds : []).filter(function (x) {
         return x && x.id && childIdSet.has(String(x.childId)) && /^\d{4}-\d{2}-\d{2}$/.test(x.date);
       }).map(function (x) { return { id: String(x.id), childId: String(x.childId), date: x.date, ts: toInt(x.ts, Date.now()) }; }),
-      // 地圖上的神秘寶箱：tileId 為空＝還沒出現（下次冒險時出現在角色前方還沒走到的格子）
+      // 地圖上的神祕寶箱：tileId 為空＝還沒出現（下次冒險時出現在角色前方還沒走到的格子）
       mapChests: (Array.isArray(adv.mapChests) ? adv.mapChests : []).filter(function (x) {
         return x && x.id && childIdSet.has(String(x.childId));
       }).map(function (x) {
@@ -437,7 +437,7 @@
               return o;
             })(),
             maxReached: Math.max(toInt(p.maxReached, 0), toInt(p.pos, 0)),   // 曾經到過最遠的格子（成就用）
-            stats: { chests: Math.max(0, toInt(p.stats && p.stats.chests, 0)), mystery: Math.max(0, toInt(p.stats && p.stats.mystery, 0)) },   // 開過的一般寶箱／神秘寶箱數
+            stats: { chests: Math.max(0, toInt(p.stats && p.stats.chests, 0)), mystery: Math.max(0, toInt(p.stats && p.stats.mystery, 0)) },   // 開過的一般寶箱／神祕寶箱數
             bag: BAG_KEYS.reduce(function (o, k) { o[k] = Math.max(0, toInt(bag[k], 0)); return o; }, {})
           };
         });
@@ -1006,7 +1006,7 @@
     };
     this.data.records.push(rec);
     this._payRecordStars(rec);
-    if (this._checkMilestones) rec.milestone = this._checkMilestones(childId);   // 累計得分里程碑（黃金鑰匙、神秘寶箱）
+    if (this._checkMilestones) rec.milestone = this._checkMilestones(childId);   // 累計得分里程碑（黃金鑰匙、神祕寶箱）
     this.save();
     return rec;
   };
