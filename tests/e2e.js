@@ -1131,14 +1131,14 @@ async function main() {
       await q.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2, { steps: 8 }); await q.mouse.up();
       await q.waitForSelector('#rack-spot.match');
     }
-    await talkUntil('.box-one');
-    await q.click('.box-one[data-b="0"]'); await q.click('.box-one[data-b="1"]');
+    await talkUntil('.floor-box:not([disabled])');
+    await q.click('.floor-box[data-b="0"]'); await q.click('.floor-box[data-b="1"]');
     assert.equal(await q.locator('#box-open').count(), 0, '三個箱子都看過才能打開');
-    await q.click('.box-one[data-b="2"]'); await q.click('.box-one[data-b="0"]');
+    await q.click('.floor-box[data-b="2"]'); await q.click('.floor-box[data-b="0"]');
     if (SHOT_DIR) { await q.waitForTimeout(500); await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, 'water-boxes.png') }); }
     await q.click('#box-open');
     assert.equal((await P()).clears, 0, '選錯箱子不會通關');
-    await q.click('.box-one[data-b="2"]'); await q.click('#box-open');
+    await q.click('.floor-box[data-b="2"]'); await q.click('#box-open');
     if (SHOT_DIR) { await q.waitForTimeout(800); await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, '41-water-box-open.png') }); }
     await talkUntil('[data-testid=water-end-card]', 20000);
     if (SHOT_DIR) { await q.waitForTimeout(800); await q.screenshot({ path: path.join(SHOT_DIR, '45a-water-end-photo.png') }); await q.waitForTimeout(1800); await q.screenshot({ path: path.join(SHOT_DIR, '45-water-end.png') }); }

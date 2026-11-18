@@ -2453,3 +2453,26 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .bottle-drag.bounce { animation: memo-shake .3s 2; }
 .bottle-ghost { position: fixed; z-index: 2000; width: 64px; height: auto; transform: translate(-50%, -60%) scale(1.1); pointer-events: none; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .35)); }
 @media (prefers-reduced-motion: reduce) { .boss-panel .boss-spot.boss-hit.hint, .bottle-drag.bounce { animation: none; outline: 3px solid #ffd23f; } }
+
+/* 2026-11-18 健忘怪房間：地上的三個箱子＋坐在上面的健忘怪；站起來後直接點箱子 */
+.boss-floor { position: absolute; inset: 0; pointer-events: none; }
+.floor-box { position: absolute; bottom: 4%; width: 17%; aspect-ratio: 1; transform: translateX(-50%); padding: 0; border: 0; background: none; border-radius: 12px; }
+.floor-box .box-art { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 3px rgba(60, 30, 0, .35)); }
+.boss-floor.ready { pointer-events: auto; }
+.boss-floor.ready .floor-box { cursor: pointer; animation: floor-box-call 1.4s ease-in-out infinite; }
+.boss-floor.ready .floor-box.seen { animation: none; }
+.floor-box.on { box-shadow: 0 0 0 3px #ff9f1a, 0 0 14px rgba(255, 159, 26, .7); }
+.floor-box .box-ev { position: absolute; z-index: 2; width: 50%; height: auto; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .25)); animation: box-ev-in .4s ease-out; }
+.floor-box .box-ev[hidden], .floor-box .boss-check[hidden] { display: none; }
+.floor-box .ev-wrench { left: -24%; bottom: -6%; }
+.floor-box .ev-puddle { right: -26%; bottom: -10%; width: 58%; }
+.floor-box .boss-check { right: -4px; top: -4px; }
+.floor-box .box-blanket { position: absolute; left: 46%; top: -40%; width: 70%; transform: translateX(-50%); animation: box-blanket-up .6s ease-out; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .25)); }
+@keyframes floor-box-call { 50% { box-shadow: 0 0 12px 3px rgba(255, 220, 90, .85); } }
+.boss-floor .monster-seat { position: absolute; left: 50%; bottom: 13%; width: 50%; height: auto; transform: translateX(-50%); filter: drop-shadow(0 4px 6px rgba(60, 30, 0, .35)); transition: transform .8s ease-in, opacity .8s ease-in; }
+.boss-floor .monster-seat.stand { transform: translate(60%, -8%); opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .boss-floor.ready .floor-box, .monster-seat { animation: none; transition: none; } }
+.boss-layer { pointer-events: none; } .boss-layer > * { pointer-events: auto; } .boss-layer > .boss-book, .boss-layer > .rack-arrow { pointer-events: none; }   /* 空白處讓點擊穿到地上的箱子 */
+
+.boss-floor .monster-seat.ph { bottom: 18%; height: 40%; width: auto; }   /* 佔位圖（正方形）：用高度 */
+.floor-box { transition: left .45s ease-out; }

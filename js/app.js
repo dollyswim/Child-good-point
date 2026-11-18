@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-178';
+  var APP_VERSION = '2026.11.18-180';
   var store;
   try {
     store = new CGP.Store();
@@ -2210,11 +2210,15 @@
     // 2026-11-18 家長：不顯示文字標籤（會擋住家具），改成透明可點範圍＋手勢游標，另有提示按鈕
     { id: 'bed', label: '床', emoji: '🛏️', x: 15, y: 62, w: 28, h: 34, card: 0, say: '床底下只有一隻拖鞋……床沿露出一角紙！' },
     { id: 'cupboard', label: '雪花櫃', emoji: '🧊', x: 30.5, y: 42, w: 15, h: 31, say: '櫃子門上貼著雪花……打開一看，只有一條木頭魚。這只是普通的櫃子嘛！', monster: '我貼了雪花，它還不肯變冰箱，真有個性！' },
-    { id: 'desk', label: '書桌', emoji: '🪑', x: 54, y: 48, w: 31, h: 22, card: 2, notebook: true, say: '桌上有墨跡，側邊抽屜露出筆記本的一角，桌腳旁還有一張紙！' },
+    { id: 'desk', label: '書桌', emoji: '🪑', x: 54, y: 46, w: 31, h: 18, card: 2, notebook: true, say: '桌上有墨跡，側邊抽屜露出筆記本的一角，桌腳旁還有一張紙！' },
     { id: 'curtain', label: '布簾', emoji: '🪟', x: 95, y: 30, w: 10, h: 46, card: 1, say: '把布簾掀開一點……後面藏著一張紙！' },
     { id: 'wardrobe', label: '衣櫃', emoji: '🚪', x: 80, y: 37, w: 21, h: 46, card: 3, say: '衣櫃門縫夾著一張紙！' },
+    { id: 'seat', label: '健忘怪坐的地方', emoji: '📦', x: 50, y: 76, w: 52, h: 36, say: '三個箱子被健忘怪的大屁股壓住了……大概是他的座位吧？', monster: '嗯？我坐在什麼上面？……先別管了，快幫我找！' },
     { id: 'rack', label: '窗邊的瓶架', emoji: '🫙', x: 52, y: 28, w: 16, h: 12, say: '窗台上有一個空空的圓形瓶架……原本放什麼呢？先記下來。' }
   ];
+  var FLOOR_BOX_X = [37, 50, 63], FLOOR_BOX_OPEN_X = [30, 50, 70];   // 地上三個箱子的中心 x（畫面百分比）：健忘怪躺著時併排靠在一起，站起來後分開一點方便點
+  var MONSTER_SEAT_PH = true;   // C-8 新圖（橫圖）到貨後改成 false，大小就改用寬度
+  var MONSTER_SEAT = 'images/water/npc/monster_confused.webp';   // 健忘怪橫躺在三個箱子上發呆（C-8 橫圖到貨前先用迷糊圖代替）
   var BOSS_CARDS = [['soiled', '弄髒了', '🟤'], ['wash', '洗一洗', '🫧'], ['dry', '晾乾', '☀️'], ['store', '收好', '📥']];   // 2026-11-17 E-16～E-19 正式圖：images/water/items/card_<id>.webp
   function bossCard(c) { var k = BOSS_CARDS[c]; return '<img class="card-art" src="images/water/items/card_' + k[0] + '.webp" alt="" draggable="false"><small>' + k[1] + '</small>'; }
   var BOSS_BOXES = [['star', '星星箱', '⭐', '箱子裡有扳手和起子，叮叮噹噹的。', 'wrench'], ['shell', '貝殼箱', '🐚', '箱子摸起來濕濕的，旁邊有一小灘水。', 'puddle'], ['moon', '月亮箱', '🌙', '箱子乾乾的，裡面也沒有工具。', '']];   // 第 5 欄：點開後出現的證據圖（E-24 扳手、E-26 水窪）
@@ -2222,7 +2226,13 @@
     var M = WHO.monster(), me = WHO.me(child), stage = wstate(child).water.bossStage || 0;
     if (!stage) await talkSeq([line(M, '不見了！我的寶貝不見了！到底放到哪去了？'), line(me, '你在找什麼？是寶物嗎？我幫你一起找吧？'), line(M, '太好了！我一直找不到我的寶……咦……我剛才要找什麼？是寶物嗎？'), line(M, '好像在床底下……不對！在冰箱裡！')]);
     var P = partyPanel({ title: '健忘怪的家', sub: '' }, null, 'water-panel boss-panel');
-    P.art.innerHTML = (WATER_ART.room ? '<img class="party-bg" src="' + WATER_ART.room + '" alt="" draggable="false">' : '<div class="room-ph"></div>') + '<div class="boss-layer" id="boss-layer"></div>';
+    // 2026-11-18 家長：三個箱子一開始就在地上，健忘怪半躺在箱子上發呆（站起來之後才在房間裡直接選箱子）
+    P.art.innerHTML = (WATER_ART.room ? '<img class="party-bg" src="' + WATER_ART.room + '" alt="" draggable="false">' : '<div class="room-ph"></div>') +
+      '<div class="boss-floor" id="boss-floor">' + BOSS_BOXES.map(function (b, i) {
+        return '<button type="button" class="floor-box" data-b="' + i + '" aria-label="' + b[1] + '" style="left:' + FLOOR_BOX_X[i] + '%" disabled><img src="images/water/items/box_' + b[0] + '.webp" alt="" class="box-art" draggable="false">' +
+          (b[4] ? '<img src="images/water/items/' + b[4] + '.webp" alt="" class="box-ev ev-' + b[4] + '" draggable="false" hidden>' : '') + '<i class="boss-check" aria-hidden="true" hidden>✓</i></button>';
+      }).join('') + '<img class="monster-seat' + (MONSTER_SEAT_PH ? ' ph' : '') + '" id="monster-seat" src="' + MONSTER_SEAT + '" alt="" draggable="false"></div>' +
+      '<div class="boss-layer" id="boss-layer"></div>';
     var layer = P.art.querySelector('#boss-layer');
     function say(w, t) { return talkSeq([line(w, t)]); }
     function okBtn(label) { return new Promise(function (r) { P.tools.innerHTML = '<button type="button" class="btn primary charge-btn" id="scene-ok">' + label + '</button>'; P.tools.querySelector('#scene-ok').onclick = function () { r(); }; }); }
@@ -2235,7 +2245,7 @@
         function prog() {
           P.tools.innerHTML = '<div class="boss-bar"><span class="party-count">📒 ' + (notebook ? 1 : 0) + ' / 1　📄 ' + cards + ' / 4</span><button type="button" class="btn small" id="boss-hint">💡 提示</button></div>';
           P.tools.querySelector('#boss-hint').onclick = function () {   // 提醒還沒找過的地方（有紙卡、筆記本的優先）
-            var left = BOSS_SPOTS.filter(function (x) { return !layer.querySelector('.boss-spot[data-spot="' + x.id + '"].seen'); });
+            var left = BOSS_SPOTS.filter(function (x) { return x.id !== 'seat' && !layer.querySelector('.boss-spot[data-spot="' + x.id + '"].seen'); });
             left.sort(function (a, b) { return (b.card != null || b.notebook ? 1 : 0) - (a.card != null || a.notebook ? 1 : 0); });
             if (!left.length) return;
             var t = layer.querySelector('.boss-spot[data-spot="' + left[0].id + '"]');
@@ -2358,17 +2368,24 @@
     });
     await talkSeq([line(me, '牛奶瓶的瓶底，跟瓶架的圓圈剛好一樣大！'), line(WHO.monster('surprised'), '啊啊啊！這不是我的牛奶瓶嗎？！'),
       line(WHO.monster('surprised'), '我怕忘記重要的事情，就把紙條塞進瓶子裡……'), line(WHO.monster('surprised'), '結果我忘記把瓶子放在哪裡！'),
-      line(me, '所以我們找到的不是藏寶圖，是你的備忘紙！'), line(M, '對！我還畫了回家的路，怕連家也忘記！'), line(M, '我記得放在箱子裡，可是忘記是哪個！箱子會自己換班嗎？')]);
-    P.title.textContent = '📦 寶貝在哪個箱子裡？'; P.sub.textContent = '先點每個箱子看看，再選一個打開（要乾乾的、不跟工具放一起）';
-    layer.innerHTML = '<div class="box-row">' + BOSS_BOXES.map(function (b, i) { return '<button type="button" class="box-one" data-b="' + i + '"><span class="box-pic"><img src="images/water/items/box_' + b[0] + '.webp" alt="" class="box-art" draggable="false">' + (b[4] ? '<img src="images/water/items/' + b[4] + '.webp" alt="" class="box-ev ev-' + b[4] + '" draggable="false" hidden>' : '') + '</span><small>' + b[1] + '</small><em hidden>' + b[3] + '</em></button>'; }).join('') + '</div>';
+      line(me, '所以我們找到的不是藏寶圖，是你的備忘紙！'), line(M, '對！我還畫了回家的路，怕連家也忘記！'), line(M, '對了，我好像晾乾之後，就把寶貝放在地上的箱子裡了！')]);
+    // 健忘怪站起來，地上的三個箱子露出來 → 直接在房間裡點箱子
+    layer.innerHTML = '';
+    var seatImg = P.art.querySelector('#monster-seat');
+    if (seatImg) { seatImg.classList.add('stand'); await sleep(reduceMotion ? 50 : 800); seatImg.remove(); }
+    var floor = P.art.querySelector('#boss-floor'); floor.classList.add('ready');
+    floor.querySelectorAll('.floor-box').forEach(function (x, i) { x.disabled = false; x.style.left = FLOOR_BOX_OPEN_X[i] + '%'; });   // 箱子稍微分開
+    await sleep(reduceMotion ? 0 : 450);
+    P.title.textContent = '📦 寶貝在哪個箱子裡？'; P.sub.textContent = '點地上的每個箱子看看，再選一個打開（要乾乾的、不跟工具放一起）';
     P.tools.innerHTML = '<span class="party-count" id="box-tip">看過 0 / 3 個箱子</span>';
     await new Promise(function (resolve) {
       var seen = {}, chosen = null;
-      layer.addEventListener('click', function (e) {
-        var b = e.target.closest('.box-one'); if (!b) return;
+      floor.addEventListener('click', function (e) {
+        var b = e.target.closest('.floor-box'); if (!b || b.disabled) return;
         var i = Number(b.getAttribute('data-b'));
-        if (!seen[i]) { seen[i] = true; b.classList.add('seen'); b.querySelector('em').hidden = false; var ev = b.querySelector('.box-ev'); if (ev) ev.hidden = false; }
-        layer.querySelectorAll('.box-one').forEach(function (x) { x.classList.toggle('on', x === b); }); chosen = i;
+        if (!seen[i]) { seen[i] = true; b.classList.add('seen'); b.querySelector('.boss-check').hidden = false; var ev = b.querySelector('.box-ev'); if (ev) ev.hidden = false; }
+        floor.querySelectorAll('.floor-box').forEach(function (x) { x.classList.toggle('on', x === b); }); chosen = i;
+        P.sub.textContent = BOSS_BOXES[i][2] + ' ' + BOSS_BOXES[i][1] + '：' + BOSS_BOXES[i][3];
         var n = Object.keys(seen).length;
         P.tools.innerHTML = n < 3 ? '<span class="party-count">看過 ' + n + ' / 3 個箱子</span>' : '<button type="button" class="btn primary charge-btn" id="box-open">打開' + BOSS_BOXES[chosen][1] + '</button>';
         var ob = P.tools.querySelector('#box-open');
@@ -2378,9 +2395,10 @@
         };
       });
     });
-    var moonBox = layer.querySelector('.box-one[data-b="2"]'); moonBox.classList.add('open');
+    var moonBox = floor.querySelector('.floor-box[data-b="2"]'); moonBox.classList.add('open'); moonBox.disabled = true;
     // E-23 打開的箱子＋E-25 小被被從箱子裡冒出來
-    moonBox.querySelector('span').innerHTML = '<img src="images/water/items/box_open.webp" alt="" class="box-art" draggable="false">' + (WATER_ART.blanket ? '<img src="' + WATER_ART.blanket + '" alt="小被被" class="box-blanket" draggable="false">' : '');
+    moonBox.querySelector('.box-art').src = 'images/water/items/box_open.webp';
+    if (WATER_ART.blanket) moonBox.insertAdjacentHTML('beforeend', '<img src="' + WATER_ART.blanket + '" alt="小被被" class="box-blanket" draggable="false">');
     P.title.textContent = '🌙 找到了！'; P.sub.textContent = '月亮箱裡有……'; P.tools.innerHTML = '';
     await new Promise(function (r) { setTimeout(r, reduceMotion ? 300 : 1800); });   // 先讓孩子看到小被被從箱子裡冒出來，再關掉視窗
     P.shade.remove();
