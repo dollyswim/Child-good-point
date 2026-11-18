@@ -2469,7 +2469,7 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .floor-box .boss-check { right: -4px; top: -4px; }
 .floor-box .box-blanket { position: absolute; left: 46%; top: -40%; width: 70%; transform: translateX(-50%); animation: box-blanket-up .6s ease-out; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .25)); }
 @keyframes floor-box-call { 50% { box-shadow: 0 0 12px 3px rgba(255, 220, 90, .85); } }
-.boss-floor .monster-seat { position: absolute; left: 50%; bottom: 13%; width: 50%; height: auto; transform: translateX(-50%); filter: drop-shadow(0 4px 6px rgba(60, 30, 0, .35)); transition: transform .8s ease-in, opacity .8s ease-in; }
+.boss-floor .monster-seat { position: absolute; left: 49%; bottom: 19%; width: 42%; height: auto; transform: translateX(-50%); filter: drop-shadow(0 4px 6px rgba(60, 30, 0, .35)); transition: transform .8s ease-in, opacity .8s ease-in; }
 .boss-floor .monster-seat.stand { transform: translate(60%, -8%); opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .boss-floor.ready .floor-box, .monster-seat { animation: none; transition: none; } }
 .boss-layer { pointer-events: none; } .boss-layer > * { pointer-events: auto; } .boss-layer > .boss-book, .boss-layer > .rack-arrow { pointer-events: none; }   /* 空白處讓點擊穿到地上的箱子 */
