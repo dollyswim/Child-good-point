@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-189';
+  var APP_VERSION = '2026.11.18-190';
   var store;
   try {
     store = new CGP.Store();
@@ -2434,16 +2434,49 @@
   // 2026-11-17 F 節正式圖（Codex，810×1080）：開場 F-1～F-3、通關送回岸 F-4、出發去下一座島 F-5（水島圖不放進 SHELL）
   var WATER_TRIP = ['f1_exit', 'f2_out', 'f3_beach', 'f4_return', 'f5_depart'].map(function (n) { return 'images/water/trip/' + n + '.webp'; });
   /** 白鯨送回岸＋「水島冒險完成！」卡片（F-4：騎在小白鯨背上滑向沙灘） */
+  // 2026-11-18 家長：水島結尾銜接火島——小白鯨送回珊瑚淺灘 → 沙灘上的破小船和昏倒的火島居民 → 居民說火山冒黑煙 → 漁夫答應載你去火島
+  // （不提生氣怪、火箭實驗。火島還沒開放時，漁夫說船要先修好，孩子照舊先回金島）。每次通關都演，第二次以後可以略過。
+  // 正式圖到貨後把檔名填進 FIRE_FOLK／WATER_END_ART（白底圖去背）；空白時用表情符號佔位
+  var FIRE_FOLK = { faint: '', panic: '', calm: '' };   // C-9 火島居民：昏倒閉眼、醒來驚慌、恢復平靜
+  var WATER_END_ART = { boat: '', toFire: '' };          // E-32 破舊小船（白底去背）、F-6 漁夫划船前往冒黑煙的火山島（直式 3:4）
+  function fireFolkArt(k) {
+    return FIRE_FOLK[k] ? '<img src="' + FIRE_FOLK[k] + '" alt="" draggable="false">' : '<span class="folk-ph" aria-hidden="true">' + ({ faint: '😵', panic: '😨', calm: '🙂' })[k] + '</span>';
+  }
   function waterEnding(child, ev) {
     return new Promise(function (resolve) {
+      var fireOpen = ev.clear.next === '火島', repeat = (ev.clear.count || 1) > 1;
       var el = document.createElement('div');
       el.className = 'flight water-trip' + (reduceMotion ? ' still' : ''); el.id = 'water-ending'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '水島冒險完成');
-      el.innerHTML = '<div class="wt-photo" style="background-image:url(' + WATER_TRIP[3] + ')"></div>' +
-        islandCard({ testid: 'water-end-card', badge: BADGE_IMG.waterClear1, title: '水島冒險完成！', quote: '「健忘怪找回了小被被，<br>下一次會游到哪裡呢？」',
-          first: ev.clear.first, chest: 3, chestName: '神祕寶箱', ach: '水島通關', soon: true,
-          next: ev.clear.next ? '下次出發會先回到「' + h(ev.clear.next) + '」繼續冒險。' : '下次出發會從水島起點開始新的一輪。', ok: 'data-we-ok' });
-      document.body.appendChild(el);
-      el.querySelector('[data-we-ok]').onclick = function () { el.remove(); render(); if (!child.preview) announceAchievements(child.id); resolve(); };
+      el.innerHTML = '<div class="wt-photo" style="background-image:url(' + WATER_TRIP[3] + ')"></div>' + (repeat ? '<button type="button" class="we-skip" data-trip-skip>略過 ›</button>' : '');
+      document.body.appendChild(el); document.body.classList.add('pawn-acting');
+      var skipped = false, sk = el.querySelector('[data-trip-skip]');
+      if (sk) sk.onclick = function () {   // 略過：把正在顯示的對話一路點完
+        skipped = true; sk.remove();
+        for (var n = 0; n < 30 && document.querySelector('#water-talk [data-talk]'); n++) { var bs = document.querySelectorAll('#water-talk [data-talk]'); bs[bs.length - 1].click(); }
+      };
+      function talk(lines) { return skipped ? Promise.resolve() : talkSeq(lines); }
+      var me = WHO.me(child), F = WHO.fisher(), folk = function (k) { return { who: '火島居民', img: FIRE_FOLK[k] }; };
+      (async function () {
+        if (!skipped) await sleep(reduceMotion ? 300 : 1600);   // 小白鯨送回岸邊（F-4）
+        // 珊瑚淺灘（F-3）：破小船＋昏倒的居民
+        el.insertAdjacentHTML('beforeend', '<div class="wo-beach" style="background-image:url(' + WATER_TRIP[2] + ')"></div>' +
+          '<div class="wend-shore"><span class="wend-boat">' + (WATER_END_ART.boat ? '<img src="' + WATER_END_ART.boat + '" alt="" draggable="false">' : '<span class="folk-ph" aria-hidden="true">🛶</span>') + '</span>' +
+          '<span class="wend-folk faint" id="wend-folk">' + fireFolkArt('faint') + '</span></div>');
+        if (sk && sk.parentNode) el.appendChild(sk);
+        var fk = el.querySelector('#wend-folk');
+        function pose(k) { fk.className = 'wend-folk ' + k; fk.innerHTML = fireFolkArt(k); }
+        await talk([line(me, '咦？沙灘上有一艘破破的小船……旁邊有人倒在地上！'), line(me, '漁夫爺爺！快來幫忙！'), line(F, '喂！你還好嗎？醒醒啊！')]);
+        pose('panic');
+        await talk([line(folk('panic'), '我是從火島來的……'), line(folk('panic'), '最近火山口一直冒黑煙，還常常傳來轟隆隆的巨響！')]);
+        pose('calm');
+        await talk([line(folk('calm'), '大家都很害怕，我只好划船逃出來……'), line(F, '火島？我知道那個地方！不過最近那裡好像不太平靜。'),
+          line(me, '我想去火島看看發生了什麼事！'), line(F, '好吧！我划船載你過去！')].concat(fireOpen ? [] : [line(F, '不過我的船得先修一修，修好就來接你！')]));
+        if (sk && sk.parentNode) sk.remove();
+        el.insertAdjacentHTML('beforeend', islandCard({ testid: 'water-end-card', badge: BADGE_IMG.waterClear1, title: '水島冒險完成！', quote: '「火山口冒出黑煙……<br>火島到底發生了什麼事？」',
+          first: ev.clear.first, chest: 3, chestName: '神祕寶箱', ach: '水島通關', soon: false,
+          next: fireOpen ? '下次出發，漁夫爺爺會划船載你去「火島」！' : '漁夫爺爺修好船就載你去火島！在那之前，下次出發先回「' + h(ev.clear.next || '金島') + '」。', ok: 'data-we-ok' }));
+        el.querySelector('[data-we-ok]').onclick = function () { el.remove(); document.body.classList.remove('pawn-acting'); render(); if (!child.preview) announceAchievements(child.id); resolve(); };
+      })();
     });
   }
   /** 木島 → 水島開場：木島滑梯最後一張 → F-1 出口亮起 → F-2 衝出樹洞 → F-3 落在沙灘＋歡迎卡片（第二次以後可略過） */
@@ -2473,13 +2506,15 @@
       })();
     });
   }
-  /** 水島 → 下一座島（目前回金島）：F-5 騎著小白鯨往海平線游去（不畫特定島嶼，目的地由卡片文字說明） */
+  /** 水島 → 下一座島：去火島＝漁夫划船（F-6，到貨前用 F-5）；火島還沒開放＝小白鯨先送回金島（F-5） */
   function waterLeave(child, travel, repeat) {
     return new Promise(function (resolve) {
       var el = document.createElement('div');
       el.className = 'flight water-trip' + (reduceMotion ? ' still' : ''); el.id = 'water-leave'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '小白鯨送你出發');
-      el.innerHTML = '<div class="wt-photo" style="background-image:url(' + WATER_TRIP[4] + ')"></div>' +
-        '<div class="fl-card" data-testid="water-leave-card"><h2>🐳 小白鯨送你出發！</h2><p>' + (travel.island === 'gold' ? '下一座島還在準備中，先回到「金島」繼續冒險吧！' : '前往「' + h(travel.name) + '」！') + '</p>' +
+      var toFire = travel.island === 'fire';
+      el.innerHTML = '<div class="wt-photo" style="background-image:url(' + (toFire && WATER_END_ART.toFire ? WATER_END_ART.toFire : WATER_TRIP[4]) + ')"></div>' +
+        '<div class="fl-card" data-testid="water-leave-card"><h2>' + (toFire ? '🛶 出發去火島！' : '🐳 小白鯨送你出發！') + '</h2><p>' +
+        (toFire ? '漁夫爺爺划著小船，載你前往冒著黑煙的火島！' : travel.island === 'gold' ? '漁夫爺爺還在修船，小白鯨先送你回到「金島」繼續冒險！' : '前往「' + h(travel.name) + '」！') + '</p>' +
         '<button type="button" class="btn primary block" data-trip-ok>繼續冒險！</button></div>';
       document.body.appendChild(el);
       el.querySelector('[data-trip-ok]').onclick = function () { el.remove(); render(); resolve(); };

@@ -283,6 +283,30 @@ Room for 18 stops, no tiles, no numbers, no text, no UI. Warm lantern light, coz
 
 ---
 
+## H. 水島結尾銜接火島（2026-11-18 新增，Gemini）
+
+劇情：小白鯨送回珊瑚淺灘 → 沙灘上有破舊小船和昏倒的火島居民 → 居民醒來說火山冒黑煙、轟隆巨響 → 漁夫答應划船載孩子去火島。**不要畫出生氣怪或火箭**（之後火島才揭曉）。
+到貨後填進 `js/app.js` 的 `FIRE_FOLK`、`WATER_END_ART`。
+
+### C-9 火島居民（3 張，同一個角色，白底、正方形 1024×1024）
+角色設定（家長定）：2.5D Q 版黏土玩具風、可愛圓潤；火島普通男性居民、年輕成年人；矮胖、頭大身小、四肢短圓；圓臉、大眼睛、圓鼻子；深棕色短髮、髮尾微翹；焦橘色短袖工作服、深棕色短褲、深棕色工作短靴；頭戴護目鏡、腰間掛小布袋；衣服胸前有簡單火焰圖騰；臉頰沾煤灰、衣角微焦、頭髮凌亂；善良、膽小、容易緊張；配色焦橘、磚紅、深棕、土黃。
+
+共用：`A cute chubby young man from a volcano island, 2.5D chibi clay toy style, round soft shapes, big head small body, short round limbs, round face, big eyes, round nose, short dark brown hair with slightly flipped tips (messy), burnt-orange short-sleeve work shirt with a simple flame emblem on the chest, dark brown shorts, dark brown work boots, goggles on his head, a small cloth pouch on his belt, soot smudges on his cheeks, slightly scorched shirt hem, color palette burnt orange, brick red, dark brown, ochre, plain white background, full body, no text`
+
+| 代號 | 表情 | 加在共用後面 |
+|---|---|---|
+| C-9a | 昏倒（檔名 `fire_folk_faint.webp`） | `lying on his back on the ground, eyes closed with swirly dizzy look, arms spread, exhausted, horizontal lying pose` |
+| C-9b | 醒來驚慌（`fire_folk_panic.webp`） | `sitting up, wide frightened eyes, sweat drops, hands raised nervously, worried open mouth` |
+| C-9c | 恢復平靜（`fire_folk_calm.webp`） | `standing, relieved gentle smile but still a little shy, hands holding his cloth pouch` |
+
+C-9b、C-9c 請在同一個對話裡接著 C-9a 改，保持同一個角色。
+
+### E-32 破舊小船（白底、正方形）
+`a small old wooden rowboat, weathered and a bit broken, a crack on the side, one oar, a few scorch marks, beached on its side, 2.5D clay toy style, plain white background, no people, no text`（檔名 `wreck_boat.webp`）
+
+### F-6 漁夫划船前往火島（直式 3:4，至少 1080×1440，畫滿不要白底）
+`First-person view sitting in a small wooden rowboat (only the front of the boat and the old fisherman's back rowing visible at the bottom), sailing across a calm turquoise sea toward a distant volcano island on the horizon, thick dark smoke rising from the volcano crater, warm orange sky, sense of adventure and a little mystery, 2.5D clay toy style, same series as the other transition images, no text, no monster, no rocket`（檔名 `to_fire.webp`）
+
 ## G. 成就徽章（選做，1 張）
 
 `waterClear1`「水島通關」：圓形徽章，比照木島通關徽章的外框與畫風（Claude 可提供參考），中間是 `a cute baby beluga and a sunken ship with a star blanket waving like a flag`，水藍＋金色。1024×1024 白底。

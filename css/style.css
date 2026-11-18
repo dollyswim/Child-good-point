@@ -2496,5 +2496,15 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 
 /* 三座島通關卡片統一木島版：金島、水島的卡片也疊在背景上 */
 .clear-screen .we-card, .water-trip .we-card { position: relative; z-index: 2; }
-.water-trip .we-card { align-self: end; margin-bottom: calc(env(safe-area-inset-bottom) + 4vh); animation: wt-card-in .5s 1.8s ease-out both; }
+.water-trip .we-card { align-self: end; margin-bottom: calc(env(safe-area-inset-bottom) + 4vh); animation: wt-card-in .45s ease-out both; }
 @media (prefers-reduced-motion: reduce) { .water-trip .we-card { animation: none; } }
+
+/* 水島結尾：珊瑚淺灘上的破小船和昏倒的火島居民（正式圖到貨前用表情符號佔位） */
+.wend-shore { position: absolute; left: 0; right: 0; top: 30%; height: 22%; z-index: 1; pointer-events: none; animation: fade-in .6s ease-out both; }
+.wend-boat { position: absolute; left: 8%; bottom: 0; width: 46%; display: grid; place-items: end center; }
+.wend-boat img { width: 100%; height: auto; filter: drop-shadow(0 6px 8px rgba(60, 40, 10, .35)); }
+.wend-folk { position: absolute; right: 10%; bottom: 0; width: 34%; display: grid; place-items: end center; transition: transform .4s; }
+.wend-folk img { width: 100%; height: auto; filter: drop-shadow(0 6px 8px rgba(60, 40, 10, .35)); }
+.wend-folk.faint .folk-ph { transform: rotate(-80deg); }
+.folk-ph { font-size: clamp(56px, 18vw, 90px); line-height: 1; filter: drop-shadow(0 6px 8px rgba(60, 40, 10, .35)); }
+.water-trip .wo-beach { position: absolute; inset: 0; background: center / cover no-repeat; animation: fade-in .6s ease-out both; }
