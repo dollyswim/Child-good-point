@@ -2479,3 +2479,7 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 
 .boss-floor .monster-seat.fade { opacity: 0; transition: opacity .5s; transform: translateX(-50%); }
 .boss-floor .monster-stand { position: absolute; right: -4%; bottom: 5%; height: 42%; width: auto; filter: drop-shadow(0 4px 6px rgba(60, 30, 0, .35)); animation: fade-in .5s ease-out both; pointer-events: none; }   /* 起身後站在房間右下角 */
+
+/* 健忘怪看藏寶圖：放大顯示在房間中央 */
+.boss-layer > .boss-map { position: absolute; left: 50%; top: 50%; width: 90%; transform: translate(-50%, -50%) rotate(-2deg); z-index: 30; pointer-events: none; border-radius: 6px; box-shadow: 0 8px 22px rgba(40, 20, 0, .5); animation: boss-book-in .35s ease-out; }
+.boss-layer > .boss-map img { display: block; width: 100%; height: auto; border-radius: 6px; object-fit: contain; }

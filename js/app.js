@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-184';
+  var APP_VERSION = '2026.11.18-185';
   var store;
   try {
     store = new CGP.Store();
@@ -2367,8 +2367,14 @@
     });
     await talkSeq([line(me, '牛奶瓶的瓶底，跟瓶架的圓圈剛好一樣大！'), line(WHO.monster('surprised'), '啊啊啊！這不是我的牛奶瓶嗎？！'),
       line(WHO.monster('surprised'), '我怕忘記重要的事情，就把紙條塞進瓶子裡……'), line(WHO.monster('surprised'), '結果我忘記把瓶子放在哪裡！'),
-      line(me, '所以我們找到的不是藏寶圖，是你的備忘紙！'), line(M, '對！我還畫了回家的路，怕連家也忘記！'), line(M, '等等，你說什麼……寶圖？給我看一下……'),
-      line(M, '對了，我好像晾乾之後，就把寶貝放在地上的箱子裡了！')]);   // 2026-11-18 家長加「等等，你說什麼……寶圖？」
+      line(me, '所以我們找到的不是藏寶圖，是你的備忘紙！'), line(M, '對！我還畫了回家的路，怕連家也忘記！'), line(M, '等等，你說什麼……寶圖？給我看一下……')]);
+    // 2026-11-18 家長：放大顯示藏寶圖（第 8 格拼好的那張，含「最重要的寶……」），健忘怪認出三個大框框就是三個箱子
+    var mp = await memoPrepare(WATER_ART.memo || memoPlaceholder(), 5, 4), mapEl = document.createElement('div');
+    mapEl.className = 'boss-map'; mapEl.innerHTML = '<img src="' + mp.src + '" alt="藏寶圖" draggable="false">';
+    layer.appendChild(mapEl);
+    await talkSeq([line(M, '對，這是我畫的……喔！這三個大框框好像是那三個箱子！')]);
+    mapEl.remove();
+    await talkSeq([line(M, '對了，我好像晾乾之後，就把寶貝放在地上的箱子裡了！'), line(M, '（健忘怪跳起來）可是放在哪裡呢？')]);
     // 健忘怪站起來，地上的三個箱子露出來 → 直接在房間裡點箱子
     layer.innerHTML = '';
     var seatImg = P.art.querySelector('#monster-seat');
