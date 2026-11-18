@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-181';
+  var APP_VERSION = '2026.11.18-182';
   var store;
   try {
     store = new CGP.Store();
@@ -2218,7 +2218,7 @@
   ];
   var FLOOR_BOX_X = [37, 50, 63], FLOOR_BOX_OPEN_X = [30, 50, 70];   // 地上三個箱子的中心 x（畫面百分比）：健忘怪躺著時併排靠在一起，站起來後分開一點方便點
   var MONSTER_SEAT_PH = false;   // true＝正方形佔位圖（用高度）；false＝C-8 橫圖（用寬度）
-  var MONSTER_SEAT = 'images/water/npc/monster_lying.webp';   // C-8 健忘怪橫躺在三個箱子上發呆（2026-11-18 家長 Gemini 圖驗收通過）
+  var MONSTER_SEAT = 'images/water/npc/monster_lying_v2.webp';   // C-8 健忘怪橫躺在三個箱子上發呆（2026-11-18 家長 Gemini 圖；v2 補去手臂和頭之間被圍住的白底）
   var BOSS_CARDS = [['soiled', '弄髒了', '🟤'], ['wash', '洗一洗', '🫧'], ['dry', '晾乾', '☀️'], ['store', '收好', '📥']];   // 2026-11-17 E-16～E-19 正式圖：images/water/items/card_<id>.webp
   function bossCard(c) { var k = BOSS_CARDS[c]; return '<img class="card-art" src="images/water/items/card_' + k[0] + '.webp" alt="" draggable="false"><small>' + k[1] + '</small>'; }
   var BOSS_BOXES = [['star', '星星箱', '⭐', '箱子裡有扳手和起子，叮叮噹噹的。', 'wrench'], ['shell', '貝殼箱', '🐚', '箱子摸起來濕濕的，旁邊有一小灘水。', 'puddle'], ['moon', '月亮箱', '🌙', '箱子乾乾的，裡面也沒有工具。', '']];   // 第 5 欄：點開後出現的證據圖（E-24 扳手、E-26 水窪）
