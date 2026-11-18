@@ -1132,11 +1132,13 @@ async function main() {
       await q.waitForSelector('#rack-spot.match');
     }
     await talkUntil('.floor-box:not([disabled])');
-    await q.click('.floor-box[data-b="0"]'); await q.click('.floor-box[data-b="1"]');
-    assert.equal(await q.locator('#box-open').count(), 0, '三個箱子都看過才能打開');
-    await q.click('.floor-box[data-b="2"]'); await q.click('.floor-box[data-b="0"]');
+    await q.click('.floor-box[data-b="0"]');
+    assert.equal(await q.locator('#box-open').count(), 1, '點一個箱子就能打開（不用三個都看過）');
     if (SHOT_DIR) { await q.waitForTimeout(500); await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, 'water-boxes.png') }); }
     await q.click('#box-open');
+    await q.waitForSelector('#water-talk');
+    assert.match(await q.locator('#water-talk .we-line').innerText(), /扳手/, '開錯箱子：健忘怪用對話框提醒（看得到）');
+    await q.locator('#water-talk [data-talk]').last().click();
     assert.equal((await P()).clears, 0, '選錯箱子不會通關');
     await q.click('.floor-box[data-b="2"]'); await q.click('#box-open');
     if (SHOT_DIR) { await q.waitForTimeout(800); await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, '41-water-box-open.png') }); }

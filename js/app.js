@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-185';
+  var APP_VERSION = '2026.11.18-186';
   var store;
   try {
     store = new CGP.Store();
@@ -2386,8 +2386,8 @@
     var floor = P.art.querySelector('#boss-floor'); floor.classList.add('ready');
     floor.querySelectorAll('.floor-box').forEach(function (x, i) { x.disabled = false; x.style.left = FLOOR_BOX_OPEN_X[i] + '%'; });   // 箱子稍微分開
     await sleep(reduceMotion ? 0 : 450);
-    P.title.textContent = '📦 寶貝在哪個箱子裡？'; P.sub.textContent = '點地上的每個箱子看看，再選一個打開（要乾乾的、不跟工具放一起）';
-    P.tools.innerHTML = '<span class="party-count" id="box-tip">看過 0 / 3 個箱子</span>';
+    P.title.textContent = '📦 寶貝在哪個箱子裡？'; P.sub.textContent = '點一個箱子看看，再按「打開」（要乾乾的、不跟工具放一起）';
+    P.tools.innerHTML = '<span class="party-count" id="box-tip">先點一個箱子</span>';   // 2026-11-18 家長：不用三個都看過，點了就能打開
     await new Promise(function (resolve) {
       var seen = {}, chosen = null;
       floor.addEventListener('click', function (e) {
@@ -2396,12 +2396,11 @@
         if (!seen[i]) { seen[i] = true; b.classList.add('seen'); b.querySelector('.boss-check').hidden = false; var ev = b.querySelector('.box-ev'); if (ev) ev.hidden = false; }
         floor.querySelectorAll('.floor-box').forEach(function (x) { x.classList.toggle('on', x === b); }); chosen = i;
         P.sub.textContent = BOSS_BOXES[i][2] + ' ' + BOSS_BOXES[i][1] + '：' + BOSS_BOXES[i][3];
-        var n = Object.keys(seen).length;
-        P.tools.innerHTML = n < 3 ? '<span class="party-count">看過 ' + n + ' / 3 個箱子</span>' : '<button type="button" class="btn primary charge-btn" id="box-open">打開' + BOSS_BOXES[chosen][1] + '</button>';
-        var ob = P.tools.querySelector('#box-open');
-        if (ob) ob.onclick = function () {
+        P.tools.innerHTML = '<button type="button" class="btn primary charge-btn" id="box-open">打開' + BOSS_BOXES[chosen][1] + '</button>';
+        P.tools.querySelector('#box-open').onclick = function () {
           if (BOSS_BOXES[chosen][0] === 'moon') { resolve(); return; }
-          toast(chosen === 0 ? '星星箱裡有扳手，會叮叮噹噹吵醒寶貝喔！' : '貝殼箱濕濕的，寶貝要放在乾乾的地方喔！', 'neg');
+          // 開錯：健忘怪用對話框說（原本的提示條被視窗擋住看不到）
+          say(M, chosen === 0 ? '不對不對！星星箱裡有扳手，會叮叮噹噹吵醒寶貝！' : '不對不對！貝殼箱濕濕的，寶貝要放在乾乾的地方！');
         };
       });
     });
@@ -2416,11 +2415,11 @@
     // 通關：⭐3＋第一次 3 個神秘寶箱（之後 10 星）
     var ev = child.preview ? { clear: { first: true, next: '金島' }, text: '\n通關獎勵：🎁 神秘寶箱 ×3（不用鑰匙）（預覽，沒有存檔）' } : store.finishWaterBoss(child.id);
     if (ev.clear.first) {
-      await talkSeq([line(me, '下面好像還有東西，那是什麼？'), line(M, '哦？那個東西喔？'), line(M, '太佔空間了啦！'), line(M, '我每次經過都會踢到小拇指！'),
-        line(WHO.monster('blanket'), '這個留下，亮晶晶的給你們！你幫我搬走好不好？', { choices: [{ label: '🎁 收下神秘禮物', val: true, primary: true }] })]);
+      await talkSeq([line(me, '下面好像還有東西，那是什麼？'), line(M, '哦？那個東西喔？'),
+        line(WHO.monster('blanket'), '太佔空間了啦，小被被都快沒空間放了！你幫我把這個拿走吧！', { choices: [{ label: '🎁 收下神秘禮物', val: true, primary: true }] })]);
     } else await talkSeq([line(WHO.monster('blanket'), '這次換我請你吃星星糖！', { choices: [{ label: '⭐ 收下 ' + GAME.GOLD_CLEAR_STARS + ' 顆能量星星', val: true, primary: true }] })]);
     await talkSeq([line(M, '謝謝你！我一定會記得你的！'), line(M, '……欸？你叫什麼名字？'), line(me, '我是你的冒險朋友！'),
-      line(M, '（拿起筆記本寫）「第一件事：出門前檢查小被被。」'), line(M, '「第二件事：記得看第一件事。」'), line(WHO.beluga(), '我送你回岸邊！')]);
+      line(M, '謝謝朋友，我要記下來今天的事。'), line(M, '（拿起筆記本，好像在畫著小被被、一條魚和奇怪的生物）'), line(WHO.beluga(), '既然完成任務了，我送你回到岸上吧！')]);   // 2026-11-18 家長改台詞
     await waterEnding(child, ev);
   }
 
