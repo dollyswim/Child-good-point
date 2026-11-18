@@ -2510,3 +2510,11 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .water-trip .wo-beach { position: absolute; inset: 0; background: center / cover no-repeat; animation: fade-in .6s ease-out both; }
 
 .wend-folk.faint { width: 46%; left: 40%; } .wend-folk.panic { width: 40%; } .wend-folk.calm { width: 32%; }
+/* 2026-11-18 小白鯨載我：游泳時上下起伏、微微擺頭，角色跟著一起晃（家長選） */
+.pawn.riding .pawn-ride:not(.leave) { animation: ride-in .6s ease-out, ride-bob .9s .6s ease-in-out infinite; }
+.pawn.riding .pawn-inner { animation: rider-bob .9s .6s ease-in-out infinite; }
+@keyframes ride-bob { 0%, 100% { transform: translateX(-50%) translateY(0) rotate(0); } 50% { transform: translateX(-50%) translateY(-7%) rotate(-3deg); } }
+@keyframes rider-bob { 0%, 100% { transform: translateY(-12%) rotate(0); } 50% { transform: translateY(-18%) rotate(-3deg); } }
+@media (prefers-reduced-motion: reduce) { .pawn.riding .pawn-ride:not(.leave), .pawn.riding .pawn-inner { animation: none; } }
+
+.water-preview { margin-top: 14px; } .wp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; } .wp-grid .btn { text-align: center; }

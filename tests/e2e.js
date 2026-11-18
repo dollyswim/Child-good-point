@@ -1159,8 +1159,43 @@ async function main() {
     assert.match(await q.locator('[data-testid=water-leave-card]').innerText(), /回到「金島」/);
     await q.click('[data-trip-ok]');
     await q.waitForFunction((cid) => window.__cgpStore.getPlayer(cid).island === 'gold', kid, { timeout: 8000 });
+    // 7. 第二次通關（沒重置）：不再演昏倒居民，漁夫說船還在修（火島未開放）
+    const backToWater = (met) => q.evaluate(([cid, m]) => {
+      const s = window.__cgpStore, p = s.getPlayer(cid);
+      p.island = 'water'; Object.keys(window.CGPGame.STORIES).forEach((k) => { if (window.CGPGame.STORIES[k].island === 'water') p.story[k] = '2026-11-18'; });
+      p.water.folkMet = m; p.water.welcomed = true; p.bag.d6 = 20; p.water.rulesSeen = true; p.storyAsk = null; s.data.adventure.rolls = []; s.setPlayerTile(cid, 99); s.save();
+    }, [kid, met]);
+    assert.equal((await P()).water.folkMet, true, '第一次通關後記下看過火島居民');
+    await idle();
+    await backToWater(true);
+    await q.reload(); await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('#pawn');
+    await setRand(F6(1)); await q.click('.dice-btn.d6');
+    await q.waitForSelector('#water-talk', { timeout: 15000 });
+    assert.match(await q.locator('#water-talk .we-line').innerText(), /船還在修/, '第二次通關（沒重置）：漁夫一句話');
+    assert.equal(await q.locator('#wend-folk').count(), 0, '不再演昏倒居民');
+    await q.locator('#water-talk [data-talk]').last().click();
+    await q.waitForSelector('[data-testid=water-end-card]');
+    assert.equal((await P()).clears, 2);
+    await q.click('[data-we-ok]');
+    // 8. 重置過（folkMet 清掉）：完整劇情，第二次以後可以按略過直接到通關卡片
+    await idle();
+    await backToWater(false);
+    await q.reload(); await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('#pawn');
+    await setRand(F6(1)); await q.click('.dice-btn.d6');
+    await q.waitForSelector('#water-ending [data-trip-skip]', { timeout: 15000 });
+    await q.click('#water-ending [data-trip-skip]');
+    await q.waitForSelector('[data-testid=water-end-card]', { timeout: 8000 });
+    assert.equal(await q.locator('#water-talk').count(), 0, '略過後沒有對話');
+    await q.click('[data-we-ok]');
+    // 9. 地圖起點旁的火島居民：通關過才出現，點了會道謝
+    await idle();
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 1); s.save(); }, kid);
+    await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('.fire-folk-npc');
+    const folkBox = await q.locator('.fire-folk-npc').boundingBox();
+    await q.mouse.click(folkBox.x + folkBox.width / 2, folkBox.y + folkBox.height * .6);
+    await q.waitForFunction(() => /謝謝/.test(document.body.innerText), null, { timeout: 5000 });
     await c.close();
-    console.log('✔ 水島：入島開場、漁夫迎接與魚桶、沿路對話、水島道具限制、關卡停下、拼圖、鯊魚 11／12 到 49、燈籠魚黑暗找東西、健忘怪三階段與 3 箱、小白鯨送回金島');
+    console.log('✔ 水島：入島開場、漁夫迎接與魚桶、沿路對話、水島道具限制、關卡停下、拼圖、鯊魚 11／12 到 49、燈籠魚黑暗找東西、健忘怪三階段與 3 箱、小白鯨送回金島、第二次通關漁夫短版、重置後完整劇情可略過、起點火島居民道謝');
   }
 
   // ---------- 一般冒險事件視窗（2026-11-09）：卡片式、單一視窗整合多個事件；內容沿用事件原文 ----------

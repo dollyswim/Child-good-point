@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-193';
+  var APP_VERSION = '2026.11.18-195';
   var store;
   try {
     store = new CGP.Store();
@@ -1571,6 +1571,7 @@
   function renderMap(child) {
     var player = store.getPlayer(child.id);
     var board = store.getBoard(child.id);
+    if (board.id === 'water') setTimeout(function () { waterPreload(board, player); }, 800);   // 2026-11-18：先在背景下載前方會用到的圖
     // 水島（多場景）：一次只顯示一個場景。顯示哪個場景：移動演出中的位置 → 家長／孩子切換瀏覽的場景 → 角色所在場景
     var hold = ui.pawnHold && ui.pawnHold.childId === child.id ? ui.pawnHold.n : null;
     var shownN = hold != null ? hold : player.pos;
@@ -1681,6 +1682,36 @@
   var WATER_NPC = { fisherman: 'images/water/npc/fisherman.webp', beluga: 'images/water/npc/beluga.webp', shark: 'images/water/npc/shark_v2.webp',   // 2026-11-18 家長換新圖（壞笑露牙的鯊魚惡霸；換檔名讓快取立刻生效）
     lantern: 'images/water/npc/anglerfish.webp',
     monster: 'images/water/npc/monster_confused.webp', monsterSurprised: 'images/water/npc/monster_surprised.webp', monsterBlanket: 'images/water/npc/monster_blanket.webp' };
+  /**
+   * 水島圖片提前下載（2026-11-18 家長選）：水島圖不在 SHELL，第一次用到才下載；網路慢時任務視窗會先空白。
+   * 每次畫地圖時看前方 12 格：有任務格就先下載那關的圖；會換場景就先下載下一張場景背景。下載過的不重複。
+   */
+  var waterPreloaded = {};
+  function waterAssets(tile) {
+    var I = 'images/water/items/', F = 'images/water/find/';
+    switch (tile) {
+      case 8: return [WATER_ART.memo, WATER_ART.bottle];
+      case 16: return [WATER_ART.potion, WATER_NPC.fisherman];
+      case 34: return [WATER_ART.seabed, WATER_ART.fish, WATER_ART.bucket, WATER_NPC.beluga, I + 'heart_bubble.webp'];
+      case 48: return [WATER_ART.sharkBg, WATER_NPC.shark];
+      case 56: return [WATER_ART.lanternBg, WATER_NPC.lantern].concat(LANTERN_ITEMS.map(function (it) { return F + it[0] + '.webp'; }));
+      case 100: return [WATER_ART.room, MONSTER_SEAT, WATER_NPC.monster, WATER_NPC.monsterSurprised, WATER_NPC.monsterBlanket, WATER_ART.blanket, WATER_ART.bottle,
+        I + 'notebook_closed.webp', I + 'notebook_open.webp', I + 'wrench.webp', I + 'puddle.webp', I + 'box_open.webp']
+        .concat(BOSS_BOXES.map(function (b) { return I + 'box_' + b[0] + '.webp'; }), BOSS_CARDS.map(function (c) { return I + 'card_' + c[0] + '.webp'; }),
+          [WATER_TRIP[3], WATER_TRIP[2], WATER_TRIP[4], BADGE_IMG.waterClear1, WATER_END_ART.boat, FIRE_FOLK.faint, FIRE_FOLK.panic, FIRE_FOLK.calm]);
+    }
+    return [];
+  }
+  function waterPreload(board, player) {
+    if (!board || board.id !== 'water') return;
+    var list = [], end = Math.min(board.tiles.length - 1, player.pos + 12);
+    for (var n = player.pos + 1; n <= end; n++) {
+      list = list.concat(waterAssets(n));
+      var r = regionOf(board, board.tiles[n]); if (r && r.background) list.push(r.background.webp);
+    }
+    list = list.filter(function (u) { if (!u || waterPreloaded[u]) return false; waterPreloaded[u] = true; return true; });
+    if (list.length) preloadImages(list, 15000);
+  }
   function waterDecor(child, board, player, scene) {
     if (board.id !== 'water' || typeof waterMapDecor !== 'function') return '';
     return waterMapDecor(child, board, player, scene);
@@ -4360,8 +4391,12 @@
         '<button class="btn small" data-action="edit-child" data-id="' + h(c.id) + '">編輯</button>' +
         '<button class="btn small danger" data-action="delete-child" data-id="' + h(c.id) + '">刪除</button></li>';
     }).join('');
+    // 2026-11-18 家長：設定頁（要家長密碼）裡直接預覽水島各關，不用記網址；預覽不動存檔、不給星星
+    var WATER_PREVIEW = [['open', '🏝️ 開場'], ['memo', '🗺️ 拼藏寶圖'], ['potion', '🧪 潛水藥水'], ['feed', '🐳 餵小白鯨'], ['shark', '🦈 鯊魚惡霸'], ['lantern', '🏮 燈籠魚'], ['boss', '🛏️ 健忘怪房間＋結尾']];
+    var preview = '<section class="card water-preview"><h2>🌊 預覽水島</h2><p class="muted small">家長試玩用：直接打開水島的任務視窗，不會改存檔、不會給星星。</p>' +
+      '<div class="wp-grid">' + WATER_PREVIEW.map(function (w) { return '<a class="btn small" href="?preview=water-' + w[0] + '#home">' + w[1] + '</a>'; }).join('') + '</div></section>';
     return replay + '<ul class="rows">' + (list || '<li class="muted">還沒有孩子</li>') + '</ul>' +
-      '<button class="btn primary block" data-action="add-child">＋ 新增孩子</button>';
+      '<button class="btn primary block" data-action="add-child">＋ 新增孩子</button>' + preview;
   }
 
   function settingsItems(kind) {
@@ -5312,7 +5347,10 @@
     var kid = { id: 'preview', preview: true, name: '小朋友', avatar: GAME.CHARACTERS[0].id };
     setTimeout(function () {
       var job = m[1] === 'open' ? waterPreviewOpen(kid) : waterTask(kid, { memo: 'memo', potion: 'potion', feed: 'feed', shark: 'shark', lantern: 'lantern', boss: 'blanket' }[m[1]]);
-      Promise.resolve(job).then(function () { toast('預覽結束（沒有存檔）。再玩一次請重新整理', 'pos'); }).catch(function (e) { toast(e.message, 'neg'); });
+      Promise.resolve(job).then(function () {
+        toast('預覽結束（沒有存檔）', 'pos');
+        if (/[?&]preview=/.test(location.search)) { history.replaceState(null, '', location.pathname + '#home'); render(); }   // 拿掉網址上的預覽參數，重新整理不會再進預覽
+      }).catch(function (e) { toast(e.message, 'neg'); });
     }, 400);
     function waterPreviewOpen(k) {
       var el = document.createElement('div');   // 開場用到地圖背景：預覽時直接用珊瑚淺灘圖
