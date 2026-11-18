@@ -1101,6 +1101,9 @@ async function main() {
     await setRand(F6(1));
     await q.click('.dice-btn.d6');
     await talkUntil('.boss-spot');
+    await q.click('#boss-hint');
+    assert.match(await q.locator('#scene-sub').innerText(), /好像還沒找過/, '提示：提醒還沒找過的地方');
+    assert.equal(await q.locator('.boss-spot.hint').count(), 1, '提示：那個地方發亮');
     for (const sp of ['bed', 'cupboard', 'desk', 'curtain', 'wardrobe']) { await talkUntil('.boss-spot[data-spot="' + sp + '"]:not(.seen)'); await q.click('.boss-spot[data-spot="' + sp + '"]'); }
     await talkUntil('.order-card');
     // 排錯：台詞要對應排錯的地方（家長截圖：洗一洗、晾乾、收好、弄髒了）
@@ -1120,7 +1123,14 @@ async function main() {
     if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, '40-water-cards.png') });
     await q.click('#order-check');
     await talkUntil('#use-bottle');
-    await q.click('#use-bottle');
+    { // 拖曳牛奶瓶：先拖到別的地方會彈回來，再拖到瓶架上
+      const bb = await q.locator('#use-bottle').boundingBox(), rb = await q.locator('#rack-spot').boundingBox();
+      await q.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2); await q.mouse.down(); await q.mouse.move(bb.x + 20, bb.y - 60, { steps: 4 }); await q.mouse.up();
+      assert.equal(await q.locator('#rack-spot.match').count(), 0, '沒拖到瓶架不算');
+      await q.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2); await q.mouse.down(); await q.mouse.move(bb.x + 20, bb.y - 40, { steps: 3 });
+      await q.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2, { steps: 8 }); await q.mouse.up();
+      await q.waitForSelector('#rack-spot.match');
+    }
     await talkUntil('.box-one');
     await q.click('.box-one[data-b="0"]'); await q.click('.box-one[data-b="1"]');
     assert.equal(await q.locator('#box-open').count(), 0, '三個箱子都看過才能打開');

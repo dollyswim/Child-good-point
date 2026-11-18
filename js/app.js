@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-176';
+  var APP_VERSION = '2026.11.18-177';
   var store;
   try {
     store = new CGP.Store();
@@ -2206,13 +2206,14 @@
 
   // 第 100 格：健忘怪的家（三階段：搜索 → 整理昨天 → 牛奶瓶真相與選箱），每完成一階段存檔（計畫第 5.3 節）
   var BOSS_SPOTS = [
-    // 2026-11-17 位置對準 D-4 正式圖的家具（x、y＝畫面百分比）；圖裡沒有木箱，改成布簾
-    { id: 'bed', label: '床', emoji: '🛏️', x: 16, y: 56, card: 0, say: '床底下只有一隻拖鞋……床沿露出一角紙！' },
-    { id: 'cupboard', label: '雪花櫃', emoji: '🧊', x: 30, y: 38, say: '櫃子門上貼著雪花……打開一看，只有一條木頭魚。這只是普通的櫃子嘛！', monster: '我貼了雪花，它還不肯變冰箱，真有個性！' },
-    { id: 'desk', label: '書桌', emoji: '🪑', x: 58, y: 50, card: 2, notebook: true, say: '桌上有墨跡，側邊抽屜露出筆記本的一角，桌腳旁還有一張紙！' },
-    { id: 'curtain', label: '布簾', emoji: '🪟', x: 89, y: 32, card: 1, say: '把布簾掀開一點……後面藏著一張紙！' },
-    { id: 'wardrobe', label: '衣櫃', emoji: '🚪', x: 80, y: 42, card: 3, say: '衣櫃門縫夾著一張紙！' },
-    { id: 'rack', label: '窗邊的瓶架', emoji: '🫙', x: 52, y: 26, say: '窗台上有一個空空的圓形瓶架……原本放什麼呢？先記下來。' }
+    // 2026-11-17 位置對準 D-4 正式圖的家具（x、y＝中心、w、h＝可點範圍，都是畫面百分比）；圖裡沒有木箱，改成布簾
+    // 2026-11-18 家長：不顯示文字標籤（會擋住家具），改成透明可點範圍＋手勢游標，另有提示按鈕
+    { id: 'bed', label: '床', emoji: '🛏️', x: 15, y: 62, w: 28, h: 34, card: 0, say: '床底下只有一隻拖鞋……床沿露出一角紙！' },
+    { id: 'cupboard', label: '雪花櫃', emoji: '🧊', x: 30.5, y: 42, w: 15, h: 31, say: '櫃子門上貼著雪花……打開一看，只有一條木頭魚。這只是普通的櫃子嘛！', monster: '我貼了雪花，它還不肯變冰箱，真有個性！' },
+    { id: 'desk', label: '書桌', emoji: '🪑', x: 54, y: 48, w: 31, h: 22, card: 2, notebook: true, say: '桌上有墨跡，側邊抽屜露出筆記本的一角，桌腳旁還有一張紙！' },
+    { id: 'curtain', label: '布簾', emoji: '🪟', x: 95, y: 30, w: 10, h: 46, card: 1, say: '把布簾掀開一點……後面藏著一張紙！' },
+    { id: 'wardrobe', label: '衣櫃', emoji: '🚪', x: 80, y: 37, w: 21, h: 46, card: 3, say: '衣櫃門縫夾著一張紙！' },
+    { id: 'rack', label: '窗邊的瓶架', emoji: '🫙', x: 52, y: 28, w: 16, h: 12, say: '窗台上有一個空空的圓形瓶架……原本放什麼呢？先記下來。' }
   ];
   var BOSS_CARDS = [['soiled', '弄髒了', '🟤'], ['wash', '洗一洗', '🫧'], ['dry', '晾乾', '☀️'], ['store', '收好', '📥']];   // 2026-11-17 E-16～E-19 正式圖：images/water/items/card_<id>.webp
   function bossCard(c) { var k = BOSS_CARDS[c]; return '<img class="card-art" src="images/water/items/card_' + k[0] + '.webp" alt="" draggable="false"><small>' + k[1] + '</small>'; }
@@ -2228,10 +2229,21 @@
     // 階段一：搜索
     if (stage < 1) {
       P.title.textContent = '🔍 找找看！'; P.sub.textContent = '點房間裡的東西，找出筆記本和 4 張紙卡';
-      layer.innerHTML = BOSS_SPOTS.map(function (s) { return '<button type="button" class="boss-spot" data-spot="' + s.id + '" style="left:' + s.x + '%;top:' + s.y + '%"><span>' + s.emoji + '</span><small>' + s.label + '</small>' + (s.card != null || s.notebook ? '<i class="paper-corner" aria-hidden="true">📄</i>' : '') + '</button>'; }).join('');
+      layer.innerHTML = BOSS_SPOTS.map(function (s) { return '<button type="button" class="boss-spot boss-hit" data-spot="' + s.id + '" aria-label="' + s.label + '" style="left:' + s.x + '%;top:' + s.y + '%;width:' + s.w + '%;height:' + s.h + '%"></button>'; }).join('');
       await new Promise(function (resolve) {
         var cards = 0, notebook = false;
-        function prog() { P.tools.innerHTML = '<span class="party-count">📒 ' + (notebook ? 1 : 0) + ' / 1　📄 ' + cards + ' / 4</span>'; }
+        function prog() {
+          P.tools.innerHTML = '<div class="boss-bar"><span class="party-count">📒 ' + (notebook ? 1 : 0) + ' / 1　📄 ' + cards + ' / 4</span><button type="button" class="btn small" id="boss-hint">💡 提示</button></div>';
+          P.tools.querySelector('#boss-hint').onclick = function () {   // 提醒還沒找過的地方（有紙卡、筆記本的優先）
+            var left = BOSS_SPOTS.filter(function (x) { return !layer.querySelector('.boss-spot[data-spot="' + x.id + '"].seen'); });
+            left.sort(function (a, b) { return (b.card != null || b.notebook ? 1 : 0) - (a.card != null || a.notebook ? 1 : 0); });
+            if (!left.length) return;
+            var t = layer.querySelector('.boss-spot[data-spot="' + left[0].id + '"]');
+            layer.querySelectorAll('.boss-spot.hint').forEach(function (x) { x.classList.remove('hint'); });
+            void t.offsetWidth; t.classList.add('hint'); setTimeout(function () { t.classList.remove('hint'); }, 2600);
+            P.sub.textContent = '💡 ' + left[0].label + '那邊好像還沒找過！';
+          };
+        }
         prog();
         layer.addEventListener('click', async function (e) {
           var b = e.target.closest('.boss-spot'); if (!b || b.classList.contains('seen')) return;
@@ -2307,9 +2319,40 @@
     }
     // 階段三：牛奶瓶真相 → 選對收納箱
     P.title.textContent = '🍼 這個瓶架……'; P.sub.textContent = '把路上撿到的牛奶瓶放到窗邊的瓶架上';
-    layer.innerHTML = '<button type="button" class="boss-spot rack-spot" id="rack-spot" style="left:52%;top:26%"><span></span><small>空的瓶架</small></button>';
-    P.tools.innerHTML = '<button type="button" class="btn primary" id="use-bottle">' + (WATER_ART.bottle ? '<img src="' + WATER_ART.bottle + '" alt="" class="btn-ico">' : '🍼 ') + '拿出牛奶瓶</button>';
-    await new Promise(function (r) { P.tools.querySelector('#use-bottle').onclick = function () { var rk = layer.querySelector('#rack-spot'); rk.classList.add('match'); if (WATER_ART.bottle) rk.querySelector('span').innerHTML = '<img src="' + WATER_ART.bottle + '" alt="" class="box-art" draggable="false">'; setTimeout(r, reduceMotion ? 50 : 700); }; });
+    // 2026-11-18 家長：要拖曳牛奶瓶到瓶架上（也可以先點牛奶瓶再點瓶架）；拖到別的地方會彈回來
+    P.sub.textContent = '把下面的牛奶瓶拖到窗邊的瓶架上';
+    layer.innerHTML = '<button type="button" class="boss-spot boss-hit rack-spot" id="rack-spot" aria-label="窗邊的瓶架" style="left:52%;top:28%;width:16%;height:12%"><span></span></button>';
+    P.tools.innerHTML = '<div class="bottle-tray"><button type="button" class="bottle-drag" id="use-bottle" aria-label="牛奶瓶"><img src="' + WATER_ART.bottle + '" alt="" draggable="false"></button><small>按住牛奶瓶，拖到瓶架上</small></div>';
+    await new Promise(function (r) {
+      var rk = layer.querySelector('#rack-spot'), bt = P.tools.querySelector('#use-bottle'), picked = false, drag = null, done = false;
+      function onRack(x, y) { var R = rk.getBoundingClientRect(), m = 14; return x >= R.left - m && x <= R.right + m && y >= R.top - m && y <= R.bottom + m; }
+      function put() {
+        if (done) return; done = true;
+        rk.classList.add('match'); rk.querySelector('span').innerHTML = '<img src="' + WATER_ART.bottle + '" alt="" class="rack-bottle" draggable="false">';
+        P.tools.querySelector('.bottle-tray').style.visibility = 'hidden'; P.sub.textContent = '剛好放得進去！';
+        setTimeout(r, reduceMotion ? 50 : 700);
+      }
+      bt.addEventListener('pointerdown', function (e) { drag = { x: e.clientX, y: e.clientY, el: null, id: e.pointerId }; try { bt.setPointerCapture(e.pointerId); } catch (err) { /* 不支援也能點 */ } });
+      bt.addEventListener('pointermove', function (e) {
+        if (!drag || e.pointerId !== drag.id) return;
+        if (!drag.el) {
+          if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) < 8) return;
+          drag.el = document.createElement('img'); drag.el.src = WATER_ART.bottle; drag.el.className = 'bottle-ghost'; document.body.appendChild(drag.el); bt.classList.add('lifting');
+        }
+        e.preventDefault(); drag.el.style.left = e.clientX + 'px'; drag.el.style.top = e.clientY + 'px';
+        rk.classList.toggle('over', onRack(e.clientX, e.clientY));
+      });
+      function end(e) {
+        if (!drag || e.pointerId !== drag.id) return;
+        var d = drag; drag = null; rk.classList.remove('over');
+        if (!d.el) { picked = true; bt.classList.add('on'); P.sub.textContent = '現在點一下窗邊的瓶架'; return; }   // 沒拖動：當作點選
+        d.el.remove(); bt.classList.remove('lifting');
+        if (e.type === 'pointerup' && onRack(e.clientX, e.clientY)) put();
+        else { bt.classList.remove('bounce'); void bt.offsetWidth; bt.classList.add('bounce'); }   // 沒放到瓶架：彈回來
+      }
+      bt.addEventListener('pointerup', end); bt.addEventListener('pointercancel', end);
+      rk.addEventListener('click', function () { if (picked) put(); else { rk.classList.remove('hint'); void rk.offsetWidth; rk.classList.add('hint'); P.sub.textContent = '先拿起下面的牛奶瓶喔！'; } });
+    });
     await talkSeq([line(me, '牛奶瓶的瓶底，跟瓶架的圓圈剛好一樣大！'), line(WHO.monster('surprised'), '啊啊啊！這不是我的牛奶瓶嗎？！'),
       line(WHO.monster('surprised'), '我怕忘記重要的事情，就把紙條塞進瓶子裡……'), line(WHO.monster('surprised'), '結果我忘記把瓶子放在哪裡！'),
       line(me, '所以我們找到的不是藏寶圖，是你的備忘紙！'), line(M, '對！我還畫了回家的路，怕連家也忘記！'), line(M, '我記得放在箱子裡，可是忘記是哪個！箱子會自己換班嗎？')]);

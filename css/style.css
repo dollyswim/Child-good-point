@@ -2426,3 +2426,23 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 
 /* 燈籠魚找完：洞口那一角暖光一閃一閃（其他地方仍然是黑的） */
 .lantern-panel .cave-lit .lantern-fish { filter: drop-shadow(0 0 10px rgba(255, 236, 150, .9)); }
+
+/* 2026-11-18 健忘怪房間：搜查點改成透明可點範圍（不顯示文字），提示時發亮；牛奶瓶拖曳 */
+.boss-panel .boss-spot.boss-hit { min-width: 0; padding: 0; border: 0; border-radius: 14px; background: transparent; box-shadow: none; animation: none; cursor: pointer; }
+.boss-panel .boss-spot.boss-hit.seen { background: transparent; box-shadow: none; }
+.boss-panel .boss-spot.boss-hit.hint { animation: boss-hint .65s ease-in-out 4; }
+.boss-panel .boss-spot.boss-hit.over { box-shadow: 0 0 0 3px #ffd23f inset, 0 0 16px #ffd23f; }
+.boss-panel .boss-spot.boss-hit.match { box-shadow: 0 0 14px 4px rgba(255, 210, 63, .8); }
+@keyframes boss-hint { 50% { box-shadow: 0 0 0 4px rgba(255, 220, 90, .95) inset, 0 0 22px 6px rgba(255, 220, 90, .85); background: rgba(255, 240, 170, .25); } }
+.boss-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
+.rack-spot span { position: absolute; inset: 0; display: grid; place-items: center; }
+.rack-bottle { height: 165%; width: auto; transform: translateY(-28%); filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .3)); }
+.bottle-tray { display: grid; justify-items: center; gap: 4px; }
+.bottle-tray small { font-weight: 800; color: #8a6a3a; }
+.bottle-drag { width: 78px; height: 78px; padding: 6px; border: 3px dashed #e2c98f; border-radius: 18px; background: #fffaf0; cursor: grab; touch-action: none; }
+.bottle-drag img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.bottle-drag.on { border-style: solid; border-color: #ff9f1a; box-shadow: 0 0 0 3px rgba(255, 159, 26, .45); }
+.bottle-drag.lifting { opacity: .35; }
+.bottle-drag.bounce { animation: memo-shake .3s 2; }
+.bottle-ghost { position: fixed; z-index: 2000; width: 64px; height: auto; transform: translate(-50%, -60%) scale(1.1); pointer-events: none; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .35)); }
+@media (prefers-reduced-motion: reduce) { .boss-panel .boss-spot.boss-hit.hint, .bottle-drag.bounce { animation: none; outline: 3px solid #ffd23f; } }
