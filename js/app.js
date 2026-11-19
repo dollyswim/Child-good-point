@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-218';
+  var APP_VERSION = '2026.11.19-220';
   var store;
   try {
     store = new CGP.Store();
@@ -428,7 +428,7 @@
   var COACH = {
     stars: { sel: '[data-testid=stars]', text: '這是你的<b>能量星星</b>⭐！做好事得到的分數，出發時會換成星星，用來在商店買道具。', btn: '知道了' },
     shop: { sel: '.map-shop', text: '點左下角的<b>商店</b>，用星星買骰子！', wait: true },
-    buy: { sel: '#confirm [data-buy=d6]', text: '買一顆 <b>6 面骰</b>試試看！（星星不夠也沒關係，背包裡已經有新手禮的骰子）', wait: true, dialog: true },
+    buy: { sel: '#confirm [data-buy=d6]', text: '<b>新手任務</b>：用星星買一顆 <b>6 面骰</b>！完成就再送你 1 顆 🎁', wait: true, dialog: true },
     roll: { sel: '.dice-btn.d6', text: '點 <b>6 面骰</b>擲骰子！', wait: true },
     move: { sel: '#pawn', text: '擲出幾點就<b>往前走幾格</b>！停在寶箱、問號、遊戲機這些特別的格子，會發生驚喜喔。每天最多擲 3 次。', btn: '開始冒險！' }
   };
@@ -1649,7 +1649,7 @@
     var used = store.getRollsToday(child.id);
     var limit = store.getLimits(child.id).dice;   // 2026-11-09：每日上限依家長設定（測試孩子不限）
     // 2026-11-19：背包裡沒有可以前進的道具、星星又買得起 → 商店跳動提醒（新手常不知道要先去商店）
-    var shopCall = canPlay && !player.pendingRoll && !bag.d6 && !bag.d12 && !bag.skates && !bag.magicDice && !(board.id === 'water' && player.story.feed)
+    var shopCall = !onboardOff() && canPlay && !player.pendingRoll && !bag.d6 && !bag.d12 && !bag.skates && !bag.magicDice && !(board.id === 'water' && player.story.feed)
       && store.getStarBalance(child.id) >= GAME.SHOP.reduce(function (m, it) { return Math.min(m, it.price); }, 99);
     var end = board.tiles.length - 1;
     var atEnd = player.pos >= end;
@@ -4090,10 +4090,11 @@
 
   /** 星星商店（對話框） */
   function openShop(childId) {
+    var bonusMsg = '';
     function draw() {
       var bal = store.getStarBalance(childId);
       var bag = store.getPlayer(childId).bag;
-      confirmEl.innerHTML = '<div class="confirm-box shop-box"><h2>🛒 星星商店</h2>' +
+      confirmEl.innerHTML = '<div class="confirm-box shop-box"><h2>🛒 星星商店</h2>' + (bonusMsg ? '<p class="shop-bonus">' + bonusMsg + '</p>' : '') +
         '<p class="shop-bal">目前有 <b>' + STAR_IMG + ' ' + num(bal) + '</b></p>' +
         GAME.SHOP.map(function (it) {
           var ok = bal >= it.price;
@@ -4110,7 +4111,7 @@
         '<div class="modal-actions"><button type="button" class="btn" data-no>完成</button></div></div>';
       confirmEl.querySelectorAll('[data-buy]').forEach(function (b) {
         b.onclick = function () {
-          try { var it = store.buyItem(childId, b.getAttribute('data-buy')); toast('買到 ' + it.name + '！', 'pos'); if (store.getPlayer(childId).tutorial === 'buy') store.setTutorial(childId, 'roll'); }
+          try { var it = store.buyItem(childId, b.getAttribute('data-buy')); if (it.starterBonus) bonusMsg = '🎉 完成新手任務！再送你 1 顆 6 面骰！'; else { bonusMsg = ''; toast('買到 ' + it.name + '！', 'pos'); } if (store.getPlayer(childId).tutorial === 'buy') store.setTutorial(childId, 'roll'); }
           catch (err) { toast(err.message, 'neg'); }
           draw();
         };
@@ -4174,7 +4175,7 @@
     yes.onclick = function () {
       var ids = picked(), got = [];
       ids.forEach(function (id) {
-        try { var x = store.settleToday(id); got.push(store.getChild(id).name + ' ⭐' + x.stars + (x.starterD6 ? '（🎁 新手禮：6 面骰 ×' + x.starterD6 + '）' : '')); }
+        try { var x = store.settleToday(id); got.push(store.getChild(id).name + ' ⭐' + x.stars + (x.starterStars ? '＋🎁 新手禮 ⭐' + x.starterStars : '')); }
         catch (err) { toast(err.message, 'neg'); }
       });
       confirmEl.close();

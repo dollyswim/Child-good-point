@@ -439,6 +439,7 @@
             })(),
             maxReached: Math.max(toInt(p.maxReached, 0), toInt(p.pos, 0)),   // 曾經到過最遠的格子（成就用）
             starterGift: !!p.starterGift,
+            starterBuy: !!p.starterBuy,   // 新手任務「去商店買 1 顆 6 面骰」已完成（送過 1 顆）
             tutorial: ['stars', 'shop', 'buy', 'roll', 'move', 'done'].indexOf(p.tutorial) >= 0 ? p.tutorial : '',   // 2026-11-19 冒險新手引導進度   // 2026-11-19 第一次出發的新手禮（6 面骰 ×2）已送過
             stats: { chests: Math.max(0, toInt(p.stats && p.stats.chests, 0)), mystery: Math.max(0, toInt(p.stats && p.stats.mystery, 0)) },   // 開過的一般寶箱／神祕寶箱數
             bag: BAG_KEYS.reduce(function (o, k) { o[k] = Math.max(0, toInt(bag[k], 0)); return o; }, {})
@@ -1550,7 +1551,7 @@
    */
   /** 冒險新手引導進度（不需要家長密碼；只是畫面提示） */
   Store.prototype.setTutorial = function (childId, step) { this.getPlayer(childId).tutorial = step; this.save(); };
-  var STARTER_D6 = 2;   // 第一次出發的新手禮：6 面骰數量
+  var STARTER_STARS = 5;   // 第一次出發的新手禮：能量星星（剛好買 1 顆 6 面骰）
   Store.prototype.getAdventureStatus = function (childId) {
     var net = this.getTodayNet(childId);
     var settlement = this.getSettlement(childId);
@@ -1591,14 +1592,15 @@
       lateIds: late.map(function (r) { return r.id; }), latePoints: latePoints,
       ts: this.now().getTime()
     };
-    // 2026-11-19 家長：第一次出發送新手禮（6 面骰 ×2，每個孩子只送一次），避免第一天星星太少什麼都買不了、不能走
+    // 2026-11-19 家長：第一次出發送新手禮 ⭐5（剛好買 1 顆 6 面骰；每個孩子只送一次）。第一次在商店買 6 面骰再送 1 顆（buyItem）
     var adv0 = this.data.adventure, carry0 = (this.data.carry || {})[childId];
     var firstEver = !adv0.settlements.some(function (s) { return s.childId === childId; }) && !(carry0 && carry0.settled);
-    if (firstEver && this.getPlayer) {
+    var noStarter = typeof globalThis !== 'undefined' && globalThis.__cgpNoStarter;   // 自動測試：舊案例不含新手禮（新手禮另有專門測試）
+    if (firstEver && this.getPlayer && !noStarter) {
       var pl = this.getPlayer(childId);
       if (!pl.starterGift) {
-        pl.starterGift = true; pl.bag.d6 = (pl.bag.d6 || 0) + STARTER_D6; x.starterD6 = STARTER_D6;
-        if (this._logItem) this._logItem(childId, 'grant', 'd6', STARTER_D6, '新手禮', '第一次出發');
+        pl.starterGift = true; x.starterStars = STARTER_STARS;
+        if (this._ledger) this._ledger(childId, STARTER_STARS, '新手禮：第一次出發');
       }
     }
     this.data.adventure.settlements.push(x);

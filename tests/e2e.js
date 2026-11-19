@@ -41,7 +41,7 @@ async function main() {
     if (!story) await c.addInitScript(() => { window.__cgpNoStory = true; });   // 金島劇情另有專門測試（story: true）
     if (!wood) await c.addInitScript(() => { window.__cgpWoodClosed = true; });   // 舊流程以「只有金島」為前提；木島另有專門測試（wood: true）
     if (water) await c.addInitScript(() => { window.__cgpWaterOpen = true; });   // 水島預設未開放（2026-11-17）
-    if (!onboard) await c.addInitScript(() => { window.__cgpNoOnboard = true; });   // 新手導覽、新手任務另有專門測試（onboard: true）
+    if (!onboard) await c.addInitScript(() => { window.__cgpNoOnboard = true; window.__cgpNoStarter = true; });   // 新手禮也另有專門測試   // 新手導覽、新手任務另有專門測試（onboard: true）
     // 金島小遊戲（木島上線前各 1/2 機率）：其他流程固定抓住星星；落葉找松果另有專門測試（goldGame: 'leaf'）
     await c.addInitScript((g) => { window.__cgpGoldGame = g; }, goldGame || 'stars');
     return c;
@@ -570,7 +570,7 @@ async function main() {
     await q.click('#confirm [data-buy=d6]');
     await q.click('#confirm [data-no]');
     assert.equal((await q.locator('[data-testid=stars]').innerText()).trim(), '0');
-    assert.match(await q.locator('.dice-btn.d6').innerText(), /×6/, '買 4 顆＋新手禮 2 顆');
+    assert.match(await q.locator('.dice-btn.d6').innerText(), /×4/);
     console.log('✔ Phase 3 案例 A：購買 6 面骰扣 5 星、進背包');
 
     // 案例 B：擲出 4，棋子逐格 1→2→3→4
@@ -610,7 +610,7 @@ async function main() {
     await q.clock.setFixedTime(new Date('2026-11-07T09:00:00'));
     await q.reload();
     await q.goto(url + '#map-' + id);
-    assert.match(await q.locator('.dice-btn.d6').innerText(), /×3/, '剩餘骰子隔天仍存在（含新手禮 2 顆）');
+    assert.match(await q.locator('.dice-btn.d6').innerText(), /×1/, '剩餘骰子隔天仍存在');
     assert.equal(await q.locator('[data-testid=rolls]').innerText(), '0 / 3');
     console.log('✔ Phase 3 案例 D：剩餘骰子隔天仍存在');
     await c3.close();
@@ -2096,7 +2096,6 @@ async function main() {
     assert.ok(over <= 0, '道具列 ' + width + 'px 出現橫向捲動');
 
     // 商店：圖示＋名稱＋價格；價格 5／10／4 星不變
-    await q.evaluate(() => { const s = window.__cgpStore; Object.keys(s.data.adventure.players).forEach((k) => { s.data.adventure.players[k].bag.d6 = 0; }); s.save(); });   // 拿掉新手禮的 6 面骰，測「沒有 6 面骰」
     await q.click('[data-action=open-shop]');
     await q.waitForFunction(() => [...document.querySelectorAll('#confirm .shop-row img')].every((i) => i.complete && i.naturalWidth));
     await checkArt('#confirm .shop-row .item-art img', '商店');

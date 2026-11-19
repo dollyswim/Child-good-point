@@ -2591,3 +2591,4 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .coach.down::after { top: -10px; border-left: 3px solid #ffd23f; border-top: 3px solid #ffd23f; }
 .go-tip { margin: 4px 0 8px; padding: 8px 10px; border-radius: 12px; background: #fff1c2; color: #8a5a00; font-weight: 800; font-size: .88rem; line-height: 1.5; }
 @media (prefers-reduced-motion: reduce) { .coach-ring { animation: none; } }
+.shop-bonus { margin: 0 0 8px; padding: 8px 10px; border-radius: 12px; background: #e4f7d8; color: #2f7a22; font-weight: 900; text-align: center; animation: mg-in .3s ease-out both; }

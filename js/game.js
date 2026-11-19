@@ -369,9 +369,15 @@
     if (!item) throw new Error('沒有這個商品');
     if (this.getStarBalance(childId) < item.price) throw new Error('能量星星不夠');
     this._ledger(childId, -item.price, '購買' + item.name);
-    this.getPlayer(childId).bag[item.id]++;
+    var p = this.getPlayer(childId);
+    p.bag[item.id]++;
+    var bonus = 0;
+    if (item.id === 'd6' && !p.starterBuy && !(typeof globalThis !== 'undefined' && globalThis.__cgpNoStarter)) {   // 2026-11-19 家長：新手任務「去商店買 1 顆 6 面骰」→ 再送 1 顆（每個孩子只送一次）
+      p.starterBuy = true; p.bag.d6++; bonus = 1;
+      this._logItem(childId, 'grant', 'd6', 1, '新手獎勵', '第一次在商店買 6 面骰');
+    }
     this.save();
-    return item;
+    return bonus ? Object.assign({}, item, { starterBonus: bonus }) : item;
   };
 
   // ---------- 寶箱內容（地圖寶箱格與背包寶箱共用同一套） ----------
