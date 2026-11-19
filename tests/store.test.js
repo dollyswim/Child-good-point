@@ -2994,3 +2994,9 @@ test('水島重置任務：6 關、魚桶、牛奶瓶、沿路對話重來（迎
   } finally { delete G.BOARDS.water; }
 });
 
+
+test('水島卡片文字：海裡版本（效果不變）', () => {
+  const T = G.CARD_TEXT.water;
+  assert.match(T.cart, /海豚/); assert.match(T.ore, /珍珠貝/); assert.match(T.back, /鯊魚/);
+  assert.equal(T.roadblocks.length, 4); assert.ok(T.roadblocks.every((r) => !/礦車|小花/.test(r)));
+});

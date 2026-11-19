@@ -152,7 +152,15 @@
       ] }
   };
   // 2026-11-18 家長：水島的命運卡後退改成鯊魚靠近（其他文字暫時沿用金島）
-  CARD_TEXT.water = Object.assign({}, CARD_TEXT.gold, { backShield: '前面有鯊魚靠近，🛡️ 防護罩擋住了！不用後退。', back: '前面有鯊魚靠近，快後退 {n} 格！' });
+  CARD_TEXT.water = { cart: '一群海豚游過來，載你額外前進 2 格！', ore: '發現一顆發光的珍珠貝，得到 ⭐2', oreLedger: '機會：發光珍珠貝',
+    d6: '在海草叢裡撿到一顆 🎲 6 面骰', chest: '在沙子底下找到一個小寶箱，得到 ⭐', skates: '在沉船碎片裡撿到一雙 🛼 溜冰鞋（上岸才能用）',
+    backShield: '前面有鯊魚靠近，🛡️ 防護罩擋住了！不用後退。', back: '前面有鯊魚靠近，快後退 {n} 格！',
+    roadblocks: [   // 2026-11-19 家長確認水島版文字（效果與機率不變）
+      '一群小丑魚排隊游過去，先讓牠們過去吧！',
+      '一隻大海龜慢慢游過路中間，等牠游走再出發。',
+      '一團海草纏住了腳，先解開再繼續。',
+      '一群水母在前面飄來飄去，停下來等牠們飄走。'
+    ] };
   function cardText(island) { return CARD_TEXT[island] || CARD_TEXT.gold; }
   function pickWeighted(rand, list) {
     var total = list.reduce(function (s, x) { return s + x.weight; }, 0);

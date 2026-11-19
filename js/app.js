@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-200';
+  var APP_VERSION = '2026.11.19-201';
   var store;
   try {
     store = new CGP.Store();
@@ -886,7 +886,8 @@
   /** 機會卡「前進 2 格」的演出文字：金島礦車、木島藤蔓（其他島還沒有主題時沿用礦車） */
   var CART_UI = {
     gold: { icon: '🚃', img: 'images/gold/minecart.webp', title: '🚃 礦車來了！', text: function (n) { return '礦車可以載你額外前進 ' + n + ' 格！'; }, btn: '🚃 上車！' },
-    wood: { icon: '🌿', title: '🌿 藤蔓垂下來了！', text: function (n) { return '抓住藤蔓盪過去，額外前進 ' + n + ' 格！'; }, btn: '🌿 抓住！' }
+    wood: { icon: '🌿', title: '🌿 藤蔓垂下來了！', text: function (n) { return '抓住藤蔓盪過去，額外前進 ' + n + ' 格！'; }, btn: '🌿 抓住！' },
+    water: { icon: '🐬', title: '🐬 海豚來了！', text: function (n) { return '一群海豚游過來，載你額外前進 ' + n + ' 格！'; }, btn: '🐬 抓住背鰭！' }
   };
   function cartUI(island) { return CART_UI[island] || CART_UI.gold; }
   /** 礦車來了：按「上車！」才出發（資料已經前進，這裡是演出與互動）；木島是藤蔓「抓住！」 */
