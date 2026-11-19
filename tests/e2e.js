@@ -1047,7 +1047,8 @@ async function main() {
     await setRand(F6(1));
     await q.click('.dice-btn.d6');
     await talkUntil('#shark-start');
-    assert.match(await q.locator('#shark-intro').innerText(), /擲出 11 或 12，就能快速通過/, '先顯示提示（沒有防護罩就不提防護罩）');
+    assert.match(await q.locator('#shark-intro').innerText(), /擲出 11、12，或是花 ⭐5 顆能量星星/, '沒有防護罩：提示可以花 5 星');
+    assert.equal(await q.locator('#shark-pay').count(), 1, '沒有防護罩時有「花能量星星直接過關」');
     if (SHOT_DIR) await q.locator('#story-panel').screenshot({ path: path.join(SHOT_DIR, '47a-water-shark-intro.png') });
     await q.click('#shark-start');
     await q.waitForSelector('#shark-roll', { state: 'visible' });

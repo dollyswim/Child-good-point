@@ -2906,6 +2906,12 @@ test('鯊魚關卡：免費 12 面骰 11／12 才過、可無限重擲、不算�
     const sh = store.sharkShield(a.id);
     assert.deepEqual([sh.pass, p.pos, p.bag.shield], [true, 49, 0]);
     assert.equal(store.getStarBalance(a.id), s0 + G.SHARK_SHIELD_STARS + G.STORY_STARS, '補 10 星＋關卡 ⭐3');
+    // 花 ⭐5 途徑（沒有回補）
+    delete p.story.shark; store.setPlayerTile(a.id, 48);
+    const s1 = store.getStarBalance(a.id);
+    const pay = store.sharkPay(a.id);
+    assert.deepEqual([pay.pass, p.pos], [true, 49]);
+    assert.equal(store.getStarBalance(a.id), s1 - G.SHARK_PAY_STARS + G.STORY_STARS, '花 5 星＋關卡 ⭐3');
   } finally { delete G.BOARDS.water; }
 });
 

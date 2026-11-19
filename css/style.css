@@ -2509,7 +2509,7 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .folk-ph { font-size: clamp(56px, 18vw, 90px); line-height: 1; filter: drop-shadow(0 6px 8px rgba(60, 40, 10, .35)); }
 .water-trip .wo-beach { position: absolute; inset: 0; background: center / cover no-repeat; animation: fade-in .6s ease-out both; }
 
-.wend-folk.faint { width: 46%; left: 40%; } .wend-folk.panic { width: 40%; } .wend-folk.calm { width: 32%; }
+.wend-folk.faint { width: 48%; left: 40%; } .wend-folk.panic { width: 40%; } .wend-folk.calm { width: 40%; }   /* 2026-11-19：三張圖的人物比例一致（昏倒圖較寬，所以框也較寬） */
 /* 2026-11-18 小白鯨載我：游泳時上下起伏、微微擺頭，角色跟著一起晃（家長選） */
 .pawn.riding .pawn-ride:not(.leave) { animation: ride-in .6s ease-out, ride-bob .9s .6s ease-in-out infinite; }
 .pawn.riding .pawn-inner { animation: rider-bob .9s .6s ease-in-out infinite; }

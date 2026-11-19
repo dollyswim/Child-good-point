@@ -151,6 +151,8 @@
         '一群螢火蟲在前面跳舞，停下來欣賞一下再出發。'
       ] }
   };
+  // 2026-11-18 家長：水島的命運卡後退改成鯊魚靠近（其他文字暫時沿用金島）
+  CARD_TEXT.water = Object.assign({}, CARD_TEXT.gold, { backShield: '前面有鯊魚靠近，🛡️ 防護罩擋住了！不用後退。', back: '前面有鯊魚靠近，快後退 {n} 格！' });
   function cardText(island) { return CARD_TEXT[island] || CARD_TEXT.gold; }
   function pickWeighted(rand, list) {
     var total = list.reduce(function (s, x) { return s + x.weight; }, 0);
@@ -1427,6 +1429,17 @@
     this.save();
     return { pass: true, shield: true, stars: SHARK_SHIELD_STARS, first: first, pos: p.pos, found: this._found };
   };
+  /** 鯊魚關卡：沒有防護罩時，花 ⭐5 直接過關（2026-11-18 家長；不像防護罩有 ⭐10 回補） */
+  var SHARK_PAY_STARS = 5;
+  Store.prototype.sharkPay = function (childId) {
+    this._requirePlay(childId);
+    if (this.waterTaskHere(childId) !== 'shark') throw new Error('現在不在鯊魚關卡');
+    if (this.getStarBalance(childId) < SHARK_PAY_STARS) throw new Error('能量星星不夠 ' + SHARK_PAY_STARS + ' 顆');
+    this._ledger(childId, -SHARK_PAY_STARS, '鯊魚關卡：花星星過關');
+    var first = this._passShark(childId);
+    this.save();
+    return { pass: true, paid: true, stars: SHARK_PAY_STARS, first: first, pos: this.getPlayer(childId).pos, found: this._found };
+  };
   /** 第 100 格：幫萊莫找到小被被 → 完成關卡（⭐3）並通關（第一次 3 個神祕寶箱，之後 10 星） */
   Store.prototype.finishWaterBoss = function (childId) {
     this._requirePlay(childId);
@@ -1522,7 +1535,7 @@
     return this.getBonusQuota(childId);
   };
 
-  var api = { CARD_TEXT: CARD_TEXT, LEAF_GAME: LEAF_GAME, LEAF_MAX_FOUND: LEAF_MAX_FOUND, leafStars: leafStars, minigameOf: minigameOf, STORIES: STORIES, storiesOf: storiesOf, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, buildWood: buildWood, WOOD_OPEN: WOOD_OPEN, buildWater: buildWater, WATER_OPEN: WATER_OPEN, WATER_TRIAL: waterTrial, waterOn: waterOn, WATER_TYPES: WATER_TYPES, SHARK_PASS: SHARK_PASS, SHARK_SHIELD_STARS: SHARK_SHIELD_STARS, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { CARD_TEXT: CARD_TEXT, LEAF_GAME: LEAF_GAME, LEAF_MAX_FOUND: LEAF_MAX_FOUND, leafStars: leafStars, minigameOf: minigameOf, STORIES: STORIES, storiesOf: storiesOf, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, buildWood: buildWood, WOOD_OPEN: WOOD_OPEN, buildWater: buildWater, WATER_OPEN: WATER_OPEN, WATER_TRIAL: waterTrial, waterOn: waterOn, WATER_TYPES: WATER_TYPES, SHARK_PASS: SHARK_PASS, SHARK_SHIELD_STARS: SHARK_SHIELD_STARS, SHARK_PAY_STARS: SHARK_PAY_STARS, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

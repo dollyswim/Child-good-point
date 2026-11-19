@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.18-198';
+  var APP_VERSION = '2026.11.19-199';
   var store;
   try {
     store = new CGP.Store();
@@ -2102,12 +2102,15 @@
       '<div class="shark-big" id="shark-big">' + waterImg(WATER_NPC.shark, '大鯊魚') + '</div>';
     var shieldN = wstate(child).bag.shield;
     // 2026-11-18 家長：視窗出現時先顯示提示，按「開始擲骰！」才進入擲骰畫面（沒有防護罩就不提防護罩）
-    P.tools.innerHTML = '<div class="shark-intro" id="shark-intro"><p>💡 ' + (shieldN ? '擲出 11、12，或是使用防護罩，就能快速通過！' : '擲出 11 或 12，就能快速通過！') + '</p>' +
+    var PAY = GAME.SHARK_PAY_STARS;   // 2026-11-18 家長：沒有防護罩時可以花 ⭐5 直接過關
+    P.tools.innerHTML = '<div class="shark-intro" id="shark-intro"><p>💡 ' + (shieldN ? '擲出 11、12，或是使用防護罩，就能快速通過！' : '擲出 11、12，或是花 ⭐' + PAY + ' 顆能量星星，就能快速通過！') + '</p>' +
       '<button type="button" class="btn primary shark-roll" id="shark-start">開始擲骰！</button></div><div class="shark-main" id="shark-main" hidden>' +
       '<div class="shark-result"><span class="shark-result-label">本次擲骰結果</span><div class="shark-die" id="shark-die" aria-live="polite">？</div></div>' +
       '<button type="button" class="btn primary shark-roll" id="shark-roll"><img src="images/items/dice_12.webp" alt="" aria-hidden="true" draggable="false"><span id="shark-roll-text">擲骰子！</span></button>' +
       (shieldN ? '<button type="button" class="btn shark-shield" id="shark-shield"><img src="images/items/shield.webp" alt="" aria-hidden="true" draggable="false">' +
-        '<span><b>使用防護罩直接過關</b><small>消耗 1 個・回補 ⭐' + GAME.SHARK_SHIELD_STARS + '</small></span></button>' : '') + '</div>';
+        '<span><b>使用防護罩直接過關</b><small>消耗 1 個・回補 ⭐' + GAME.SHARK_SHIELD_STARS + '</small></span></button>'
+        : '<button type="button" class="btn shark-shield" id="shark-pay"><img src="images/items/star.webp" alt="" aria-hidden="true" draggable="false">' +
+          '<span><b>花能量星星直接過關</b><small>消耗 ⭐' + PAY + '（目前 ⭐' + (child.preview ? '—' : store.getStarBalance(child.id)) + '）</small></span></button>') + '</div>';
     P.sub.hidden = true;
     P.tools.querySelector('#shark-start').onclick = function () { P.tools.querySelector('#shark-intro').remove(); P.tools.querySelector('#shark-main').hidden = false; P.sub.hidden = false; };
     var res = await new Promise(function (resolve) {
@@ -2124,6 +2127,12 @@
         busy = false;
         if (r.pass) setTimeout(function () { resolve(r); }, reduceMotion ? 300 : 1200);   // 2026-11-18 家長：擲出 11、12 時鯊魚留在原地，不做讓開的動畫
       };
+      var pb = P.tools.querySelector('#shark-pay');
+      if (pb) pb.onclick = function () {
+        confirmThen('花 ⭐' + PAY + ' 顆能量星星讓鯊魚讓路？', '花星星', false, function () {
+          try { var r = child.preview ? { pass: true, paid: true, first: true } : store.sharkPay(child.id); setTimeout(function () { resolve(r); }, reduceMotion ? 300 : 600); } catch (err) { toast(err.message, 'neg'); }
+        });
+      };
       var sb = P.tools.querySelector('#shark-shield');
       if (sb) sb.onclick = function () {
         confirmThen('用 1 個 🛡️ 防護罩讓鯊魚讓路？\n過關後補你 ' + GAME.SHARK_SHIELD_STARS + ' 顆能量星星。', '使用', false, function () {
@@ -2133,7 +2142,8 @@
     });
     P.shade.remove();
     if (res.first) toast('⭐ 完成任務「大鯊魚攔路」：+' + GAME.STORY_STARS + ' 能量星星' + (res.shield ? '，防護罩補償 +' + res.stars : ''), 'pos');
-    await talkSeq(res.shield ? [line(WHO.shark(), '哇，防護罩好厲害！過去吧！'), line(WHO.me(child), '謝謝大鯊魚！')]
+    await talkSeq(res.paid ? [line(WHO.shark(), '哼，亮晶晶的星星……好吧，這次讓你過去！'), line(WHO.me(child), '謝謝大鯊魚！')]
+      : res.shield ? [line(WHO.shark(), '哇，防護罩好厲害！過去吧！'), line(WHO.me(child), '謝謝大鯊魚！')]
       : [line(WHO.shark(), '等等！你去哪裡！'), line(WHO.me(child), '我們趕路，先走囉～')]);   // 2026-11-18 家長改台詞（擲出 11、12）
     if (!child.preview) await hopAlong(child, [GAME.STORIES.shark.tile + 1]);
   }
@@ -2975,6 +2985,7 @@
     var react = pawnReaction(res);
     if (react) { ui.busy = true; document.body.classList.add('pawn-acting'); try { await pawnPlay(react); } finally { ui.busy = false; document.body.classList.remove('pawn-acting'); } }   // 角色先反應，再顯示事件說明（pawn-acting：動作中，骰子暫停）
     var head = kind === 'skates' ? '🛼 前進 3 格' : kind === 'wings' ? '🪽 飛行翼' : kind === 'door' ? '🚪 傳送門'
+      : kind === 'beluga' ? '🐳 小白鯨往前游了 ' + res.value + ' 格' : kind === 'submarine' ? '🚤 潛水艇'   // 2026-11-18 家長：小白鯨不說「擲出」
       : (kind === 'magic' || (pr && pr.die === 'magic') ? '✨ 神奇骰子擲出 ' : '🎲 擲出 ') + res.value;
     // 停在小遊戲格（或礦車載到小遊戲格）：直接開始「抓住星星」
     var clearEv = ev && ev.clear ? ev : (ev && ev.then && ev.then.clear ? ev.then : null);
