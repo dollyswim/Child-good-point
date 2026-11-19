@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-205';
+  var APP_VERSION = '2026.11.19-206';
   var store;
   try {
     store = new CGP.Store();
@@ -3745,13 +3745,14 @@
       function inNet(m) { return net && Math.hypot(m.x - net.x, m.y - net.y) <= R; }
       function burst() {   // 網子破了：啵！網內的魚繼續游
         var b = document.createElement('i'); b.className = 'fg-pop'; b.style.left = net.x + 'px'; b.style.top = net.y + 'px'; field.appendChild(b); setTimeout(function () { b.remove(); }, 450);
+        mobs.forEach(function (m) { if (m.held) { m.held = false; m.vx = (Math.random() < 0.5 ? -1 : 1) * Math.abs(m.vx || 40) * 1.6; m.el.classList.remove('fg-held'); } });   // 網裡的魚逃走
         playPop(); broken++; used++; net = null; drawNet(); afterNet();
       }
       function release() {
         if (!net) return;
-        var got = mobs.filter(function (m) { return (m.kind === 'clown' || m.kind === 'tang') && !m.caught && inNet(m); });
+        var got = mobs.filter(function (m) { return (m.kind === 'clown' || m.kind === 'tang') && !m.caught && (m.held || inNet(m)); });
         got.forEach(function (m) {
-          m.caught = true; caught++; m.el.classList.add('fg-got');
+          m.held = false; m.caught = true; caught++; m.el.classList.add('fg-got');
           (function (mm) { setTimeout(function () { mm.el.remove(); mobs.splice(mobs.indexOf(mm), 1); if (!ended) spawn(fishKind()); }, 400); })(m);
         });
         if (got.length) { var t = document.createElement('b'); t.className = 'fg-plus'; t.textContent = '+' + got.length; t.style.left = net.x + 'px'; t.style.top = net.y + 'px'; field.appendChild(t); setTimeout(function () { t.remove(); }, 800); }
@@ -3764,6 +3765,18 @@
         timeLeft -= dt; if (timeLeft <= 0) { timeLeft = 0; hud(); if (net) release(); finish(); return; }
         mobs.forEach(function (m) {
           if (m.caught) return;
+          if (m.held) {   // 2026-11-19 家長：被網子罩住的魚跟著網子走，在網裡輕輕擺動
+            m.phase += dt * 6;
+            m.x = net.x + m.ox + Math.sin(m.phase) * 3; m.y = net.y + m.oy + Math.cos(m.phase * 0.7) * 2;
+            m.el.style.transform = 'translate(' + (m.x - m.s / 2) + 'px,' + (m.y - m.s / 2) + 'px) scaleX(' + (m.vx < 0 ? -1 : 1) + ')';
+            return;
+          }
+          if (net && (m.kind === 'clown' || m.kind === 'tang') && Math.hypot(m.x - net.x, m.y - net.y) <= R * 0.8) {   // 進網：之後跟著網子
+            var ox = m.x - net.x, oy = m.y - net.y, d = Math.hypot(ox, oy), lim = R * 0.55;
+            if (d > lim) { ox *= lim / d; oy *= lim / d; }
+            m.held = true; m.ox = ox; m.oy = oy; m.el.classList.add('fg-held');
+            return;
+          }
           if (Math.random() < (m.kind === 'tang' ? 0.6 : 0.25) * dt) m.vx = -m.vx;   // 偶爾轉向
           m.phase += dt * (m.kind === 'jelly' ? 1.6 : 3);
           m.x += m.vx * dt; m.y += Math.sin(m.phase) * (m.kind === 'jelly' ? 22 : 8) * dt;

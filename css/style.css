@@ -2549,3 +2549,4 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .fg-result .fg-stat { font-weight: 800; color: #5a6a7a; font-size: .95rem; }
 .fg-result .mg-gain img { width: 34px; height: 34px; }
 @media (prefers-reduced-motion: reduce) { .fg-mob.fg-puff, .fg-pop, .fg-plus { animation-duration: .01s; } }
+.fg-mob.fg-held { z-index: 6; filter: brightness(1.08); }   /* 網裡的魚畫在網子上面一點，看得出被罩住 */
