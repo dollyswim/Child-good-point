@@ -11,7 +11,7 @@
     /** 圖檔（images/gold/gear-house/）：null＝還沒有圖，用表情符號暫代 */
     var D = 'images/gold/gear-house/';
     var GH_ART = { house: D + 'house.webp', mom: D + 'mom.webp', eat: D + 'eat.webp', happy: D + 'happy.webp', cough: D + 'cough.webp', messy: D + 'messy.webp', dusk: D + 'dusk.webp',   // 2026-11-19 家長圖（13 張到齊）；dusk＝30 分鐘的後果（黃昏、湯涼了）
-      pose: { time: D + 'time.webp', eyes: D + 'eyes.webp', mouth: D + 'mouth.webp', tool: D + 'hand.webp', sit: D + 'walk.webp', feet: D + 'feet.webp' } };
+      pose: { time: D + 'time2.webp', eyes: D + 'eyes.webp', mouth: D + 'mouth.webp', tool: D + 'hand.webp', sit: D + 'walk.webp', feet: D + 'feet.webp' } };
     /** 地圖上的小屋：長地圖座標（第二區左上的空草地，腳底 y）；第 53 格觸發任務 */
     var HOUSE = { gx: 255, gy: 2935, w: 150, tile: 53 };
     var NAME = { kid: '小齒', mom: '媽媽', house: '齒輪小屋' };

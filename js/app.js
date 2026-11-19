@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-228';
+  var APP_VERSION = '2026.11.19-229';
   var store;
   try {
     store = new CGP.Store();
