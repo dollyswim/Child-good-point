@@ -948,14 +948,22 @@
   // 水島開放後才出現的成就（2026-11-17）
   if (waterOn) ACHIEVEMENTS.splice(ACHIEVEMENTS.findIndex(function (a) { return a.id === 'woodClear1'; }) + 1, 0,
   { id: 'waterClear1', cat: 'adventure', icon: '🌊', name: '水島通關', desc: '幫萊莫找回小被被，完成水島冒險', check: function (s, c) { return (s.getPlayer(c).islandClears.water || 0) >= 1; } });
+  // 2026-11-19 家長：珊瑚灣撈魚趣兩個成就（單局撈到幾條；只算日常小遊戲，劇情撈魚不算）
+  if (waterOn) ACHIEVEMENTS.splice(ACHIEVEMENTS.findIndex(function (a) { return a.id === 'squirrel5'; }) + 1, 0,
+    { id: 'fish20', cat: 'collect', icon: '🐟', name: '晚上就吃魚', desc: '「珊瑚灣撈魚趣」單局撈到 20 條以上', check: function (s, c) { return bestFish(s, c) >= 20; } },
+    { id: 'fish90', cat: 'collect', icon: '🐠', name: '都能開水族館了', desc: '「珊瑚灣撈魚趣」單局撈到 90 條以上', check: function (s, c) { return bestFish(s, c) >= 90; } });
   /** 「抓住星星」單局最多抓到幾顆 */
   /** 落葉找松果單局最佳成績：key＝caught（找到的松果）或 squirrels（翻到的松鼠）；含封存結轉 */
   function bestLeaf(s, c, key) {
     var carry = ((s.data.carry || {})[c] || {})[key === 'caught' ? 'bestLeaf' : 'bestSquirrel'] || 0;
     return s.data.adventure.minigames.reduce(function (m, g) { return g.childId === c && g.status === 'done' && g.game === 'leaf' && (g[key] || 0) > m ? g[key] : m; }, carry);
   }
-  function bestCatch(s, c) {
-    return s.data.adventure.minigames.reduce(function (m, g) { return g.childId === c && g.status === 'done' && g.game !== 'leaf' && g.caught > m ? g.caught : m; }, ((s.data.carry || {})[c] || {}).bestCatch || 0);   // 含封存結轉
+  /** 撈魚單局最多撈到幾條（含封存結轉） */
+  function bestFish(s, c) {
+    return s.data.adventure.minigames.reduce(function (m, g) { return g.childId === c && g.status === 'done' && g.game === 'fish' && g.caught > m ? g.caught : m; }, ((s.data.carry || {})[c] || {}).bestFish || 0);
+  }
+  function bestCatch(s, c) {   // 只算「抓住星星」（2026-11-19 修正：撈魚不算）
+    return s.data.adventure.minigames.reduce(function (m, g) { return g.childId === c && g.status === 'done' && (!g.game || g.game === 'stars') && g.caught > m ? g.caught : m; }, ((s.data.carry || {})[c] || {}).bestCatch || 0);   // 含封存結轉
   }
   /** 完成的特殊任務數 */
   function specialDone(s, c) {

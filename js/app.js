@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-214';
+  var APP_VERSION = '2026.11.19-215';
   var store;
   try {
     store = new CGP.Store();
@@ -3158,7 +3158,7 @@
   BADGE_IMG.woodClear1 = 'images/badges/badge_woodClear1v2.webp';
   BADGE_IMG.waterClear1 = 'images/badges/badge_waterClear1.webp';   // 2026-11-17 家長提供（沉船＋小白鯨＋星星旗）；水島圖不放進 SHELL，第一次用到才下載   // 2026-11-13 換上家長提供的專屬圖（換檔名讓圖片快取立刻生效）
   /** 主徽章挑選：越高階／越稀有分數越高（只影響演出，不影響成就條件） */
-  var ACH_RANK = { goldClear1: 300, woodClear1: 300, waterClear1: 300, streak7: 120, reachR4: 110, catch10: 100, special5: 95, reachR3: 80, chests10: 75, mystery1: 70,
+  var ACH_RANK = { goldClear1: 300, woodClear1: 300, waterClear1: 300, fish90: 105, fish20: 50, streak7: 120, reachR4: 110, catch10: 100, special5: 95, reachR3: 80, chests10: 75, mystery1: 70,
     reachR2: 60, catch5: 45, special1: 40, chest1: 30, advStart: 20 };
   function achRank(a) { var m = /^earn(\d+)$/.exec(a.id); return m ? 50 + Number(m[1]) / 100 : (ACH_RANK[a.id] || 10); }
   /** 徽章 HTML（size：lg 主徽章、sm 小徽章、xs 收藏格） */

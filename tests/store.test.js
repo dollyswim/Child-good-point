@@ -3029,3 +3029,18 @@ test('撈魚裝滿魚桶：分好幾局加總、最多 10 條、存檔；餵過�
     assert.equal(store.getStarBalance(a.id), s0, '劇情撈魚不給能量星星');
   } finally { delete G.BOARDS.water; }
 });
+
+test('撈魚成就：撈魚不算「星星捕手」；封存結轉保留撈魚單局最佳', () => {
+  const { store, a } = waterStore('water', 6);
+  try {
+    const catch5 = G.ACHIEVEMENTS.find((x) => x.id === 'catch5');
+    store.data.adventure.minigames.push({ id: 'f1', childId: a.id, date: store.today(), tile: 7, status: 'done', game: 'fish', caught: 30, stars: 10, ts: 0 });
+    assert.equal(catch5.check(store, a.id), false, '撈到 30 條魚不會變成星星捕手');
+    store.data.adventure.minigames.push({ id: 's1', childId: a.id, date: store.today(), tile: 7, status: 'done', caught: 6, stars: 2, ts: 0 });
+    assert.equal(catch5.check(store, a.id), true, '抓住星星 6 顆才算');
+    store.data.adventure.minigames.push({ id: 'f0', childId: a.id, date: '2026-01-02', tile: 7, status: 'done', game: 'fish', caught: 91, stars: 15, ts: 0 });
+    if (store.allowPinReset) store.allowPinReset();   // 測試：略過家長密碼
+    store.archiveRecords('2026-02-01');
+    assert.equal(store.data.carry[a.id].bestFish, 91, '封存後保留撈魚單局最佳 91 條');
+  } finally { delete G.BOARDS.water; }
+});
