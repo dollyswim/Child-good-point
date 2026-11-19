@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-215';
+  var APP_VERSION = '2026.11.19-216';
   var store;
   try {
     store = new CGP.Store();
@@ -3685,6 +3685,7 @@
   function fishArt(kind) {
     return FISH_ART[kind] ? '<img src="' + FISH_ART[kind] + '" alt="" draggable="false">' : '<span class="fg-emoji" aria-hidden="true">' + FISH_EMOJI[kind] + '</span>';
   }
+  function fgIco(kind) { return FISH_ART[kind] ? '<img class="fg-ico" src="' + FISH_ART[kind] + '" alt="" aria-hidden="true">' : FISH_EMOJI[kind]; }
   /** 啵！（Web Audio 合成，跟著成就音效開關；失敗就安靜） */
   function playPop() {
     if (!soundOn()) return;
@@ -3710,8 +3711,10 @@
         '<span class="mg-count" id="fg-caught">🐟 ' + (opts.story ? (opts.have || 0) + ' / ' + C.storyGoal : '0') + '</span>' +
         '<span class="mg-count" id="fg-nets">🫧 ×' + C.nets + '</span></div>' +
         '<div class="mg-field fg-field" id="fg-field"><div class="fg-net" id="fg-net" hidden><i></i><b class="fg-warn">快破了！</b></div></div>' +
-        '<div class="mg-tip fg-tip" id="fg-tip"><b>🐠 ' + h(opts.title || '珊瑚灣撈魚趣') + '</b>' + (opts.sub ? '<small>' + h(opts.sub) + '</small>' : '') +
-        '<span>按住拖曳泡泡網，放開就能撈魚！<br>🐡 河豚會刺破網子一部分，🪼 水母碰到網子就破！</span>' +
+        '<div class="mg-tip fg-tip" id="fg-tip"><b>' + fgIco('clown') + ' ' + h(opts.title || '珊瑚灣撈魚趣') + '</b>' + (opts.sub ? '<small>' + h(opts.sub) + '</small>' : '') +
+        '<span>按住拖曳泡泡網，放開就能撈魚！</span>' +
+        '<span class="fg-rule">' + fgIco('clown') + fgIco('tang') + ' 小丑魚、藍倒吊可以撈</span>' +   // 2026-11-19 家長：說明用遊戲裡同一張圖
+        '<span class="fg-rule">' + fgIco('puffer') + ' 河豚會刺破網子一部分</span><span class="fg-rule">' + fgIco('jelly') + ' 水母碰到網子就破！</span>' +
         (opts.practice ? '<small class="mg-practice">🧪 試玩模式：不會得到星星，也不算今天的次數</small>' : '') +
         '<button type="button" class="btn primary" data-fg="start">開始撈魚</button>' +
         '<button type="button" class="btn link mg-later" data-fg="later">' + (opts.laterLabel || '稍後再玩') + '</button></div>';

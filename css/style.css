@@ -2562,3 +2562,5 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .fg-mob.fg-in > * { animation: fg-in .6s ease-out both; }
 @keyframes fg-in { from { opacity: 0; scale: .4; } }
 @media (prefers-reduced-motion: reduce) { .fg-mob.fg-in > * { animation-duration: .01s; } }
+.fg-ico { width: 1.7em; height: 1.7em; object-fit: contain; vertical-align: middle; margin: -.3em .05em; }
+.fg-tip .fg-rule { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
