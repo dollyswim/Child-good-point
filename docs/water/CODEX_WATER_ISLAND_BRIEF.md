@@ -311,6 +311,8 @@ C-9b、C-9c 請在同一個對話裡接著 C-9a 改，保持同一個角色。
 
 ## I. 水島小遊戲「珊瑚灣撈魚趣」（2026-11-19 新增，Gemini）
 
+> ✅ 2026-11-19 I-1～I-5 已收（家長 Gemini 圖）→ `images/water/fish/clown／tang／puffer／puffer_big／jelly.webp`（去白底、256×256，五張共約 30KB）。
+
 到貨後填進 `js/app.js` 的 `FISH_ART`（clown、tang、puffer、pufferBig、jelly），放在 `images/water/fish/`。白底、正方形 1024×1024、單一物件、**側面朝右游**（App 會左右翻轉）。用「角色與小圖」共用風格。
 
 共用：`2.5D chibi clay toy style, round soft shapes, side view facing right, full body, plain white background, no text, no shadow`

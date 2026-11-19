@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-208';
+  var APP_VERSION = '2026.11.19-209';
   var store;
   try {
     store = new CGP.Store();
@@ -3679,8 +3679,8 @@
   }
 
   // ---------- 水島小遊戲「珊瑚灣撈魚趣」（2026-11-19 家長定稿；參數在 game.js 的 FISH_GAME） ----------
-  // 正式圖到貨前：小丑魚用現有的魚圖、其他用表情符號佔位；圖到了把檔名填進 FISH_ART
-  var FISH_ART = { clown: 'images/water/items/fish.webp', tang: '', puffer: '', pufferBig: '', jelly: '' };
+  // 2026-11-19 正式圖（家長 Gemini 圖，去白底、256×256、都面朝右；水島圖不放進 SHELL，開遊戲時先下載）
+  var FISH_ART = { clown: 'images/water/fish/clown.webp', tang: 'images/water/fish/tang.webp', puffer: 'images/water/fish/puffer.webp', pufferBig: 'images/water/fish/puffer_big.webp', jelly: 'images/water/fish/jelly.webp' };
   var FISH_EMOJI = { clown: '🐠', tang: '🐟', puffer: '🐡', pufferBig: '🐡', jelly: '🪼' };
   function fishArt(kind) {
     return FISH_ART[kind] ? '<img src="' + FISH_ART[kind] + '" alt="" draggable="false">' : '<span class="fg-emoji" aria-hidden="true">' + FISH_EMOJI[kind] + '</span>';
@@ -3716,6 +3716,7 @@
         '<button type="button" class="btn primary" data-fg="start">開始撈魚</button>' +
         '<button type="button" class="btn link mg-later" data-fg="later">' + (opts.laterLabel || '稍後再玩') + '</button></div>';
       document.body.appendChild(el); document.body.classList.add('mg-open');
+      preloadImages(Object.keys(FISH_ART).map(function (k) { return FISH_ART[k]; }).filter(Boolean), 4000);   // 看說明時先下載魚的圖
       var field = el.querySelector('#fg-field'), netEl = el.querySelector('#fg-net'), still = reduceMotion;
       var W = 0, H = 0, R = 40, raf = 0, last = 0, timeLeft = C.seconds, started = false, ended = false;
       var netsLeft = C.nets, caught = 0, used = 0, broken = 0, mobs = [], net = null;
