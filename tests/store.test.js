@@ -2987,7 +2987,7 @@ test('水島重置任務：6 關、魚桶、牛奶瓶、沿路對話重來（迎
     assert.equal(store.markWaterNote(a.id, 'n4'), false, '看過不再播');
     assert.throws(() => store.setWaterFlag(a.id, 'hack', 1), /沒有這個水島紀錄/);
     const s2 = new Store({ storage, seed: false, now: () => new Date('2026-11-06T10:00:00') });
-    assert.deepEqual(s2.getPlayer(a.id).water, { seen: { n4: true }, bucket: true, bottle: true, welcomed: true, rulesSeen: false, bossStage: 0, folkMet: true }, '存檔重開保留');
+    assert.deepEqual(s2.getPlayer(a.id).water, { seen: { n4: true }, bucket: true, bottle: true, welcomed: true, rulesSeen: false, bossStage: 0, folkMet: true, fishCaught: 0 }, '存檔重開保留');
     p.storyAsk = 'water';
     assert.equal(store.answerStoryReset(a.id, true), true);
     assert.deepEqual([p.story.memo, p.story.potion, p.water.bucket, p.water.welcomed, p.water.seen, p.water.folkMet], [undefined, undefined, undefined, true, undefined, undefined], '重置後火島居民那段會再完整演一次');
@@ -2999,4 +2999,33 @@ test('水島卡片文字：海裡版本（效果不變）', () => {
   const T = G.CARD_TEXT.water;
   assert.match(T.cart, /海豚/); assert.match(T.ore, /珍珠貝/); assert.match(T.back, /鯊魚/);
   assert.equal(T.roadblocks.length, 4); assert.ok(T.roadblocks.every((r) => !/礦車|小花/.test(r)));
+});
+
+test('珊瑚灣撈魚趣：水島小遊戲一律撈魚；能量星星＝星級（基礎 1，3／6／9 條各 +1）', () => {
+  assert.equal(G.minigameOf('water', () => 0.9), 'fish');
+  assert.deepEqual([0, 2, 3, 5, 6, 8, 9, 30].map(G.fishStars), [1, 1, 2, 2, 3, 3, 4, 4]);
+  const { store, a, p } = waterStore('water', 6);
+  try {
+    doneUpTo(p, []);
+    store.data.adventure.minigames.push({ id: 'm1', childId: a.id, date: store.today(), tile: 7, status: 'pending', game: 'fish', caught: 0, stars: 0, ts: 0 });
+    const s0 = store.getStarBalance(a.id);
+    const m = store.finishMinigame(a.id, 7);
+    assert.deepEqual([m.caught, m.stars, store.getStarBalance(a.id) - s0], [7, 3, 3]);
+  } finally { delete G.BOARDS.water; }
+});
+
+test('撈魚裝滿魚桶：分好幾局加總、最多 10 條、存檔；餵過就不用撈；不給星星', () => {
+  const { store, a, p, storage } = waterStore('water', 34);
+  try {
+    doneUpTo(p, ['memo', 'potion']);
+    p.story.feed = '2026-11-19'; assert.throws(() => store.addFeedFish(a.id, 3), /不需要撈魚/, '已經餵過就不用撈'); delete p.story.feed;
+    store.setPlayerTile(a.id, 5);   // 漁夫給魚桶後就可以撈（不一定在第 34 格）
+    const s0 = store.getStarBalance(a.id);
+    assert.equal(store.addFeedFish(a.id, 4), 4);
+    assert.equal(store.addFeedFish(a.id, 3), 7);
+    const s2 = new Store({ storage, seed: false, now: () => new Date('2026-11-06T10:00:00') });
+    assert.equal(s2.getPlayer(a.id).water.fishCaught, 7, '重新開啟保留進度');
+    assert.equal(store.addFeedFish(a.id, 9), 10, '最多 10 條');
+    assert.equal(store.getStarBalance(a.id), s0, '劇情撈魚不給能量星星');
+  } finally { delete G.BOARDS.water; }
 });

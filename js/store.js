@@ -424,7 +424,7 @@
             water: (function () {   // 水島故事進度（2026-11-17）
               var w = p.water && typeof p.water === 'object' ? p.water : {}, seen = {};
               if (w.seen && typeof w.seen === 'object') Object.keys(w.seen).forEach(function (k) { if (/^[a-z0-9]{1,16}$/.test(k) && w.seen[k]) seen[k] = true; });
-              return { seen: seen, bucket: !!w.bucket, bottle: !!w.bottle, welcomed: !!w.welcomed, rulesSeen: !!w.rulesSeen, bossStage: Math.max(0, Math.min(3, toInt(w.bossStage, 0))), folkMet: !!w.folkMet };   // folkMet：2026-11-18 看過結尾的火島居民
+              return { seen: seen, bucket: !!w.bucket, bottle: !!w.bottle, welcomed: !!w.welcomed, rulesSeen: !!w.rulesSeen, bossStage: Math.max(0, Math.min(3, toInt(w.bossStage, 0))), folkMet: !!w.folkMet, fishCaught: Math.max(0, Math.min(99, toInt(w.fishCaught, 0))) };   // fishCaught：2026-11-19 第 34 格撈魚累積   // folkMet：2026-11-18 看過結尾的火島居民
             })(),
             // 換島：其他島的保存進度 { 島: { laps, maxReached } }、金島以外的通關次數 { 島: 次數 }
             islands: (function () {

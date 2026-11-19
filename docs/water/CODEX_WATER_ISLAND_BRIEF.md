@@ -309,6 +309,20 @@ C-9b、C-9c 請在同一個對話裡接著 C-9a 改，保持同一個角色。
 ### F-6 漁夫划船前往火島（直式 3:4，至少 1080×1440，畫滿不要白底）
 `First-person view sitting in a small wooden rowboat (only the front of the boat and the old fisherman's back rowing visible at the bottom), sailing across a calm turquoise sea toward a distant volcano island on the horizon, thick dark smoke rising from the volcano crater, warm orange sky, sense of adventure and a little mystery, 2.5D clay toy style, same series as the other transition images, no text, no monster, no rocket`（檔名 `to_fire.webp`）
 
+## I. 水島小遊戲「珊瑚灣撈魚趣」（2026-11-19 新增，Gemini）
+
+到貨後填進 `js/app.js` 的 `FISH_ART`（clown、tang、puffer、pufferBig、jelly），放在 `images/water/fish/`。白底、正方形 1024×1024、單一物件、**側面朝右游**（App 會左右翻轉）。用「角色與小圖」共用風格。
+
+共用：`2.5D chibi clay toy style, round soft shapes, side view facing right, full body, plain white background, no text, no shadow`
+
+| 代號 | 生物 | 加在共用後面 |
+|---|---|---|
+| I-1 | 小丑魚（`clown.webp`） | `a cute small clownfish, bright orange with three white stripes outlined in black, big friendly eyes, small smile` |
+| I-2 | 藍倒吊（`tang.webp`） | `a cute small blue tang fish, royal blue body with black markings and a yellow tail, big friendly eyes` |
+| I-3 | 河豚・平常（`puffer.webp`） | `a cute small pufferfish, round light yellow-brown body with soft brown spots, relaxed calm face, tiny fins` |
+| I-4 | 河豚・膨脹（`puffer_big.webp`） | `the same pufferfish fully puffed up into a big round ball with soft short spikes, surprised grumpy face`（請在同一個對話裡接著 I-3 改） |
+| I-5 | 水母（`jelly.webp`） | `a cute translucent pink-purple jellyfish, round bell with a soft glow, short curly tentacles, sleepy gentle face` |
+
 ## G. 成就徽章（選做，1 張）
 
 `waterClear1`「水島通關」：圓形徽章，比照木島通關徽章的外框與畫風（Claude 可提供參考），中間是 `a cute baby beluga and a sunken ship with a star blanket waving like a flag`，水藍＋金色。1024×1024 白底。

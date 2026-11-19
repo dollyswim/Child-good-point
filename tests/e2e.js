@@ -998,8 +998,14 @@ async function main() {
     await q.click('#water-talk [data-talk]');
     assert.match(await q.locator('#water-talk').innerText(), /溜冰鞋、飛行翼和傳送門都不能用/);
     await q.click('#water-talk [data-talk]');
-    assert.match(await q.locator('#water-talk').innerText(), /拿一桶魚/);
+    assert.match(await q.locator('#water-talk').innerText(), /拿魚桶和泡泡網/);
     await q.click('#water-talk [data-talk]');
+    await q.waitForSelector('#water-talk');
+    assert.match(await q.locator('#water-talk').innerText(), /先在珊瑚灣撈 10 條魚/, '拿到魚桶就開始撈魚');
+    await q.click('#water-talk [data-talk]');
+    await q.waitForSelector('[data-fg=start]');
+    assert.match(await q.locator('#fg-caught').innerText(), /0 \/ 10/);
+    await q.click('[data-fg=later]');   // 等一下再撈：第 34 格會再接著撈
     await q.waitForSelector('#water-talk', { timeout: 8000 });   // 第 4 格：牛奶瓶
     assert.match(await q.locator('#water-talk').innerText(), /玻璃牛奶瓶/);
     await q.click('#water-talk [data-talk]');
@@ -1041,6 +1047,24 @@ async function main() {
     await q.click('#scene-ok');
     await idle();
     assert.ok((await P()).story.memo, '拼圖完成');
+    // 2b. 第 34 格小白鯨：魚桶是空的 → 撈魚（先不撈就留在關卡）→ 累積滿 10 條才餵
+    await q.evaluate((cid) => { const s = window.__cgpStore, p = s.getPlayer(cid); p.story.potion = '2026-11-17'; s.data.adventure.rolls = []; s.setPlayerTile(cid, 31); s.save(); }, kid);
+    await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('#pawn');
+    await setRand(F6(3)); await q.click('.dice-btn.d6');
+    await talkUntil('[data-fg=start]');
+    assert.match(await q.locator('#fg-caught').innerText(), /0 \/ 10/, '劇情撈魚顯示累積 0 / 10');
+    if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, '48-water-fish-story.png') });
+    await q.click('[data-fg=later]');
+    await idle();
+    st = await P();
+    assert.deepEqual([st.pos, !!st.story.feed, st.water.fishCaught || 0], [34, false, 0], '先不撈：留在第 34 格');
+    await q.evaluate((cid) => { const s = window.__cgpStore; s.getPlayer(cid).water.fishCaught = 10; s.save(); }, kid);
+    await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('[data-story=feed]');
+    { const gb = await q.locator('[data-story=feed]').boundingBox(); await q.mouse.click(gb.x + gb.width / 2, gb.y + gb.height / 2); }
+    await talkUntil('.feed-one');
+    for (let k = 0; k < 10; k++) await q.click('.feed-one[data-i="' + k + '"]');
+    await idle();
+    assert.equal(!!(await P()).story.feed, true, '撈滿 10 條後餵小白鯨完成');
     // 3. 鯊魚：第 47 格擲 1 → 48 → 免費 12 面骰 10 沒過、11 過關 → 第 49 格
     await q.evaluate((cid) => { const s = window.__cgpStore, p = s.getPlayer(cid); ['potion', 'feed'].forEach((k) => { p.story[k] = '2026-11-17'; }); s.data.adventure.rolls = []; s.setPlayerTile(cid, 47); s.save(); }, kid);
     await q.goto(url + '#child-' + kid); await q.goto(url + '#map-' + kid); await q.waitForSelector('#pawn');

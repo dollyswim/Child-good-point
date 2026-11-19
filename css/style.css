@@ -2520,3 +2520,32 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .water-preview { margin-top: 14px; } .wp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; } .wp-grid .btn { text-align: center; }
 .wp-sub { margin: 16px 0 4px; font-size: 1rem; } .water-preview .btn.block { margin: 6px 0; }
 .trial-banner { margin: 0 0 8px; padding: 6px 12px; border-radius: 99px; background: #fff1c2; border: 2px dashed #e0a21c; color: #8a5a00; font-weight: 900; text-align: center; font-size: .9rem; }
+
+/* 水島小遊戲「珊瑚灣撈魚趣」 */
+.fish-mg { background: #1d7aa5 url(../images/water/task/open_water.webp) center / cover no-repeat; touch-action: none; }
+.fg-top { grid-template-columns: repeat(3, auto); justify-content: center; gap: 8px; }
+.fg-top .mg-count { background: rgba(0, 40, 70, .45); font-size: clamp(.95rem, 4.4vw, 1.15rem); }
+.fg-field { overflow: hidden; touch-action: none; cursor: crosshair; }
+.fg-mob { position: absolute; left: 0; top: 0; display: grid; place-items: center; pointer-events: none; will-change: transform; }
+.fg-mob img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 4px rgba(0, 40, 70, .3)); }
+.fg-emoji { font-size: 2.6em; line-height: 1; }
+.fg-mob .fg-emoji { font-size: calc(var(--s, 50px) * .8); }
+.fg-tang img { filter: hue-rotate(185deg) saturate(1.4) drop-shadow(0 4px 4px rgba(0, 40, 70, .3)); }   /* 藍倒吊正式圖到貨前：魚圖改藍色 */
+.fg-jelly { opacity: .9; }
+.fg-mob.fg-puff { animation: fg-puff .5s ease-out; }
+.fg-mob.fg-got { transition: opacity .35s, filter .35s; opacity: 0; filter: brightness(1.6); }
+@keyframes fg-puff { 40% { scale: 1.45; } }
+.fg-net { position: absolute; left: 0; top: 0; border-radius: 50%; pointer-events: none; z-index: 5; --dur: 1;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .55), rgba(190, 240, 255, .18) 45%, rgba(120, 210, 255, .12) 70%);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, calc(.25 + .6 * var(--dur))), 0 0 14px rgba(180, 240, 255, .5); opacity: calc(.45 + .55 * var(--dur)); }
+.fg-net i { position: absolute; inset: -7px; border-radius: 50%; background: conic-gradient(#ffd23f calc(var(--dur) * 360deg), transparent 0); -webkit-mask: radial-gradient(circle, transparent calc(100% - 6px), #000 calc(100% - 5px)); mask: radial-gradient(circle, transparent calc(100% - 6px), #000 calc(100% - 5px)); }
+.fg-net.weak i { background: conic-gradient(#ff6a4a calc(var(--dur) * 360deg), transparent 0); }
+.fg-pop { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; border: 4px solid rgba(255, 255, 255, .9); pointer-events: none; animation: fg-pop .45s ease-out forwards; }
+@keyframes fg-pop { to { transform: scale(6); opacity: 0; } }
+.fg-plus { position: absolute; transform: translate(-50%, -50%); color: #ffe27a; font-size: 1.6rem; font-weight: 900; text-shadow: 0 2px 4px rgba(0, 0, 0, .5); pointer-events: none; animation: fg-plus .8s ease-out forwards; }
+@keyframes fg-plus { to { transform: translate(-50%, -160%); opacity: 0; } }
+.fg-tip { top: auto; bottom: calc(env(safe-area-inset-bottom) + 18px); background: rgba(0, 40, 70, .6); }
+.fg-tip .btn.primary { min-width: 60%; margin-top: 4px; }
+.fg-result .fg-stat { font-weight: 800; color: #5a6a7a; font-size: .95rem; }
+.fg-result .mg-gain img { width: 34px; height: 34px; }
+@media (prefers-reduced-motion: reduce) { .fg-mob.fg-puff, .fg-pop, .fg-plus { animation-duration: .01s; } }

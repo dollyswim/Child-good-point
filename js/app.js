@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-202';
+  var APP_VERSION = '2026.11.19-203';
   var store;
   try {
     store = new CGP.Store();
@@ -89,6 +89,7 @@
     if (hs === 'report') return { name: 'report', arg: null };
     if (hs === 'minigame-test') return { name: 'minigame-test', arg: null }; // 家長試玩小遊戲（不給星星、不算次數）
     if (hs === 'leaf-test') return { name: 'leaf-test', arg: null };         // 家長試玩木島「落葉找松果」
+    if (hs === 'fish-test') return { name: 'fish-test', arg: null };         // 家長試玩水島「珊瑚灣撈魚趣」
     var m = hs.match(/^(child|rules|challenge|shop|adventure|map)(?:-(.+))?$/);
     if (!m) return { name: 'home', arg: null };
     return { name: m[1] === 'rules' ? 'settings' : m[1], arg: m[2] || null };
@@ -267,6 +268,7 @@
     if (r.name === 'home' && !store.data.flags.tourSeen && !onboardOff()) setTimeout(openTour, 300);   // 第一次打開：新手導覽
     if (r.name === 'minigame-test') openMinigame(null, null, { practice: true });
     if (r.name === 'leaf-test') openMinigame(null, null, { practice: true, leaf: true });
+    if (r.name === 'fish-test' && !document.getElementById('mg')) openFishMinigame(null, null, { practice: true });
     if (r.name === 'adventure') showBlessings(r.arg);
     if (notes.length) toast(notes.join('\n'), 'pos');
     // 新解鎖的成就：星光成就劇場（已先寫入存檔，動畫中斷不影響）
@@ -1810,9 +1812,10 @@
     if (first) {
       await talkSeq([line(F, '歡迎來到水島！我是這裡的漁夫爺爺。'),
         line(F, '在水裡，溜冰鞋、飛行翼和傳送門都不能用喔！要靠自己的腳和骰子前進。'),
-        line(F, '海裡的朋友常常肚子餓，帶一桶魚去吧，遇到餓肚子的朋友可以分給牠！', { choices: [{ label: '🪣 拿一桶魚', val: true, primary: true }] })]);
+        line(F, '海裡的朋友常常肚子餓，這個魚桶和泡泡網給你，遇到餓肚子的朋友，就撈魚餵牠吧！', { choices: [{ label: '🪣 拿魚桶和泡泡網', val: true, primary: true }] })]);
       wflag(child, 'bucket', true); wflag(child, 'welcomed', true); wflag(child, 'rulesSeen', true);
-      toast('🪣 拿到一桶魚！（故事物品）', 'pos');
+      toast('🪣 拿到空魚桶和泡泡網！（故事物品）', 'pos');
+      if (!p.story.feed) await fillBucket(child, [line(F, '魚桶空空的可不行！先在珊瑚灣撈 ' + GAME.FISH_GAME.storyGoal + ' 條魚，把魚桶裝滿吧！')]);   // 2026-11-19 家長：拿到魚桶就開始撈
       return;
     }
     await talkSeq([line(F, '又見面啦！記得在水裡不能用溜冰鞋、飛行翼和傳送門喔！', { choices: [{ label: '知道了', val: true, primary: true }] })]);
@@ -1822,12 +1825,12 @@
         { choices: [{ label: '不用了', val: false }, { label: '好，重新來！', val: true, primary: true }] })]);
       store.answerStoryReset(child.id, yes);
       if (yes) {
-        await talkSeq([line(F, '好！魚桶也幫你裝滿了！', { choices: [{ label: '🪣 拿一桶魚', val: true, primary: true }] })]);
+        await talkSeq([line(F, '好！魚桶和泡泡網再給你一次！', { choices: [{ label: '🪣 拿魚桶和泡泡網', val: true, primary: true }] })]);
         wflag(child, 'bucket', true);
         toast('🔄 水島的任務重新開始囉！', 'pos');
       }
     } else if (!p.water.bucket && !p.story.feed) {
-      await talkSeq([line(F, '魚桶空了吧？再帶一桶去！', { choices: [{ label: '🪣 拿一桶魚', val: true, primary: true }] })]);
+      await talkSeq([line(F, '魚桶和泡泡網帶著吧，遇到餓肚子的朋友用得到！', { choices: [{ label: '🪣 拿魚桶和泡泡網', val: true, primary: true }] })]);
       wflag(child, 'bucket', true);
     }
   }
@@ -2036,10 +2039,17 @@
   async function waterFeed(child) {
     var p = wstate(child), B = WHO.beluga();
     if (!p.water.bucket) {
-      await talkSeq([line(B, '好餓喔……'), line(WHO.fisher(), '（漁夫爺爺划著小船過來）忘了帶魚桶嗎？拿去吧！', { choices: [{ label: '🪣 拿一桶魚', val: true, primary: true }] })]);
+      await talkSeq([line(B, '好餓喔……'), line(WHO.fisher(), '（漁夫爺爺划著小船過來）忘了帶魚桶和泡泡網嗎？拿去吧！', { choices: [{ label: '🪣 拿魚桶和泡泡網', val: true, primary: true }] })]);
       wflag(child, 'bucket', true);
     }
-    await talkSeq([line(B, '咕嚕～我肚子好餓喔……'), line(WHO.me(child), '我有一桶魚！一條一條餵你吃！')]);
+    // 2026-11-19 家長：魚桶要撈滿 10 條才能餵（通常在漁夫給魚桶時就撈好；沒撈滿就在這裡接著撈）
+    var GOAL = GAME.FISH_GAME.storyGoal, have0 = child.preview ? (fillBucket.pv || 0) : (wstate(child).water.fishCaught || 0);
+    if (have0 < GOAL) {
+      var full = await fillBucket(child, have0 ? [line(B, '咕嚕～還是好餓……'), line(WHO.me(child), '魚桶裡有 ' + have0 + ' 條了，再撈 ' + (GOAL - have0) + ' 條就夠了！')]
+        : [line(B, '咕嚕～我肚子好餓喔……'), line(WHO.me(child), '我的魚桶是空的……我去撈 ' + GOAL + ' 條魚給你吃！')]);
+      if (!full) return;   // 先休息：關卡還在，下次接著撈
+    }
+    await talkSeq([line(B, '咕嚕～我肚子好餓喔……'), line(WHO.me(child), '魚桶裝滿了！一條一條餵你吃！')]);
     var P = partyPanel({ title: '餵小白鯨吃魚！', sub: '點一條魚，餵給小白鯨（共 10 條）' }, null, 'water-panel feed-panel');
     P.art.innerHTML = (WATER_ART.seabed ? '<img class="party-bg" src="' + WATER_ART.seabed + '" alt="" draggable="false">' : '') +
       '<div class="feed-beluga" id="feed-beluga">' + waterImg(WATER_NPC.beluga, '小白鯨') + '</div>' +
@@ -2091,6 +2101,27 @@
     document.body.appendChild(el);
     toast('🐳 ' + CALL_LINES[Math.floor(Math.random() * CALL_LINES.length)], 'pos');
     setTimeout(function () { el.remove(); callBusy = false; }, reduceMotion ? 1200 : 3000);
+  }
+
+  /**
+   * 撈魚把魚桶裝滿（劇情模式，可分好幾局累積、存檔；不算每日小遊戲、不給能量星星）。intro：開始前的對話
+   * @returns 是否已經裝滿
+   */
+  async function fillBucket(child, intro) {
+    var GOAL = GAME.FISH_GAME.storyGoal, have = child.preview ? (fillBucket.pv || 0) : (wstate(child).water.fishCaught || 0);
+    if (have >= GOAL) return true;
+    if (intro && intro.length) await talkSeq(intro);
+    while (have < GOAL) {
+      var fr = await fishGame({ title: '撈魚裝滿魚桶', sub: '累積撈到 ' + GOAL + ' 條，就能餵餓肚子的小白鯨', story: true, have: have, laterLabel: '等一下再撈' });
+      if (fr.quit) { toast('🐟 走到第 34 格遇到小白鯨時，還可以接著撈', 'pos'); return false; }
+      have = child.preview ? (fillBucket.pv = Math.min(GOAL, have + fr.caught)) : store.addFeedFish(child.id, fr.caught);
+      if (have >= GOAL) break;
+      var again = await talkSeq([line(WHO.me(child), '魚桶裡有 ' + have + ' 條魚了，還差 ' + (GOAL - have) + ' 條！',
+        { choices: [{ label: '先休息', val: false }, { label: '🫧 再撈一次', val: true, primary: true }] })]);
+      if (!again) { toast('🐟 魚桶裡的 ' + have + ' 條魚會留著，下次接著撈！', 'pos'); return false; }
+    }
+    await talkSeq([line(WHO.me(child), '魚桶裝滿 ' + GOAL + ' 條魚了！遇到餓肚子的朋友就可以餵牠！')]);
+    return true;
   }
 
   // 第 48 格：大鯊魚（免費 12 面骰擲到 11 或 12 才過；或用防護罩，過關後補 10 星）
@@ -3523,6 +3554,7 @@
     if (document.getElementById('mg')) return;
     if (!practice && !store.getPendingMinigame(childId)) return;
     if (practice ? opts.leaf : store.getPendingMinigame(childId).game === 'leaf') { openLeafMinigame(childId, subtitle, opts); return; }   // 木島：落葉找松果
+    if (practice ? opts.fish : store.getPendingMinigame(childId).game === 'fish') { document.body.classList.remove('mg-open'); openFishMinigame(childId, subtitle, opts); return; }   // 水島：珊瑚灣撈魚趣
     var MAX = GAME.MINIGAME_MAX_STARS, SEC = GAME.MINIGAME_SECONDS;
     // 2026-11-08 家長調整（孩子反映星星消失太快）：每顆多停留 0.5 秒、出現數量 1.5 倍（間隔縮為 2/3）
     var PHASES = [{ until: 5000, gap: 667, life: 1700, count: 1, small: false },   // 前 5 秒
@@ -3644,6 +3676,159 @@
       close();
     };
     addStar(50, 44, true, 0, false);
+  }
+
+  // ---------- 水島小遊戲「珊瑚灣撈魚趣」（2026-11-19 家長定稿；參數在 game.js 的 FISH_GAME） ----------
+  // 正式圖到貨前：小丑魚用現有的魚圖、其他用表情符號佔位；圖到了把檔名填進 FISH_ART
+  var FISH_ART = { clown: 'images/water/items/fish.webp', tang: '', puffer: '', pufferBig: '', jelly: '' };
+  var FISH_EMOJI = { clown: '🐠', tang: '🐟', puffer: '🐡', pufferBig: '🐡', jelly: '🪼' };
+  function fishArt(kind) {
+    return FISH_ART[kind] ? '<img src="' + FISH_ART[kind] + '" alt="" draggable="false">' : '<span class="fg-emoji" aria-hidden="true">' + FISH_EMOJI[kind] + '</span>';
+  }
+  /** 啵！（Web Audio 合成，跟著成就音效開關；失敗就安靜） */
+  function playPop() {
+    if (!soundOn()) return;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      audioCtx = audioCtx || new AC(); if (audioCtx.state === 'suspended') audioCtx.resume();
+      var t0 = audioCtx.currentTime, o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(900, t0); o.frequency.exponentialRampToValueAtTime(220, t0 + 0.12);
+      g.gain.setValueAtTime(0.18, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.15);
+      o.connect(g); g.connect(audioCtx.destination); o.start(t0); o.stop(t0 + 0.16);
+    } catch (e) { /* 音效失敗不影響遊戲 */ }
+  }
+  /**
+   * 撈魚一局（日常與劇情共用）。opts：{ title, sub, story（劇情：顯示累積）, have（劇情已累積數）, practice, laterLabel }
+   * @returns Promise<{ caught, used, broken, quit }>（quit＝還沒開始就按「稍後再玩」）
+   */
+  function fishGame(opts) {
+    var C = GAME.FISH_GAME;
+    return new Promise(function (resolve) {
+      var el = document.createElement('div');
+      el.className = 'mg fish-mg'; el.id = 'mg';
+      el.innerHTML = '<div class="mg-top fg-top"><span class="mg-count" id="fg-time">⏱️ 00:' + String(C.seconds).padStart(2, '0') + '</span>' +
+        '<span class="mg-count" id="fg-caught">🐟 ' + (opts.story ? (opts.have || 0) + ' / ' + C.storyGoal : '0') + '</span>' +
+        '<span class="mg-count" id="fg-nets">🫧 ×' + C.nets + '</span></div>' +
+        '<div class="mg-field fg-field" id="fg-field"><div class="fg-net" id="fg-net" hidden><i></i></div></div>' +
+        '<div class="mg-tip fg-tip" id="fg-tip"><b>🐠 ' + h(opts.title || '珊瑚灣撈魚趣') + '</b>' + (opts.sub ? '<small>' + h(opts.sub) + '</small>' : '') +
+        '<span>按住拖曳泡泡網，放開就能撈魚！<br>🐡 河豚會刺破網子一部分，🪼 水母碰到網子就破！</span>' +
+        (opts.practice ? '<small class="mg-practice">🧪 試玩模式：不會得到星星，也不算今天的次數</small>' : '') +
+        '<button type="button" class="btn primary" data-fg="start">開始撈魚</button>' +
+        '<button type="button" class="btn link mg-later" data-fg="later">' + (opts.laterLabel || '稍後再玩') + '</button></div>';
+      document.body.appendChild(el); document.body.classList.add('mg-open');
+      var field = el.querySelector('#fg-field'), netEl = el.querySelector('#fg-net'), still = reduceMotion;
+      var W = 0, H = 0, R = 40, raf = 0, last = 0, timeLeft = C.seconds, started = false, ended = false;
+      var netsLeft = C.nets, caught = 0, used = 0, broken = 0, mobs = [], net = null;
+      function size() { W = field.clientWidth; H = field.clientHeight; R = Math.max(44, Math.min(W, H) * 0.15); netEl.style.width = netEl.style.height = R * 2 + 'px'; }
+      function spawn(kind) {
+        var m = { kind: kind, el: document.createElement('div'), s: Math.max(44, W * (kind === 'jelly' ? 0.13 : kind === 'puffer' ? 0.15 : 0.13)) };
+        var fromLeft = Math.random() < 0.5;
+        m.x = mobs.length < C.fish + C.puffers + C.jellies ? W * (0.1 + Math.random() * 0.8) : (fromLeft ? -m.s : W + m.s);
+        m.y = H * (0.12 + Math.random() * 0.76);
+        var speed = (kind === 'tang' ? 70 : kind === 'jelly' ? 18 : 38) * (W / 390);
+        m.vx = (fromLeft ? 1 : -1) * speed * (0.7 + Math.random() * 0.6); m.vy = 0; m.phase = Math.random() * 6;
+        m.el.className = 'fg-mob fg-' + kind; m.el.innerHTML = fishArt(kind); m.el.style.width = m.el.style.height = m.s + 'px'; m.el.style.setProperty('--s', m.s + 'px');
+        field.appendChild(m.el); mobs.push(m); return m;
+      }
+      function fishKind() { return Math.random() < 0.55 ? 'clown' : 'tang'; }
+      function hud() {
+        el.querySelector('#fg-caught').textContent = '🐟 ' + (opts.story ? Math.min(C.storyGoal, (opts.have || 0) + caught) + ' / ' + C.storyGoal : caught);
+        el.querySelector('#fg-nets').textContent = '🫧 ×' + netsLeft;
+        var t = Math.ceil(timeLeft); el.querySelector('#fg-time').textContent = '⏱️ 00:' + String(Math.max(0, t)).padStart(2, '0');
+      }
+      function point(e) { var r = field.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top - (e.pointerType === 'mouse' ? 0 : 36) }; }   // 觸控：網子在手指上方一點
+      function drawNet() {
+        if (!net) { netEl.hidden = true; return; }
+        netEl.hidden = false; netEl.style.transform = 'translate(' + (net.x - R) + 'px,' + (net.y - R) + 'px)';
+        netEl.style.setProperty('--dur', Math.max(0, net.dur) / C.durability); netEl.classList.toggle('weak', net.dur < 35);
+      }
+      function inNet(m) { return net && Math.hypot(m.x - net.x, m.y - net.y) <= R; }
+      function burst() {   // 網子破了：啵！網內的魚繼續游
+        var b = document.createElement('i'); b.className = 'fg-pop'; b.style.left = net.x + 'px'; b.style.top = net.y + 'px'; field.appendChild(b); setTimeout(function () { b.remove(); }, 450);
+        playPop(); broken++; used++; net = null; drawNet(); afterNet();
+      }
+      function release() {
+        if (!net) return;
+        var got = mobs.filter(function (m) { return (m.kind === 'clown' || m.kind === 'tang') && !m.caught && inNet(m); });
+        got.forEach(function (m) {
+          m.caught = true; caught++; m.el.classList.add('fg-got');
+          (function (mm) { setTimeout(function () { mm.el.remove(); mobs.splice(mobs.indexOf(mm), 1); if (!ended) spawn(fishKind()); }, 400); })(m);
+        });
+        if (got.length) { var t = document.createElement('b'); t.className = 'fg-plus'; t.textContent = '+' + got.length; t.style.left = net.x + 'px'; t.style.top = net.y + 'px'; field.appendChild(t); setTimeout(function () { t.remove(); }, 800); }
+        used++; net = null; drawNet(); hud(); afterNet();
+      }
+      function afterNet() { hud(); if (netsLeft <= 0) setTimeout(finish, 500); }
+      function loop(ts) {
+        if (ended) return;
+        var dt = Math.min(0.05, (ts - (last || ts)) / 1000); last = ts;
+        timeLeft -= dt; if (timeLeft <= 0) { timeLeft = 0; hud(); if (net) release(); finish(); return; }
+        mobs.forEach(function (m) {
+          if (m.caught) return;
+          if (Math.random() < (m.kind === 'tang' ? 0.6 : 0.25) * dt) m.vx = -m.vx;   // 偶爾轉向
+          m.phase += dt * (m.kind === 'jelly' ? 1.6 : 3);
+          m.x += m.vx * dt; m.y += Math.sin(m.phase) * (m.kind === 'jelly' ? 22 : 8) * dt;
+          m.y = Math.max(H * 0.1, Math.min(H * 0.92, m.y));
+          if (m.x < -m.s * 1.2 || m.x > W + m.s * 1.2) { m.y = H * (0.12 + Math.random() * 0.76); m.x = m.vx > 0 ? -m.s : W + m.s; }   // 游出去：從另一邊進來
+          m.el.style.transform = 'translate(' + (m.x - m.s / 2) + 'px,' + (m.y - m.s / 2) + 'px) scaleX(' + (m.vx < 0 ? -1 : 1) + ')';
+        });
+        if (net) {
+          net.t += dt; if (net.t > C.grace) net.dur -= C.drainPerSec * dt;
+          var touch = mobs.filter(function (m) { return !m.caught && Math.hypot(m.x - net.x, m.y - net.y) <= R + m.s * 0.3; });
+          if (touch.some(function (m) { return m.kind === 'jelly'; })) { burst(); }   // 水母優先：立刻破
+          else {
+            touch.forEach(function (m) {
+              if (m.kind === 'puffer' && !net.puffed[mobs.indexOf(m)]) { net.puffed[mobs.indexOf(m)] = true; net.dur -= C.puffer; m.el.classList.add('fg-puff'); m.el.innerHTML = fishArt('pufferBig'); (function (mm) { setTimeout(function () { mm.el.classList.remove('fg-puff'); mm.el.innerHTML = fishArt('puffer'); }, 1200); })(m); }
+            });
+            if (net && net.dur <= 0) burst(); else drawNet();
+          }
+        }
+        raf = requestAnimationFrame(loop);
+      }
+      field.addEventListener('pointerdown', function (e) {
+        if (!started || ended || net || netsLeft <= 0) return;
+        e.preventDefault(); try { field.setPointerCapture(e.pointerId); } catch (err) { /* 不支援也能玩 */ }
+        var p = point(e); netsLeft--; net = { x: p.x, y: p.y, dur: C.durability, t: 0, puffed: {}, id: e.pointerId }; drawNet(); hud();
+      });
+      field.addEventListener('pointermove', function (e) { if (!net || e.pointerId !== net.id) return; e.preventDefault(); var p = point(e); net.x = Math.max(0, Math.min(W, p.x)); net.y = Math.max(0, Math.min(H, p.y)); drawNet(); });
+      field.addEventListener('pointerup', function (e) { if (net && e.pointerId === net.id) release(); });
+      field.addEventListener('pointercancel', function (e) { if (net && e.pointerId === net.id) release(); });
+      function cleanup() { ended = true; cancelAnimationFrame(raf); window.removeEventListener('resize', size); el.remove(); document.body.classList.remove('mg-open'); }
+      function finish() {
+        if (ended) return;
+        ended = true; cancelAnimationFrame(raf); net = null; drawNet();
+        var gain = GAME.fishStars(caught);
+        var res = document.createElement('div'); res.className = 'mg-result fg-result';
+        res.innerHTML = '<b>🐠 撈魚成果！</b>' +
+          '<p>捕獲 <strong>' + caught + '</strong> 條魚</p><p class="fg-stat">成功下網 ' + (used - broken) + ' 次・破掉 ' + broken + ' 個網子</p>' +
+          (opts.story ? '<p class="fg-stat">小白鯨的魚：' + Math.min(C.storyGoal, (opts.have || 0) + caught) + ' / ' + C.storyGoal + ' 條</p>'
+            : '<p class="mg-gain">' + new Array(gain + 1).join(STAR_IMG) + '</p><p class="fg-stat">' + (opts.practice ? '🧪 試玩：' + gain + ' 顆能量星星（不會真的得到）' : '得到 ' + gain + ' 顆能量星星') + '</p>') +
+          '<button type="button" class="btn primary" data-fg="done">' + (opts.story ? '好！' : opts.practice ? '離開' : '收下') + '</button>';
+        el.appendChild(res);
+        res.querySelector('[data-fg=done]').onclick = function () { cleanup(); resolve({ caught: caught, used: used, broken: broken }); };
+      }
+      el.querySelector('[data-fg=later]').onclick = function () { cleanup(); resolve({ quit: true, caught: 0, used: 0, broken: 0 }); };
+      el.querySelector('[data-fg=start]').onclick = function () {
+        el.querySelector('#fg-tip').remove(); started = true; last = 0; raf = requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(function () {
+        size(); window.addEventListener('resize', size);
+        for (var i = 0; i < C.fish; i++) spawn(fishKind());
+        for (i = 0; i < C.puffers; i++) spawn('puffer');
+        for (i = 0; i < C.jellies; i++) spawn('jelly');
+        mobs.forEach(function (m) { m.el.style.transform = 'translate(' + (m.x - m.s / 2) + 'px,' + (m.y - m.s / 2) + 'px)'; });
+        if (still) mobs.forEach(function (m) { m.vx *= 0.6; });
+      });
+    });
+  }
+  /** 日常模式：水島小遊戲格（每天次數、獎勵照既有小遊戲規則） */
+  function openFishMinigame(childId, subtitle, opts) {
+    var practice = !!(opts && opts.practice);
+    fishGame({ sub: subtitle, practice: practice }).then(function (r) {
+      if (r.quit) { if (!practice) toast('小遊戲留著，等一下再玩'); render(); return; }
+      if (practice) { location.replace('#home'); render(); return; }
+      try { var m = store.finishMinigame(childId, r.caught); toast('⭐ 撈魚得到 ' + m.stars + ' 顆能量星星！', 'pos'); } catch (err) { toast(err.message, 'neg'); }
+      render();
+    });
   }
 
   // ---------- 木島小遊戲「落葉找松果」（記憶遊戲，2026-11-08 家長決定） ----------

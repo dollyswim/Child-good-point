@@ -44,7 +44,16 @@
    * rand：決定金島這一場玩哪一種（只有真的要開新的一場時才傳，避免多用掉亂數）
    */
   var GOLD_LEAF_CHANCE = 0.5;
+  /**
+   * 水島小遊戲「珊瑚灣撈魚趣」（2026-11-19 家長定稿）：參數全部集中在這裡。
+   * 日常：水島小遊戲格一律撈魚，每天次數照既有小遊戲規則；能量星星＝星級（基礎 1，撈到 3／6／9 條各 +1，最多 4）。
+   * 劇情：第 34 格餵小白鯨前要撈滿 storyGoal 條（可分好幾局累積、存檔），不算每日次數、不給能量星星。
+   */
+  var FISH_GAME = { seconds: 45, nets: 5, durability: 100, grace: 0.5, drainPerSec: 20, puffer: 35, storyGoal: 10, starSteps: [3, 6, 9], maxCaught: 99,
+    fish: 5, puffers: 1, jellies: 1 };   // 畫面上同時游動的數量：可撈的魚、河豚、水母
+  function fishStars(caught) { var c = Math.max(0, Math.floor(Number(caught) || 0)); return 1 + FISH_GAME.starSteps.filter(function (n) { return c >= n; }).length; }
   function minigameOf(island, rand) {
+    if (island === 'water') return 'fish';
     if (island === 'wood') return 'leaf';
     if (island === 'gold' && !BOARDS.wood && rand) {
       if (typeof window !== 'undefined' && window.__cgpGoldGame) return window.__cgpGoldGame;   // 自動測試用：固定金島玩哪一種（不用亂數）
@@ -765,30 +774,30 @@
       }
     } else if (tile.type === 'minigame') {
       var island = this.getPlayer(childId).island, self = this;
-      function pickGame() { return minigameOf(island, self.random) === 'leaf'; }   // 開新的一場時才決定玩哪一種
-      var leaf = false;
+      function pickGame() { return minigameOf(island, self.random); }   // 開新的一場時才決定玩哪一種（stars／leaf／fish）
+      var leaf = false, game = 'stars';
       ev.title = '🎮 小遊戲';
       var todays = this.getMinigamesToday(childId), lim = this.getLimits(childId).minigame;   // 2026-11-09：每日小遊戲次數依家長設定
       var mg = todays.filter(function (m) { return m.status === 'pending'; })[0] || (todays.length >= lim ? todays[0] || { status: 'done' } : null);
       if (!mg) {
-        leaf = pickGame();
+        game = pickGame(); leaf = game === 'leaf';
         mg = { id: uid(), childId: childId, date: this.today(), tile: tile.n, status: 'pending', caught: 0, stars: 0, ts: this.now().getTime() };
-        if (leaf) mg.game = 'leaf';
+        if (game !== 'stars') mg.game = game;
         this.data.adventure.minigames.push(mg);
         ev.minigame = { id: mg.id };
-        ev.text = leaf ? '記住松果藏在哪幾堆落葉下，再把它們翻出來！共 3 回合。' : '點星星收集能量星星！第 1 顆在正中央，點到後開始 ' + MINIGAME_SECONDS + ' 秒計時。';
+        ev.text = game === 'fish' ? '按住拖曳泡泡網，放開就能撈魚！' + FISH_GAME.seconds + ' 秒、' + FISH_GAME.nets + ' 個網子。' : leaf ? '記住松果藏在哪幾堆落葉下，再把它們翻出來！共 3 回合。' : '點星星收集能量星星！第 1 顆在正中央，點到後開始 ' + MINIGAME_SECONDS + ' 秒計時。';
       } else if (mg.status === 'pending') {
-        leaf = mg.game === 'leaf';
+        leaf = mg.game === 'leaf'; game = mg.game || 'stars';
         ev.minigame = { id: mg.id };
         ev.text = '今天的小遊戲還沒玩完，現在開始吧！';
       } else if (this._useBonus(childId, 'games')) {
         // 再來 3 次：額外的小遊戲（不轉神祕寶箱）
-        leaf = pickGame();
+        game = pickGame(); leaf = game === 'leaf';
         mg = { id: uid(), childId: childId, date: this.today(), tile: tile.n, status: 'pending', bonus: true, caught: 0, stars: 0, ts: this.now().getTime() };
-        if (leaf) mg.game = 'leaf';
+        if (game !== 'stars') mg.game = game;
         this.data.adventure.minigames.push(mg);
         ev.minigame = { id: mg.id, bonus: true };
-        ev.text = '🎮 再來 3 次：額外的小遊戲！' + (leaf ? '記住松果的位置再翻出來。' : '點星星收集能量星星。');
+        ev.text = '🎮 再來 3 次：額外的小遊戲！' + (game === 'fish' ? '按住拖曳泡泡網，放開就能撈魚。' : leaf ? '記住松果的位置再翻出來。' : '點星星收集能量星星。');
       } else {
         // 今天的小遊戲次數用完 → 這次機會轉成神祕寶箱（下次冒險時出現在前方還沒走到的格子；還沒撿走的最多 2 個）
         ev.minigameOverflow = true;
@@ -797,7 +806,7 @@
           ev.text = '今天的小遊戲已經玩完了（每天 ' + lim + ' 次）。\n這次的機會變成了一個 🎁 神祕寶箱，下次冒險時會藏在你前方還沒走到的地方！';
         } else ev.text = '今天的小遊戲已經玩完了（每天 ' + lim + ' 次），明天再來挑戰！\n（還有 2 個 🎁 神祕寶箱等你去撿，撿到後才會再變出新的）';
       }
-      if (ev.minigame) ev.title = leaf ? '🎮 小遊戲：落葉找松果' : '🎮 小遊戲：抓住星星';
+      if (ev.minigame) ev.title = game === 'fish' ? '🎮 小遊戲：珊瑚灣撈魚趣' : leaf ? '🎮 小遊戲：落葉找松果' : '🎮 小遊戲：抓住星星';
     } else if (tile.type === 'boundary') {
       var ri = REGIONS.findIndex(function (r) { return r.id === tile.regionId; });
       var lastR = REGIONS[ri], nextR = REGIONS[ri + 1];
@@ -1036,13 +1045,14 @@
     this._requirePlay(childId);
     var m = this.getPendingMinigame(childId);
     if (!m) throw new Error('今天沒有可以玩的小遊戲');
-    var leaf = m.game === 'leaf';
+    var leaf = m.game === 'leaf', fish = m.game === 'fish';
     var got = Math.max(0, Math.floor(Number(caught) || 0));
     if (leaf) got = Math.min(LEAF_MAX_FOUND, got);
-    var n = leaf ? leafStars(got) : minigameStars(got);
+    if (fish) got = Math.min(FISH_GAME.maxCaught, got);
+    var n = fish ? fishStars(got) : leaf ? leafStars(got) : minigameStars(got);
     m.status = 'done'; m.caught = got; m.stars = n; m.doneTs = this.now().getTime();
     if (leaf) m.squirrels = Math.max(0, Math.min(LEAF_GAME.decoys * LEAF_GAME.rounds.length, Math.floor(Number(squirrels) || 0)));
-    if (n > 0) this._ledger(childId, n, leaf ? '小遊戲：落葉找松果' : '小遊戲：抓住星星');
+    if (n > 0) this._ledger(childId, n, fish ? '小遊戲：珊瑚灣撈魚趣' : leaf ? '小遊戲：落葉找松果' : '小遊戲：抓住星星');
     this.save();
     return m;
   };
@@ -1437,6 +1447,17 @@
     this.save();
     return { pass: true, shield: true, stars: SHARK_SHIELD_STARS, first: first, pos: p.pos, found: this._found };
   };
+  /** 撈魚把魚桶裝滿（2026-11-19：漁夫給魚桶時就開始撈，第 34 格沒撈滿再接著撈）：累積最多 storyGoal、存檔；不給能量星星、不算每日小遊戲 */
+  Store.prototype.addFeedFish = function (childId, n) {
+    this._requirePlay(childId);
+    var p0 = this.getPlayer(childId);
+    if (p0.island !== 'water' || p0.story.feed) throw new Error('現在不需要撈魚餵小白鯨');
+    var w = p0.water;
+    w.fishCaught = Math.min(FISH_GAME.storyGoal, (w.fishCaught || 0) + Math.max(0, Math.floor(Number(n) || 0)));
+    if (w.fishCaught >= FISH_GAME.storyGoal) w.bucket = true;   // 魚桶裝滿了
+    this.save();
+    return w.fishCaught;
+  };
   /** 鯊魚關卡：沒有防護罩時，花 ⭐5 直接過關（2026-11-18 家長；不像防護罩有 ⭐10 回補） */
   var SHARK_PAY_STARS = 5;
   Store.prototype.sharkPay = function (childId) {
@@ -1543,7 +1564,7 @@
     return this.getBonusQuota(childId);
   };
 
-  var api = { CARD_TEXT: CARD_TEXT, LEAF_GAME: LEAF_GAME, LEAF_MAX_FOUND: LEAF_MAX_FOUND, leafStars: leafStars, minigameOf: minigameOf, STORIES: STORIES, storiesOf: storiesOf, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, buildWood: buildWood, WOOD_OPEN: WOOD_OPEN, buildWater: buildWater, WATER_OPEN: WATER_OPEN, WATER_TRIAL: waterTrial, waterOn: waterOn, WATER_TYPES: WATER_TYPES, SHARK_PASS: SHARK_PASS, SHARK_SHIELD_STARS: SHARK_SHIELD_STARS, SHARK_PAY_STARS: SHARK_PAY_STARS, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { CARD_TEXT: CARD_TEXT, LEAF_GAME: LEAF_GAME, LEAF_MAX_FOUND: LEAF_MAX_FOUND, leafStars: leafStars, minigameOf: minigameOf, STORIES: STORIES, storiesOf: storiesOf, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, buildWood: buildWood, WOOD_OPEN: WOOD_OPEN, buildWater: buildWater, WATER_OPEN: WATER_OPEN, WATER_TRIAL: waterTrial, waterOn: waterOn, WATER_TYPES: WATER_TYPES, SHARK_PASS: SHARK_PASS, SHARK_SHIELD_STARS: SHARK_SHIELD_STARS, SHARK_PAY_STARS: SHARK_PAY_STARS, FISH_GAME: FISH_GAME, fishStars: fishStars, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);
