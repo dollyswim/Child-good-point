@@ -1420,7 +1420,7 @@
   ];
   var MEAL_GAME = { rounds: 3, waitSec: 12, sitEvery: 3 };   // 每局 3 題；12 秒沒提醒播後果（不顯示倒數）；「屁股坐」最多隔 3 局一定出現
   /**
-   * 抽一局的題目：6 種裡隨機 3 種、不重複。forceSit＝這局一定要有「屁股坐」（位置隨機）。
+   * 抽一局的題目：6 種裡隨機 3 種、不重複。forceSit＝這局一定要有「屁股坐」（位置隨機）。抽到「30分鐘吃完」一律放最後一題。
    * @returns {string[]} 規則代號
    */
   function pickMealRounds(rand, forceSit) {
@@ -1429,6 +1429,8 @@
     if (forceSit) { out.push('sit'); ids.splice(ids.indexOf('sit'), 1); }
     while (out.length < MEAL_GAME.rounds) out.push(ids.splice(Math.floor(rand() * ids.length), 1)[0]);
     for (var i = out.length - 1; i > 0; i--) { var j = Math.floor(rand() * (i + 1)), t = out[i]; out[i] = out[j]; out[j] = t; }
+    var k = out.indexOf('time');   // 2026-11-19 家長：「30分鐘吃完」（吃太久）抽到就放最後一題，才剛開始就吃太久很怪
+    if (k >= 0) { out.splice(k, 1); out.push('time'); }
     return out;
   }
   /**

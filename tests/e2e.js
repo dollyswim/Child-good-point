@@ -2365,7 +2365,7 @@ async function main() {
   // ---------- 金島第 53 格：齒輪小屋「吃飯好行為大挑戰」（2026-11-19） ----------
   {
     const c = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', story: true });
-    await c.addInitScript(() => { window.__cgpMealIds = ['time', 'sit', 'tool']; window.__cgpMealWait = 1200; window.__cgpMealCalm = 1500; });
+    await c.addInitScript(() => { window.__cgpMealIds = ['time', 'sit', 'tool'];   /* 測試指定題目順序（不經過抽題，所以 time 可以在第 1 題） */ window.__cgpMealWait = 1200; window.__cgpMealCalm = 1500; });
     const q = await c.newPage();
     q.on('pageerror', (e) => errors.push(e.message));
     await q.goto(url);

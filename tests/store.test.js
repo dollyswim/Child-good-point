@@ -3088,16 +3088,17 @@ test('冒險新手引導：進度存檔保留；不認得的值重置為空', ()
   assert.equal(s3.getPlayer(a.id).tutorial, '');
 });
 
-test('齒輪小屋（第 53 格）：題庫 6 種都完整；每局 3 題不重複；「屁股坐」最多隔 3 局一定出現；不給星星、不算每日次數；舊存檔補預設值', () => {
+test('齒輪小屋（第 53 格）：題庫 6 種都完整；每局 3 題不重複、30分鐘吃完放最後；「屁股坐」最多隔 3 局一定出現；不給星星、不算每日次數；舊存檔補預設值', () => {
   const { store, a, storage } = p3Store();
   assert.deepEqual(G.MEAL_RULES.map(r => r.label), ['30分鐘吃完', '眼睛看', '嘴巴吃', '用餐具', '屁股坐', '腳放地上']);
   G.MEAL_RULES.forEach(r => ['id', 'icon', 'cue', 'hint', 'after', 'ico', 'fixed'].forEach(k => assert.ok(r[k], r.id + ' 缺 ' + k)));
   assert.equal(G.STORIES.meal.tile, 53);
   assert.equal(G.BOARDS.gold.tiles[53].type, 'chest', '第 53 格底層的寶箱照常');
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 300; i++) {
     const ids = G.pickMealRounds(Math.random, i % 2 === 0);
     assert.equal(ids.length, 3); assert.equal(new Set(ids).size, 3);
     if (i % 2 === 0) assert.ok(ids.includes('sit'), '指定時一定有屁股坐');
+    if (ids.includes('time')) assert.equal(ids[2], 'time', '30分鐘吃完一律是最後一題');
   }
   const p = store.getPlayer(a.id);
   assert.deepEqual(p.gearHouse, { plays: 0, sinceSit: 0 });
