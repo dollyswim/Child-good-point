@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-201';
+  var APP_VERSION = '2026.11.19-202';
   var store;
   try {
     store = new CGP.Store();
@@ -963,6 +963,7 @@
   function storyXY(board, id, v) {
     var cfg = ISLAND_STORY[board.id], t = board.tiles[GAME.STORIES[id].tile];
     var spot = v === cfg.spots[id].guide && ((board.guideSpots && board.guideSpots[t.n]) || (board.npcSpots && board.npcSpots[t.n]));   // 正式地圖：導遊站在地圖預留的空地（木島 guideSpots、水島 npcSpots）
+    if (id === 'shark' && v === cfg.spots[id].guide) return { x: t.gx + 70, y: t.gy + 60 };   // 2026-11-19 家長：鯊魚貼在第 48 格旁（可以擋到格子），不要離太遠
     if (spot) return { x: spot[0], y: spot[1] + (id === 'blanket' ? -120 : 0) };   // 2026-11-19 萊莫放大 2 倍：往上移，整隻都在地圖裡
     return cfg.rel ? { x: t.gx + v[0], y: t.gy + v[1] } : { x: v[0], y: v[1] };
   }
