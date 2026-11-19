@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-207';
+  var APP_VERSION = '2026.11.19-208';
   var store;
   try {
     store = new CGP.Store();
@@ -3726,7 +3726,9 @@
         m.x = mobs.length < C.fish + C.puffers + C.jellies ? W * (0.1 + Math.random() * 0.8) : (fromLeft ? -m.s : W + m.s);
         m.y = H * (0.12 + Math.random() * 0.76);
         var speed = (kind === 'tang' ? 70 : kind === 'jelly' ? 18 : 38) * (W / 390);
-        m.vx = (fromLeft ? 1 : -1) * speed * (0.7 + Math.random() * 0.6); m.vy = 0; m.phase = Math.random() * 6;
+        m.sp = speed * (0.7 + Math.random() * 0.6); m.phase = Math.random() * 6;
+        var ang = (Math.random() - 0.5) * 1.2;   // 2026-11-19 家長：上下左右隨機游（進場時大致朝畫面裡面）
+        m.vx = (fromLeft ? 1 : -1) * Math.cos(ang) * m.sp; m.vy = Math.sin(ang) * m.sp;
         m.el.className = 'fg-mob fg-' + kind; m.el.innerHTML = fishArt(kind); m.el.style.width = m.el.style.height = m.s + 'px'; m.el.style.setProperty('--s', m.s + 'px');
         field.appendChild(m.el); mobs.push(m); return m;
       }
@@ -3780,10 +3782,13 @@
             if (!ended) spawn(fishKind());   // 2026-11-19 家長：一罩住就馬上補一條新魚
             return;
           }
-          if (Math.random() < (m.kind === 'tang' ? 0.6 : 0.25) * dt) m.vx = -m.vx;   // 偶爾轉向
+          if (Math.random() < (m.kind === 'tang' ? 0.9 : m.kind === 'jelly' ? 0.3 : 0.5) * dt) {   // 偶爾換一個隨機方向（上下左右都可能）
+            var a2 = Math.random() * Math.PI * 2; m.vx = Math.cos(a2) * m.sp; m.vy = Math.sin(a2) * m.sp * (m.kind === 'jelly' ? 1 : 0.8);
+          }
           m.phase += dt * (m.kind === 'jelly' ? 1.6 : 3);
-          m.x += m.vx * dt; m.y += Math.sin(m.phase) * (m.kind === 'jelly' ? 22 : 8) * dt;
-          m.y = Math.max(H * 0.1, Math.min(H * 0.92, m.y));
+          m.x += m.vx * dt; m.y += m.vy * dt + Math.sin(m.phase) * (m.kind === 'jelly' ? 14 : 5) * dt;
+          if (m.y < H * 0.1) { m.y = H * 0.1; m.vy = Math.abs(m.vy); }      // 碰到上下邊緣彈回來
+          if (m.y > H * 0.92) { m.y = H * 0.92; m.vy = -Math.abs(m.vy); }
           if ((m.x < -m.s * 1.2 || m.x > W + m.s * 1.2) && (m.kind === 'clown' || m.kind === 'tang') && mobs.filter(function (q) { return (q.kind === 'clown' || q.kind === 'tang') && !q.caught && !q.held && !q.gone; }).length > C.fish) { m.gone = true; m.caught = true; m.el.remove(); setTimeout(function () { var i = mobs.indexOf(m); if (i >= 0) mobs.splice(i, 1); }, 0); return; }
           if (m.x < -m.s * 1.2 || m.x > W + m.s * 1.2) { m.y = H * (0.12 + Math.random() * 0.76); m.x = m.vx > 0 ? -m.s : W + m.s; }   // 游出去：從另一邊進來
           m.el.style.transform = 'translate(' + (m.x - m.s / 2) + 'px,' + (m.y - m.s / 2) + 'px) scaleX(' + (m.vx < 0 ? -1 : 1) + ')';
@@ -3833,7 +3838,7 @@
         for (i = 0; i < C.puffers; i++) spawn('puffer');
         for (i = 0; i < C.jellies; i++) spawn('jelly');
         mobs.forEach(function (m) { m.el.style.transform = 'translate(' + (m.x - m.s / 2) + 'px,' + (m.y - m.s / 2) + 'px)'; });
-        if (still) mobs.forEach(function (m) { m.vx *= 0.6; });
+        if (still) mobs.forEach(function (m) { m.sp *= 0.6; m.vx *= 0.6; m.vy *= 0.6; });   // 減少動態：游慢一點
       });
     });
   }
