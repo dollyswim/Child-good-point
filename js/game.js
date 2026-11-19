@@ -29,11 +29,11 @@
   var MINIGAME_SECONDS = 10;
   /**
    * 木島小遊戲「落葉找松果」（2026-11-08 家長決定）：25 堆落葉（5×5），先亮出松果位置讓孩子記住，蓋回去後翻找。
-   * 計分版（木島小遊戲格）：3 回合越來越難，每回合翻錯 3 次就進下一回合；每 2 顆松果換 1 顆能量星星（無條件進位；2026-11-08 家長曾改 1 換 1，後來改回 2 換 1），最多 15 顆松果 → 8 顆。
+   * 計分版（木島小遊戲格）：3 回合越來越難，每回合翻錯 3 次就進下一回合；每顆松果換 1 顆能量星星（2026-11-19 家長改：三種小遊戲上限都 15；原本每 2 顆換 1 顆）（無條件進位；2026-11-08 家長曾改 1 換 1，後來改回 2 換 1），最多 15 顆松果 → 8 顆。
    * 劇情版（木島第 8 格）：1 回合、松果 5 顆、看 3 秒，翻錯沒關係、找齊就完成。
    */
   // 干擾物（2026-11-08 家長決定）：每回合 2 隻吃松果的松鼠，先看時和松果一起亮出來（同樣淡色底）；翻到松鼠算翻錯 1 次（劇情版不會失敗）
-  var LEAF_GAME = { piles: 25, misses: 3, rate: 2, decoys: 2,
+  var LEAF_GAME = { piles: 25, misses: 3, rate: 1, decoys: 2,   // rate：2026-11-19 家長改成 1 顆松果換 1 顆（最多 15，和其他小遊戲一致）
     rounds: [{ pine: 4, show: 3000 }, { pine: 5, show: 2500 }, { pine: 6, show: 2000 }],
     story: { pine: 5, show: 3000 } };
   var LEAF_MAX_FOUND = LEAF_GAME.rounds.reduce(function (n, r) { return n + r.pine; }, 0);
@@ -46,10 +46,10 @@
   var GOLD_LEAF_CHANCE = 0.5;
   /**
    * 水島小遊戲「珊瑚灣撈魚趣」（2026-11-19 家長定稿）：參數全部集中在這裡。
-   * 日常：水島小遊戲格一律撈魚，每天次數照既有小遊戲規則；能量星星和落葉找松果一致：每 2 條換 1 顆（無條件進位）、最多 8 顆，至少 1 顆（2026-11-19 家長）。
+   * 日常：水島小遊戲格一律撈魚，每天次數照既有小遊戲規則；能量星星每 1 條換 1 顆、最多 15 顆（三種小遊戲上限都是 15）、至少 1 顆（2026-11-19 家長）。
    * 劇情：第 34 格餵小白鯨前要撈滿 storyGoal 條（可分好幾局累積、存檔），不算每日次數、不給能量星星。
    */
-  var FISH_GAME = { seconds: 45, nets: 5, durability: 100, grace: 0.5, drainPerSec: 20, puffer: 35, storyGoal: 10, rate: 2, maxStars: 8, maxCaught: 99,
+  var FISH_GAME = { seconds: 45, nets: 5, durability: 100, grace: 0.5, drainPerSec: 20, puffer: 35, storyGoal: 10, rate: 1, maxStars: 15, maxCaught: 99,
     fish: 5, puffers: 1, jellies: 1 };   // 畫面上同時游動的數量：可撈的魚、河豚、水母
   function fishStars(caught) { var c = Math.max(0, Math.floor(Number(caught) || 0)); return Math.max(1, Math.min(FISH_GAME.maxStars, Math.ceil(c / FISH_GAME.rate))); }
   function minigameOf(island, rand) {

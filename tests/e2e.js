@@ -2563,11 +2563,11 @@ async function main() {
     assert.equal(await q.locator('.leaf-step1 .leaf-pine').count(), 11, '一顆顆排出找到的松果');
     await q.click('.leaf-step1 [data-mg=merge]');
     await q.waitForSelector('.leaf-result [data-mg=claim]', { timeout: 8000 });
-    assert.match(await q.locator('.leaf-result').innerText(), /換成能量星星[\s\S]*每 2 顆松果換 1 顆[\s\S]*\+6 能量星星/);
-    assert.equal(await q.locator('.leaf-result .mg-group').count(), 6, '11 顆松果分成 6 組（最後一組 1 顆）');
+    assert.match(await q.locator('.leaf-result').innerText(), /換成能量星星[\s\S]*每顆松果換 1 顆能量星星[\s\S]*\+11 能量星星/);
+    assert.equal(await q.locator('.leaf-result .mg-group').count(), 11, '11 顆松果各換 1 顆');
     await q.click('[data-mg=claim]');
     await q.waitForFunction(() => !document.getElementById('mg'));
-    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), starsMg + 6, '11 顆松果 → 6 星');
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), starsMg + 11, '11 顆松果 → 11 星');
     assert.equal(await q.evaluate((cid) => window.__cgpStore.data.adventure.minigames.filter((m) => m.childId === cid && m.game === 'leaf' && m.status === 'done').pop().squirrels, id), 1, '這局翻到 1 隻松鼠（成就「怎麼都是松鼠」用）');
     // 家長試玩 #leaf-test：不給星星、不算次數
     const snapLeaf = await q.evaluate(() => localStorage.getItem('cgp-data'));

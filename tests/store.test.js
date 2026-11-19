@@ -2391,11 +2391,11 @@ test('木島劇情（森林派對）：四個任務（每區 1 個、都在一�
   assert.deepEqual(Object.keys(s2.getPlayer(a.id).story).sort(), ['flowers', 'invite', 'party', 'pinecone']);
 });
 
-test('木島小遊戲「落葉找松果」：木島小遊戲格產生 leaf 小遊戲、每 2 顆松果換 1 星（最多 15 顆 → 8 星）、不算星星捕手、存檔保留', () => {
+test('木島小遊戲「落葉找松果」：木島小遊戲格產生 leaf 小遊戲、每顆松果換 1 星（最多 15 顆 → 15 星）、不算星星捕手、存檔保留', () => {
   const { store, a, push, storage } = p3Store();
   assert.deepEqual([G.minigameOf('wood'), G.minigameOf('gold')], ['leaf', 'stars']);
   assert.equal(G.LEAF_MAX_FOUND, 15, '3 回合 4＋5＋6 顆');
-  assert.deepEqual([0, 1, 2, 3, 15, 99].map(G.leafStars), [0, 1, 1, 2, 8, 8]);
+  assert.deepEqual([0, 1, 2, 3, 15, 99].map(G.leafStars), [0, 1, 2, 3, 15, 15]);
   G.registerBoard('wood', fakeWood());
   try {
     const p = store.getPlayer(a.id); p.island = 'wood'; p.tileId = 'wood-01-004'; store.save();
@@ -2408,8 +2408,8 @@ test('木島小遊戲「落葉找松果」：木島小遊戲格產生 leaf 小�
     assert.equal(s2.getPendingMinigame(a.id).game, 'leaf', '重新整理後還是落葉找松果');
     const bal = store.getStarBalance(a.id);
     const m = store.finishMinigame(a.id, 30);
-    assert.deepEqual([m.caught, m.stars], [15, 8], '最多 15 顆松果 → 8 星');
-    assert.equal(store.getStarBalance(a.id), bal + 8);
+    assert.deepEqual([m.caught, m.stars], [15, 15], '最多 15 顆松果 → 15 星');
+    assert.equal(store.getStarBalance(a.id), bal + 15);
     assert.ok(store.data.adventure.ledger.some(x => x.reason === '小遊戲：落葉找松果' || x.note === '小遊戲：落葉找松果' || JSON.stringify(x).includes('落葉找松果')));
     assert.ok(!store.checkAchievements(a.id).some(x => x.id === 'catch5'), '松果不算「星星捕手」');
   } finally { delete G.BOARDS.wood; }
@@ -2509,7 +2509,7 @@ test('金島小遊戲（木島上線前）：各 1/2 機率抓住星星或落葉
   assert.equal(store.getPendingMinigame(a.id).game, 'leaf');
   const s2 = new Store({ storage, seed: false, now: () => store.now() });
   assert.equal(s2.getPendingMinigame(a.id).game, 'leaf', '重新整理後還是同一種');
-  assert.equal(store.finishMinigame(a.id, 15).stars, 8, '找松果照松果換算（2 顆 1 星、最多 8）');
+  assert.equal(store.finishMinigame(a.id, 15).stars, 15, '找松果照松果換算（1 顆 1 星、最多 15）');
   // 隔天：0.7 → 抓住星星
   setDate('2026-11-07T10:00:00');
   const it = store.addItem({ kind: 'bonus', name: 'x', points: 10 });
@@ -2528,7 +2528,7 @@ test('金島小遊戲（木島上線前）：各 1/2 機率抓住星星或落葉
   assert.equal(G.minigameOf('gold'), 'stars', '沒有給亂數（例如只是查詢）時當作抓住星星');
 });
 
-test('松果躲躲：寶物商店 50 點、馬上玩一局落葉找松果（不占每天 1 次）、每天最多 1 個、和星星呼喚各自計算、2 顆松果 1 星', () => {
+test('松果躲躲：寶物商店 50 點、馬上玩一局落葉找松果（不占每天 1 次）、每天最多 1 個、和星星呼喚各自計算、1 顆松果 1 星', () => {
   const { store, a } = p3Store();
   const bag = store.getPlayer(a.id).bag;
   bag.pineHide = 2; bag.starCall = 1;
@@ -2536,8 +2536,8 @@ test('松果躲躲：寶物商店 50 點、馬上玩一局落葉找松果（不�
   assert.deepEqual([mg.game, mg.bonus, bag.pineHide], ['leaf', true, 1]);
   assert.throws(() => store.usePineHide(a.id), /先把還沒玩完/);
   const bal = store.getStarBalance(a.id);
-  assert.equal(store.finishMinigame(a.id, 11).stars, 6);
-  assert.equal(store.getStarBalance(a.id), bal + 6);
+  assert.equal(store.finishMinigame(a.id, 11).stars, 11);
+  assert.equal(store.getStarBalance(a.id), bal + 11);
   assert.throws(() => store.usePineHide(a.id), /每天只能用 1 個/);
   assert.equal(store.useStarCall(a.id).game, undefined, '同一天還可以用星星呼喚（抓住星星）');
 });
@@ -3001,16 +3001,16 @@ test('水島卡片文字：海裡版本（效果不變）', () => {
   assert.equal(T.roadblocks.length, 4); assert.ok(T.roadblocks.every((r) => !/礦車|小花/.test(r)));
 });
 
-test('珊瑚灣撈魚趣：水島小遊戲一律撈魚；能量星星每 2 條 1 顆、最多 8、至少 1（和落葉找松果一致）', () => {
+test('珊瑚灣撈魚趣：水島小遊戲一律撈魚；能量星星每條 1 顆、最多 15、至少 1', () => {
   assert.equal(G.minigameOf('water', () => 0.9), 'fish');
-  assert.deepEqual([0, 1, 2, 3, 7, 15, 16, 30].map(G.fishStars), [1, 1, 1, 2, 4, 8, 8, 8]);
+  assert.deepEqual([0, 1, 2, 3, 7, 15, 16, 30].map(G.fishStars), [1, 1, 2, 3, 7, 15, 15, 15]);
   const { store, a, p } = waterStore('water', 6);
   try {
     doneUpTo(p, []);
     store.data.adventure.minigames.push({ id: 'm1', childId: a.id, date: store.today(), tile: 7, status: 'pending', game: 'fish', caught: 0, stars: 0, ts: 0 });
     const s0 = store.getStarBalance(a.id);
     const m = store.finishMinigame(a.id, 7);
-    assert.deepEqual([m.caught, m.stars, store.getStarBalance(a.id) - s0], [7, 4, 4]);
+    assert.deepEqual([m.caught, m.stars, store.getStarBalance(a.id) - s0], [7, 7, 7]);
   } finally { delete G.BOARDS.water; }
 });
 
