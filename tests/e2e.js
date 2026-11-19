@@ -2412,7 +2412,7 @@ async function main() {
     assert.equal(await q.locator('#gh-scene').getAttribute('data-state'), 'cough');
     await q.click('[data-talk=next]');
     assert.match(await q.locator('#gh-talk').innerText(), /媽媽[\s\S]*用力咳嗽/);
-    assert.equal(await q.locator('.gh-mom-here').count(), 1, '媽媽回到小齒旁邊');
+    assert.equal(await q.locator('#gh-talk .we-portrait img[src*="mom"]').count(), 1, '媽媽出現在對話框（畫面裡不放媽媽）');
     await q.click('[data-talk=next]');
     assert.match(await q.locator('#gh-talk').innerText(), /咳出來了，呼吸恢復正常/);
     await q.click('[data-talk=next]');

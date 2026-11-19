@@ -574,6 +574,8 @@ English (shared): First-person POV sliding down a wooden root slide inside a gia
 
 計畫：`docs/gold/GEAR_HOUSE_PLAN.md`。交件後放 `images/gold/gear-house/`（檔名見每張的括號）。
 
+**交件進度（2026-11-19）**：已到 H-3 `eat`、H-5 `eyes`、H-6 `mouth`、H-7 `hand`、H-8 `walk`（已接進 App）。還缺 H-1 小屋外觀、H-2 媽媽、H-4 `time`、H-4b `dusk`、H-9 `feet`、H-10 `cough`、H-11 `happy`（選做 H-12 `messy`）。H-9 請保留桌上的小水杯（後果是水杯倒了）。缺圖的畫面先用正常吃飯的圖疊表情符號。
+
 **做法（重要）**：餐廳裡的畫面一律是「**同一個場景、同一個視角**」的整張圖，程式只要換圖，不用把角色疊在背景上對位置。
 1. 先做 **H-3 正常吃飯**，滿意後當作基準圖。
 2. H-4～H-11 都在同一個對話裡上傳 H-3，說「用同一張圖，只改小齒的動作」。
