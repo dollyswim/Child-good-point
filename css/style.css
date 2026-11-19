@@ -2576,3 +2576,18 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .pick-hand { position: absolute; left: 60%; top: 55%; font-style: normal; font-size: 30px; pointer-events: none; animation: pick-tap 1s ease-in-out infinite; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .4)); }
 @keyframes pick-tap { 50% { transform: translate(-4px, -8px) scale(.9); } }
 @media (prefers-reduced-motion: reduce) { .map-shop.call, .pick-hand { animation: none; } }
+
+/* 2026-11-19 冒險新手引導：目標發光、說明泡泡 */
+.coach-ring { z-index: 1250 !important; box-shadow: 0 0 0 4px #ffd23f, 0 0 0 9999px rgba(20, 10, 0, .38) !important; border-radius: 16px; animation: coach-glow 1.2s ease-in-out infinite; }
+#pawn.coach-ring { border-radius: 50%; }
+@keyframes coach-glow { 50% { box-shadow: 0 0 0 8px rgba(255, 210, 63, .7), 0 0 0 9999px rgba(20, 10, 0, .38); } }
+.coach { position: fixed; left: 50%; transform: translateX(-50%); z-index: 1260; width: min(88vw, 340px); box-sizing: border-box; padding: 12px 14px 8px; border-radius: 18px; background: #fffaf0; border: 3px solid #ffd23f; box-shadow: 0 8px 20px rgba(0, 0, 0, .3); --ax: 50%; }
+.coach p { margin: 0 0 6px; font-weight: 800; color: #5a3a1a; line-height: 1.55; }
+.coach p b { color: #c2410c; }
+.coach-acts { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.coach-acts .btn { white-space: nowrap; flex: none; width: auto; min-width: 0; }
+.coach::after { content: ""; position: absolute; left: var(--ax); width: 16px; height: 16px; background: #fffaf0; transform: translateX(-50%) rotate(45deg); }
+.coach.up::after { bottom: -10px; border-right: 3px solid #ffd23f; border-bottom: 3px solid #ffd23f; }
+.coach.down::after { top: -10px; border-left: 3px solid #ffd23f; border-top: 3px solid #ffd23f; }
+.go-tip { margin: 4px 0 8px; padding: 8px 10px; border-radius: 12px; background: #fff1c2; color: #8a5a00; font-weight: 800; font-size: .88rem; line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) { .coach-ring { animation: none; } }

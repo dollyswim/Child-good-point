@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-217';
+  var APP_VERSION = '2026.11.19-218';
   var store;
   try {
     store = new CGP.Store();
@@ -238,7 +238,7 @@
       var homeFresh = store.getChildren().map(function (c) { return { child: c, list: store.checkAchievements(c.id) }; });   // 首頁成就欄顯示最新狀態
       html = renderHome();
     }
-    if (r.name !== 'map') { ui.doorPick = null; ui.sceneView = null; ui.pawnHold = null; }
+    if (r.name !== 'map') { ui.doorPick = null; ui.sceneView = null; ui.pawnHold = null; coachHide(); }
     if (r.name !== 'settings') {
       if (store.isParentUnlocked()) store.lockParent();   // 離開設定就上鎖
       ui.pinMode = null;
@@ -262,6 +262,7 @@
         }
         if (!storyResetAsk(mc)) towerIntro(mc);
       }, 600); }
+      if (!ui.busy) setTimeout(function () { if (route().name === 'map' && route().arg === r.arg && !ui.busy && !document.getElementById('water-talk') && !document.getElementById('party-shade')) coachShow(r.arg); }, 900);   // 新手引導
       if (store.takeChestHint(r.arg)) notes.push('✨ 附近似乎藏著神祕寶物……');
       var wp = store.getPlayer(r.arg); if (wp.island === 'wood' && wp.pos >= 85) preloadImages(WOOD_SLIDES.concat(GAME.WATER_OPEN || window.__cgpWaterOpen ? WATER_TRIP.slice(0, 3) : []));   // 快到樹洞了：先在背景載入滑梯圖
     }
@@ -422,6 +423,64 @@
 
   // ---------- 新手上手（2026-11-09 家長要求：分享給朋友時第一次用就上手） ----------
   function onboardOff() { return !!window.__cgpNoOnboard; }   // E2E 其他流程關掉，避免擋住點擊
+  // ---------- 第一次進冒險地圖的新手引導（2026-11-19 家長）：能量星星 → 商店 → 買 6 面骰 → 擲骰 → 走格子 ----------
+  // 進度存在 player.tutorial（'' → stars → shop → buy → roll → move → done）；每個孩子只跑一次，可以按「跳過」
+  var COACH = {
+    stars: { sel: '[data-testid=stars]', text: '這是你的<b>能量星星</b>⭐！做好事得到的分數，出發時會換成星星，用來在商店買道具。', btn: '知道了' },
+    shop: { sel: '.map-shop', text: '點左下角的<b>商店</b>，用星星買骰子！', wait: true },
+    buy: { sel: '#confirm [data-buy=d6]', text: '買一顆 <b>6 面骰</b>試試看！（星星不夠也沒關係，背包裡已經有新手禮的骰子）', wait: true, dialog: true },
+    roll: { sel: '.dice-btn.d6', text: '點 <b>6 面骰</b>擲骰子！', wait: true },
+    move: { sel: '#pawn', text: '擲出幾點就<b>往前走幾格</b>！停在寶箱、問號、遊戲機這些特別的格子，會發生驚喜喔。每天最多擲 3 次。', btn: '開始冒險！' }
+  };
+  var COACH_ORDER = ['stars', 'shop', 'buy', 'roll', 'move', 'done'];
+  function coachStep(childId) {
+    var p = store.getPlayer(childId);
+    if (!p.tutorial) {   // 舊存檔：已經擲過骰子的孩子不再教
+      var played = p.maxReached > 0 || p.goldClears > 0 || store.data.adventure.rolls.some(function (r) { return r.childId === childId; });
+      store.setTutorial(childId, played ? 'done' : 'stars');
+    }
+    return p.tutorial;
+  }
+  function coachNext(childId, from) {
+    if (coachStep(childId) !== from) return;
+    var n = COACH_ORDER[COACH_ORDER.indexOf(from) + 1];
+    if (n === 'buy' && !document.querySelector('#confirm [data-buy=d6]')) n = 'roll';
+    store.setTutorial(childId, n);
+    coachShow(childId);
+  }
+  /** 走完之後：等事件視窗、對話都關掉，再顯示「擲出幾點就走幾格」（最多等 30 秒） */
+  function coachAfterMove(childId, n) {
+    if (store.getPlayer(childId).tutorial !== 'move' || n > 40) return;
+    var busy = ui.busy || document.getElementById('confirm').open || document.getElementById('party-shade') || document.getElementById('water-talk') || document.querySelector('.pilot-talk, .clear-screen, #mg');
+    if (busy || route().name !== 'map') { setTimeout(function () { coachAfterMove(childId, n + 1); }, 800); return; }
+    coachShow(childId);
+  }
+  function coachHide() { var o = document.getElementById('coach'); if (o) o.remove(); var r = document.querySelector('.coach-ring'); if (r) r.classList.remove('coach-ring'); }
+  /** 在目前步驟的目標上畫光圈＋說明泡泡（地圖每次重畫後都會重新對準） */
+  function coachShow(childId) {
+    coachHide();
+    if (window.__cgpNoCoach || !childId || onboardOff()) return;
+    var st = coachStep(childId), c = COACH[st];
+    if (!c || !store.canPlayToday(childId) || store.getPlayer(childId).pendingRoll) return;
+    if (st !== 'buy' && route().name !== 'map') return;
+    if (st === 'move' && document.body.classList.contains('pawn-acting')) return;
+    var target = document.querySelector(c.sel);
+    if (!target) return;
+    target.classList.add('coach-ring');
+    var box = document.createElement('div');
+    box.id = 'coach'; box.className = 'coach' + (c.dialog ? ' in-dialog' : ''); box.setAttribute('role', 'status');
+    box.innerHTML = '<p>' + c.text + '</p><div class="coach-acts">' + (c.btn ? '<button type="button" class="btn primary small" data-coach="next">' + c.btn + '</button>' : '') +
+      '<button type="button" class="btn link small" data-coach="skip">跳過教學</button></div>';
+    (c.dialog ? document.getElementById('confirm') : document.body).appendChild(box);
+    var r = target.getBoundingClientRect(), vh = window.innerHeight, bh = box.offsetHeight;
+    var top = r.top > vh / 2 ? r.top - bh - 14 : r.bottom + 14;   // 目標在下半部：泡泡放上面
+    box.style.top = Math.max(8, Math.min(vh - bh - 8, top)) + 'px';
+    box.classList.add(r.top > vh / 2 ? 'up' : 'down');
+    box.style.setProperty('--ax', Math.max(20, Math.min(box.offsetWidth - 20, r.left + r.width / 2 - box.getBoundingClientRect().left)) + 'px');
+    box.querySelector('[data-coach=skip]').onclick = function () { store.setTutorial(childId, 'done'); coachHide(); toast('之後也可以在設定裡重新看教學'); };
+    var nb = box.querySelector('[data-coach=next]'); if (nb) nb.onclick = function () { coachNext(childId, st); };
+  }
+
   /** 首頁「新手任務」：新增孩子 → 記一筆加分 → 進入今日冒險 → 擲一次骰子；全部完成或按「不用提示」就收起 */
   function onboardSteps(children) {
     if (!children.length || store.data.flags.tipsDone || onboardOff()) return '';
@@ -431,7 +490,7 @@
       { done: !!store.data.flags.rulesSeen, text: '設定加分扣分規則', how: '已先準備好常用規則，照你家的習慣改一改（第一次會請你設家長密碼）', href: '#rules-bonus' },
       { done: store.data.records.some(function (r) { return r.type === 'bonus' || r.type === 'task'; }), text: '記錄第一筆加分',
         how: '到「小孩」頁，點一個加分項目（例如「主動幫忙」）', href: '#child-' + c.id },
-      { done: ad.settlements.length > 0, text: '進入今日冒險', how: '今天得分大於 0 後，在「小孩」頁按「進入今日冒險」，點數會換成能量星星', href: '#child-' + c.id },
+      { done: ad.settlements.length > 0, text: '進入今日冒險', how: '今天得分大於 0 後，在「小孩」頁按「進入今日冒險」，點數會換成能量星星（建議每天 30 分以上再出發，5 分換 1 顆星，才買得起骰子）', href: '#child-' + c.id },
       { done: children.some(function (k) { return store.getPlayer(k.id).maxReached > 0; }), text: '在金島地圖擲一次骰子', how: '冒險大廳點孩子進入地圖，按骰子前進', href: '#adventure-' + c.id }
     ];
     var left = steps.filter(function (x) { return !x.done; }).length;
@@ -2992,7 +3051,7 @@
         await sleep(500);
         await hopAlong(child, back.backPath);
       }
-    } finally { ui.busy = false; ui.pawnHold = null; ui.ride = false; }
+    } finally { ui.busy = false; ui.pawnHold = null; ui.ride = false; if (store.getPlayer(childId).tutorial === 'move') setTimeout(function () { coachAfterMove(childId, 0); }, 1500); }
     render();
     if (towerBefore < TOWER_LIT_AT && goldMaxOf(store.getPlayer(childId)) >= TOWER_LIT_AT && document.getElementById('gold-tower')) {
       ui.busy = true; document.body.classList.add('pawn-acting');   // 演出期間暫停骰子
@@ -4051,12 +4110,13 @@
         '<div class="modal-actions"><button type="button" class="btn" data-no>完成</button></div></div>';
       confirmEl.querySelectorAll('[data-buy]').forEach(function (b) {
         b.onclick = function () {
-          try { var it = store.buyItem(childId, b.getAttribute('data-buy')); toast('買到 ' + it.name + '！', 'pos'); }
+          try { var it = store.buyItem(childId, b.getAttribute('data-buy')); toast('買到 ' + it.name + '！', 'pos'); if (store.getPlayer(childId).tutorial === 'buy') store.setTutorial(childId, 'roll'); }
           catch (err) { toast(err.message, 'neg'); }
           draw();
         };
       });
-      confirmEl.querySelector('[data-no]').onclick = function () { confirmEl.close(); render(); };
+      confirmEl.querySelector('[data-no]').onclick = function () { if (store.getPlayer(childId).tutorial === 'buy') store.setTutorial(childId, 'roll'); confirmEl.close(); render(); };
+      if (store.getPlayer(childId).tutorial === 'buy') setTimeout(function () { coachShow(childId); }, 50);
     }
     draw();
     confirmEl.oncancel = function () { render(); };
@@ -4099,6 +4159,8 @@
     }).join('');
     confirmEl.innerHTML = '<div class="confirm-box go-box"><h2>🚀 今日冒險出發</h2>' +
       '<p class="muted small">勾選要一起出發的孩子。出發時用今日淨得分結算能量星星，之後再加的分不會再增加星星（一天只結算一次）。</p>' +
+      (store.getChildren().some(function (c) { return !store.getSettlement(c.id) && store.getTodayNet(c.id) > 0 && store.getTodayNet(c.id) < 30; })
+        ? '<p class="go-tip">💡 建議每天得到 <b>30 分以上</b>再出發（可換 ⭐6），孩子才買得起骰子、玩得到後面的冒險。</p>' : '') +   // 2026-11-19 家長
       '<div class="go-list">' + rows + '</div>' +
       '<div class="modal-actions"><button type="button" class="btn" data-no>取消</button>' +
       '<button type="button" class="btn primary" data-yes>一起出發！</button></div></div>';
@@ -4633,7 +4695,7 @@
   }
 
   function settingsChildren() {
-    var replay = '<p class="tour-replay-row"><button type="button" class="btn small" data-action="tour-replay">📖 再看一次新手導覽</button>' +
+    var replay = '<p class="tour-replay-row"><button type="button" class="btn small" data-action="tour-replay">📖 再看一次新手導覽</button> <button type="button" class="btn small" data-action="coach-replay">🎲 冒險教學再看一次</button>' +
       (store.data.flags.tipsDone ? ' <button type="button" class="btn small" data-action="tips-show">🧭 首頁重新顯示新手任務</button>' : '') + '</p>';
     var list = store.getChildren().map(function (c) {
       return '<li class="row">' + avatar(c, 'sm') +
@@ -5234,6 +5296,7 @@
         case 'tips-done': store.setFlag('tipsDone', true); render(); break;
         case 'tips-show': store.setFlag('tipsDone', false); toast('首頁會重新顯示新手任務'); render(); break;
         case 'tour-replay': openTour(); break;
+        case 'coach-replay': store.getChildren().forEach(function (c) { store.setTutorial(c.id, 'stars'); }); toast('下次進冒險地圖會重新教一次'); break;
         case 'water-trial': {   // 水島試玩模式：只存在這台裝置；切換後重新載入，讓島嶼設定生效
           var onNow = GAME.WATER_TRIAL;
           confirmThen(onNow ? '關閉水島試玩模式？\n還在水島的孩子會回到金島起點。' : '打開水島試玩模式？\n只有這台裝置看得到水島。', onNow ? '關閉' : '打開', false, function () {
@@ -5419,7 +5482,7 @@
         case 'export': exportData(); break;
         case 'snooze-backup': store.snoozeBackup(); toast('好的，明天再提醒'); render(); break;
         case 'enter-adventure': enterAdventure(childId); break;
-        case 'roll': { var rk = el.getAttribute('data-kind'); playMove(childId, rk === 'magicDice' ? 'magic' : rk); break; }   // 神奇骰子按鈕代號 magicDice → 擲骰種類 magic
+        case 'roll': { var rk = el.getAttribute('data-kind'); coachHide(); if (rk === 'd6' && store.getPlayer(childId).tutorial === 'roll') store.setTutorial(childId, 'move'); playMove(childId, rk === 'magicDice' ? 'magic' : rk); break; }   // 神奇骰子按鈕代號 magicDice → 擲骰種類 magic
         case 'use-skates': playMove(childId, 'skates'); break;
         case 'use-item': playMove(childId, el.getAttribute('data-kind')); break;
         case 'use-magnet': openMagnet(childId); break;
@@ -5496,7 +5559,7 @@
           });
           break;
         case 'item-info': showInfo('道具說明', ITEM_INFO[el.getAttribute('data-kind')] || ''); break;
-        case 'open-shop': openShop(childId); break;
+        case 'open-shop': openShop(childId); coachNext(childId, 'shop'); break;
         case 'play-minigame': openMinigame(childId); break;
         case 'pick-character': openCharacterPicker(childId); break;
         case 'claim': {

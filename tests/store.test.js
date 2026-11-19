@@ -3060,3 +3060,15 @@ test('新手禮：每個孩子第一次出發送 6 面骰 ×2，只送一次；�
   const s2 = new Store({ storage, seed: false, now: () => new Date(t) });
   assert.equal(s2.getPlayer(a.id).starterGift, true, '存檔保留已送過');
 });
+
+test('冒險新手引導：進度存檔保留；不認得的值重置為空', () => {
+  const storage = memoryStorage();
+  const store = new Store({ storage, seed: false, now: () => new Date('2026-11-06T10:00:00') });
+  const a = store.addChild({ name: 'A' });
+  store.setTutorial(a.id, 'roll');
+  const s2 = new Store({ storage, seed: false, now: () => new Date('2026-11-06T10:00:00') });
+  assert.equal(s2.getPlayer(a.id).tutorial, 'roll');
+  s2.getPlayer(a.id).tutorial = 'hack'; s2.save();
+  const s3 = new Store({ storage, seed: false, now: () => new Date('2026-11-06T10:00:00') });
+  assert.equal(s3.getPlayer(a.id).tutorial, '');
+});
