@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-199';
+  var APP_VERSION = '2026.11.19-200';
   var store;
   try {
     store = new CGP.Store();
@@ -954,7 +954,7 @@
         feed: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '小白鯨', img: 'images/water/npc/beluga.webp', iw: 640, ih: 640, w: 150 }, hint: '小白鯨好像肚子餓了……走到第 34 格餵牠吃魚！' },
         shark: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '大鯊魚', img: 'images/water/npc/shark_v2.webp', iw: 640, ih: 640, w: 190 }, hint: '大鯊魚守在第 48 格，要擲出 11 或 12 才讓你過！' },
         lantern: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '燈籠魚', img: 'images/water/npc/anglerfish.webp', iw: 640, ih: 640, w: 100 }, hint: '燈籠魚的東西掉了一地……走到第 56 格幫牠找！' },
-        blanket: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '萊莫', img: 'images/water/npc/monster_confused.webp', iw: 640, ih: 640, w: 100 }, hint: '門裡有人在翻箱倒櫃……走到第 100 格看看！' }
+        blanket: { type: 'water', guide: [0, 0], cam: [0, -60], npc: { cls: 'water-npc', label: '萊莫', img: 'images/water/npc/monster_confused.webp', iw: 640, ih: 640, w: 200 }, hint: '門裡有人在翻箱倒櫃……走到第 100 格看看！' }
       }
     }
   };
@@ -962,7 +962,7 @@
   function storyXY(board, id, v) {
     var cfg = ISLAND_STORY[board.id], t = board.tiles[GAME.STORIES[id].tile];
     var spot = v === cfg.spots[id].guide && ((board.guideSpots && board.guideSpots[t.n]) || (board.npcSpots && board.npcSpots[t.n]));   // 正式地圖：導遊站在地圖預留的空地（木島 guideSpots、水島 npcSpots）
-    if (spot) return { x: spot[0], y: spot[1] };
+    if (spot) return { x: spot[0], y: spot[1] + (id === 'blanket' ? -120 : 0) };   // 2026-11-19 萊莫放大 2 倍：往上移，整隻都在地圖裡
     return cfg.rel ? { x: t.gx + v[0], y: t.gy + v[1] } : { x: v[0], y: v[1] };
   }
   /** 現在這座島還沒完成、而且格子已開放的劇情代號 */
