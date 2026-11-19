@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-216';
+  var APP_VERSION = '2026.11.19-217';
   var store;
   try {
     store = new CGP.Store();
@@ -1084,6 +1084,7 @@
     if (!pickJob || el.classList.contains('got')) return;
     el.classList.add('got');
     pickJob.n++;
+    document.querySelectorAll('.pick-hand').forEach(function (x) { x.remove(); });
     var c = document.getElementById('pick-count'); if (c) c.textContent = pickJob.n + ' / ' + pickJob.need;
     var f = document.getElementById('pick-fill'); if (f) f.style.width = (pickJob.n / pickJob.need * 100) + '%';
     setTimeout(function () { el.remove(); }, 400);
@@ -1101,8 +1102,9 @@
     });
     var panel = document.createElement('div');
     panel.className = 'charge-panel story-panel' + (sp.top ? ' top' : ''); panel.id = 'story-panel';   // 面板放上方，不擋住地圖上的東西
-    panel.innerHTML = '<b>' + h(sp.title) + '</b><small>' + h(sp.sub) + '</small><span class="charge-bar"><i id="pick-fill"></i></span><span class="story-count" id="pick-count">0 / ' + sp.items.length + '</span>';
+    panel.innerHTML = '<b>' + h(sp.title) + '</b><small>' + h(sp.sub) + '</small><small class="pick-tip">👆 直接點畫面上的東西就能撿起來，不用走過去喔！</small><span class="charge-bar"><i id="pick-fill"></i></span><span class="story-count" id="pick-count">0 / ' + sp.items.length + '</span>';
     document.body.appendChild(panel);
+    if (els[0]) els[0].insertAdjacentHTML('beforeend', '<i class="pick-hand" aria-hidden="true">👆</i>');   // 2026-11-19：第一個東西上面有手指在點，撿到第一個就消失
     return new Promise(function (resolve) { pickJob = { n: 0, need: sp.items.length, done: resolve, els: els }; });
   }
   /** 互動 press：按一個按鈕，地圖上出現變化（礦車開走、吊橋拉緊） */
@@ -1587,6 +1589,9 @@
     var canPlay = store.canPlayToday(child.id);
     var used = store.getRollsToday(child.id);
     var limit = store.getLimits(child.id).dice;   // 2026-11-09：每日上限依家長設定（測試孩子不限）
+    // 2026-11-19：背包裡沒有可以前進的道具、星星又買得起 → 商店跳動提醒（新手常不知道要先去商店）
+    var shopCall = canPlay && !player.pendingRoll && !bag.d6 && !bag.d12 && !bag.skates && !bag.magicDice && !(board.id === 'water' && player.story.feed)
+      && store.getStarBalance(child.id) >= GAME.SHOP.reduce(function (m, it) { return Math.min(m, it.price); }, 99);
     var end = board.tiles.length - 1;
     var atEnd = player.pos >= end;
     var quota = store.getBonusQuota(child.id);
@@ -1645,7 +1650,7 @@
       '<div class="map-ctrl"><button type="button" data-map="in" aria-label="放大">＋</button><button type="button" data-map="out" aria-label="縮小">－</button>' +
       '<button type="button" data-map="follow" aria-label="回到角色位置">🎯</button></div>' +
       (scene ? sceneNav(board, scene) : '') +
-      '<button type="button" class="map-shop" data-action="open-shop"' + (canPlay ? '' : ' disabled') + ' aria-label="星星商店">' + SHOP_ART + '<b>商店</b></button>' +
+      '<button type="button" class="map-shop' + (shopCall ? ' call' : '') + '" data-action="open-shop"' + (canPlay ? '' : ' disabled') + ' aria-label="星星商店">' + SHOP_ART + '<b>商店</b>' + (shopCall ? '<i class="shop-call">先到商店買骰子！</i>' : '') + '</button>' +
       '<div class="dice-overlay" id="dice-overlay" hidden><div class="die-face" id="die-face">?</div></div>' +
       '</section>' +
       '<p class="map-hint">' + reason + '</p>' +
@@ -4037,7 +4042,12 @@
             '<span class="shop-row-main"><b>' + h(it.name) + '</b><small>' + h(it.desc) + '・背包 ×' + bag[it.id] + '</small></span>' +
             '<button class="btn ' + (ok ? 'primary' : '') + ' small" data-buy="' + it.id + '"' + (ok ? '' : ' disabled') + '>⭐' + it.price + '</button></div>';
         }).join('') +
-        '<p class="muted small">買來的道具放進背包，沒用完隔天仍然保留。每天最多擲 ' + store.getLimits().dice + ' 次骰子。</p>' +
+        (function () {   // 2026-11-19：什麼都買不起時說明原因（原本只是按鈕變淡）
+          var cheap = GAME.SHOP.reduce(function (m, it) { return it.price < m.price ? it : m; }), d6 = GAME.SHOP.filter(function (it) { return it.id === 'd6'; })[0];
+          if (bal >= cheap.price) return '';
+          return '<p class="shop-short">還差 ' + STAR_IMG + ' ' + (cheap.price - bal) + ' 顆才能買' + h(cheap.name) + '（6 面骰要 ⭐' + d6.price + '）。多完成幾個加分項目，下次出發就能換到更多星星！</p>';
+        })() +
+        '<p class="muted small">買來的道具放進背包，沒用完隔天仍然保留。每天最多擲 ' + store.getLimits(childId).dice + ' 次骰子。</p>' +
         '<div class="modal-actions"><button type="button" class="btn" data-no>完成</button></div></div>';
       confirmEl.querySelectorAll('[data-buy]').forEach(function (b) {
         b.onclick = function () {
@@ -4102,7 +4112,7 @@
     yes.onclick = function () {
       var ids = picked(), got = [];
       ids.forEach(function (id) {
-        try { var x = store.settleToday(id); got.push(store.getChild(id).name + ' ⭐' + x.stars); }
+        try { var x = store.settleToday(id); got.push(store.getChild(id).name + ' ⭐' + x.stars + (x.starterD6 ? '（🎁 新手禮：6 面骰 ×' + x.starterD6 + '）' : '')); }
         catch (err) { toast(err.message, 'neg'); }
       });
       confirmEl.close();

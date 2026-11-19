@@ -798,7 +798,7 @@ test('Phase 3 案例 A：購買 6 面骰扣 5 星、進背包', () => {
   assert.equal(store.getStarBalance(a.id), 20);
   store.buyItem(a.id, 'd6');
   assert.equal(store.getStarBalance(a.id), 15);
-  assert.equal(store.getPlayer(a.id).bag.d6, 1);
+  assert.equal(store.getPlayer(a.id).bag.d6, 3, '買 1 顆＋第一次出發的新手禮 2 顆');
   store.buyItem(a.id, 'd12');
   store.buyItem(a.id, 'skates');
   assert.equal(store.getStarBalance(a.id), 1);
@@ -841,10 +841,10 @@ test('Phase 3 案例 D：剩餘骰子隔天仍存在；隔天擲骰次數重新�
   s1.recordItem(a.id, b.id); s1.settleToday(a.id);
   for (let i = 0; i < 4; i++) s1.buyItem(a.id, 'd6');
   for (let i = 0; i < 3; i++) s1.rollDice(a.id, 'd6');
-  assert.equal(s1.getPlayer(a.id).bag.d6, 1);
+  assert.equal(s1.getPlayer(a.id).bag.d6, 3, '剩 1 顆＋新手禮 2 顆');
   t = new Date('2026-11-07T09:00:00').getTime();
   const s2 = new Store({ storage, seed: false, now: () => new Date(t) }); // 隔天重新開啟
-  assert.equal(s2.getPlayer(a.id).bag.d6, 1, '剩餘骰子保留');
+  assert.equal(s2.getPlayer(a.id).bag.d6, 3, '剩餘骰子保留（含新手禮 2 顆）');
   assert.throws(() => s2.rollDice(a.id, 'd6'), /尚未出發/, '當天沒出發不能玩');
   assert.throws(() => s2.buyItem(a.id, 'd6'), /尚未出發/);
   s2.recordItem(a.id, b.id); s2.settleToday(a.id);
@@ -920,7 +920,7 @@ test('角色：8 種冒險夥伴可選，每個孩子獨立；匯出入保留遊
   other.importJSON(store.exportJSON());
   assert.equal(other.getPlayer(a.id).character, 'horn');
   assert.equal(other.getPlayer(b2.id).character, 'flame');
-  assert.equal(other.getPlayer(a.id).bag.d6, 1);
+  assert.equal(other.getPlayer(a.id).bag.d6, 3, '含新手禮 2 顆');
   assert.equal(other.getStarBalance(a.id), 15);
 });
 
@@ -3043,4 +3043,20 @@ test('撈魚成就：撈魚不算「星星捕手」；封存結轉保留撈魚�
     store.archiveRecords('2026-02-01');
     assert.equal(store.data.carry[a.id].bestFish, 91, '封存後保留撈魚單局最佳 91 條');
   } finally { delete G.BOARDS.water; }
+});
+
+test('新手禮：每個孩子第一次出發送 6 面骰 ×2，只送一次；已經出發過的孩子不送', () => {
+  const storage = memoryStorage();
+  let t = new Date('2026-11-06T10:00:00').getTime();
+  const store = new Store({ storage, seed: false, now: () => new Date(t) });
+  const a = store.addChild({ name: 'A' }), it = store.addItem({ kind: 'bonus', name: 'b', points: 15 });
+  store.recordItem(a.id, it.id);
+  const x = store.settleToday(a.id);
+  assert.deepEqual([x.stars, x.starterD6, store.getPlayer(a.id).bag.d6], [3, 2, 2], '15 分只換到 3 星，但有 2 顆 6 面骰可以走');
+  t = new Date('2026-11-07T10:00:00').getTime();
+  store.recordItem(a.id, it.id);
+  const y = store.settleToday(a.id);
+  assert.deepEqual([y.starterD6, store.getPlayer(a.id).bag.d6], [undefined, 2], '第二天不再送');
+  const s2 = new Store({ storage, seed: false, now: () => new Date(t) });
+  assert.equal(s2.getPlayer(a.id).starterGift, true, '存檔保留已送過');
 });

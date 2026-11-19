@@ -438,6 +438,7 @@
               return o;
             })(),
             maxReached: Math.max(toInt(p.maxReached, 0), toInt(p.pos, 0)),   // 曾經到過最遠的格子（成就用）
+            starterGift: !!p.starterGift,   // 2026-11-19 第一次出發的新手禮（6 面骰 ×2）已送過
             stats: { chests: Math.max(0, toInt(p.stats && p.stats.chests, 0)), mystery: Math.max(0, toInt(p.stats && p.stats.mystery, 0)) },   // 開過的一般寶箱／神祕寶箱數
             bag: BAG_KEYS.reduce(function (o, k) { o[k] = Math.max(0, toInt(bag[k], 0)); return o; }, {})
           };
@@ -1546,6 +1547,7 @@
    * 今日冒險狀態
    * @returns {{ unlocked, settled, settlement, net, previewBase, previewBonus, previewStars, balance }}
    */
+  var STARTER_D6 = 2;   // 第一次出發的新手禮：6 面骰數量
   Store.prototype.getAdventureStatus = function (childId) {
     var net = this.getTodayNet(childId);
     var settlement = this.getSettlement(childId);
@@ -1586,6 +1588,16 @@
       lateIds: late.map(function (r) { return r.id; }), latePoints: latePoints,
       ts: this.now().getTime()
     };
+    // 2026-11-19 家長：第一次出發送新手禮（6 面骰 ×2，每個孩子只送一次），避免第一天星星太少什麼都買不了、不能走
+    var adv0 = this.data.adventure, carry0 = (this.data.carry || {})[childId];
+    var firstEver = !adv0.settlements.some(function (s) { return s.childId === childId; }) && !(carry0 && carry0.settled);
+    if (firstEver && this.getPlayer) {
+      var pl = this.getPlayer(childId);
+      if (!pl.starterGift) {
+        pl.starterGift = true; pl.bag.d6 = (pl.bag.d6 || 0) + STARTER_D6; x.starterD6 = STARTER_D6;
+        if (this._logItem) this._logItem(childId, 'grant', 'd6', STARTER_D6, '新手禮', '第一次出發');
+      }
+    }
     this.data.adventure.settlements.push(x);
     this.save();
     return x;
