@@ -337,3 +337,13 @@ C-9b、C-9c 請在同一個對話裡接著 C-9a 改，保持同一個角色。
 - 角色：同一角色多張時比例一致；上半身可以裁成半身大圖。
 - 小圖：輪廓清楚、縮小看得懂；同一組（紙卡、箱子）風格一致。
 - 萊莫的故事線索：備忘圖的星星不指向任何箱子；瓶底和瓶架對得上；紙卡不露出被子全貌。
+
+### 成就徽章（2026-11-19 新增，選做）
+
+沒有圖時程式會畫一個 emoji 徽章，所以不急。到貨後放進 `images/badges/`，並在 `js/app.js` 的 `BADGE_IMG` 加上路徑（水島圖不放進 SHELL）。共同規格：1024×1024、純白背景、徽章置中、四周留約 8% 邊距、不要文字、不要數字、黏土玩具般的柔和質感。
+
+| 成就 | 檔名 | 提示詞 |
+|---|---|---|
+| 水島小英雄（`waterHero`） | `badge_waterHero.webp` | 中文：圓形成就徽章，綠色圓潤粗外框，內側一圈細金邊（和「木島小英雄」同一系列）。框內是戴著潛水面鏡的可愛小男孩，背著小氧氣瓶，開心地抱著一顆發光的珍珠貝殼，身旁有一隻小白鯨探出頭，背景是淡藍色的海底、珊瑚和往上飄的泡泡。English: `Round achievement badge, thick glossy green rim with a thin gold inner ring (same series as the "wood island hero" badge). Inside: a cute little boy wearing a diving mask and a small oxygen tank, happily hugging a glowing pearl shell, a small beluga whale peeking beside him, soft light-blue underwater background with coral and rising bubbles. Soft clay-toy texture, warm pastels. Pure white background, centered, about 8% margin, no text, no numbers. 1024×1024.` |
+| 晚上就吃魚（`fish20`） | `badge_fish20.webp` | 中文：圓形成就徽章，紫色圓潤粗外框（和「松鼠朋友」徽章同一系列）。框內是一個小木桶，裡面裝著幾條小丑魚和藍倒吊魚，旁邊立著一支泡泡網，桶邊有幾顆水滴。English: `Round achievement badge, thick glossy purple rim (same series as the "squirrel friend" badge), deep purple inside. Center: a small wooden bucket filled with a few clownfish and blue tang fish, a bubble net leaning beside it, a few water drops. Soft clay-toy texture, warm pastels. Pure white background, centered, about 8% margin, no text, no numbers. 1024×1024.` |
+| 都能開水族館了（`fish90`） | `badge_fish90.webp` | 中文：圓形成就徽章，紫色圓潤粗外框（同上一系列）。框內是一個圓形玻璃魚缸，裡面游著很多小丑魚和藍倒吊魚，有水草、小珊瑚和泡泡，魚缸上方有一顆小星星閃光。English: `Round achievement badge, thick glossy purple rim (same series), deep purple inside. Center: a round glass aquarium full of many clownfish and blue tang fish, seaweed, small coral and bubbles, a little sparkle star above the tank. Soft clay-toy texture, warm pastels. Pure white background, centered, about 8% margin, no text, no numbers. 1024×1024.` |
