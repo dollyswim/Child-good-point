@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-212';
+  var APP_VERSION = '2026.11.19-213';
   var store;
   try {
     store = new CGP.Store();
@@ -3750,7 +3750,11 @@
       function inNet(m) { return net && Math.hypot(m.x - net.x, m.y - net.y) <= R; }
       function burst() {   // 網子破了：啵！網內的魚繼續游
         var b = document.createElement('i'); b.className = 'fg-pop'; b.style.left = net.x + 'px'; b.style.top = net.y + 'px'; field.appendChild(b); setTimeout(function () { b.remove(); }, 450);
-        mobs.forEach(function (m) { if (m.held) { m.held = false; m.vx = (Math.random() < 0.5 ? -1 : 1) * Math.abs(m.vx || 40) * 1.6; m.el.classList.remove('fg-held'); } });   // 網裡的魚逃走
+        mobs.forEach(function (m) {   // 2026-11-19 家長：網裡的魚往四面八方快速逃走、游出畫面就消失（罩住時已經補過新魚）
+          if (!m.held) return;
+          var dx = m.x - net.x, dy = m.y - net.y, d = Math.hypot(dx, dy) || 1, a = d < 4 ? Math.random() * Math.PI * 2 : Math.atan2(dy, dx), sp = Math.max(W, H) * 0.9;
+          m.held = false; m.flee = true; m.vx = Math.cos(a) * sp; m.vy = Math.sin(a) * sp; m.el.classList.remove('fg-held'); m.el.classList.add('fg-flee');
+        });
         playPop(); broken++; used++; net = null; drawNet(); afterNet();
       }
       function release() {
@@ -3770,6 +3774,12 @@
         timeLeft -= dt; if (timeLeft <= 0) { timeLeft = 0; hud(); if (net) release(); finish(); return; }
         mobs.forEach(function (m) {
           if (m.caught) return;
+          if (m.flee) {   // 逃走的魚：直直衝出畫面後消失
+            m.x += m.vx * dt; m.y += m.vy * dt;
+            m.el.style.transform = 'translate(' + (m.x - m.s / 2) + 'px,' + (m.y - m.s / 2) + 'px) scaleX(' + (m.vx < 0 ? -1 : 1) + ')';
+            if (m.x < -m.s || m.x > W + m.s || m.y < -m.s || m.y > H + m.s) { m.caught = true; m.el.remove(); setTimeout(function () { var i = mobs.indexOf(m); if (i >= 0) mobs.splice(i, 1); }, 0); }
+            return;
+          }
           if (m.held) {   // 2026-11-19 家長：被網子罩住的魚跟著網子走，在網裡輕輕擺動
             m.phase += dt * 6;
             m.x = net.x + m.ox + Math.sin(m.phase) * 3; m.y = net.y + m.oy + Math.cos(m.phase * 0.7) * 2;
