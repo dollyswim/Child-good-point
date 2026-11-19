@@ -311,6 +311,7 @@
     if (!p.islands || typeof p.islands !== 'object') p.islands = {};           // 其他島的保存進度 { 島: { laps, maxReached } }
     if (!p.islandClears || typeof p.islandClears !== 'object') p.islandClears = {};   // 金島以外的通關次數（金島沿用 goldClears）
     if (!p.story || typeof p.story !== 'object') p.story = {};   // 劇情完成日期 { ore, rail, tower, pinecone, flowers, invite, party }
+    if (!p.gearHouse || typeof p.gearHouse !== 'object') p.gearHouse = { plays: 0, sinceSit: 0 };   // 2026-11-19 齒輪小屋：玩過幾局、幾局沒出現「屁股坐」
     if (!p.water || typeof p.water !== 'object') p.water = {};   // 水島故事進度：seen（沿路對話）、bucket（魚桶）、bottle（牛奶瓶）、welcomed、bossStage、folkMet（看過結尾昏倒的火島居民；重置任務會清掉）
     // 位置以穩定格子 ID 為準；舊存檔只有整數格號時對應到同號的格子（第 n 格 → gold-01-00n）
     var board = BOARDS[p.island] || GOLD;
@@ -930,9 +931,9 @@
     { id: 'goldClear1', cat: 'adventure', icon: '🏅', name: '金島通關', desc: '走完金島 100 格，抵達金冠城堡', check: function (s, c) { return s.getPlayer(c).goldClears >= 1; } },
     { id: 'reachR2', cat: 'adventure', icon: '💎', name: '抵達水晶礦谷', desc: '走到第 31 格以後', check: function (s, c) { return goldMax(s.getPlayer(c)) >= 31; } },
     { id: 'reachR3', cat: 'adventure', icon: '⚙️', name: '抵達齒輪工坊', desc: '走到第 56 格以後', check: function (s, c) { return goldMax(s.getPlayer(c)) >= 56; } },
-    { id: 'goldHero', cat: 'adventure', icon: '🦸', name: '金島小英雄', desc: '幫技師完成金島的 3 個任務：撿回礦石、接通礦車軌道、點亮能源塔', check: function (s, c) {
-      var p = s.getPlayer(c);
-      return !!(p.story.ore && p.story.rail && (p.story.tower || goldMax(p) >= 80)); } },   // 更新前就點亮能源塔的也算
+    { id: 'goldHero', cat: 'adventure', icon: '🦸', name: '金島小英雄', desc: '完成金島的 4 個任務：撿回礦石、接通礦車軌道、陪小齒吃飯、點亮能源塔', check: function (s, c) {
+      var p = s.getPlayer(c);   // 2026-11-19 家長：加上齒輪小屋（陪小齒吃飯）共 4 個；已經拿到的成就照樣保留
+      return !!(p.story.ore && p.story.rail && p.story.meal && (p.story.tower || goldMax(p) >= 80)); } },   // 更新前就點亮能源塔的也算
     { id: 'reachR4', cat: 'adventure', icon: '👑', name: '抵達金冠城堡', desc: '走到第 81 格以後', check: function (s, c) { return goldMax(s.getPlayer(c)) >= 81; } },
     { id: 'woodClear1', cat: 'adventure', icon: '🌳', name: '木島通關', desc: '走完木島 100 格，滑進精靈巨樹的神祕樹洞', check: function (s, c) { return (s.getPlayer(c).islandClears.wood || 0) >= 1; } },   // 2026-11-12 新增
     { id: 'woodHero', cat: 'adventure', icon: '🧚', name: '木島小英雄', desc: '幫森林小精靈準備森林派對：撿回松果、採花摘莓果、做邀請卡、布置派對', check: function (s, c) {
@@ -1345,7 +1346,9 @@
   // invite＝第 65 格做邀請卡送給森林動物、party＝第 92 格布置派對；四個都完成解鎖成就「木島小英雄」
   // 格號先沿用 WOOD_ISLAND_PLAN 的一般格，木島草圖到貨後可再調；完成紀錄存在 players[id].story（代號各島不重複）
   var STORIES = {
-    ore: { island: 'gold', tile: 5, name: '礦工求助' }, rail: { island: 'gold', tile: 30, name: '礦車轉轍' }, tower: { island: 'gold', tile: 80, name: '能源主塔' },
+    ore: { island: 'gold', tile: 5, name: '礦工求助' }, rail: { island: 'gold', tile: 30, name: '礦車轉轍' },
+    meal: { island: 'gold', tile: 53, name: '齒輪小屋' },   // 2026-11-19 家長企劃：陪小齒吃飯（第二區左上的齒輪小屋；計畫 docs/gold/GEAR_HOUSE_PLAN.md）
+    tower: { island: 'gold', tile: 80, name: '能源主塔' },
     // 2026-11-09 家長決定：木島劇情改成「森林派對」（木島尚未上線，沒有既有存檔，代號直接換新）
     pinecone: { island: 'wood', tile: 8, name: '撿回松果' }, flowers: { island: 'wood', tile: 40, name: '採花摘莓果' },
     invite: { island: 'wood', tile: 65, name: '派對邀請卡' }, party: { island: 'wood', tile: 92, name: '森林派對' },
@@ -1394,6 +1397,52 @@
     }
     this.save();
     return !!(offer && yes);
+  };
+  // ---------- 金島第 53 格：齒輪小屋「吃飯好行為大挑戰」（2026-11-19 家長企劃；計畫 docs/gold/GEAR_HOUSE_PLAN.md） ----------
+  /**
+   * 六項吃飯好行為（沿用家庭規則，不另外發明）。畫面文字都在這裡，調整情境只改這張表。
+   * cue＝問題行為（小齒的台詞／旁白）、hint＝選錯時的溫和引導、after＝12 秒沒提醒的後果（每題只播一次）、fixed＝改正後小齒說的話
+   * ico＝後果疊在畫面上的小圖示（圖到之前也用來暫代問題行為）
+   */
+  var MEAL_RULES = [   // 2026-11-19 家長：每題只違反一條（其他都做得好），孩子才不會覺得好幾個答案都對
+    { id: 'time', label: '30分鐘吃完', icon: '🕒', pose: '🐢', cue: '小齒坐得好好的，也用湯匙看著飯吃，可是一口要吃好久好久……時鐘的長針快走到 30 分了，碗裡還有一大半。', hint: '小齒吃飯的速度怎麼樣？看看時鐘。',
+      after: '天色變黃昏了，湯也涼掉了，飯還沒吃完……', ico: '🌇', fixed: '我要專心吃，30 分鐘內吃完！' },
+    { id: 'eyes', label: '眼睛看', icon: '👀', pose: '🐦', cue: '小齒一邊用湯匙吃飯，一邊轉頭看窗外的小鳥……', hint: '小齒的眼睛在看哪裡呢？',
+      after: '沒看著碗，湯匙舀歪了，飯掉到桌上！', ico: '🍚', fixed: '眼睛看著飯，就不會舀歪了！' },
+    { id: 'mouth', label: '嘴巴吃', icon: '👄', pose: '💬', cue: '小齒拿著湯匙、看著飯，可是嘴巴一直講話：「你知道嗎？今天我看到……還有……」', hint: '小齒的嘴巴在做什麼？',
+      after: '一邊講話一邊吃，飯粒從嘴巴掉出來，掉到衣服上了！', ico: '😮', fixed: '嘴巴先吃飯，吞下去再說話！' },
+    { id: 'tool', label: '用餐具', icon: '🥄', pose: '✋', cue: '小齒坐得好好的、看著飯，可是把湯匙放下，直接用手抓飯……', hint: '小齒用什麼拿飯呢？',
+      after: '雙手和桌子都沾滿黏黏的飯粒了！', ico: '🫳', fixed: '用湯匙吃，手和桌子都乾乾淨淨！' },
+    { id: 'sit', label: '屁股坐', icon: '🪑', pose: '🚶', cue: '小齒：「我站著吃也可以吧！」他拿著飯站起來，在餐桌旁邊走來走去邊吃……', hint: '小齒現在坐在椅子上嗎？',
+      after: '小齒邊走邊吃，被食物嗆到了！', ico: '😣', fixed: '原來邊走邊吃會有危險！我要坐好再吃！', safety: true },
+    { id: 'feet', label: '腳放地上', icon: '🦶', pose: '🦵', cue: '小齒用湯匙好好吃飯，可是把雙腳縮到椅子上，椅子搖來搖去……', hint: '小齒的腳放在哪裡呢？',
+      after: '椅子晃了一下，碰倒桌上的水杯了！', ico: '🥤', fixed: '腳放地上坐得穩，椅子就不會晃了！' }
+  ];
+  var MEAL_GAME = { rounds: 3, waitSec: 12, sitEvery: 3 };   // 每局 3 題；12 秒沒提醒播後果（不顯示倒數）；「屁股坐」最多隔 3 局一定出現
+  /**
+   * 抽一局的題目：6 種裡隨機 3 種、不重複。forceSit＝這局一定要有「屁股坐」（位置隨機）。
+   * @returns {string[]} 規則代號
+   */
+  function pickMealRounds(rand, forceSit) {
+    rand = rand || Math.random;
+    var ids = MEAL_RULES.map(function (r) { return r.id; }), out = [];
+    if (forceSit) { out.push('sit'); ids.splice(ids.indexOf('sit'), 1); }
+    while (out.length < MEAL_GAME.rounds) out.push(ids.splice(Math.floor(rand() * ids.length), 1)[0]);
+    for (var i = out.length - 1; i > 0; i--) { var j = Math.floor(rand() * (i + 1)), t = out[i]; out[i] = out[j]; out[j] = t; }
+    return out;
+  }
+  /**
+   * 開始一局齒輪小屋（寫入「玩過幾局」，不給星星、不算每日次數；星星在第一次完成任務 completeStory('meal') 時給）。
+   * 連續 sitEvery-1 局沒出現「屁股坐」，這局就一定出現。
+   * @returns {string[]} 這局的 3 個規則代號
+   */
+  Store.prototype.startMealGame = function (childId) {
+    var p = this.getPlayer(childId), g = p.gearHouse;
+    var ids = pickMealRounds(this.random, (g.sinceSit || 0) >= MEAL_GAME.sitEvery - 1);
+    g.plays = (g.plays || 0) + 1;
+    g.sinceSit = ids.indexOf('sit') >= 0 ? 0 : (g.sinceSit || 0) + 1;
+    this.save();
+    return ids;
   };
   // ---------- 水島（2026-11-16 家長決定的規則；計畫 docs/water/WATER_ISLAND_PLAN.md） ----------
   /** 前方（不含目前這格）第一個還沒完成的水島關卡格號；不是水島或都完成了回傳 -1 */
@@ -1584,7 +1633,7 @@
     return this.getBonusQuota(childId);
   };
 
-  var api = { CARD_TEXT: CARD_TEXT, LEAF_GAME: LEAF_GAME, LEAF_MAX_FOUND: LEAF_MAX_FOUND, leafStars: leafStars, minigameOf: minigameOf, STORIES: STORIES, storiesOf: storiesOf, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, buildWood: buildWood, WOOD_OPEN: WOOD_OPEN, buildWater: buildWater, WATER_OPEN: WATER_OPEN, WATER_TRIAL: waterTrial, waterOn: waterOn, WATER_TYPES: WATER_TYPES, SHARK_PASS: SHARK_PASS, SHARK_SHIELD_STARS: SHARK_SHIELD_STARS, SHARK_PAY_STARS: SHARK_PAY_STARS, FISH_GAME: FISH_GAME, fishStars: fishStars, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { CARD_TEXT: CARD_TEXT, LEAF_GAME: LEAF_GAME, LEAF_MAX_FOUND: LEAF_MAX_FOUND, leafStars: leafStars, minigameOf: minigameOf, STORIES: STORIES, storiesOf: storiesOf, MEAL_RULES: MEAL_RULES, MEAL_GAME: MEAL_GAME, pickMealRounds: pickMealRounds, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, buildWood: buildWood, WOOD_OPEN: WOOD_OPEN, buildWater: buildWater, WATER_OPEN: WATER_OPEN, WATER_TRIAL: waterTrial, waterOn: waterOn, WATER_TYPES: WATER_TYPES, SHARK_PASS: SHARK_PASS, SHARK_SHIELD_STARS: SHARK_SHIELD_STARS, SHARK_PAY_STARS: SHARK_PAY_STARS, FISH_GAME: FISH_GAME, fishStars: fishStars, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

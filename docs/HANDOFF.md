@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-19｜App 版本 `2026.11.19-226`｜Service Worker 快取 `cgp-shell-v236`｜`main` 最新：水島正式開放、撈魚小遊戲、新手教學、水島程式拆到 `js/water.js`
+> 最後更新：2026-11-19｜App 版本 `2026.11.19-227`｜Service Worker 快取 `cgp-shell-v237`｜`main` 最新：金島第 53 格齒輪小屋（A 階段，暫代圖）、水島正式開放、撈魚小遊戲、新手教學、水島程式拆到 `js/water.js`
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -11,12 +11,12 @@
 - Repo：**`dollyswim/Child-good-point`**，直接在 `main` 開發與推送（家長同意，不開 PR）；GitHub Pages：https://dollyswim.github.io/Child-good-point/
 - 純 HTML／CSS／JS 的 PWA，不需建置；資料存在手機瀏覽器 localStorage（自動備份存在 IndexedDB）。
 - 舊 repo 搬家、手機資料搬家都已完成（舊的交接步驟已移除）。
-- 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）
+- 小遊戲試玩網址：https://dollyswim.github.io/Child-good-point/#minigame-test（抓住星星）、https://dollyswim.github.io/Child-good-point/#leaf-test（木島落葉找松果）、https://dollyswim.github.io/Child-good-point/#gear-test（金島齒輪小屋）
 - 木島任務視窗預覽（不寫存檔、不給星星）：`?preview=party`（第 92 格布置派對）、`?preview=flowers`（第 40 格）、`?preview=invite`（第 65 格），例如 https://dollyswim.github.io/Child-good-point/?preview=party
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v236`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.19-226`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
-2. 測試：`npm test`（單元，約 1 秒，目前 160 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v237`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.19-227`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+2. 測試：`npm test`（單元，約 1 秒，目前 162 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
 
@@ -61,7 +61,7 @@
 - 家長預覽連結 `?preview=…`；換島不受任務影響的單元測試；`docs/WOOD_TO_WATER_HANDOFF.md` 全面更新（11-16）。
 
 ### 待辦（家長尚未指定先後）
-- **規劃中**：金島支線「齒輪小屋：吃飯好行為大挑戰」（第二區左上空草地），計畫初稿 `docs/gold/GEAR_HOUSE_PLAN.md`，已定：算進金島小英雄、第 53 格觸發、不限次數；第一次完成 ⭐3、嗆咳由玩家角色叫媽媽；規劃完成，下一步 A 階段（程式＋暫代圖）。
+- **齒輪小屋（金島第 53 格，2026-11-19 A 階段完成，暫代圖）**：程式 `js/gear-house.js`、題庫 `js/game.js` 的 `MEAL_RULES`、試玩 `#gear-test`、計畫 `docs/gold/GEAR_HOUSE_PLAN.md`。「金島小英雄」改成 4 個任務（已拿到的保留）；傳送門也不能跳過第 53 格。**等家長用 `docs/art-prompts.md` H-1～H-12 產圖**，到貨後填 `GH_ART`（餐廳圖放 `images/gold/gear-house/`，不放 SHELL；小屋外觀放 SHELL）。
 - **待家長決定**：已經通關木島、回到金島的孩子，要再走完金島、木島才會到水島（島嶼順序金 → 木 → 水）；家長若希望直接到水島要另外做。
 - 家長要手動刪除之前試玩用的「測試」孩子（⭐1000、不受每日上限；試玩區塊已不顯示）。
 - **實機驗收水島**：撈魚難度（只用自動測試確認規則）、6 個任務手感、結尾過場。

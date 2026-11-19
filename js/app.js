@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-226';
+  var APP_VERSION = '2026.11.19-227';
   var store;
   try {
     store = new CGP.Store();
@@ -90,6 +90,7 @@
     if (hs === 'minigame-test') return { name: 'minigame-test', arg: null }; // 家長試玩小遊戲（不給星星、不算次數）
     if (hs === 'leaf-test') return { name: 'leaf-test', arg: null };         // 家長試玩木島「落葉找松果」
     if (hs === 'fish-test') return { name: 'fish-test', arg: null };         // 家長試玩水島「珊瑚灣撈魚趣」
+    if (hs === 'gear-test') return { name: 'gear-test', arg: null };         // 家長試玩金島「齒輪小屋：吃飯好行為大挑戰」
     var m = hs.match(/^(child|rules|challenge|shop|adventure|map)(?:-(.+))?$/);
     if (!m) return { name: 'home', arg: null };
     return { name: m[1] === 'rules' ? 'settings' : m[1], arg: m[2] || null };
@@ -270,6 +271,7 @@
     if (r.name === 'minigame-test') openMinigame(null, null, { practice: true });
     if (r.name === 'leaf-test') openMinigame(null, null, { practice: true, leaf: true });
     if (r.name === 'fish-test' && !document.getElementById('mg')) openFishMinigame(null, null, { practice: true });
+    if (r.name === 'gear-test' && !document.getElementById('mg')) GEAR.play(null, { practice: true }).then(function () { location.replace('#home'); render(); });
     if (r.name === 'adventure') showBlessings(r.arg);
     if (notes.length) toast(notes.join('\n'), 'pos');
     // 新解鎖的成就：星光成就劇場（已先寫入存檔，動畫中斷不影響）
@@ -984,7 +986,9 @@
         rail: { type: 'scene', guide: [430, 4522], cam: [470, 4420], lever: [360, 4556],
           scene: { before: 'images/gold/rail_before.webp', after: 'images/gold/rail_after.webp', fallback: 'images/gold/minecart.webp', doneTitle: '🎉 軌道接通了！', doneSub: '礦車可以開往水晶礦谷了', ok: '🎉 太好了！' },
           title: '🔧 礦車卡住了！', sub: '抓住紅色把手，把轉轍器往下拉到底',
-          hint: '礦場的轉轍器卡住了…走到第 30 格幫我拉下拉桿！', intro: '轉轍器卡住了，礦車過不去！幫我拉下拉桿！', done: '軌道接通了！礦車可以開往水晶礦谷了！' }
+          hint: '礦場的轉轍器卡住了…走到第 30 格幫我拉下拉桿！', intro: '轉轍器卡住了，礦車過不去！幫我拉下拉桿！', done: '軌道接通了！礦車可以開往水晶礦谷了！' },
+        // 2026-11-19 家長企劃：第 53 格齒輪小屋「陪小齒吃飯」（小屋與遊戲在 js/gear-house.js；地圖上的小屋一直都在，不用技師當導遊）
+        meal: { type: 'meal', guide: [255, 2935], cam: [300, 2840], hint: '齒輪小屋的門關著……走到第 53 格看看！' }
       }
     },
     wood: {
@@ -1071,7 +1075,7 @@
   /** 還沒完成的劇情：導遊站在劇情地點（頭上有「！」），點他會提示要去哪一格 */
   function storyDecor(board, player, scene) {
     var cfg = ISLAND_STORY[board.id];
-    return storyOpen(board, player).filter(function (id) { return !scene || board.tiles[GAME.STORIES[id].tile].regionId === scene.id; }).map(function (id) {
+    return storyOpen(board, player).filter(function (id) { return id !== 'meal' && (!scene || board.tiles[GAME.STORIES[id].tile].regionId === scene.id); }).map(function (id) {   // 齒輪小屋自己畫（houseDecor）
       var sp = cfg.spots[id], g = storyXY(board, id, sp.guide), gd = sp.npc || cfg.guide;
       var lever = sp.lever ? storyXY(board, id, sp.lever) : null;
       return '<div class="story-guide ' + gd.cls + '" data-tap="guide" data-story="' + id + '" style="left:' + g.x.toFixed(1) + 'px;top:' + g.y.toFixed(1) + 'px;width:' + gd.w + 'px;z-index:' + Math.round(g.y / 6) + '" role="img" aria-label="' + gd.label + '（需要幫忙）">' +
@@ -1130,6 +1134,7 @@
     var kind = el.getAttribute('data-tap');
     if (kind === 'pick') { collectPick(el); return; }
     if (kind === 'pilot') { pilotTalk(child); return; }
+    if (kind === 'house') { houseTap(child, el); return; }
     if (kind === 'folk') { techTalk(child, 3200, FOLK_THANKS[Math.floor(Math.random() * FOLK_THANKS.length)], el); return; }
     if (kind === 'guide') {
       var id = el.getAttribute('data-story'), cfg = ISLAND_STORY[GAME.STORIES[id].island];
@@ -1596,6 +1601,7 @@
       render();
       return;
     }
+    if (sp && sp.type === 'meal') { await mealStory(child, false); return; }
     if (!sp || !world || !guide) return;
     ui.busy = true; document.body.classList.add('pawn-acting', 'story-on');
     try {
@@ -1636,7 +1642,8 @@
   function renderMap(child) {
     var player = store.getPlayer(child.id);
     var board = store.getBoard(child.id);
-    if (board.id === 'water') setTimeout(function () { waterPreload(board, player); }, 800);   // 2026-11-18：先在背景下載前方會用到的圖
+    if (board.id === 'water') setTimeout(function () { waterPreload(board, player); }, 800);
+    if (board.id === 'gold') setTimeout(function () { GEAR.preload(board, player); }, 800);   // 齒輪小屋：第 45 格起先下載餐廳圖   // 2026-11-18：先在背景下載前方會用到的圖
     // 水島（多場景）：一次只顯示一個場景。顯示哪個場景：移動演出中的位置 → 家長／孩子切換瀏覽的場景 → 角色所在場景
     var hold = ui.pawnHold && ui.pawnHold.childId === child.id ? ui.pawnHold.n : null;
     var shownN = hold != null ? hold : player.pos;
@@ -1697,7 +1704,7 @@
       '<div class="map-world" id="map-world" style="width:' + W + 'px;height:' + H + 'px" data-w="' + W + '" data-h="' + H + '"' + (scene ? ' data-scene="' + scene.id + '"' : '') + '>' +
       mapStrips(board, scene) +
       towerDecor(board, player) +
-      storyDecor(board, player, scene) + pilotDecor(child, board) + waterDecor(child, board, player, scene) +
+      storyDecor(board, player, scene) + GEAR.houseDecor(board, player) + pilotDecor(child, board) + waterDecor(child, board, player, scene) +
       tiles +
       store.getMapChests(child.id).filter(function (c) { return inScene(c.n); }).map(function (c) {
         var cp = worldXY(region, board.tiles[c.n]);
@@ -1753,6 +1760,38 @@
     waterNotes = WATER.waterNotes, waterWelcome = WATER.waterWelcome, waterTask = WATER.waterTask, callBeluga = WATER.callBeluga,
     WATER_TRIP = WATER.WATER_TRIP, FOLK_THANKS = WATER.FOLK_THANKS, waterEnding = WATER.waterEnding, waterOpening = WATER.waterOpening,
     waterLeave = WATER.waterLeave, openFishMinigame = WATER.openFishMinigame;
+  // ---------- 金島第 53 格：齒輪小屋「吃飯好行為大挑戰」在 js/gear-house.js（2026-11-19）----------
+  var GEAR = window.CGPGearHouse({
+    store: store, h: h, toast: toast, GAME: GAME, talkPortrait: talkPortrait, charIdOf: charIdOf, preloadImages: preloadImages,
+    get reduceMotion() { return reduceMotion; }
+  });
+  /**
+   * 齒輪小屋：replay＝任務完成後重玩（不給星星）。任務第一次完成給 ⭐STORY_STARS、算進「金島小英雄」。
+   * 選「等一下」：小屋留在地圖上（頭上有「！」），之後點小屋再進去。
+   */
+  async function mealStory(child, replay) {
+    if (document.getElementById('mg')) return;
+    var hold = ui.busy;   // 擲骰途中觸發：之後由擲骰流程重畫
+    ui.busy = true; document.body.classList.add('pawn-acting', 'story-on');
+    try {
+      if (ui.cam) { ui.cam.cx = GEAR.HOUSE.gx + 45; ui.cam.cy = GEAR.HOUSE.gy - 95; applyCam(true); await sleep(reduceMotion ? 50 : 700); }
+      var r = await GEAR.play(child, { replay: replay });
+      if (r.done && !replay) {
+        var first = store.completeStory(child.id, 'meal');
+        if (first) toast('⭐ 完成任務「' + GAME.STORIES.meal.name + '」：+' + GAME.STORY_STARS + ' 能量星星', 'pos');
+      } else if (r.done) toast('🍚 謝謝你又來陪小齒吃飯！', 'pos');
+      else if (r.later || r.quit) toast('齒輪小屋會一直在這裡，準備好了再點小屋！');
+      followPawn(true);
+    } finally { ui.busy = false; document.body.classList.remove('pawn-acting', 'story-on'); }   // 比照水島任務：結束就解除鎖定（擲骰途中觸發也一樣）
+    if (!hold) render();
+  }
+  /** 點地圖上的齒輪小屋：還沒走到第 53 格 → 提示；任務還沒完成 → 開始任務；完成了 → 再玩一次 */
+  function houseTap(child, el) {
+    if (ui.busy || document.body.classList.contains('pawn-acting')) return;
+    var p = store.getPlayer(child.id);
+    if (!p.story.meal && !GEAR.reached(p)) { techTalk(child, 3200, ISLAND_STORY.gold.spots.meal.hint, el); return; }
+    mealStory(child, !!p.story.meal);
+  }
 
   // ---------- 鏡頭：拖曳、雙指縮放、跟隨角色 ----------
   // ui.cam：{ childId, z（縮放）, cx, cy（畫面中心對應的地圖座標）, manual（使用者拖曳後暫停跟隨） }

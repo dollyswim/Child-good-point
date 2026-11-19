@@ -570,7 +570,7 @@ English (shared): First-person POV sliding down a wooden root slide inside a gia
 
 ---
 
-## 金島第 53 格：齒輪小屋「吃飯好行為大挑戰」（11 張必做＋1 張選做，2026-11-19 新增，請 Gemini 製作）
+## 金島第 53 格：齒輪小屋「吃飯好行為大挑戰」（12 張必做＋1 張選做，2026-11-19 新增，請 Gemini 製作）
 
 計畫：`docs/gold/GEAR_HOUSE_PLAN.md`。交件後放 `images/gold/gear-house/`（檔名見每張的括號）。
 
@@ -578,7 +578,8 @@ English (shared): First-person POV sliding down a wooden root slide inside a gia
 1. 先做 **H-3 正常吃飯**，滿意後當作基準圖。
 2. H-4～H-11 都在同一個對話裡上傳 H-3，說「用同一張圖，只改小齒的動作」。
 3. 畫面一致很重要：餐桌、椅子、時鐘、小車車、窗戶的位置都不要動。
-4. 4 種後果（飯菜變涼、食物掉桌上、聊天沒吃、水杯倒了）**不用另外畫**，程式會在問題圖上疊小圖示。
+4. **每張問題圖只畫一個壞習慣，其他都要做得好**（例如看窗外那張，小齒還是坐好、用湯匙）。孩子才不會覺得好幾個答案都對（2026-11-19 家長）。
+5. 後果大多不用另外畫，程式會在問題圖上疊小圖示（飯掉桌上、飯粒掉衣服上、水杯倒了）；只有「30 分鐘吃完」的黃昏另畫一張（H-4b）。
 
 ### 角色設定（H-3～H-11、H-2 每張都貼在主體描述前面）
 
@@ -614,11 +615,11 @@ pure white background, centered with margin, no text, portrait about 2:3, at lea
 ```
 Scene: inside the cozy gear cottage dining room, warm afternoon light from a window on the left,
 a round wooden dining table in the center front with a plate of rice, a bowl of vegetable soup with gentle steam, a spoon and a cup of water,
-a small wooden chair for the child behind the table, a big brass gear wall clock on the back wall,
+a small wooden chair for the child behind the table, a big brass gear wall clock on the back wall, a window on the left wall showing a bright blue daytime sky,
 a toy corner on the right side with a small red toy car on a rug and a few toy blocks, open floor space between the table and the toy corner,
 three-quarter front view, horizontal 4:3, full scene, no text, no watermark
 ```
-中文：齒輪小屋的溫馨餐廳，左邊窗戶照進午後暖光；畫面中央前方一張圓木餐桌，桌上有一盤白飯、一碗冒著淡淡熱氣的蔬菜湯、一支湯匙、一杯水；餐桌後面一張小木椅；後牆掛著一個大大的黃銅齒輪時鐘；右邊是玩具角落，地毯上有一台紅色小車車和幾塊積木；餐桌和玩具角落之間留一塊空地。正面略斜的視角、橫式 4:3、畫滿整張場景，不要文字、浮水印。
+中文：齒輪小屋的溫馨餐廳，左邊窗戶照進午後暖光；畫面中央前方一張圓木餐桌，桌上有一盤白飯、一碗冒著淡淡熱氣的蔬菜湯、一支湯匙、一杯水；餐桌後面一張小木椅；後牆掛著一個大大的黃銅齒輪時鐘；左牆窗戶外是明亮的藍天白天；右邊是玩具角落，地毯上有一台紅色小車車和幾塊積木；餐桌和玩具角落之間留一塊空地。正面略斜的視角、橫式 4:3、畫滿整張場景，不要文字、浮水印。
 
 ### H-3 正常吃飯（`eat`，基準圖）
 ```
@@ -631,21 +632,28 @@ three-quarter front view, horizontal 4:3, full scene, no text, no watermark
 
 | # | 檔名 | 英文動作 | 中文 |
 |---|---|---|---|
-| H-4 | `toy` | still sitting, he has put the spoon down and is playing with a small toy car on the table, ignoring the food | 還坐著，湯匙放下，在桌上玩一台小車車，沒在吃飯 |
-| H-5 | `look` | still sitting, holding the spoon in the air but turning his head to look out of the window, eyes away from the plate | 還坐著，湯匙舉在半空，頭轉向窗外東張西望，沒看盤子 |
-| H-6 | `talk` | still sitting, spoon resting on the plate, mouth wide open talking excitedly with both hands gesturing, small speech-bubble dots near his mouth (no letters) | 還坐著，湯匙放在盤子上，嘴巴張大、兩手比來比去講不停，嘴邊有小小的對話點點（不要字） |
-| H-7 | `hand` | still sitting, the spoon lies on the table, he grabs rice with his bare hand, a few grains of rice on his fingers | 還坐著，湯匙丟在桌上，直接用手抓飯，手指上沾了幾粒飯 |
-| H-8 | `walk` | he has stood up and left the chair, walking toward the toy car in the toy corner while holding a bite of food in his hand, the chair is empty | 離開椅子站起來，手上拿著一口食物，邊走邊吃往玩具角落的小車車走去，椅子空著 |
-| H-9 | `feet` | sitting on the chair with both feet pulled up onto the seat, knees up, the chair tilting slightly, the cup of water wobbling near the table edge | 坐在椅子上但雙腳縮到椅面上、膝蓋抬高，椅子微微傾斜，桌邊的水杯搖搖晃晃 |
+| H-4 | `time` | sitting properly with feet on the floor, holding the spoon and looking at his food, but chewing one tiny bite very very slowly with a sleepy bored face, the bowl is still more than half full, the wall clock's long hand is close to the 30-minute mark | 坐好、雙腳踩地、拿湯匙看著飯，但一小口嚼好久、一臉慢吞吞；碗裡還有一大半；時鐘長針快到 30 分 |
+| H-5 | `eyes` | sitting properly and scooping rice with the spoon, but his head is turned to look at a little bird outside the window, eyes away from the bowl | 坐好、拿湯匙在舀飯，但頭轉向窗外看小鳥，眼睛沒看碗 |
+| H-6 | `mouth` | sitting properly, holding the spoon and looking at his food, but his mouth is wide open talking excitedly, small speech-bubble dots near his mouth (no letters), not eating | 坐好、拿湯匙看著飯，但嘴巴張大一直講話，嘴邊有小小的對話點點（不要字），沒在吃 |
+| H-7 | `hand` | sitting properly and looking at his food, but the spoon lies on the table and he grabs rice with his bare hand, a few grains of rice on his fingers | 坐好、看著飯，但湯匙丟在桌上，直接用手抓飯，手指上沾了幾粒飯 |
+| H-8 | `walk` | he has stood up and is walking around beside the table while eating a bite of rice from his spoon and still looking at his food, the chair is empty (he is NOT going to the toys) | 站起來在餐桌旁邊走來走去，邊走邊用湯匙吃飯、眼睛看著食物；椅子空著（**不是去拿玩具**） |
+| H-9 | `feet` | eating nicely with the spoon and looking at his food, but both feet are pulled up onto the chair seat, knees up, the chair tilting slightly, the cup of water wobbling near the table edge | 用湯匙好好吃、看著飯，但雙腳縮到椅面上、膝蓋抬高，椅子微微傾斜，桌邊水杯搖搖晃晃 |
+
+### H-4b 30 分鐘到了（`dusk`，30分鐘吃完的後果）
+```
+Same scene, same camera angle and same Xiao Chi as the "time" image: the sky outside the window has turned into an orange sunset evening, warm dim evening light in the room,
+the wall clock's long hand has passed the 30-minute mark, the soup no longer has any steam (it is cold), the bowl is still half full, Xiao Chi looks surprised, keep everything else exactly the same
+```
+中文：跟 H-4 同一個場景：窗外變成橘色黃昏，屋裡光線變暗變暖；時鐘長針已經過了 30 分；湯不再冒熱氣（涼掉了），碗裡還有一半；小齒一臉驚訝；其他都不要動。
 
 ### H-10 嗆咳（`cough`，屁股坐的後果）
 安全情境：**有效咳嗽、不是窒息**。不要誇張、不要好笑、不要拍背。
 ```
-Same scene, same camera angle and same Xiao Chi as the "walk" image: he has stopped walking near the toy corner, bending slightly forward and coughing hard with one hand near his mouth,
+Same scene, same camera angle and same Xiao Chi as the "walk" image: he has stopped walking beside the table, bending slightly forward and coughing hard with one hand near his mouth,
 a surprised worried face with small sweat drops, small cough puff lines near his mouth, face color normal (not blue, not red), he is clearly still breathing and coughing,
 calm and gentle mood, not scary, not funny, keep everything else exactly the same
 ```
-中文：跟 H-8 同一個場景、同一個視角：小齒在玩具角落附近停下來，身體微微前傾、一手放在嘴邊用力咳嗽；表情驚訝、有點擔心、冒小汗珠，嘴邊有小小的咳嗽線條；**臉色正常（不要發青或漲紅）**，看得出還在呼吸、在咳嗽；氣氛平靜溫和，不嚇人也不好笑；其他都不要動。
+中文：跟 H-8 同一個場景、同一個視角：小齒在餐桌旁邊停下來，身體微微前傾、一手放在嘴邊用力咳嗽；表情驚訝、有點擔心、冒小汗珠，嘴邊有小小的咳嗽線條；**臉色正常（不要發青或漲紅）**，看得出還在呼吸、在咳嗽；氣氛平靜溫和，不嚇人也不好笑；其他都不要動。
 
 > 媽媽跑過來、玩家角色喊人，都由程式用對話框演出，這張圖不用畫媽媽。
 

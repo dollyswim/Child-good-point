@@ -2334,7 +2334,7 @@ async function main() {
     assert.ok(await q.evaluate((cid) => !!window.__cgpStore.getPlayer(cid).story.rail, id));
     // 劇情完成後再進地圖：導遊不再出現
     await q.reload(); await q.waitForSelector('#pawn');
-    assert.equal(await q.locator('.story-guide').count(), 0);
+    assert.equal(await q.locator('.story-guide:not(.gear-house)').count(), 0);
     // 機會卡礦車：先按「上車！」才前進（第 3 格機會格：從第 1 格擲 2，機會卡抽到礦車）
     await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 1); s.save(); }, id);
     await q.reload(); await q.waitForSelector('#pawn');
@@ -2361,6 +2361,95 @@ async function main() {
     console.log('✔ 金島劇情：技師導遊提示、第 5 格撿礦石、第 30 格拉轉轍器、各 ⭐3、不重複；機會卡礦車按上車才前進；回到島上可重置任務');
     await cs.close();
   }
+
+  // ---------- 金島第 53 格：齒輪小屋「吃飯好行為大挑戰」（2026-11-19） ----------
+  {
+    const c = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', story: true });
+    await c.addInitScript(() => { window.__cgpMealIds = ['time', 'sit', 'tool']; window.__cgpMealWait = 1200; window.__cgpMealCalm = 1500; });
+    const q = await c.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '小齒的朋友' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+      const p = s.getPlayer(a.id); ['ore', 'rail'].forEach((k) => { p.story[k] = '2026-11-18'; }); p.bag.d6 = 1; s.setPlayerTile(a.id, 49); p.maxReached = 49; s.random = () => 0.99; s.save(); return a.id; });   // 擲 6 停在第 55 格（不到第 56 格的能源塔開場）
+    // 小屋可能在鏡頭外：直接送出「按下＋放開」給地圖（地圖接管觸控，放開時判斷點到什麼）
+    const tapHouse = () => q.evaluate(() => { const el = document.getElementById('gear-house'), o = { bubbles: true, pointerId: 7, clientX: 10, clientY: 10, isPrimary: true };
+      const v = document.getElementById('map-view'); v.setPointerCapture = () => {};   // 模擬的指標沒有真的手指，略過擷取
+      el.dispatchEvent(new PointerEvent('pointerdown', o)); el.dispatchEvent(new PointerEvent('pointerup', o)); });
+    const info = () => q.evaluate((cid) => { const s = window.__cgpStore, p = s.getPlayer(cid); return { meal: p.story.meal || null, stars: s.getStarBalance(cid), plays: p.gearHouse.plays }; }, id);
+    await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    assert.equal(await q.locator('#gear-house').count(), 1, '地圖上有齒輪小屋');
+    assert.equal(await q.locator('#gear-house .story-bang').count(), 1, '任務還沒完成：頭上有「！」');
+    const before = await info();
+    // 經過第 53 格：媽媽請孩子幫忙 → 等一下（任務留著）
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#mg.gh-mg [data-talk=later]', { timeout: 15000 });
+    assert.match(await q.locator('#gh-talk').innerText(), /媽媽[\s\S]*可以幫我陪小齒吃飯嗎/);
+    if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'gear-intro.png') });
+    await q.click('[data-talk=later]');
+    await q.waitForSelector('#mg', { state: 'detached' });
+    assert.equal((await info()).meal, null, '選等一下：任務還沒完成');
+    // 點小屋再進去
+    await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 10000 });
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).pos, id), 55);
+    await tapHouse();
+    await q.waitForSelector('#mg [data-talk=ok]');
+    await q.click('[data-talk=ok]'); await q.click('[data-talk=go]');
+    await q.waitForSelector('#gh-prog:text("1 / 3")');
+    // 第 1 題「30分鐘吃完」：還沒出問題先按 → 提醒還吃得很好；出問題後選錯 → 溫和引導；12 秒（測試 1.2 秒）沒提醒 → 後果；再選對
+    await q.click('[data-rule=eyes]');
+    assert.match(await q.locator('#gh-line').innerText(), /吃得很好/);
+    await q.waitForSelector('#gh-line.gh-cue');
+    await q.click('[data-rule=eyes]');
+    await q.waitForSelector('#gh-line.gh-hint');
+    await q.waitForSelector('.gh-after-ico', { timeout: 4000 });
+    assert.match(await q.locator('#gh-line').innerText(), /天色變黃昏了，湯也涼掉了/);
+    await q.click('[data-rule=time]');
+    await q.waitForSelector('#gh-line.gh-ok');
+    // 第 2 題「屁股坐」：嗆咳 → 玩家角色喊媽媽 → 媽媽跑回來陪 → 恢復呼吸 → 仍要按「屁股坐」
+    await q.waitForSelector('#gh-prog:text("2 / 3")');
+    await q.waitForSelector('#gh-talk [data-talk=next]', { timeout: 5000 });
+    assert.match(await q.locator('#gh-talk').innerText(), /小齒的朋友[\s\S]*媽媽！小齒嗆到了/);
+    assert.equal(await q.locator('#gh-scene').getAttribute('data-state'), 'cough');
+    await q.click('[data-talk=next]');
+    assert.match(await q.locator('#gh-talk').innerText(), /媽媽[\s\S]*用力咳嗽/);
+    assert.equal(await q.locator('.gh-mom-here').count(), 1, '媽媽回到小齒旁邊');
+    await q.click('[data-talk=next]');
+    assert.match(await q.locator('#gh-talk').innerText(), /咳出來了，呼吸恢復正常/);
+    await q.click('[data-talk=next]');
+    assert.equal(await q.locator('.gh-after-ico').count(), 0, '嗆咳不疊後果圖示');
+    await q.click('[data-rule=sit]');
+    await q.waitForSelector('#gh-line.gh-ok');
+    assert.match(await q.locator('#gh-line').innerText(), /邊走邊吃會有危險/);
+    // 第 3 題「用餐具」：直接選對
+    await q.waitForSelector('#gh-prog:text("3 / 3")');
+    await q.waitForSelector('#gh-line.gh-cue');
+    await q.click('[data-rule=tool]');
+    await q.waitForSelector('#gh-talk [data-talk=done]', { timeout: 5000 });
+    assert.match(await q.locator('#gh-talk').innerText(), /謝謝你陪小齒吃飯！你真是個好幫手/);
+    await noHScroll('齒輪小屋');
+    await q.click('[data-talk=done]');
+    await q.waitForSelector('#mg', { state: 'detached' });
+    const after = await info();
+    assert.ok(after.meal, '任務完成');
+    assert.equal(after.stars, before.stars + 3, '第一次完成 ⭐3');
+    assert.equal(after.plays, 1, '選等一下那次沒有開始，不算一局');
+    await q.waitForTimeout(600);
+    assert.equal(await q.locator('#gear-house .story-bang').count(), 0, '完成後小屋沒有「！」');
+    // 再玩一次：不給星星；中途離開不影響
+    await tapHouse();
+    await q.waitForSelector('#mg [data-talk=ok]');
+    await q.click('[data-gh=quit]');
+    await q.waitForSelector('#mg', { state: 'detached' });
+    assert.equal((await info()).stars, after.stars, '重玩不給星星');
+    // 家長試玩網址
+    await q.goto(url + '#gear-test');
+    await q.waitForSelector('#mg.gh-mg');
+    assert.match(await q.locator('#mg').innerText(), /試玩模式/);
+    await q.click('[data-gh=quit]');
+    await q.waitForFunction(() => location.hash === '#home');
+    await c.close();
+  }
+  console.log('✔ 齒輪小屋：經過第 53 格媽媽請幫忙、可以等一下再點小屋；6 個按鈕選錯有引導、沒提醒播一次後果；屁股坐嗆咳由玩家角色喊媽媽；完成 ⭐3、重玩不給；#gear-test 試玩');
 
   // ---------- 木島劇情「森林派對」（用測試假地圖：複製金島格子當木島）：小精靈導遊、第 8 格找松果、第 40 格採花摘莓果、第 65 格邀請卡、第 92 格布置派對 ----------
   {
@@ -2533,7 +2622,7 @@ async function main() {
     assert.ok(await q.evaluate((cid) => window.__cgpStore.getAchievements(cid).find((a) => a.id === 'woodHero').done, id), '解鎖木島小英雄');
     if (await q.locator('#confirm[open]').count()) await q.click('#confirm [data-yes]');
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
-    assert.equal(await q.locator('.story-guide').count(), 0, '全部完成後沒有導遊');
+    assert.equal(await q.locator('.story-guide:not(.gear-house)').count(), 0, '全部完成後沒有導遊');
     // 木島小遊戲格：落葉找松果計分版（3 回合 4／5／6 顆；每回合翻錯 3 次進下一回合；每 2 顆換 1 星）
     await q.evaluate((cid) => { const s = window.__cgpStore; s.data.adventure.rolls = []; s.setPlayerTile(cid, 4); s.random = () => 2.5 / 6; s.save(); }, id);
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');

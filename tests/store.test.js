@@ -2358,20 +2358,22 @@ test('家長重置今天的次數上限：骰子、小遊戲、前進道具、�
   assert.equal(s2.getRollsLeft(a.id), 2);
 });
 
-test('金島劇情：第一次完成各給 ⭐3、不重複給；三個都完成解鎖「金島小英雄」（更新前已點亮能源塔也算）；存檔重開保留', () => {
+test('金島劇情：第一次完成各給 ⭐3、不重複給；四個都完成解鎖「金島小英雄」（更新前已點亮能源塔也算）；存檔重開保留', () => {
   const { store, a, storage } = p3Store();
   const bal = store.getStarBalance(a.id);
-  assert.deepEqual(G.storiesOf('gold'), ['ore', 'rail', 'tower']);
+  assert.deepEqual(G.storiesOf('gold'), ['ore', 'rail', 'meal', 'tower']);
   assert.equal(store.completeStory(a.id, 'ore'), true);
   assert.equal(store.completeStory(a.id, 'ore'), false, '不重複給');
   assert.equal(store.getStarBalance(a.id), bal + 3);
   store.completeStory(a.id, 'rail');
   assert.ok(!store.checkAchievements(a.id).some(x => x.id === 'goldHero'));
   store.getPlayer(a.id).maxReached = 85;            // 更新前就點亮能源塔
+  assert.ok(!store.checkAchievements(a.id).some(x => x.id === 'goldHero'), '2026-11-19 起還要完成齒輪小屋');
+  store.completeStory(a.id, 'meal');
   assert.ok(store.checkAchievements(a.id).some(x => x.id === 'goldHero'));
-  assert.equal(store.getStarBalance(a.id), bal + 6);
+  assert.equal(store.getStarBalance(a.id), bal + 9);
   const s2 = new Store({ storage, seed: false, now: () => store.now() });
-  assert.deepEqual(Object.keys(s2.getPlayer(a.id).story).sort(), ['ore', 'rail']);
+  assert.deepEqual(Object.keys(s2.getPlayer(a.id).story).sort(), ['meal', 'ore', 'rail']);
   assert.throws(() => store.completeStory(a.id, 'nope'), /沒有這個劇情/);
 });
 
@@ -2739,7 +2741,9 @@ test('傳送門不能跳過還沒完成的任務格：最遠到前方第一個�
   store.completeStory(a.id, 'ore');
   assert.throws(() => store.useDoor(a.id, 40), /第 30 格的任務「礦車轉轍」還沒完成/, '下一個限制是第 30 格');
   assert.equal(store.useDoor(a.id, 20).path[0], 20, '任務格之前的格子都可以');
-  store.completeStory(a.id, 'rail'); store.completeStory(a.id, 'tower');
+  store.completeStory(a.id, 'rail');
+  assert.throws(() => store.useDoor(a.id, 60), /第 53 格的任務「齒輪小屋」還沒完成/, '2026-11-19 新增：第 53 格齒輪小屋');
+  store.completeStory(a.id, 'meal'); store.completeStory(a.id, 'tower');
   assert.equal(store.doorLimit(a.id), null, '任務都完成：沒有限制');
   assert.equal(store.useDoor(a.id, 95).path[0], 95);
   assert.equal(store.useDoor(a.id, 10).path[0], 10, '往回傳送不受限制');
@@ -3082,4 +3086,42 @@ test('冒險新手引導：進度存檔保留；不認得的值重置為空', ()
   s2.getPlayer(a.id).tutorial = 'hack'; s2.save();
   const s3 = new Store({ storage, seed: false, now: () => new Date('2026-11-06T10:00:00') });
   assert.equal(s3.getPlayer(a.id).tutorial, '');
+});
+
+test('齒輪小屋（第 53 格）：題庫 6 種都完整；每局 3 題不重複；「屁股坐」最多隔 3 局一定出現；不給星星、不算每日次數；舊存檔補預設值', () => {
+  const { store, a, storage } = p3Store();
+  assert.deepEqual(G.MEAL_RULES.map(r => r.label), ['30分鐘吃完', '眼睛看', '嘴巴吃', '用餐具', '屁股坐', '腳放地上']);
+  G.MEAL_RULES.forEach(r => ['id', 'icon', 'cue', 'hint', 'after', 'ico', 'fixed'].forEach(k => assert.ok(r[k], r.id + ' 缺 ' + k)));
+  assert.equal(G.STORIES.meal.tile, 53);
+  assert.equal(G.BOARDS.gold.tiles[53].type, 'chest', '第 53 格底層的寶箱照常');
+  for (let i = 0; i < 50; i++) {
+    const ids = G.pickMealRounds(Math.random, i % 2 === 0);
+    assert.equal(ids.length, 3); assert.equal(new Set(ids).size, 3);
+    if (i % 2 === 0) assert.ok(ids.includes('sit'), '指定時一定有屁股坐');
+  }
+  const p = store.getPlayer(a.id);
+  assert.deepEqual(p.gearHouse, { plays: 0, sinceSit: 0 });
+  delete p.gearHouse; store.save();
+  const s2 = new Store({ storage, seed: false, now: () => store.now() });
+  assert.deepEqual(s2.getPlayer(a.id).gearHouse, { plays: 0, sinceSit: 0 }, 'migrate 補預設值');
+  const bal = store.getStarBalance(a.id), rolls = store.getRollsLeft(a.id);
+  store.random = () => 0;   // 永遠抽到最前面 3 個（不會自己抽到屁股坐）
+  const runs = [];
+  for (let i = 0; i < 6; i++) runs.push(store.startMealGame(a.id).includes('sit'));
+  assert.deepEqual(runs, [false, false, true, false, false, true], '連續 2 局沒有，第 3 局一定有');
+  assert.equal(store.getPlayer(a.id).gearHouse.plays, 6);
+  assert.equal(store.getStarBalance(a.id), bal, '玩小屋不給星星');
+  assert.equal(store.getRollsLeft(a.id), rolls, '不算擲骰次數');
+  assert.equal(store.completeStory(a.id, 'meal'), true);
+  assert.equal(store.getStarBalance(a.id), bal + 3, '第一次完成任務 ⭐3');
+});
+
+test('金島小英雄改成 4 個任務（2026-11-19）：已經拿到的成就保留', () => {
+  const { store, a, storage } = p3Store();
+  ['ore', 'rail', 'tower'].forEach(k => store.completeStory(a.id, k));
+  store.data.achievements[a.id] = Object.assign(store.data.achievements[a.id] || {}, { goldHero: '2026-11-10' });
+  store.save();
+  const s2 = new Store({ storage, seed: false, now: () => store.now() });
+  s2.checkAchievements(a.id);
+  assert.ok(s2.data.achievements[a.id].goldHero, '舊的徽章還在');
 });
