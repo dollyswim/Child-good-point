@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-16｜App 版本 `2026.11.19-211`｜Service Worker 快取 `cgp-shell-v221`｜`main` 最新：飛行員阿翔、任務重置、派對自由擺放、對話半身大圖
+> 最後更新：2026-11-16｜App 版本 `2026.11.19-212`｜Service Worker 快取 `cgp-shell-v222`｜`main` 最新：飛行員阿翔、任務重置、派對自由擺放、對話半身大圖
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -15,7 +15,7 @@
 - 木島任務視窗預覽（不寫存檔、不給星星）：`?preview=party`（第 92 格布置派對）、`?preview=flowers`（第 40 格）、`?preview=invite`（第 65 格），例如 https://dollyswim.github.io/Child-good-point/?preview=party
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v221`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.19-211`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v222`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.19-212`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 146 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -370,4 +370,4 @@
 ### 2026-11-19：小遊戲能量星星上限統一 15 顆（家長決定）
 - 抓住星星：每 3 顆換 1 顆、最多 15（不變）。
 - 落葉找松果：改成每顆松果換 1 顆（`LEAF_GAME.rate` 2 → 1），最多 15（三回合共 15 顆松果）。
-- 珊瑚灣撈魚趣：每條魚換 1 顆、最多 15、至少 1（`FISH_GAME.rate`、`maxStars`）。
+- 珊瑚灣撈魚趣：每 3 條魚換 1 顆（家長試玩撈到 54 條後由 1 改 3）、最多 15、至少 1（`FISH_GAME.rate`、`maxStars`）。

@@ -46,10 +46,10 @@
   var GOLD_LEAF_CHANCE = 0.5;
   /**
    * 水島小遊戲「珊瑚灣撈魚趣」（2026-11-19 家長定稿）：參數全部集中在這裡。
-   * 日常：水島小遊戲格一律撈魚，每天次數照既有小遊戲規則；能量星星每 1 條換 1 顆、最多 15 顆（三種小遊戲上限都是 15）、至少 1 顆（2026-11-19 家長）。
+   * 日常：水島小遊戲格一律撈魚，每天次數照既有小遊戲規則；能量星星每 3 條換 1 顆（無條件進位，2026-11-19 家長試玩撈到 54 條後調整）、最多 15 顆、至少 1 顆。
    * 劇情：第 34 格餵小白鯨前要撈滿 storyGoal 條（可分好幾局累積、存檔），不算每日次數、不給能量星星。
    */
-  var FISH_GAME = { seconds: 45, nets: 5, durability: 100, grace: 0.5, drainPerSec: 20, puffer: 35, storyGoal: 10, rate: 1, maxStars: 15, maxCaught: 99,
+  var FISH_GAME = { seconds: 45, nets: 5, durability: 100, grace: 0.5, drainPerSec: 20, puffer: 35, storyGoal: 10, rate: 3, maxStars: 15, maxCaught: 99,
     fish: 10, puffers: 1, jellies: 1, warnAt: 35 };   // fish：2026-11-19 家長改 2 倍；warnAt：耐久低於這個值網子變紅、抖動、顯示「快破了！」   // 畫面上同時游動的數量：可撈的魚、河豚、水母
   function fishStars(caught) { var c = Math.max(0, Math.floor(Number(caught) || 0)); return Math.max(1, Math.min(FISH_GAME.maxStars, Math.ceil(c / FISH_GAME.rate))); }
   function minigameOf(island, rand) {

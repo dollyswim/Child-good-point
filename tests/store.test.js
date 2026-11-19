@@ -3001,16 +3001,16 @@ test('水島卡片文字：海裡版本（效果不變）', () => {
   assert.equal(T.roadblocks.length, 4); assert.ok(T.roadblocks.every((r) => !/礦車|小花/.test(r)));
 });
 
-test('珊瑚灣撈魚趣：水島小遊戲一律撈魚；能量星星每條 1 顆、最多 15、至少 1', () => {
+test('珊瑚灣撈魚趣：水島小遊戲一律撈魚；能量星星每 3 條 1 顆、最多 15、至少 1', () => {
   assert.equal(G.minigameOf('water', () => 0.9), 'fish');
-  assert.deepEqual([0, 1, 2, 3, 7, 15, 16, 30].map(G.fishStars), [1, 1, 2, 3, 7, 15, 15, 15]);
+  assert.deepEqual([0, 1, 3, 4, 7, 45, 54, 99].map(G.fishStars), [1, 1, 1, 2, 3, 15, 15, 15]);
   const { store, a, p } = waterStore('water', 6);
   try {
     doneUpTo(p, []);
     store.data.adventure.minigames.push({ id: 'm1', childId: a.id, date: store.today(), tile: 7, status: 'pending', game: 'fish', caught: 0, stars: 0, ts: 0 });
     const s0 = store.getStarBalance(a.id);
     const m = store.finishMinigame(a.id, 7);
-    assert.deepEqual([m.caught, m.stars, store.getStarBalance(a.id) - s0], [7, 7, 7]);
+    assert.deepEqual([m.caught, m.stars, store.getStarBalance(a.id) - s0], [7, 3, 3]);
   } finally { delete G.BOARDS.water; }
 });
 
