@@ -2401,7 +2401,8 @@ async function main() {
     await q.waitForSelector('#gh-line.gh-cue');
     await q.click('[data-rule=eyes]');
     await q.waitForSelector('#gh-line.gh-hint');
-    await q.waitForSelector('.gh-after-ico', { timeout: 4000 });
+    await q.waitForSelector('#gh-line.gh-after', { timeout: 4000 });
+    assert.match(await q.locator('#gh-scene img').getAttribute('src'), /dusk\.webp$/, '後果換成黃昏的圖');
     assert.match(await q.locator('#gh-line').innerText(), /天色變黃昏了，湯也涼掉了/);
     await q.click('[data-rule=time]');
     await q.waitForSelector('#gh-line.gh-ok');
@@ -2412,7 +2413,7 @@ async function main() {
     assert.equal(await q.locator('#gh-scene').getAttribute('data-state'), 'cough');
     await q.click('[data-talk=next]');
     assert.match(await q.locator('#gh-talk').innerText(), /媽媽[\s\S]*用力咳嗽/);
-    assert.equal(await q.locator('.gh-mom-here').count(), 1, '媽媽回到小齒旁邊');
+    assert.equal(await q.locator('#gh-talk .we-portrait img[src*="mom"]').count(), 1, '媽媽出現在對話框（畫面裡不放媽媽）');
     await q.click('[data-talk=next]');
     assert.match(await q.locator('#gh-talk').innerText(), /咳出來了，呼吸恢復正常/);
     await q.click('[data-talk=next]');

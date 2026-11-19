@@ -10,9 +10,8 @@
 
     /** 圖檔（images/gold/gear-house/）：null＝還沒有圖，用表情符號暫代 */
     var D = 'images/gold/gear-house/';
-    var GH_ART = { house: null, mom: null, eat: null, happy: null, cough: null, messy: null, dusk: null,   // dusk＝30 分鐘的後果（黃昏、湯涼了）
-      pose: { time: null, eyes: null, mouth: null, tool: null, sit: null, feet: null } };
-    void D;
+    var GH_ART = { house: D + 'house.webp', mom: D + 'mom.webp', eat: D + 'eat.webp', happy: D + 'happy.webp', cough: D + 'cough.webp', messy: D + 'messy.webp', dusk: D + 'dusk.webp',   // 2026-11-19 家長圖（13 張到齊）；dusk＝30 分鐘的後果（黃昏、湯涼了）
+      pose: { time: D + 'time.webp', eyes: D + 'eyes.webp', mouth: D + 'mouth.webp', tool: D + 'hand.webp', sit: D + 'walk.webp', feet: D + 'feet.webp' } };
     /** 地圖上的小屋：長地圖座標（第二區左上的空草地，腳底 y）；第 53 格觸發任務 */
     var HOUSE = { gx: 255, gy: 2935, w: 150, tile: 53 };
     var NAME = { kid: '小齒', mom: '媽媽', house: '齒輪小屋' };
@@ -51,8 +50,15 @@
       var img = state === 'eat' ? GH_ART.eat : state === 'happy' ? GH_ART.happy : state === 'cough' ? GH_ART.cough
         : state === 'after' && r.id === 'tool' && GH_ART.messy ? GH_ART.messy : state === 'after' && r.id === 'time' && GH_ART.dusk ? GH_ART.dusk : r ? GH_ART.pose[r.id] : null;
       var overlay = state === 'after' && r && !(r.id === 'tool' && GH_ART.messy) && !(r.id === 'time' && GH_ART.dusk) && r.id !== 'sit' ? '<span class="gh-after-ico" aria-hidden="true">' + r.ico + '</span>' : '';
-      var mom = opts && opts.momHome ? '<span class="gh-mom-here" aria-hidden="true">' + (GH_ART.mom ? '<img src="' + GH_ART.mom + '" alt="">' : '👩') + '</span>' : '';
+      var mom = '';   // 2026-11-19 家長：嗆咳時畫面裡不放媽媽（她的圖是笑著揮手），媽媽只出現在對話框
       if (img) return '<img class="gh-scene-img" src="' + img + '" alt="" draggable="false">' + overlay + mom;
+      // 部分圖已到：缺的畫面先用「正常吃飯」（嗆咳用「邊走邊吃」）的圖，疊上表情符號標示（2026-11-19）
+      var base = state === 'cough' ? GH_ART.pose.sit : GH_ART.eat;
+      if (base) {
+        var badge = state === 'happy' ? '😄👍' : state === 'cough' ? '😣💦' : r ? r.pose : '';
+        return '<img class="gh-scene-img' + (state === 'after' && r && r.id === 'time' ? ' dusk' : '') + '" src="' + base + '" alt="" draggable="false">' +
+          (badge ? '<span class="gh-badge" aria-hidden="true">' + badge + '</span>' : '') + overlay + mom;
+      }
       var away = r && r.id === 'sit' && (state === 'cue' || state === 'after' || state === 'cough');
       var kid = state === 'happy' ? '😄' : state === 'cough' ? '😣' : '🧒';
       var pose = state === 'cue' || state === 'after' ? '<i class="gh-pose">' + r.pose + '</i>' : state === 'happy' ? '<i class="gh-pose">👍</i>' : state === 'eat' ? '<i class="gh-pose">🥄</i>' : '';
