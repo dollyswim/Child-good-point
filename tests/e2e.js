@@ -1173,6 +1173,7 @@ async function main() {
     assert.match(await q.locator('[data-testid=water-end-card]').innerText(), /水島冒險完成[\s\S]*神祕寶箱 ×3/);
     st = await P();
     assert.deepEqual([st.clears, st.gift - gift0, !!st.story.blanket], [1, 3, true], '第一次通關：3 個神祕寶箱');
+    assert.ok(await q.evaluate((cid) => { const s = window.__cgpStore; s.checkAchievements(cid); return !!(s.data.achievements[cid] || {}).waterHero && !!(s.data.achievements[cid] || {}).waterClear1; }, kid), '6 個任務都完成：水島小英雄＋水島通關');
     await q.click('[data-we-ok]');
     // 6. 下一擲：小白鯨送行 → 回金島
     await q.evaluate((cid) => { window.__cgpStore.data.adventure.rolls = []; }, kid);
@@ -2937,6 +2938,109 @@ async function main() {
     assert.equal(ok, 1080, '離線時圖片從快取載入');
     await c.close();
     console.log('✔ 離線快取：圖片獨立快取、升版只重抓程式（圖片請求 ' + imgReq + ' / ' + imgCount + '）、離線可開啟並顯示圖片');
+  }
+
+  // ---------- 新手：第一次出發送 ⭐5、冒險教學 5 步、新手任務買 6 面骰再送 1 顆、商店跳動提醒（2026-11-19） ----------
+  {
+    const c = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', onboard: true });
+    const q = await c.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    const id = await q.evaluate(() => { const s = window.__cgpStore; s.data.flags.tourSeen = true; s.data.flags.tipsDone = true; const a = s.addChild({ name: '新手' }); const it = s.addItem({ kind: 'bonus', name: '幫忙', points: 15 }); s.recordItem(a.id, it.id); s.save(); return a.id; });
+    await q.reload();
+    await q.goto(url + '#child-' + id);
+    await q.click('[data-action=enter-adventure]');
+    assert.match(await q.locator('#confirm .go-tip').innerText(), /30 分以上/, '15 分出發：提示建議 30 分以上');
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction(() => /新手禮 ⭐5/.test(document.body.innerText), null, { timeout: 5000 });
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), 8, '15 分 3 星＋新手禮 5 星');
+    await q.goto(url + '#map-' + id);
+    await q.waitForSelector('#coach', { timeout: 6000 });
+    assert.match(await q.locator('#coach').innerText(), /能量星星/);
+    assert.equal(await q.locator('.map-shop.call .shop-call').count(), 1, '沒有骰子、星星夠：商店跳動提醒');
+    await q.click('#coach [data-coach=next]');
+    assert.match(await q.locator('#coach').innerText(), /商店/);
+    assert.equal(await q.locator('.map-shop.coach-ring').count(), 1, '商店發光');
+    await q.click('.map-shop', { force: true });
+    await q.waitForSelector('#confirm #coach');
+    assert.match(await q.locator('#confirm #coach').innerText(), /新手任務/);
+    await q.click('#confirm [data-buy=d6]');
+    assert.match(await q.locator('#confirm .shop-bonus').innerText(), /完成新手任務/);
+    assert.deepEqual(await q.evaluate((cid) => [window.__cgpStore.getPlayer(cid).bag.d6, window.__cgpStore.getStarBalance(cid)], id), [2, 3], '買 1 顆送 1 顆');
+    await q.click('#confirm [data-no]');
+    await q.waitForSelector('.dice-btn.d6.coach-ring', { timeout: 5000 });
+    assert.match(await q.locator('#coach').innerText(), /擲骰子/);
+    await q.evaluate(() => { window.__cgpStore.random = () => 0.05; });   // 擲 1 → 第 1 格（普通格）
+    await q.click('.dice-btn.d6');
+    await q.waitForSelector('#pawn.coach-ring', { timeout: 10000 });
+    assert.match(await q.locator('#coach').innerText(), /往前走幾格/);
+    await q.click('#coach [data-coach=next]');
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).tutorial, id), 'done');
+    await q.reload(); await q.goto(url + '#map-' + id); await q.waitForTimeout(1500);
+    assert.equal(await q.locator('#coach').count(), 0, '教完不再出現');
+    await c.close();
+    console.log('✔ 新手：出發提示 30 分、新手禮 ⭐5、冒險教學 5 步、新手任務買 1 送 1、商店跳動提醒');
+  }
+
+  // ---------- 撈魚手感：緩衝 0.5 秒、每秒 −20、河豚 −35（同一網一次）、水母立刻破、魚跟著網子走、放開才算（2026-11-19） ----------
+  {
+    const c = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block' });
+    await c.addInitScript(() => { window.__cgpFishHook = (api) => { window.__fish = api; }; });   // 停住的魚用 caught=true「暫停」：主迴圈不移動、不碰網子
+    const q = await c.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url + '#fish-test');
+    await q.waitForSelector('[data-fg=start]');
+    await q.waitForFunction(() => window.__fish);
+    await q.click('[data-fg=start]');
+    const fieldBox = await q.locator('#fg-field').boundingBox();
+    const park = () => q.evaluate(() => { window.__fish.mobs.forEach((m) => { if (!m.held && !m.flee && !m.el.classList.contains('fg-got')) { m.caught = true; m.parked = true; m.sp = 0; m.vx = 0; m.vy = 0; } }); });
+    const place = (kind, dx, dy) => q.evaluate(([k, x, y]) => { const m = window.__fish.mobs.find((v) => (v.kind === k || (k === 'fish' && (v.kind === 'clown' || v.kind === 'tang'))) && v.parked); m.parked = false; m.caught = false; m.x = x; m.y = y; m.phase = 0; return true; }, [kind, dx, dy]);
+    const unplace = (kind) => q.evaluate((k) => { window.__fish.mobs.forEach((m) => { if (m.kind === k && !m.parked) { m.parked = true; m.caught = true; } }); }, kind);
+    const net = () => q.evaluate(() => { const n = window.__fish.net(); return n ? { dur: Math.round(n.dur), x: n.x, y: n.y } : null; });
+    const cx = fieldBox.x + 150, cy = fieldBox.y + 300;   // 滑鼠：網子就在游標位置
+    await park();
+    // 1. 緩衝與時間耗損
+    await q.mouse.move(cx, cy); await q.mouse.down(); await q.waitForTimeout(350);
+    assert.equal((await net()).dur, 100, '前 0.5 秒不扣');
+    await q.waitForTimeout(1150);
+    let n1 = await net(); assert.ok(n1.dur <= 85 && n1.dur >= 70, '約 1.5 秒：剩 80% 左右（實際 ' + n1.dur + '）');
+    await q.mouse.up();
+    // 2. 魚跟著網子走、放開才算
+    await place('fish', 150, 300);
+    await q.mouse.move(cx, cy); await q.mouse.down(); await q.waitForTimeout(200); await park();   // 罩住後補的新魚也停住
+    assert.equal(await q.locator('.fg-held').count(), 1, '網子罩住魚');
+    await q.mouse.move(cx + 60, cy + 120, { steps: 8 }); await q.waitForTimeout(150);
+    const held = await q.evaluate(() => { const m = window.__fish.mobs.find((v) => v.held), n = window.__fish.net(); return Math.hypot(m.x - n.x, m.y - n.y); });
+    assert.ok(held < 30, '魚跟著網子移動（離網子中心 ' + Math.round(held) + 'px）');
+    assert.match(await q.locator('#fg-caught').innerText(), /🐟 0/, '還沒放開不算');
+    await q.mouse.up(); await q.waitForTimeout(200);
+    assert.match(await q.locator('#fg-caught').innerText(), /🐟 1/, '放開才撈到');
+    // 3. 河豚 −35，同一網只扣一次
+    await q.waitForTimeout(500); await park();
+    await place('puffer', 150, 300);
+    await q.mouse.move(cx, cy); await q.mouse.down(); await q.waitForTimeout(150);
+    const p1 = (await net()).dur; assert.ok(p1 <= 66 && p1 >= 60, '碰到河豚扣 35（剩 ' + p1 + '）');
+    await q.waitForTimeout(400);
+    const p2 = (await net()).dur; assert.ok(p2 >= p1 - 10, '同一隻河豚不重複扣（' + p1 + ' → ' + p2 + '）');
+    await q.mouse.up();
+    await unplace('puffer');
+    // 4. 水母：碰到立刻破、網裡的魚逃走不算
+    await place('fish', 150, 300);
+    await q.mouse.move(cx, cy); await q.mouse.down(); await q.waitForTimeout(200); await park();
+    assert.equal(await q.locator('.fg-held').count(), 1);
+    await place('jelly', 150, 300); await q.waitForTimeout(100);
+    assert.equal(await net(), null, '碰到水母立刻破');
+    assert.equal(await q.locator('.fg-flee').count(), 1, '網裡的魚逃走');
+    await q.mouse.up(); await q.waitForTimeout(200);
+    assert.match(await q.locator('#fg-caught').innerText(), /🐟 1/, '破網的魚不算');
+    assert.match(await q.locator('#fg-nets').innerText(), /×1/, '用了 4 個網，剩 1 個');
+    // 5. 最後一網用完就結算
+    await unplace('jelly'); await park();
+    await q.mouse.move(cx, cy); await q.mouse.down(); await q.waitForTimeout(150); await q.mouse.up();
+    await q.waitForSelector('.fg-result', { timeout: 3000 });
+    assert.match(await q.locator('.fg-result').innerText(), /撈魚成果[\s\S]*捕獲 1 條[\s\S]*破掉 1 個/);
+    await c.close();
+    console.log('✔ 撈魚：緩衝 0.5 秒、每秒 −20、河豚 −35 一次、水母立刻破、魚跟著網子走、放開才算、5 網用完結算');
   }
 
   assert.deepEqual(errors, [], '頁面不得出現 JS 錯誤或原生對話框');

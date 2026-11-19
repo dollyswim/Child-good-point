@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-221';
+  var APP_VERSION = '2026.11.19-222';
   var store;
   try {
     store = new CGP.Store();
@@ -3927,6 +3927,7 @@
         for (i = 0; i < C.jellies; i++) spawn('jelly');
         mobs.forEach(function (m) { m.el.style.transform = 'translate(' + (m.x - m.s / 2) + 'px,' + (m.y - m.s / 2) + 'px)'; });
         if (still) mobs.forEach(function (m) { m.sp *= 0.6; m.vx *= 0.6; m.vy *= 0.6; });   // 減少動態：游慢一點
+        if (window.__cgpFishHook) window.__cgpFishHook({ mobs: mobs, net: function () { return net; }, size: function () { return [W, H, R]; }, field: field });   // 自動測試：可以固定魚的位置
       });
     });
   }

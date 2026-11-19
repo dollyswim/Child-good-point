@@ -953,7 +953,10 @@
   ]);
   // 水島開放後才出現的成就（2026-11-17）
   if (waterOn) ACHIEVEMENTS.splice(ACHIEVEMENTS.findIndex(function (a) { return a.id === 'woodClear1'; }) + 1, 0,
-  { id: 'waterClear1', cat: 'adventure', icon: '🌊', name: '水島通關', desc: '幫萊莫找回小被被，完成水島冒險', check: function (s, c) { return (s.getPlayer(c).islandClears.water || 0) >= 1; } });
+  { id: 'waterClear1', cat: 'adventure', icon: '🌊', name: '水島通關', desc: '幫萊莫找回小被被，完成水島冒險', check: function (s, c) { return (s.getPlayer(c).islandClears.water || 0) >= 1; } },
+  { id: 'waterHero', cat: 'adventure', icon: '🐳', name: '水島小英雄', desc: '完成水島的 6 個任務：拼藏寶圖、喝潛水藥水、餵小白鯨、通過鯊魚惡霸、幫燈籠魚找東西、找回萊莫的小被被', check: function (s, c) {   // 2026-11-19 家長
+    var p = s.getPlayer(c);
+    return storiesOf('water').every(function (k) { return !!p.story[k]; }); } });
   // 2026-11-19 家長：珊瑚灣撈魚趣兩個成就（單局撈到幾條；只算日常小遊戲，劇情撈魚不算）
   if (waterOn) ACHIEVEMENTS.splice(ACHIEVEMENTS.findIndex(function (a) { return a.id === 'squirrel5'; }) + 1, 0,
     { id: 'fish20', cat: 'collect', icon: '🐟', name: '晚上就吃魚', desc: '「珊瑚灣撈魚趣」單局撈到 20 條以上', check: function (s, c) { return bestFish(s, c) >= 20; } },
