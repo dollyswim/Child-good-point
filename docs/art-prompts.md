@@ -567,3 +567,100 @@ English (shared): First-person POV sliding down a wooden root slide inside a gia
 
 - 中文：可愛的 Q 版小飛行員「阿翔」，全身站姿、面向正面略偏左，戴復古皮革飛行帽和護目鏡（護目鏡推到額頭上），穿藍色飛行夾克、白色圍巾隨風飄，一手舉起打招呼，表情開朗有自信；童話遊戲風格、黏土玩具般的柔和質感、溫暖粉彩，和金島技師同一個畫風；純白背景，角色置中，四周留邊，不要文字、不要飛機、不要地面陰影以外的背景。直式約 2:3，至少 800×1200。
 - English: A cute chibi pilot character named A-Xiang, full body standing, facing front slightly left, wearing a retro leather aviator cap with goggles pushed up on the forehead, a blue flight jacket and a white scarf fluttering, one hand raised in a friendly wave, cheerful and confident. Storybook game style, soft clay-toy texture, warm pastels, matching the existing gold-island technician character. Pure white background, centered with margin, no text, no airplane, portrait about 2:3, at least 800×1200.
+
+---
+
+## 金島第 53 格：齒輪小屋「吃飯好行為大挑戰」（12 張必做＋1 張選做，2026-11-19 新增，請 Gemini 製作）
+
+計畫：`docs/gold/GEAR_HOUSE_PLAN.md`。交件後放 `images/gold/gear-house/`（檔名見每張的括號）。
+
+**做法（重要）**：餐廳裡的畫面一律是「**同一個場景、同一個視角**」的整張圖，程式只要換圖，不用把角色疊在背景上對位置。
+1. 先做 **H-3 正常吃飯**，滿意後當作基準圖。
+2. H-4～H-11 都在同一個對話裡上傳 H-3，說「用同一張圖，只改小齒的動作」。
+3. 畫面一致很重要：餐桌、椅子、時鐘、小車車、窗戶的位置都不要動。
+4. 4 種後果（飯菜變涼、食物掉桌上、聊天沒吃、水杯倒了）**不用另外畫**，程式會在問題圖上疊小圖示。
+
+### 角色設定（H-3～H-11、H-2 每張都貼在主體描述前面）
+
+```
+Character "Xiao Chi": a cute chibi little boy about 5 years old, big round head, rosy cheeks, short fluffy brown hair
+with a small shiny brass gear hair clip, mustard-yellow T-shirt with a tiny gear emblem, blue overalls, small brown shoes.
+Character "Mom": a kind young mother, brown hair in a soft bun, cream blouse, teal apron with little gold gear prints.
+Style: bright cute 2.5D clay-toy style matching the gold-island technician, soft rounded shapes, warm pastel colors with gold accents, soft lighting.
+```
+
+中文：「小齒」：約 5 歲的 Q 版小男孩，大圓頭、紅臉頰，棕色短捲髮上夾著一個小小的亮黃銅齒輪髮夾，芥末黃 T 恤胸前有小齒輪圖案，藍色吊帶褲、棕色小鞋子。「媽媽」：溫柔的年輕媽媽，棕髮挽成鬆鬆的髮髻，米白色上衣，綠松色圍裙上印著小小的金色齒輪。畫風：明亮可愛的 2.5D 黏土玩具風，和金島技師同一個畫風，形狀圓潤、溫暖粉彩配金色點綴、柔和光線。
+
+### H-1 齒輪小屋外觀（`house`，地圖用，白底）
+地圖上顯示約 180px 寬，放在第二區左上的草地上。Claude 會只去除與外框相連的白底（會先回報）。
+```
+A single cute small cottage for a children's mobile game map, bright cute 2.5D clay style, a cozy wooden cottage with a warm orange tiled roof,
+brass pipes and a little chimney puffing a small cloud, a big golden gear decoration on the front gable and small gears on the walls,
+a round window with warm light, a small wooden door with a gear-shaped knob, a tiny flower pot by the door,
+slightly top-down three-quarter view, clear simple silhouette, plain white background, centered with generous margin, no characters, no text, no watermark, square 1024 x 1024
+```
+中文：地圖用的一間可愛小木屋，明亮可愛的 2.5D 黏土風格；溫暖的橘色瓦片屋頂，黃銅管線和一根冒著小白煙的煙囪；正面山牆上有一個大大的金色齒輪裝飾，牆上也有小齒輪；圓形窗戶透出溫暖燈光，小木門的門把是齒輪形狀，門邊有一小盆花。略俯視斜角、輪廓簡單；純白背景、置中、四周多留白，不要人物、文字、浮水印；正方形 1024×1024。
+
+### H-2 媽媽（`mom`，對話框半身圖，白底）
+開場、嗆咳情境、結尾共用。Claude 會只去除與外框相連的白底。
+```
+[角色設定] Full body of Mom standing, facing front slightly left, one hand waving gently and a warm smile, holding a small cloth bag on the other arm (she is about to go out),
+pure white background, centered with margin, no text, portrait about 2:3, at least 800 x 1200
+```
+中文：媽媽全身站姿，面向正面略偏左，一手輕輕揮手、溫暖微笑，另一手臂掛著一個小布包（準備出門）；純白背景、置中、四周留邊，不要文字；直式約 2:3，至少 800×1200。
+
+### 餐廳場景共用規格（H-3～H-11）
+橫式 4:3（1200×900），**畫滿整張場景、不要白底、不要文字**。
+```
+Scene: inside the cozy gear cottage dining room, warm afternoon light from a window on the left,
+a round wooden dining table in the center front with a plate of rice, a bowl of vegetable soup with gentle steam, a spoon and a cup of water,
+a small wooden chair for the child behind the table, a big brass gear wall clock on the back wall,
+a toy corner on the right side with a small red toy car on a rug and a few toy blocks, open floor space between the table and the toy corner,
+three-quarter front view, horizontal 4:3, full scene, no text, no watermark
+```
+中文：齒輪小屋的溫馨餐廳，左邊窗戶照進午後暖光；畫面中央前方一張圓木餐桌，桌上有一盤白飯、一碗冒著淡淡熱氣的蔬菜湯、一支湯匙、一杯水；餐桌後面一張小木椅；後牆掛著一個大大的黃銅齒輪時鐘；右邊是玩具角落，地毯上有一台紅色小車車和幾塊積木；餐桌和玩具角落之間留一塊空地。正面略斜的視角、橫式 4:3、畫滿整張場景，不要文字、浮水印。
+
+### H-3 正常吃飯（`eat`，基準圖）
+```
+[角色設定] [餐廳場景] Xiao Chi sits properly on the chair at the table, feet on the floor, holding the spoon, eating rice happily while looking at his food
+```
+中文：小齒坐好在椅子上、雙腳踩地，拿著湯匙、眼睛看著飯，開心地吃。
+
+### H-4～H-9 六種問題行為（同一張 H-3 改動作）
+每張都用：「Same scene, same camera angle and same Xiao Chi as the previous image, only change his pose: …」，最後加「keep the table, chair, clock and toys exactly the same」。
+
+| # | 檔名 | 英文動作 | 中文 |
+|---|---|---|---|
+| H-4 | `toy` | still sitting, he has put the spoon down and is playing with a small toy car on the table, ignoring the food | 還坐著，湯匙放下，在桌上玩一台小車車，沒在吃飯 |
+| H-5 | `look` | still sitting, holding the spoon in the air but turning his head to look out of the window, eyes away from the plate | 還坐著，湯匙舉在半空，頭轉向窗外東張西望，沒看盤子 |
+| H-6 | `talk` | still sitting, spoon resting on the plate, mouth wide open talking excitedly with both hands gesturing, small speech-bubble dots near his mouth (no letters) | 還坐著，湯匙放在盤子上，嘴巴張大、兩手比來比去講不停，嘴邊有小小的對話點點（不要字） |
+| H-7 | `hand` | still sitting, the spoon lies on the table, he grabs rice with his bare hand, a few grains of rice on his fingers | 還坐著，湯匙丟在桌上，直接用手抓飯，手指上沾了幾粒飯 |
+| H-8 | `walk` | he has stood up and left the chair, walking toward the toy car in the toy corner while holding a bite of food in his hand, the chair is empty | 離開椅子站起來，手上拿著一口食物，邊走邊吃往玩具角落的小車車走去，椅子空著 |
+| H-9 | `feet` | sitting on the chair with both feet pulled up onto the seat, knees up, the chair tilting slightly, the cup of water wobbling near the table edge | 坐在椅子上但雙腳縮到椅面上、膝蓋抬高，椅子微微傾斜，桌邊的水杯搖搖晃晃 |
+
+### H-10 嗆咳（`cough`，屁股坐的後果）
+安全情境：**有效咳嗽、不是窒息**。不要誇張、不要好笑、不要拍背。
+```
+Same scene, same camera angle and same Xiao Chi as the "walk" image: he has stopped walking near the toy corner, bending slightly forward and coughing hard with one hand near his mouth,
+a surprised worried face with small sweat drops, small cough puff lines near his mouth, face color normal (not blue, not red), he is clearly still breathing and coughing,
+calm and gentle mood, not scary, not funny, keep everything else exactly the same
+```
+中文：跟 H-8 同一個場景、同一個視角：小齒在玩具角落附近停下來，身體微微前傾、一手放在嘴邊用力咳嗽；表情驚訝、有點擔心、冒小汗珠，嘴邊有小小的咳嗽線條；**臉色正常（不要發青或漲紅）**，看得出還在呼吸、在咳嗽；氣氛平靜溫和，不嚇人也不好笑；其他都不要動。
+
+> 媽媽跑過來、玩家角色喊人，都由程式用對話框演出，這張圖不用畫媽媽。
+
+### H-11 開心改正（`happy`，6 題共用）
+```
+Same scene, same camera angle and same Xiao Chi as the "eat" image: he sits properly on the chair with both feet on the floor, holding the spoon,
+giving a big happy smile and a thumbs-up with his other hand, a few small golden sparkles around him, keep everything else exactly the same
+```
+中文：跟 H-3 同一個場景：小齒坐好、雙腳踩地、拿著湯匙，開心大笑、另一手比讚，身邊有幾顆小小的金色閃光；其他都不要動。
+
+### H-12 選做：手和桌子沾滿飯粒（`messy`，用餐具的後果）
+沒有這張時，程式會在 H-7 上疊「🍚 手和桌子都黏黏的」小圖示。
+```
+Same scene and same camera angle as the "hand" image: both of Xiao Chi's hands and the table around his plate are covered with sticky rice and a few soup drops, he looks at his hands with an "oops" face, keep everything else exactly the same
+```
+中文：跟 H-7 同一個場景：小齒兩隻手和盤子周圍的桌面都沾滿黏黏的飯粒和幾滴湯，他看著自己的手、一臉「糟糕」的表情；其他都不要動。
+
+> 小提醒：如果 Gemini 換了小齒的長相或衣服，補一句「keep Xiao Chi's face, hair clip, yellow shirt and blue overalls identical to the previous image」。
