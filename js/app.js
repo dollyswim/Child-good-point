@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-223';
+  var APP_VERSION = '2026.11.19-224';
   var store;
   try {
     store = new CGP.Store();
@@ -2290,6 +2290,7 @@
     'earn1000 earn2000 earn3000 earn4000 earn5000 earn6000 earn7000 earn8000 earn9000 earn10000 special1 special5 streak7 locked').split(' ')
     .forEach(function (id) { BADGE_IMG[id] = 'images/badges/badge_' + id + '.webp'; });
   BADGE_IMG.woodClear1 = 'images/badges/badge_woodClear1v2.webp';
+  ['waterHero', 'fish20', 'fish90'].forEach(function (id) { BADGE_IMG[id] = 'images/badges/badge_' + id + '.webp'; });   // 2026-11-19 家長 Gemini 圖（去外圍白底、256×256）；水島圖不放進 SHELL
   BADGE_IMG.waterClear1 = 'images/badges/badge_waterClear1.webp';   // 2026-11-17 家長提供（沉船＋小白鯨＋星星旗）；水島圖不放進 SHELL，第一次用到才下載   // 2026-11-13 換上家長提供的專屬圖（換檔名讓圖片快取立刻生效）
   /** 主徽章挑選：越高階／越稀有分數越高（只影響演出，不影響成就條件） */
   var ACH_RANK = { goldClear1: 300, woodClear1: 300, waterClear1: 300, fish90: 105, fish20: 50, streak7: 120, reachR4: 110, catch10: 100, special5: 95, reachR3: 80, chests10: 75, mystery1: 70,
