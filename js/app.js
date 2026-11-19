@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-220';
+  var APP_VERSION = '2026.11.19-221';
   var store;
   try {
     store = new CGP.Store();
@@ -3886,7 +3886,8 @@
           if (touch.some(function (m) { return m.kind === 'jelly'; })) { burst(); }   // 水母優先：立刻破
           else {
             touch.forEach(function (m) {
-              if (m.kind === 'puffer' && !net.puffed[mobs.indexOf(m)]) { net.puffed[mobs.indexOf(m)] = true; net.dur -= C.puffer; m.el.classList.add('fg-puff'); m.el.innerHTML = fishArt('pufferBig'); (function (mm) { setTimeout(function () { mm.el.classList.remove('fg-puff'); mm.el.innerHTML = fishArt('puffer'); }, 1200); })(m); }
+              if (m.kind === 'puffer' && m.hitNet !== net) { m.hitNet = net;   // 同一網只扣一次（記在河豚身上，魚被撈走後陣列位置會變）
+                net.dur -= C.puffer; m.el.classList.add('fg-puff'); m.el.innerHTML = fishArt('pufferBig'); (function (mm) { setTimeout(function () { mm.el.classList.remove('fg-puff'); mm.el.innerHTML = fishArt('puffer'); }, 1200); })(m); }
             });
             if (net && net.dur <= 0) burst(); else drawNet();
           }
