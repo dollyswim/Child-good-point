@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-210';
+  var APP_VERSION = '2026.11.19-211';
   var store;
   try {
     store = new CGP.Store();
@@ -3680,7 +3680,7 @@
 
   // ---------- 水島小遊戲「珊瑚灣撈魚趣」（2026-11-19 家長定稿；參數在 game.js 的 FISH_GAME） ----------
   // 2026-11-19 正式圖（家長 Gemini 圖，去白底、256×256、都面朝右；水島圖不放進 SHELL，開遊戲時先下載）
-  var FISH_ART = { clown: 'images/water/fish/clown.webp', tang: 'images/water/fish/tang.webp', puffer: 'images/water/fish/puffer.webp', pufferBig: 'images/water/fish/puffer_big.webp', jelly: 'images/water/fish/jelly_v2.webp' };
+  var FISH_ART = { clown: 'images/water/fish/clown.webp', tang: 'images/water/fish/tang.webp', puffer: 'images/water/fish/puffer.webp', pufferBig: 'images/water/fish/puffer_big.webp', jelly: 'images/water/fish/jelly_v3.webp' };
   var FISH_EMOJI = { clown: '🐠', tang: '🐟', puffer: '🐡', pufferBig: '🐡', jelly: '🪼' };
   function fishArt(kind) {
     return FISH_ART[kind] ? '<img src="' + FISH_ART[kind] + '" alt="" draggable="false">' : '<span class="fg-emoji" aria-hidden="true">' + FISH_EMOJI[kind] + '</span>';
