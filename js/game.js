@@ -50,7 +50,7 @@
    * 劇情：第 34 格餵小白鯨前要撈滿 storyGoal 條（可分好幾局累積、存檔），不算每日次數、不給能量星星。
    */
   var FISH_GAME = { seconds: 45, nets: 5, durability: 100, grace: 0.5, drainPerSec: 20, puffer: 35, storyGoal: 10, rate: 1, maxStars: 15, maxCaught: 99,
-    fish: 5, puffers: 1, jellies: 1 };   // 畫面上同時游動的數量：可撈的魚、河豚、水母
+    fish: 10, puffers: 1, jellies: 1, warnAt: 35 };   // fish：2026-11-19 家長改 2 倍；warnAt：耐久低於這個值網子變紅、抖動、顯示「快破了！」   // 畫面上同時游動的數量：可撈的魚、河豚、水母
   function fishStars(caught) { var c = Math.max(0, Math.floor(Number(caught) || 0)); return Math.max(1, Math.min(FISH_GAME.maxStars, Math.ceil(c / FISH_GAME.rate))); }
   function minigameOf(island, rand) {
     if (island === 'water') return 'fish';

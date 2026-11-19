@@ -2535,11 +2535,18 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .fg-mob.fg-puff { animation: fg-puff .5s ease-out; }
 .fg-mob.fg-got { transition: opacity .35s, filter .35s; opacity: 0; filter: brightness(1.6); }
 @keyframes fg-puff { 40% { scale: 1.45; } }
-.fg-net { position: absolute; left: 0; top: 0; border-radius: 50%; pointer-events: none; z-index: 5; --dur: 1;
-  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .55), rgba(190, 240, 255, .18) 45%, rgba(120, 210, 255, .12) 70%);
-  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, calc(.25 + .6 * var(--dur))), 0 0 14px rgba(180, 240, 255, .5); opacity: calc(.45 + .55 * var(--dur)); }
-.fg-net i { position: absolute; inset: -7px; border-radius: 50%; background: conic-gradient(#ffd23f calc(var(--dur) * 360deg), transparent 0); -webkit-mask: radial-gradient(circle, transparent calc(100% - 6px), #000 calc(100% - 5px)); mask: radial-gradient(circle, transparent calc(100% - 6px), #000 calc(100% - 5px)); }
-.fg-net.weak i { background: conic-gradient(#ff6a4a calc(var(--dur) * 360deg), transparent 0); }
+.fg-net { position: absolute; left: 0; top: 0; border-radius: 50%; pointer-events: none; z-index: 5; --dur: 1; --hue: 120;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, calc(.25 + .35 * var(--dur))), rgba(190, 240, 255, calc(.08 + .14 * var(--dur))) 50%, rgba(120, 210, 255, calc(.04 + .1 * var(--dur))) 72%);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, calc(.2 + .6 * var(--dur))); }
+/* 耐久度外圈：綠 → 黃 → 紅，越少圈越短（2026-11-19 家長：看得出什麼時候要破） */
+.fg-net i { position: absolute; inset: -9px; border-radius: 50%; background: conic-gradient(hsl(var(--hue), 85%, 52%) calc(var(--dur) * 360deg), rgba(255, 255, 255, .25) 0);
+  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 9px), #000 calc(100% - 8px)); mask: radial-gradient(closest-side, transparent calc(100% - 9px), #000 calc(100% - 8px)); filter: drop-shadow(0 0 4px rgba(0, 0, 0, .35)); }
+.fg-net .fg-warn { position: absolute; left: 50%; top: -34px; transform: translateX(-50%); padding: 2px 10px; border-radius: 99px; background: #e8483c; color: #fff; font-size: .85rem; font-weight: 900; white-space: nowrap; opacity: 0; transition: opacity .2s; }
+.fg-net.weak { animation: fg-shake .18s linear infinite; }
+.fg-net.weak i { filter: drop-shadow(0 0 8px rgba(255, 60, 40, .9)); }
+.fg-net.weak .fg-warn { opacity: 1; }
+@keyframes fg-shake { 25% { margin-left: -2px; } 75% { margin-left: 2px; } }
+@media (prefers-reduced-motion: reduce) { .fg-net.weak { animation: none; } }
 .fg-pop { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; border: 4px solid rgba(255, 255, 255, .9); pointer-events: none; animation: fg-pop .45s ease-out forwards; }
 @keyframes fg-pop { to { transform: scale(6); opacity: 0; } }
 .fg-plus { position: absolute; transform: translate(-50%, -50%); color: #ffe27a; font-size: 1.6rem; font-weight: 900; text-shadow: 0 2px 4px rgba(0, 0, 0, .5); pointer-events: none; animation: fg-plus .8s ease-out forwards; }

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-206';
+  var APP_VERSION = '2026.11.19-207';
   var store;
   try {
     store = new CGP.Store();
@@ -3709,7 +3709,7 @@
       el.innerHTML = '<div class="mg-top fg-top"><span class="mg-count" id="fg-time">⏱️ 00:' + String(C.seconds).padStart(2, '0') + '</span>' +
         '<span class="mg-count" id="fg-caught">🐟 ' + (opts.story ? (opts.have || 0) + ' / ' + C.storyGoal : '0') + '</span>' +
         '<span class="mg-count" id="fg-nets">🫧 ×' + C.nets + '</span></div>' +
-        '<div class="mg-field fg-field" id="fg-field"><div class="fg-net" id="fg-net" hidden><i></i></div></div>' +
+        '<div class="mg-field fg-field" id="fg-field"><div class="fg-net" id="fg-net" hidden><i></i><b class="fg-warn">快破了！</b></div></div>' +
         '<div class="mg-tip fg-tip" id="fg-tip"><b>🐠 ' + h(opts.title || '珊瑚灣撈魚趣') + '</b>' + (opts.sub ? '<small>' + h(opts.sub) + '</small>' : '') +
         '<span>按住拖曳泡泡網，放開就能撈魚！<br>🐡 河豚會刺破網子一部分，🪼 水母碰到網子就破！</span>' +
         (opts.practice ? '<small class="mg-practice">🧪 試玩模式：不會得到星星，也不算今天的次數</small>' : '') +
@@ -3740,7 +3740,9 @@
       function drawNet() {
         if (!net) { netEl.hidden = true; return; }
         netEl.hidden = false; netEl.style.transform = 'translate(' + (net.x - R) + 'px,' + (net.y - R) + 'px)';
-        netEl.style.setProperty('--dur', Math.max(0, net.dur) / C.durability); netEl.classList.toggle('weak', net.dur < 35);
+        var f = Math.max(0, net.dur) / C.durability;
+        netEl.style.setProperty('--dur', f); netEl.style.setProperty('--hue', Math.round(f * 120));   // 綠 120 → 黃 60 → 紅 0
+        netEl.classList.toggle('weak', net.dur < C.warnAt);
       }
       function inNet(m) { return net && Math.hypot(m.x - net.x, m.y - net.y) <= R; }
       function burst() {   // 網子破了：啵！網內的魚繼續游
@@ -3752,8 +3754,8 @@
         if (!net) return;
         var got = mobs.filter(function (m) { return (m.kind === 'clown' || m.kind === 'tang') && !m.caught && (m.held || inNet(m)); });
         got.forEach(function (m) {
-          m.held = false; m.caught = true; caught++; m.el.classList.add('fg-got');
-          (function (mm) { setTimeout(function () { mm.el.remove(); mobs.splice(mobs.indexOf(mm), 1); if (!ended) spawn(fishKind()); }, 400); })(m);
+          var refill = !m.held; m.held = false; m.caught = true; caught++; m.el.classList.add('fg-got');
+          (function (mm) { setTimeout(function () { mm.el.remove(); mobs.splice(mobs.indexOf(mm), 1); if (!ended && refill) spawn(fishKind()); }, 400); })(m);
         });
         if (got.length) { var t = document.createElement('b'); t.className = 'fg-plus'; t.textContent = '+' + got.length; t.style.left = net.x + 'px'; t.style.top = net.y + 'px'; field.appendChild(t); setTimeout(function () { t.remove(); }, 800); }
         used++; net = null; drawNet(); hud(); afterNet();
@@ -3775,12 +3777,14 @@
             var ox = m.x - net.x, oy = m.y - net.y, d = Math.hypot(ox, oy), lim = R * 0.55;
             if (d > lim) { ox *= lim / d; oy *= lim / d; }
             m.held = true; m.ox = ox; m.oy = oy; m.el.classList.add('fg-held');
+            if (!ended) spawn(fishKind());   // 2026-11-19 家長：一罩住就馬上補一條新魚
             return;
           }
           if (Math.random() < (m.kind === 'tang' ? 0.6 : 0.25) * dt) m.vx = -m.vx;   // 偶爾轉向
           m.phase += dt * (m.kind === 'jelly' ? 1.6 : 3);
           m.x += m.vx * dt; m.y += Math.sin(m.phase) * (m.kind === 'jelly' ? 22 : 8) * dt;
           m.y = Math.max(H * 0.1, Math.min(H * 0.92, m.y));
+          if ((m.x < -m.s * 1.2 || m.x > W + m.s * 1.2) && (m.kind === 'clown' || m.kind === 'tang') && mobs.filter(function (q) { return (q.kind === 'clown' || q.kind === 'tang') && !q.caught && !q.held && !q.gone; }).length > C.fish) { m.gone = true; m.caught = true; m.el.remove(); setTimeout(function () { var i = mobs.indexOf(m); if (i >= 0) mobs.splice(i, 1); }, 0); return; }
           if (m.x < -m.s * 1.2 || m.x > W + m.s * 1.2) { m.y = H * (0.12 + Math.random() * 0.76); m.x = m.vx > 0 ? -m.s : W + m.s; }   // 游出去：從另一邊進來
           m.el.style.transform = 'translate(' + (m.x - m.s / 2) + 'px,' + (m.y - m.s / 2) + 'px) scaleX(' + (m.vx < 0 ? -1 : 1) + ')';
         });
