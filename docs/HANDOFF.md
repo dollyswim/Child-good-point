@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-16｜App 版本 `2026.11.19-224`｜Service Worker 快取 `cgp-shell-v234`｜`main` 最新：飛行員阿翔、任務重置、派對自由擺放、對話半身大圖
+> 最後更新：2026-11-16｜App 版本 `2026.11.19-225`｜Service Worker 快取 `cgp-shell-v235`｜`main` 最新：飛行員阿翔、任務重置、派對自由擺放、對話半身大圖
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -15,7 +15,7 @@
 - 木島任務視窗預覽（不寫存檔、不給星星）：`?preview=party`（第 92 格布置派對）、`?preview=flowers`（第 40 格）、`?preview=invite`（第 65 格），例如 https://dollyswim.github.io/Child-good-point/?preview=party
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v234`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.19-224`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v235`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.19-225`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 146 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -113,6 +113,12 @@
 
 ### 2026-11-16：飛行過場改成「金島飛向木島」兩段＋降落一段
 - `flightScene()`：前兩段都用 `fly.webp`，圖比畫面寬（`.fl-fly` 高 118vh），鏡頭由左下的金島平移到右邊的木島（`fl-pan` 5.4 秒）；第三段才換 `land.webp` 並出現「抵達木島，降落！」卡片。減少動態時飛行圖置中不移動。
+
+### 2026-11-19：水島正式開放（`WATER_OPEN = true`）
+- `js/game.js` 的 `WATER_OPEN` 改成 `true`：木島通關後下一次移動前往水島，水島通關後回金島。島嶼順序是金 → 木 → 水 → 金，已經通關木島、回到金島的孩子要再走完金島、木島才會到水島。
+- 舊的試玩設定（這台裝置的 `cgp-water-trial`）正式開放後不再作用；設定頁的「水島試玩模式」區塊也不再顯示。之前建立的「測試」孩子照舊存在，請家長自行刪除。
+- 木島第 70 格起，在背景先下載水島開場過場、第一張場景、漁夫、魚桶、第 8 格藏寶圖、撈魚遊戲的魚（`water.js` 的 `waterArrivalAssets()`）。
+- 自動測試：E2E 預設用 `__cgpWaterClosed` 關掉水島（舊流程以木島通關回金島為前提），`water: true` 才打開；單元測試在檔案開頭設 `globalThis.__cgpWaterClosed`。`game.js` 改從 `globalThis` 讀這些開關（Node 裡 `root` 是 `module.exports`）。
 
 ### 2026-11-17：水島程式完成（預設未開放 `WATER_OPEN = false`）
 - 計畫：`docs/water/WATER_ISLAND_PLAN.md`；美術：`docs/water/CODEX_WATER_ISLAND_BRIEF.md`；驗收紀錄：`docs/water/WATER_A_REVIEW.md`。四張正式地圖已接入（`images/water/scene01_v2/02_v2/03/04.webp`），座標 `data/water/water_scene0N_tiles_final.json` → `tools/gen_board_water.py` → `js/board-water.js`。

@@ -40,7 +40,7 @@ async function main() {
     if (!theater) await c.addInitScript(() => { window.__cgpNoTheater = true; });
     if (!story) await c.addInitScript(() => { window.__cgpNoStory = true; });   // 金島劇情另有專門測試（story: true）
     if (!wood) await c.addInitScript(() => { window.__cgpWoodClosed = true; });   // 舊流程以「只有金島」為前提；木島另有專門測試（wood: true）
-    if (water) await c.addInitScript(() => { window.__cgpWaterOpen = true; });   // 水島預設未開放（2026-11-17）
+    if (!water) await c.addInitScript(() => { window.__cgpWaterClosed = true; });   // 2026-11-19 水島正式開放；舊流程以「木島通關回金島」為前提，水島另有專門測試（water: true）
     if (!onboard) await c.addInitScript(() => { window.__cgpNoOnboard = true; window.__cgpNoStarter = true; });   // 新手禮也另有專門測試   // 新手導覽、新手任務另有專門測試（onboard: true）
     // 金島小遊戲（木島上線前各 1/2 機率）：其他流程固定抓住星星；落葉找松果另有專門測試（goldGame: 'leaf'）
     await c.addInitScript((g) => { window.__cgpGoldGame = g; }, goldGame || 'stars');
@@ -3041,6 +3041,26 @@ async function main() {
     assert.match(await q.locator('.fg-result').innerText(), /撈魚成果[\s\S]*捕獲 1 條[\s\S]*破掉 1 個/);
     await c.close();
     console.log('✔ 撈魚：緩衝 0.5 秒、每秒 −20、河豚 −35 一次、水母立刻破、魚跟著網子走、放開才算、5 網用完結算');
+  }
+
+  // ---------- 水島正式開放＋木島第 70 格起預先下載水島圖（2026-11-19） ----------
+  {
+    const c = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', wood: true, water: true });
+    const q = await c.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    assert.equal(await q.evaluate(() => window.CGPGame.WATER_OPEN && !!window.CGPGame.BOARDS.water), true, '水島正式開放');
+    const id = await q.evaluate(() => { const s = window.__cgpStore; s.data.flags.tourSeen = true; s.data.flags.tipsDone = true; const a = s.addChild({ name: '預載' }); const p = s.getPlayer(a.id); p.island = 'wood'; p.pos = 60; p.tileId = window.CGPGame.BOARDS.wood.tiles[60].id; s.save(); return a.id; });
+    const got = () => q.evaluate(() => performance.getEntriesByType('resource').map((e) => e.name).filter((n) => /images\/water\//.test(n)).map((n) => n.replace(/^.*images\/water\//, '')));
+    await q.goto(url + '#map-' + id); await q.waitForTimeout(800);
+    assert.deepEqual(await got(), [], '第 60 格還不下載');
+    await q.evaluate((cid) => { const s = window.__cgpStore, p = s.getPlayer(cid); p.pos = 75; p.tileId = window.CGPGame.BOARDS.wood.tiles[75].id; s.save(); }, id);
+    await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id);
+    await q.waitForFunction(() => performance.getEntriesByType('resource').some((e) => /images\/water\/scene01_v2/.test(e.name)), null, { timeout: 5000 });
+    const list = await got();
+    for (const f of ['trip/f1_exit.webp', 'scene01_v2.webp', 'npc/fisherman.webp', 'items/fish_bucket.webp', 'task/memo_map.webp', 'fish/clown.webp', 'fish/jelly_v3.webp']) assert.ok(list.includes(f), '第 75 格預先下載 ' + f + '（實際：' + list.join(' ') + '）');
+    await c.close();
+    console.log('✔ 水島正式開放；木島第 70 格起在背景先下載水島開場、第一場景、漁夫、魚桶、藏寶圖、撈魚圖');
   }
 
   assert.deepEqual(errors, [], '頁面不得出現 JS 錯誤或原生對話框');

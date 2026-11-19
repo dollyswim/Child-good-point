@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-224';
+  var APP_VERSION = '2026.11.19-225';
   var store;
   try {
     store = new CGP.Store();
@@ -264,7 +264,7 @@
       }, 600); }
       if (!ui.busy) setTimeout(function () { if (route().name === 'map' && route().arg === r.arg && !ui.busy && !document.getElementById('water-talk') && !document.getElementById('party-shade')) coachShow(r.arg); }, 900);   // 新手引導
       if (store.takeChestHint(r.arg)) notes.push('✨ 附近似乎藏著神祕寶物……');
-      var wp = store.getPlayer(r.arg); if (wp.island === 'wood' && wp.pos >= 85) preloadImages(WOOD_SLIDES.concat(GAME.WATER_OPEN || window.__cgpWaterOpen ? WATER_TRIP.slice(0, 3) : []));   // 快到樹洞了：先在背景載入滑梯圖
+      var wp = store.getPlayer(r.arg); if (wp.island === 'wood' && wp.pos >= 70) preloadImages(WOOD_SLIDES.concat(GAME.waterOn && !!GAME.BOARDS.water ? waterArrivalAssets() : []), 20000);   // 快到樹洞了：先在背景載入滑梯圖＋水島開場要用的圖（2026-11-19 起第 70 格就開始）
     }
     if (r.name === 'home' && !store.data.flags.tourSeen && !onboardOff()) setTimeout(openTour, 300);   // 第一次打開：新手導覽
     if (r.name === 'minigame-test') openMinigame(null, null, { practice: true });
@@ -1749,7 +1749,7 @@
     get reduceMotion() { return reduceMotion; }, get BADGE_IMG() { return BADGE_IMG; }, get WOOD_SLIDES() { return WOOD_SLIDES; },
     get audioCtx() { return audioCtx; }, set audioCtx(v) { audioCtx = v; }   // 成就音效和撈魚的「啵」共用同一個音訊
   });
-  var belugaAct = WATER.belugaAct, WATER_NPC = WATER.WATER_NPC, waterPreload = WATER.waterPreload, waterDecor = WATER.waterDecor,
+  var belugaAct = WATER.belugaAct, waterArrivalAssets = WATER.waterArrivalAssets, WATER_NPC = WATER.WATER_NPC, waterPreload = WATER.waterPreload, waterDecor = WATER.waterDecor,
     waterNotes = WATER.waterNotes, waterWelcome = WATER.waterWelcome, waterTask = WATER.waterTask, callBeluga = WATER.callBeluga,
     WATER_TRIP = WATER.WATER_TRIP, FOLK_THANKS = WATER.FOLK_THANKS, waterEnding = WATER.waterEnding, waterOpening = WATER.waterOpening,
     waterLeave = WATER.waterLeave, openFishMinigame = WATER.openFishMinigame;

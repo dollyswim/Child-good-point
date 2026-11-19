@@ -52,6 +52,13 @@
       list = list.filter(function (u) { if (!u || waterPreloaded[u]) return false; waterPreloaded[u] = true; return true; });
       if (list.length) preloadImages(list, 15000);
     }
+    /** 木島後段（第 70 格起）就先在背景下載：開場過場、第一張場景背景、迎接的漁夫與魚桶、第 8 格藏寶圖、撈魚遊戲的魚（2026-11-19 家長選） */
+    function waterArrivalAssets() {
+      return WATER_TRIP.slice(0, 3).concat(['images/water/scene01_v2.webp', WATER_NPC.fisherman, WATER_ART.bucket], waterAssets(8),
+        Object.keys(FISH_ART).map(function (k) { return FISH_ART[k]; })).filter(function (u) {
+        if (!u || waterPreloaded[u]) return false; waterPreloaded[u] = true; return true;
+      });
+    }
     function waterDecor(child, board, player, scene) {
       if (board.id !== 'water' || typeof waterMapDecor !== 'function') return '';
       return waterMapDecor(child, board, player, scene);
@@ -1156,7 +1163,7 @@
     }
 
     return {
-      belugaAct: belugaAct, WATER_NPC: WATER_NPC, waterPreload: waterPreload, waterDecor: waterDecor,
+      belugaAct: belugaAct, waterArrivalAssets: waterArrivalAssets, WATER_NPC: WATER_NPC, waterPreload: waterPreload, waterDecor: waterDecor,
       waterNotes: waterNotes, waterWelcome: waterWelcome, waterTask: waterTask, callBeluga: callBeluga,
       WATER_TRIP: WATER_TRIP, FOLK_THANKS: FOLK_THANKS, waterEnding: waterEnding, waterOpening: waterOpening,
       waterLeave: waterLeave, openFishMinigame: openFishMinigame

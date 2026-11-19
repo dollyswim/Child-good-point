@@ -1,6 +1,7 @@
 // 資料層單元測試：node --test tests/
 const test = require('node:test');
 const assert = require('node:assert/strict');
+globalThis.__cgpWaterClosed = true;   // 2026-11-19 水島正式開放；舊測試以「水島沒開」為前提（成就數、商店商品、換島順序），需要水島的測試自己 registerBoard
 const { Store, memoryStorage, migrate, STORAGE_KEY, memorySnapBackend, STORAGE_WARN_CHARS } = require('../js/store.js');
 globalThis.__cgpNoStarter = true;   // 舊案例不含新手禮；新手禮在最後的專門測試打開
 
@@ -2848,7 +2849,8 @@ test('水島地圖：101 格、4 個場景 25／34／24／18、格子類型照�
   assert.deepEqual(G.storiesOf('water').map((k) => G.STORIES[k].tile), [8, 16, 34, 48, 56, 100]);
   G.storiesOf('water').forEach((k) => { const t = G.STORIES[k].tile; if (t < 100) assert.equal(B.tiles[t].type, 'normal', '關卡格底層是一般格'); });
   assert.deepEqual([B.tiles[49].type, B.tiles[0].id, B.tiles[100].id], ['normal', 'water-01-start', 'water-04-100']);
-  assert.ok(!G.BOARDS.water, '預設還沒開放');
+  assert.ok(!G.BOARDS.water, '測試裡用 __cgpWaterClosed 關掉');
+  assert.equal(G.WATER_OPEN, true, '2026-11-19 正式開放');
 });
 
 test('水島關卡：走到就停、剩下步數作廢；完成前不能前進（骰子、小白鯨、潛水艇都一樣）', () => {

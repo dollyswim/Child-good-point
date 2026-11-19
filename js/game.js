@@ -247,13 +247,16 @@
   /**
    * 水島（2026-11-17 接入，Codex 正式圖；計畫見 docs/water/WATER_ISLAND_PLAN.md）：4 張獨立場景（各 1080×1350，不接成長圖），
    * 格子的 gx、gy 是所在場景內的座標，regionId＝場景代號；畫面一次只顯示一個場景（board.scenes＝true）。
-   * WATER_OPEN＝false：程式與地圖已接好，但劇情插圖、過場圖還沒到齊，孩子還不能前往。預覽用 window.__cgpWaterOpen = true。
+   * WATER_OPEN＝true：2026-11-19 家長決定正式開放（之前是 false，只能用試玩模式或 window.__cgpWaterOpen 預覽）。
+   * 自動測試的舊流程用 window.__cgpWaterClosed = true 關掉水島。
    */
-  var WATER_OPEN = false;
+  var WATER_OPEN = true;
   // 2026-11-18 家長試玩模式：設定裡打開後只在「這台裝置」開放水島（存在 localStorage 的 cgp-water-trial），孩子其他裝置不受影響
   var waterTrial = false;
-  try { waterTrial = !!(root.localStorage && root.localStorage.getItem('cgp-water-trial') === '1'); } catch (e) { waterTrial = false; }
-  var waterOn = (WATER_OPEN || !!root.__cgpWaterOpen || waterTrial) && !root.__cgpWaterClosed;
+  // 正式開放後，舊的試玩設定不再作用（不會再顯示「試玩模式」橫幅）
+  try { waterTrial = !WATER_OPEN && !!(root.localStorage && root.localStorage.getItem('cgp-water-trial') === '1'); } catch (e) { waterTrial = false; }
+  var flagRoot = typeof globalThis !== 'undefined' ? globalThis : root;   // Node 測試裡 root 是 module.exports，開關要從 globalThis 讀（瀏覽器兩者相同）
+  var waterOn = (WATER_OPEN || !!flagRoot.__cgpWaterOpen || waterTrial) && !flagRoot.__cgpWaterClosed;
   var WATER_SCENES = [['water-01', '珊瑚淺灘', 0, 24, 'images/water/scene01_v2.webp'], ['water-02', '深海世界', 25, 58, 'images/water/scene02_v2.webp'],
     ['water-03', '水下洞穴', 59, 82, 'images/water/scene03.webp'], ['water-04', '沉船', 83, 100, 'images/water/scene04.webp']].map(function (r) {
     return { id: r[0], name: r[1], from: r[2], to: r[3], stripY: 0, available: true, background: { webp: r[4], jpg: r[4] }, size: { width: 1080, height: 1350 } };
