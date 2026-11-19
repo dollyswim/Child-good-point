@@ -570,7 +570,7 @@ English (shared): First-person POV sliding down a wooden root slide inside a gia
 
 ---
 
-## 金島第 53 格：齒輪小屋「吃飯好行為大挑戰」（12 張必做＋1 張選做，2026-11-19 新增，請 Gemini 製作）
+## 金島第 53 格：齒輪小屋「吃飯好行為大挑戰」（11 張必做＋1 張選做，2026-11-19 新增，請 Gemini 製作）
 
 計畫：`docs/gold/GEAR_HOUSE_PLAN.md`。交件後放 `images/gold/gear-house/`（檔名見每張的括號）。
 
