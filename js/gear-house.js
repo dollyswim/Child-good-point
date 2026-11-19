@@ -184,7 +184,10 @@
           var ans = await talk('mom', '我得去工坊拿個東西，可以幫我陪' + NAME.kid + '吃飯嗎？', [['later', '等一下', false], ['ok', '好啊！', true]]);
           if (ans === 'later') { finish({ later: true }); return; }
           ids = pick(); progEl.textContent = '0 / ' + ids.length;
-          await talk('mom', '謝謝你！' + NAME.kid + '吃飯的時候，如果做得不好，就按下面的按鈕提醒他喔！', [['go', '知道了', true]]);
+          await talk('mom', '謝謝你！我有教' + NAME.kid + '吃飯的時候，要注意 6 個吃飯好行為，如果他忘記了，幫我提醒他喔！', [['next', '好！', true]]);   // 2026-11-19 家長改台詞
+          el.classList.add('gh-point');   // 系統提示：下面 6 個按鈕亮一下
+          await talk('narr', '點選下面 6 個按鈕，就能提醒' + NAME.kid + '。', [['go', '知道了', true]]);
+          el.classList.remove('gh-point');
           nextRound();
         })();
       });

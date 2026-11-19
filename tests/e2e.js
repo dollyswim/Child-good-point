@@ -2393,7 +2393,11 @@ async function main() {
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).pos, id), 55);
     await tapHouse();
     await q.waitForSelector('#mg [data-talk=ok]');
-    await q.click('[data-talk=ok]'); await q.click('[data-talk=go]');
+    await q.click('[data-talk=ok]');
+    assert.match(await q.locator('#gh-talk').innerText(), /我有教小齒吃飯的時候，要注意 6 個吃飯好行為，如果他忘記了，幫我提醒他喔/);
+    await q.click('[data-talk=next]');
+    assert.match(await q.locator('#gh-talk').innerText(), /點選下面 6 個按鈕，就能提醒小齒/);
+    await q.click('[data-talk=go]');
     await q.waitForSelector('#gh-prog:text("1 / 3")');
     // 第 1 題「30分鐘吃完」：還沒出問題先按 → 提醒還吃得很好；出問題後選錯 → 溫和引導；12 秒（測試 1.2 秒）沒提醒 → 後果；再選對
     await q.click('[data-rule=eyes]');
