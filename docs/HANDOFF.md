@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-16｜App 版本 `2026.11.19-222`｜Service Worker 快取 `cgp-shell-v232`｜`main` 最新：飛行員阿翔、任務重置、派對自由擺放、對話半身大圖
+> 最後更新：2026-11-16｜App 版本 `2026.11.19-223`｜Service Worker 快取 `cgp-shell-v233`｜`main` 最新：飛行員阿翔、任務重置、派對自由擺放、對話半身大圖
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -15,7 +15,7 @@
 - 木島任務視窗預覽（不寫存檔、不給星星）：`?preview=party`（第 92 格布置派對）、`?preview=flowers`（第 40 格）、`?preview=invite`（第 65 格），例如 https://dollyswim.github.io/Child-good-point/?preview=party
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v232`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.19-222`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v233`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.19-223`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 146 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -117,7 +117,7 @@
 ### 2026-11-17：水島程式完成（預設未開放 `WATER_OPEN = false`）
 - 計畫：`docs/water/WATER_ISLAND_PLAN.md`；美術：`docs/water/CODEX_WATER_ISLAND_BRIEF.md`；驗收紀錄：`docs/water/WATER_A_REVIEW.md`。四張正式地圖已接入（`images/water/scene01_v2/02_v2/03/04.webp`），座標 `data/water/water_scene0N_tiles_final.json` → `tools/gen_board_water.py` → `js/board-water.js`。
 - 資料層（`js/game.js`）：`buildWater()`（4 場景、`board.scenes = true`、格子類型 `WATER_TYPES`）；水島 6 關 `STORIES`（memo 8、potion 16、feed 34、shark 48、lantern 56、blanket 100）＋`waterGate()`（走到未完成關卡就停、餘步作廢，`_advance` 共用）、`waterTaskHere()`（停在關卡上不能前進）；`sharkTry()`（免費 d12，11／12 過關只到 49）、`sharkShield()`（防護罩＋10 星）；`finishWaterBoss()`＋`_clearIsland()`（第一次 3 個免鑰匙神祕寶箱，之後 10 星）；`belugaRide()`（每天 `limits.beluga` 次）、`useSubmarine()`（寶物 `submarine` 200 點、持有 3、`limits.sub`、25～99、不能跳過關卡）；水島不能用溜冰鞋、飛行翼、傳送門；`players[id].water`（seen、bucket、bottle、welcomed、rulesSeen、bossStage，`migrate()` 已補）；成就 `waterClear1`、商店潛水艇只在水島開放時出現。
-- 畫面（`js/app.js`）：多場景地圖（`renderMap` 只顯示一個場景、`hopAlong` 跨場景 `switchScene()` 淡出淡入、`ui.pawnHold` 移動演出中的位置、`ui.sceneView` ◀ ▶ 瀏覽）；水島劇情區塊（`WATER_ART`、`talkSeq()`、`WATER_NOTES` 12 段沿路對話、`waterWelcome()` 漁夫迎接、`waterTask()` 六關、`waterOpening()`／`waterLeave()`／`waterEnding()` 過場）。正式插圖到貨後填 `WATER_ART` 的檔名即可。
+- 畫面（`js/app.js`；水島劇情區塊與撈魚 2026-11-19 起在 `js/water.js`）：多場景地圖（`renderMap` 只顯示一個場景、`hopAlong` 跨場景 `switchScene()` 淡出淡入、`ui.pawnHold` 移動演出中的位置、`ui.sceneView` ◀ ▶ 瀏覽）；水島劇情區塊（`WATER_ART`、`talkSeq()`、`WATER_NOTES` 12 段沿路對話、`waterWelcome()` 漁夫迎接、`waterTask()` 六關、`waterOpening()`／`waterLeave()`／`waterEnding()` 過場）。正式插圖到貨後填 `WATER_ART` 的檔名即可。
 - 預覽（不寫存檔）：`?preview=water-memo`、`water-potion`、`water-feed`、`water-shark`、`water-lantern`、`water-boss`、`water-open`。測試或家長試玩整個水島：在瀏覽器主控台設 `window.__cgpWaterOpen = true` 再重新載入（正式開放改 `WATER_OPEN = true`）。
 - 測試：單元 +8（154 項）；E2E 新增「水島」整段（入島 → 迎接 → 第 8 格拼圖 → 鯊魚 → 燈籠魚 → 健忘怪三階段 → 3 箱 → 回金島），用 `water: true` 開啟。
 - 待辦：D 節 4 張視窗插圖、F 節 5 張過場、E 節剩下的小圖（牛奶瓶、海玻璃重畫等）到貨後換上；家長實機試玩後調整燈籠魚光圈（`LANTERN_LIGHT`）、拼圖難度；全部到齊後開放。
@@ -251,6 +251,7 @@
 | `js/game.js` | 冒險邏輯：區域、格子、商店、擲骰、溜冰鞋、停格事件、角色（擴充 `Store.prototype`） |
 | `js/art.js` | 插圖 `<img>` 片段（吉祥物、寶箱、漂浮城堡） |
 | `js/app.js` | 所有畫面、路由、對話框、地圖鏡頭（拖曳／縮放／跟隨） |
+| `js/water.js` | 水島劇情、六個任務、過場、撈魚小遊戲（2026-11-19 從 app.js 拆出；`app.js` 用 `CGPWater(A)` 傳入共用工具，再取回 `waterTask` 等函式） |
 | `css/style.css` | 樣式；後段為依序追加的主題與覆寫，修改時注意後面的規則會覆蓋前面 |
 | `sw.js` | 離線快取（網路優先＋`cache: 'no-cache'` 驗證）；**新增圖片或 JS 時要加入 `SHELL` 並升 `CACHE` 版本** |
 | `tests/store.test.js` | 單元測試（`npm test`） |
