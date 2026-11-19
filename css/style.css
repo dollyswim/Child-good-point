@@ -2558,3 +2558,7 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 @media (prefers-reduced-motion: reduce) { .fg-mob.fg-puff, .fg-pop, .fg-plus { animation-duration: .01s; } }
 .fg-mob.fg-held { z-index: 6; filter: brightness(1.08); }   /* 網裡的魚畫在網子上面一點，看得出被罩住 */
 .fg-mob.fg-flee { opacity: .85; }
+/* 新魚從水裡浮出來 */
+.fg-mob.fg-in > * { animation: fg-in .6s ease-out both; }
+@keyframes fg-in { from { opacity: 0; scale: .4; } }
+@media (prefers-reduced-motion: reduce) { .fg-mob.fg-in > * { animation-duration: .01s; } }

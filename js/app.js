@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-213';
+  var APP_VERSION = '2026.11.19-214';
   var store;
   try {
     store = new CGP.Store();
@@ -3724,14 +3724,21 @@
       function spawn(kind) {
         var m = { kind: kind, el: document.createElement('div'), s: Math.max(44, W * (kind === 'jelly' ? 0.13 : kind === 'puffer' ? 0.15 : 0.13)) };
         var fromLeft = Math.random() < 0.5;
-        m.x = mobs.length < C.fish + C.puffers + C.jellies ? W * (0.1 + Math.random() * 0.8) : (fromLeft ? -m.s : W + m.s);
-        m.y = H * (0.12 + Math.random() * 0.76);
+        var sp0 = openSpot(); m.x = sp0[0]; m.y = sp0[1];   // 2026-11-19 家長：新魚在畫面中間隨機浮出來（不從兩側），也不出現在網子旁
+        if (mobs.length >= C.fish + C.puffers + C.jellies) m.el.classList.add('fg-in');
         var speed = (kind === 'tang' ? 70 : kind === 'jelly' ? 18 : 38) * (W / 390);
         m.sp = speed * (0.7 + Math.random() * 0.6); m.phase = Math.random() * 6;
         var ang = (Math.random() - 0.5) * 1.2;   // 2026-11-19 家長：上下左右隨機游（進場時大致朝畫面裡面）
         m.vx = (fromLeft ? 1 : -1) * Math.cos(ang) * m.sp; m.vy = Math.sin(ang) * m.sp;
         m.el.className = 'fg-mob fg-' + kind; m.el.innerHTML = fishArt(kind); m.el.style.width = m.el.style.height = m.s + 'px'; m.el.style.setProperty('--s', m.s + 'px');
         field.appendChild(m.el); mobs.push(m); return m;
+      }
+      /** 畫面中隨機一個位置，避開正在用的網子 */
+      function openSpot() {
+        var x, y, k = 0;
+        do { x = W * (0.1 + Math.random() * 0.8); y = H * (0.12 + Math.random() * 0.76); k++; }
+        while (net && Math.hypot(x - net.x, y - net.y) < R * 1.8 && k < 20);
+        return [x, y];
       }
       function fishKind() { return Math.random() < 0.55 ? 'clown' : 'tang'; }
       function hud() {
@@ -3801,7 +3808,9 @@
           if (m.y < H * 0.1) { m.y = H * 0.1; m.vy = Math.abs(m.vy); }      // 碰到上下邊緣彈回來
           if (m.y > H * 0.92) { m.y = H * 0.92; m.vy = -Math.abs(m.vy); }
           if ((m.x < -m.s * 1.2 || m.x > W + m.s * 1.2) && (m.kind === 'clown' || m.kind === 'tang') && mobs.filter(function (q) { return (q.kind === 'clown' || q.kind === 'tang') && !q.caught && !q.held && !q.gone; }).length > C.fish) { m.gone = true; m.caught = true; m.el.remove(); setTimeout(function () { var i = mobs.indexOf(m); if (i >= 0) mobs.splice(i, 1); }, 0); return; }
-          if (m.x < -m.s * 1.2 || m.x > W + m.s * 1.2) { m.y = H * (0.12 + Math.random() * 0.76); m.x = m.vx > 0 ? -m.s : W + m.s; }   // 游出去：從另一邊進來
+          if (m.x < -m.s * 1.2 || m.x > W + m.s * 1.2) {   // 游出去：在畫面中間隨機浮出來（不從兩側進來）
+            var sp1 = openSpot(); m.x = sp1[0]; m.y = sp1[1]; m.vx = -m.vx; m.el.classList.remove('fg-in'); void m.el.offsetWidth; m.el.classList.add('fg-in');
+          }
           m.el.style.transform = 'translate(' + (m.x - m.s / 2) + 'px,' + (m.y - m.s / 2) + 'px) scaleX(' + (m.vx < 0 ? -1 : 1) + ')';
         });
         if (net) {
