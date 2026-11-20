@@ -2278,9 +2278,9 @@ async function main() {
     await q.goto(url + '#map-' + id);
     await q.waitForSelector('.story-guide[data-story=ore] .story-bang');
     assert.equal(await q.locator('.story-guide[data-story=rail]').count(), 1, '兩個劇情點都有技師導遊');
-    await q.click('.story-guide[data-story=ore]', { force: true });   // 點技師：提示要去哪一格
+    await q.click('.story-guide[data-story=ore]', { force: true });   // 點技師：請孩子幫忙（2026-11-20 家長台詞）
     await q.waitForSelector('#tech-bubble');
-    assert.match(await q.locator('#tech-bubble').innerText(), /第 5 格/);
+    assert.match(await q.locator('#tech-bubble').innerText(), /抱歉，我的金礦石掉得到處都是，能幫我撿回來嗎/);
     const stars0 = await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id);
     // 擲 2 → 第 5 格：鏡頭移過去、技師說明、撿回 5 顆礦石
     await q.evaluate(() => { window.__cgpStore.random = () => 1.5 / 6; });

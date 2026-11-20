@@ -2638,7 +2638,7 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .gh-point .gh-btns { position: relative; z-index: 4; pointer-events: none; }   /* 系統提示時，6 個按鈕浮到遮罩上面並閃一下 */
 .gh-point .gh-btn { animation: gh-glow 1s ease-in-out infinite; }
 @keyframes gh-glow { 50% { box-shadow: 0 3px 0 #d7b27a, 0 0 0 4px #ffb21f; } }
-.gh-point .gh-narr { bottom: auto; top: calc(env(safe-area-inset-top) + 70px); }   /* 系統提示放上方，不擋住按鈕 */
+/* 系統提示的位置由程式放在 6 個按鈕正上方（gear-house.js talk） */
 .gh-practice { margin: 0 14px; text-align: center; color: #8a4f12; }
 .gh-talk:empty { display: none; }
 .gh-talk { position: absolute; inset: 0; z-index: 3; background: rgba(30, 20, 10, .28); }

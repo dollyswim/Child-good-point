@@ -13,7 +13,7 @@
     var GH_ART = { house: D + 'house.webp', mom: D + 'mom.webp', eat: D + 'eat.webp', happy: D + 'happy.webp', cough: D + 'cough.webp', messy: D + 'messy.webp', dusk: D + 'dusk.webp',   // 2026-11-19 家長圖（13 張到齊）；dusk＝30 分鐘的後果（黃昏、湯涼了）
       pose: { time: D + 'time2.webp', eyes: D + 'eyes.webp', mouth: D + 'mouth.webp', tool: D + 'hand.webp', sit: D + 'walk.webp', feet: D + 'feet.webp' } };
     /** 地圖上的小屋：長地圖座標（第二區左上的空草地，腳底 y）；第 53 格觸發任務 */
-    var HOUSE = { gx: 255, gy: 2935, w: 150, tile: 53 };
+    var HOUSE = { gx: 252, gy: 2950, w: 230, tile: 53 };   // 2026-11-20 家長：放大佔滿草地
     var NAME = { kid: '小齒', mom: '媽媽', house: '齒輪小屋' };
 
     function rule(id) { return GAME.MEAL_RULES.filter(function (r) { return r.id === id; })[0]; }
@@ -114,6 +114,10 @@
                 return '<button type="button" class="btn' + (a[2] ? ' primary' : '') + '" data-talk="' + a[0] + '">' + h(a[1]) + '</button>';
               }).join('') + '</div></div>';
             el.classList.add('gh-talking');
+            if (who === 'narr' && el.classList.contains('gh-point')) {   // 2026-11-20 家長：系統提示放在 6 個按鈕正上方（畫面中間的空白處）
+              var box = talkEl.firstChild, btns = el.querySelector('#gh-btns');
+              box.style.top = 'auto'; box.style.bottom = (el.clientHeight - btns.getBoundingClientRect().top + 10) + 'px';
+            }
             talkNext = function (v) { talkEl.innerHTML = ''; el.classList.remove('gh-talking'); talkNext = null; res(v); };
           });
         }

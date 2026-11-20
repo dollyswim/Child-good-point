@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.20-234';
+  var APP_VERSION = '2026.11.20-235';
   var store;
   try {
     store = new CGP.Store();
@@ -864,7 +864,7 @@
   /** 金島的最遠格子（人在其他島時讀金島保存的進度） */
   function goldMaxOf(p) { return p.island === 'gold' ? (p.maxReached || 0) : (((p.islands || {}).gold || {}).maxReached || 0); }
   var TOWER_LIT_AT = 80;   // 第一次走到第 80 格以後通電（家長決定）
-  var TOWER = { gx: 850, gy: 1625, w: 180 }, TECH = { gx: 752, gy: 1632, w: 42 };   /* 2026-11-20 換成小齒爸爸的新圖（比較瘦高），寬 42 約 87px 高 */   // 第三區空地 (850, 190)；gy 為腳底
+  var TOWER = { gx: 850, gy: 1625, w: 180 }, TECH = { gx: 752, gy: 1632, w: 52 };   /* 2026-11-20 換成小齒爸爸的新圖（比較瘦高）；家長說太小，寬 52 約 107px 高 */   // 第三區空地 (850, 190)；gy 為腳底
   function towerDecor(board, player) {
     if (board.id !== 'gold' || !board.regions.some(function (r) { return r.id === 'gold-03' && r.available; })) return '';
     var lit = goldMaxOf(player) >= TOWER_LIT_AT;
@@ -980,7 +980,7 @@
         ore: { type: 'collect', guide: [860, 5062], cam: [720, 5000], top: true,
           items: [[800, 4952], [866, 4918], [600, 5112], [520, 5012], [760, 5160]], itemCls: 'story-ore', itemLabel: '金礦石',
           title: '⛏️ 幫技師撿回金礦石！', sub: '點地圖上發光的礦石',
-          hint: '我的金礦石滾得到處都是…走到第 5 格幫我撿回來！', intro: '我的金礦石滾得到處都是！幫我把 5 顆發光的礦石撿回來！', done: '太好了！礦石都找回來了，謝謝你！' },
+          hint: '抱歉，我的金礦石掉得到處都是，能幫我撿回來嗎？', intro: '我的金礦石滾得到處都是！幫我把 5 顆發光的礦石撿回來！', done: '太好了！礦石都找回來了，謝謝你！' },
         // 2026-11-08 家長決定：改成「視窗＋前後兩張圖」——先看礦車卡在坑道裡的圖，拖曳拉桿拉到底後，同一個視窗換成問題解決的圖（地圖上不再放礦車動畫）
         // scene.before／after：Gemini 圖到貨後填入檔名；還沒有圖時用礦車圖暫代（拉之前紅色「！」、解決後「✨」）
         rail: { type: 'scene', guide: [430, 4522], cam: [470, 4420], lever: [360, 4556],
@@ -1774,7 +1774,7 @@
     var hold = ui.busy;   // 擲骰途中觸發：之後由擲骰流程重畫
     ui.busy = true; document.body.classList.add('pawn-acting', 'story-on');
     try {
-      if (ui.cam) { ui.cam.cx = GEAR.HOUSE.gx + 45; ui.cam.cy = GEAR.HOUSE.gy - 95; applyCam(true); await sleep(reduceMotion ? 50 : 700); }
+      if (ui.cam) { ui.cam.cx = GEAR.HOUSE.gx + 45; ui.cam.cy = GEAR.HOUSE.gy - 130; applyCam(true); await sleep(reduceMotion ? 50 : 700); }
       var asked = false;
       if (!replay) {   // 任務還沒完成：媽媽先在地圖上喊人，按「好！」才進小屋
         asked = (await GEAR.call(child)) === 'ok';
