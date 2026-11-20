@@ -857,7 +857,7 @@
     // 正式圖到貨後把檔名填進 FIRE_FOLK／WATER_END_ART（白底圖去背）；空白時用表情符號佔位
     var FOLK_THANKS = ['謝謝你救了我！等火島安全了，一定請你來玩！', '謝謝你和漁夫爺爺！我現在好多了。', '火山的黑煙……不知道大家還好嗎？謝謝你願意幫忙！'];
     var FIRE_FOLK = { faint: 'images/water/ending/fire_folk_faint.webp', panic: 'images/water/ending/fire_folk_panic.webp', calm: 'images/water/ending/fire_folk_calm_v2.webp' };   // C-9 火島居民（2026-11-18 家長 Gemini 圖）：昏倒、驚慌、平靜
-    var WATER_END_ART = { boat: 'images/water/ending/wreck_boat.webp', toFire: '' };          // E-32 破舊小船（白底去背）、F-6 漁夫划船前往冒黑煙的火山島（直式 3:4）
+    var WATER_END_ART = { boat: 'images/water/ending/wreck_boat.webp', toFire: 'images/water/ending/to_fire.webp' };   /* 2026-11-20 F-6 家長圖到貨（火島開放時才會用到） */          // E-32 破舊小船（白底去背）、F-6 漁夫划船前往冒黑煙的火山島（直式 3:4）
     function fireFolkArt(k) {
       return FIRE_FOLK[k] ? '<img src="' + FIRE_FOLK[k] + '" alt="" draggable="false">' : '<span class="folk-ph" aria-hidden="true">' + ({ faint: '😵', panic: '😨', calm: '🙂' })[k] + '</span>';
     }

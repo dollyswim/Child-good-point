@@ -307,7 +307,7 @@ C-9b、C-9c 請在同一個對話裡接著 C-9a 改，保持同一個角色。
 `a small old wooden rowboat, weathered and a bit broken, a crack on the side, one oar, a few scorch marks, beached on its side, 2.5D clay toy style, plain white background, no people, no text`（檔名 `wreck_boat.webp`）
 
 ### F-6 漁夫划船前往火島（直式 3:4，至少 1080×1440，畫滿不要白底）
-> 2026-11-20 家長交了一張橫式 16:9（內容符合），在手機直式全螢幕會把火山裁掉，**請重做直式 3:4**：火山在上方中間、漁夫背影在下方中間。
+> ✅ 2026-11-20 已收直式版（家長 Gemini 圖）→ `images/water/ending/to_fire.webp`（810×1085，不放 SHELL），已填進 `WATER_END_ART.toFire`；火島開放後水島通關的下一擲就會用這張。
 `First-person view sitting in a small wooden rowboat (only the front of the boat and the old fisherman's back rowing visible at the bottom), sailing across a calm turquoise sea toward a distant volcano island on the horizon, thick dark smoke rising from the volcano crater, warm orange sky, sense of adventure and a little mystery, 2.5D clay toy style, same series as the other transition images, no text, no monster, no rocket`（檔名 `to_fire.webp`）
 
 ## I. 水島小遊戲「珊瑚灣撈魚趣」（2026-11-19 新增，Gemini）
