@@ -12,6 +12,8 @@
     var D = 'images/gold/gear-house/';
     var GH_ART = { house: D + 'house.webp', mom: D + 'mom.webp', eat: D + 'eat.webp', happy: D + 'happy.webp', cough: D + 'cough.webp', messy: D + 'messy.webp', dusk: D + 'dusk.webp',   // 2026-11-19 家長圖（13 張到齊）；dusk＝30 分鐘的後果（黃昏、湯涼了）
       pose: { time: D + 'time2.webp', eyes: D + 'eyes.webp', mouth: D + 'mouth.webp', tool: D + 'hand.webp', sit: D + 'walk.webp', feet: D + 'feet.webp' } };
+    // 12 秒沒提醒的後果圖（2026-11-20 補齊：水杯打翻、飯掉桌上、飯粒掉衣服上）；屁股坐的後果是嗆咳（GH_ART.cough）。沒有圖的才疊表情符號
+    GH_ART.after = { time: GH_ART.dusk, tool: GH_ART.messy, feet: D + 'spill.webp', eyes: D + 'drop.webp', mouth: D + 'spit.webp' };
     /** 地圖上的小屋：長地圖座標（第二區左上的空草地，腳底 y）；第 53 格觸發任務 */
     var HOUSE = { gx: 228, gy: 2950, w: 207, tile: 53 };   // 2026-11-20 家長：佔滿草地，再縮 0.9 倍、左邊緣對齊草地左側（x 約 127）
     var NAME = { kid: '小齒', mom: '媽媽', house: '齒輪小屋' };
@@ -24,8 +26,9 @@
     function reached(player) { return goldMax(player) >= HOUSE.tile; }
     /** 會用到的圖（第 45 格起在背景先下載） */
     function assets() {
-      var out = [GH_ART.mom, GH_ART.eat, GH_ART.happy, GH_ART.cough, GH_ART.messy, GH_ART.dusk];
+      var out = [GH_ART.mom, GH_ART.eat, GH_ART.happy, GH_ART.cough];
       Object.keys(GH_ART.pose).forEach(function (k) { out.push(GH_ART.pose[k]); });
+      Object.keys(GH_ART.after).forEach(function (k) { out.push(GH_ART.after[k]); });
       return out.filter(Boolean);
     }
     var preloaded = false;
@@ -48,8 +51,8 @@
     /** 餐廳畫面：有圖就放整張圖；沒有圖用表情符號暫代（小齒＋動作＋餐桌） */
     function sceneHtml(state, r, opts) {
       var img = state === 'eat' ? GH_ART.eat : state === 'happy' ? GH_ART.happy : state === 'cough' ? GH_ART.cough
-        : state === 'after' && r.id === 'tool' && GH_ART.messy ? GH_ART.messy : state === 'after' && r.id === 'time' && GH_ART.dusk ? GH_ART.dusk : r ? GH_ART.pose[r.id] : null;
-      var overlay = state === 'after' && r && !(r.id === 'tool' && GH_ART.messy) && !(r.id === 'time' && GH_ART.dusk) && r.id !== 'sit' ? '<span class="gh-after-ico" aria-hidden="true">' + r.ico + '</span>' : '';
+        : state === 'after' && GH_ART.after[r.id] ? GH_ART.after[r.id] : r ? GH_ART.pose[r.id] : null;
+      var overlay = state === 'after' && r && !GH_ART.after[r.id] && r.id !== 'sit' ? '<span class="gh-after-ico" aria-hidden="true">' + r.ico + '</span>' : '';
       var mom = '';   // 2026-11-19 家長：嗆咳時畫面裡不放媽媽（她的圖是笑著揮手），媽媽只出現在對話框
       if (img) return '<img class="gh-scene-img" src="' + img + '" alt="" draggable="false">' + overlay + mom;
       // 部分圖已到：缺的畫面先用「正常吃飯」（嗆咳用「邊走邊吃」）的圖，疊上表情符號標示（2026-11-19）

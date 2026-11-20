@@ -674,3 +674,6 @@ Same scene and same camera angle as the "hand" image: both of Xiao Chi's hands a
 中文：跟 H-7 同一個場景：小齒兩隻手和盤子周圍的桌面都沾滿黏黏的飯粒和幾滴湯，他看著自己的手、一臉「糟糕」的表情；其他都不要動。
 
 > 小提醒：如果 Gemini 換了小齒的長相或衣服，補一句「keep Xiao Chi's face, hair clip, yellow shirt and blue overalls identical to the previous image」。
+
+### H-13～H-15 後果圖（2026-11-20 新增，已到貨接上）
+原本疊表情符號的 3 個後果改用圖：H-13 水杯打翻（`spill`，用 H-9 改）、H-14 飯掉到桌上（`drop`，用 H-5 改）、H-15 飯粒掉到衣服上（`spit`，用新版 H-6 改）。提示詞格式同 H-4b：「Same scene, same camera angle and same Xiao Chi as the reference image…」。
