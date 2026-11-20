@@ -311,7 +311,7 @@
     if (!p.islands || typeof p.islands !== 'object') p.islands = {};           // 其他島的保存進度 { 島: { laps, maxReached } }
     if (!p.islandClears || typeof p.islandClears !== 'object') p.islandClears = {};   // 金島以外的通關次數（金島沿用 goldClears）
     if (!p.story || typeof p.story !== 'object') p.story = {};   // 劇情完成日期 { ore, rail, tower, pinecone, flowers, invite, party }
-    if (!p.gearHouse || typeof p.gearHouse !== 'object') p.gearHouse = { plays: 0, sinceSit: 0 };   // 2026-11-19 齒輪小屋：玩過幾局、幾局沒出現「屁股坐」
+    if (!p.gearHouse || typeof p.gearHouse !== 'object') p.gearHouse = { plays: 0 };   // 齒輪小屋：plays＝玩過幾局、giftDone＝拿過神祕寶箱的日期、chestDate＝最近一次拿一般寶箱的日期
     if (!p.water || typeof p.water !== 'object') p.water = {};   // 水島故事進度：seen（沿路對話）、bucket（魚桶）、bottle（牛奶瓶）、welcomed、bossStage、folkMet（看過結尾昏倒的火島居民；重置任務會清掉）
     // 位置以穩定格子 ID 為準；舊存檔只有整數格號時對應到同號的格子（第 n 格 → gold-01-00n）
     var board = BOARDS[p.island] || GOLD;
@@ -1418,33 +1418,56 @@
     { id: 'feet', label: '腳放地上', icon: '🦶', pose: '🦵', cue: '小齒用湯匙好好吃飯，可是把雙腳縮到椅子上，椅子搖來搖去……', hint: '小齒的腳放在哪裡呢？',
       after: '椅子晃了一下，碰倒桌上的水杯了！', ico: '🥤', fixed: '腳放地上坐得穩，椅子就不會晃了！' }
   ];
-  var MEAL_GAME = { rounds: 3, waitSec: 12, sitEvery: 3 };   // 每局 3 題；12 秒沒提醒播後果（不顯示倒數）；「屁股坐」最多隔 3 局一定出現
+  // 2026-11-20 家長：每局 5 題；「30分鐘吃完」只會在第 5 題（約一半機率）；「屁股坐」每局剛好 1 次（位置隨機）；其他 4 種隨機、可重複但不連續
+  var MEAL_GAME = { rounds: 5, waitSec: 12, timeChance: 0.5 };   // 12 秒沒提醒播後果（不顯示倒數）
   /**
-   * 抽一局的題目：6 種裡隨機 3 種、不重複。forceSit＝這局一定要有「屁股坐」（位置隨機）。抽到「30分鐘吃完」一律放最後一題。
+   * 抽一局的題目（5 題）。
    * @returns {string[]} 規則代號
    */
-  function pickMealRounds(rand, forceSit) {
+  function pickMealRounds(rand) {
     rand = rand || Math.random;
-    var ids = MEAL_RULES.map(function (r) { return r.id; }), out = [];
-    if (forceSit) { out.push('sit'); ids.splice(ids.indexOf('sit'), 1); }
-    while (out.length < MEAL_GAME.rounds) out.push(ids.splice(Math.floor(rand() * ids.length), 1)[0]);
-    for (var i = out.length - 1; i > 0; i--) { var j = Math.floor(rand() * (i + 1)), t = out[i]; out[i] = out[j]; out[j] = t; }
-    var k = out.indexOf('time');   // 2026-11-19 家長：「30分鐘吃完」（吃太久）抽到就放最後一題，才剛開始就吃太久很怪
-    if (k >= 0) { out.splice(k, 1); out.push('time'); }
+    var n = MEAL_GAME.rounds, out = new Array(n), last = n - 1;
+    var free = ['eyes', 'mouth', 'tool', 'feet'];
+    if (rand() < MEAL_GAME.timeChance) out[last] = 'time';
+    var sitAt = Math.floor(rand() * (out[last] ? last : n));   // 第 5 題已經是「30分鐘吃完」時，屁股坐放在第 1～4 題
+    out[sitAt] = 'sit';
+    for (var i = 0; i < n; i++) {
+      if (out[i]) continue;
+      var pool = free.filter(function (id) { return id !== out[i - 1] && id !== out[i + 1]; });   // 不跟前後一題一樣
+      out[i] = pool[Math.floor(rand() * pool.length)];
+    }
     return out;
   }
   /**
-   * 開始一局齒輪小屋（寫入「玩過幾局」，不給星星、不算每日次數；星星在第一次完成任務 completeStory('meal') 時給）。
-   * 連續 sitEvery-1 局沒出現「屁股坐」，這局就一定出現。
-   * @returns {string[]} 這局的 3 個規則代號
+   * 開始一局齒輪小屋（只記「玩過幾局」；獎勵在 finishMealGame）。
+   * @returns {string[]} 這局的 5 個規則代號
    */
   Store.prototype.startMealGame = function (childId) {
-    var p = this.getPlayer(childId), g = p.gearHouse;
-    var ids = pickMealRounds(this.random, (g.sinceSit || 0) >= MEAL_GAME.sitEvery - 1);
+    var g = this.getPlayer(childId).gearHouse;
+    var ids = pickMealRounds(this.random);
     g.plays = (g.plays || 0) + 1;
-    g.sinceSit = ids.indexOf('sit') >= 0 ? 0 : (g.sinceSit || 0) + 1;
     this.save();
     return ids;
+  };
+  /**
+   * 完成一局齒輪小屋的獎勵（2026-11-20 家長決定）：
+   * - 任務還沒完成：完成任務 ⭐STORY_STARS（重置任務後再完成也一樣給）
+   * - 神祕寶箱（免鑰匙）：每個孩子只給一次（第一次完成；舊存檔在更新前就完成的，下一次完成時補給）
+   * - 之後再完成（重玩、重置後再完成）：一般寶箱，每天最多 1 個
+   * @returns {{ stars: number, gift: boolean, chest: boolean }}
+   */
+  Store.prototype.finishMealGame = function (childId) {
+    var p = this.getPlayer(childId), g = p.gearHouse, today = this.today(), out = { stars: 0, gift: false, chest: false };
+    if (!p.story.meal && this.completeStory(childId, 'meal')) out.stars = STORY_STARS;
+    if (!g.giftDone) {
+      g.giftDone = today; p.bag.giftMysteryChest++; out.gift = true;
+      this._logItem(childId, 'grant', 'giftMysteryChest', 1, '齒輪小屋', '第一次陪小齒吃飯');
+    } else if (g.chestDate !== today) {
+      g.chestDate = today; p.bag.chest++; out.chest = true;
+      this._logItem(childId, 'grant', 'chest', 1, '齒輪小屋', '再陪小齒吃飯');
+    }
+    this.save();
+    return out;
   };
   // ---------- 水島（2026-11-16 家長決定的規則；計畫 docs/water/WATER_ISLAND_PLAN.md） ----------
   /** 前方（不含目前這格）第一個還沒完成的水島關卡格號；不是水島或都完成了回傳 -1 */

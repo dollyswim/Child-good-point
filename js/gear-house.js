@@ -79,7 +79,7 @@
         var ids = [];   // 按「好啊！」才抽題（選「等一下」不算一局）
         function pick() {
           var forced = window.__cgpMealIds;   // 自動測試指定題目（仍照常記一局）
-          var got = child && !opts.practice ? store.startMealGame(child.id) : GAME.pickMealRounds(Math.random, false);
+          var got = child && !opts.practice ? store.startMealGame(child.id) : GAME.pickMealRounds(Math.random);
           return forced ? forced.slice() : got;
         }
         var C = GAME.MEAL_GAME, waitMs = window.__cgpMealWait || C.waitSec * 1000, calmMs = window.__cgpMealCalm || (still() ? 1200 : 2500);

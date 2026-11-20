@@ -3088,33 +3088,62 @@ test('冒險新手引導：進度存檔保留；不認得的值重置為空', ()
   assert.equal(s3.getPlayer(a.id).tutorial, '');
 });
 
-test('齒輪小屋（第 53 格）：題庫 6 種都完整；每局 3 題不重複、30分鐘吃完放最後；「屁股坐」最多隔 3 局一定出現；不給星星、不算每日次數；舊存檔補預設值', () => {
+test('齒輪小屋（第 53 格）：題庫 6 種都完整；每局 5 題、30分鐘吃完只在第 5 題、屁股坐剛好 1 次、其他不連續重複；不算每日次數；舊存檔補預設值', () => {
   const { store, a, storage } = p3Store();
   assert.deepEqual(G.MEAL_RULES.map(r => r.label), ['30分鐘吃完', '眼睛看', '嘴巴吃', '用餐具', '屁股坐', '腳放地上']);
   G.MEAL_RULES.forEach(r => ['id', 'icon', 'cue', 'hint', 'after', 'ico', 'fixed'].forEach(k => assert.ok(r[k], r.id + ' 缺 ' + k)));
   assert.equal(G.STORIES.meal.tile, 53);
   assert.equal(G.BOARDS.gold.tiles[53].type, 'chest', '第 53 格底層的寶箱照常');
-  for (let i = 0; i < 300; i++) {
-    const ids = G.pickMealRounds(Math.random, i % 2 === 0);
-    assert.equal(ids.length, 3); assert.equal(new Set(ids).size, 3);
-    if (i % 2 === 0) assert.ok(ids.includes('sit'), '指定時一定有屁股坐');
-    if (ids.includes('time')) assert.equal(ids[2], 'time', '30分鐘吃完一律是最後一題');
+  let withTime = 0, repeats = 0; const sitPos = new Set();
+  for (let i = 0; i < 2000; i++) {
+    const ids = G.pickMealRounds(Math.random);
+    assert.equal(ids.length, 5);
+    ids.forEach(id => assert.ok(G.MEAL_RULES.some(r => r.id === id), id));
+    assert.equal(ids.filter(x => x === 'sit').length, 1, '屁股坐剛好 1 次');
+    assert.ok(ids.indexOf('time') < 0 || ids.indexOf('time') === 4, '30分鐘吃完只在第 5 題');
+    assert.ok(ids.filter(x => x === 'time').length <= 1);
+    for (let k = 1; k < 5; k++) assert.notEqual(ids[k], ids[k - 1], '不連續重複');
+    if (ids[4] === 'time') withTime++;
+    if (new Set(ids).size < 5) repeats++;
+    sitPos.add(ids.indexOf('sit'));
   }
+  assert.ok(withTime > 800 && withTime < 1200, '大約一半的局有 30分鐘吃完：' + withTime);
+  assert.ok(repeats > 0, '可以重複出現');
+  assert.deepEqual([...sitPos].sort(), [0, 1, 2, 3, 4], '屁股坐位置隨機');
   const p = store.getPlayer(a.id);
-  assert.deepEqual(p.gearHouse, { plays: 0, sinceSit: 0 });
+  assert.deepEqual(p.gearHouse, { plays: 0 });
   delete p.gearHouse; store.save();
   const s2 = new Store({ storage, seed: false, now: () => store.now() });
-  assert.deepEqual(s2.getPlayer(a.id).gearHouse, { plays: 0, sinceSit: 0 }, 'migrate 補預設值');
+  assert.deepEqual(s2.getPlayer(a.id).gearHouse, { plays: 0 }, 'migrate 補預設值');
   const bal = store.getStarBalance(a.id), rolls = store.getRollsLeft(a.id);
-  store.random = () => 0;   // 永遠抽到最前面 3 個（不會自己抽到屁股坐）
-  const runs = [];
-  for (let i = 0; i < 6; i++) runs.push(store.startMealGame(a.id).includes('sit'));
-  assert.deepEqual(runs, [false, false, true, false, false, true], '連續 2 局沒有，第 3 局一定有');
-  assert.equal(store.getPlayer(a.id).gearHouse.plays, 6);
-  assert.equal(store.getStarBalance(a.id), bal, '玩小屋不給星星');
+  for (let i = 0; i < 3; i++) assert.equal(store.startMealGame(a.id).length, 5);
+  assert.equal(store.getPlayer(a.id).gearHouse.plays, 3);
+  assert.equal(store.getStarBalance(a.id), bal, '開始玩不給星星');
   assert.equal(store.getRollsLeft(a.id), rolls, '不算擲骰次數');
-  assert.equal(store.completeStory(a.id, 'meal'), true);
-  assert.equal(store.getStarBalance(a.id), bal + 3, '第一次完成任務 ⭐3');
+});
+
+test('齒輪小屋獎勵（2026-11-20）：第一次 ⭐3＋免鑰匙神祕寶箱；之後一般寶箱每天 1 個；重置任務後再完成 ⭐3＋一般寶箱；更新前就完成的補給神祕寶箱', () => {
+  const { store, a, setDate } = p3Store();
+  const p = store.getPlayer(a.id), bal = store.getStarBalance(a.id);
+  assert.deepEqual(store.finishMealGame(a.id), { stars: 3, gift: true, chest: false }, '第一次');
+  assert.ok(p.story.meal);
+  assert.equal(p.bag.giftMysteryChest, 1); assert.equal(p.bag.chest, 0);
+  assert.equal(store.getStarBalance(a.id), bal + 3);
+  assert.deepEqual(store.finishMealGame(a.id), { stars: 0, gift: false, chest: true }, '同一天重玩：一般寶箱');
+  assert.deepEqual(store.finishMealGame(a.id), { stars: 0, gift: false, chest: false }, '同一天再玩：沒有獎勵');
+  assert.equal(p.bag.chest, 1); assert.equal(p.bag.giftMysteryChest, 1);
+  setDate('2026-11-07T10:00:00');
+  assert.deepEqual(store.finishMealGame(a.id), { stars: 0, gift: false, chest: true }, '隔天又有 1 個');
+  setDate('2026-11-08T10:00:00');
+  delete p.story.meal;   // 回到金島重置任務
+  assert.deepEqual(store.finishMealGame(a.id), { stars: 3, gift: false, chest: true }, '重置後再完成：⭐3＋一般寶箱，不再給神祕寶箱');
+  assert.equal(store.getStarBalance(a.id), bal + 6);
+  assert.equal(p.bag.giftMysteryChest, 1); assert.equal(p.bag.chest, 3);
+  assert.equal(store.openChest(a.id, 'giftMysteryChest').kind, 'giftMysteryChest', '神祕寶箱不用鑰匙就能開');
+  // 更新前就完成任務的孩子（沒拿過神祕寶箱）：下一次完成補給
+  const b = store.addChild({ name: 'B' }), pb = store.getPlayer(b.id);
+  pb.story.meal = '2026-11-19';
+  assert.deepEqual(store.finishMealGame(b.id), { stars: 0, gift: true, chest: false });
 });
 
 test('金島小英雄改成 4 個任務（2026-11-19）：已經拿到的成就保留', () => {

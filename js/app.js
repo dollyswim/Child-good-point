@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.19-231';
+  var APP_VERSION = '2026.11.20-232';
   var store;
   try {
     store = new CGP.Store();
@@ -1766,7 +1766,7 @@
     get reduceMotion() { return reduceMotion; }
   });
   /**
-   * 齒輪小屋：replay＝任務完成後重玩（不給星星）。任務第一次完成給 ⭐STORY_STARS、算進「金島小英雄」。
+   * 齒輪小屋：replay＝任務完成後重玩。獎勵見 store.finishMealGame（完成任務 ⭐3＋神祕寶箱一次；之後一般寶箱每天 1 個）。
    * 選「等一下」：小屋留在地圖上（頭上有「！」），之後點小屋再進去。
    */
   async function mealStory(child, replay) {
@@ -1776,11 +1776,13 @@
     try {
       if (ui.cam) { ui.cam.cx = GEAR.HOUSE.gx + 45; ui.cam.cy = GEAR.HOUSE.gy - 95; applyCam(true); await sleep(reduceMotion ? 50 : 700); }
       var r = await GEAR.play(child, { replay: replay });
-      if (r.done && !replay) {
-        var first = store.completeStory(child.id, 'meal');
-        if (first) toast('⭐ 完成任務「' + GAME.STORIES.meal.name + '」：+' + GAME.STORY_STARS + ' 能量星星', 'pos');
-      } else if (r.done) toast('🍚 謝謝你又來陪小齒吃飯！', 'pos');
-      else if (r.later || r.quit) toast('齒輪小屋會一直在這裡，準備好了再點小屋！');
+      if (r.done) {   // 2026-11-20 家長：完成任務 ⭐3；神祕寶箱（免鑰匙）只給一次；之後再完成給一般寶箱，每天最多 1 個
+        var rw = store.finishMealGame(child.id), got = [];
+        if (rw.stars) got.push('⭐ 完成任務「' + GAME.STORIES.meal.name + '」：+' + rw.stars + ' 能量星星');
+        if (rw.gift) got.push('🎁 得到一個神祕寶箱（不用鑰匙），放進背包了！');
+        if (rw.chest) got.push('🧰 得到一個一般寶箱，放進背包了！');
+        toast(got.length ? got.join('\n') : '🍚 謝謝你又來陪小齒吃飯！今天的寶箱已經拿過了，明天再來喔！', 'pos');
+      } else if (r.later || r.quit) toast('齒輪小屋會一直在這裡，準備好了再點小屋！');
       followPawn(true);
     } finally { ui.busy = false; document.body.classList.remove('pawn-acting', 'story-on'); }   // 比照水島任務：結束就解除鎖定（擲骰途中觸發也一樣）
     if (!hold) render();
