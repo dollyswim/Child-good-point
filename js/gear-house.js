@@ -13,7 +13,7 @@
     var GH_ART = { house: D + 'house.webp', mom: D + 'mom.webp', eat: D + 'eat.webp', happy: D + 'happy.webp', cough: D + 'cough.webp', messy: D + 'messy.webp', dusk: D + 'dusk.webp',   // 2026-11-19 家長圖（13 張到齊）；dusk＝30 分鐘的後果（黃昏、湯涼了）
       pose: { time: D + 'time2.webp', eyes: D + 'eyes.webp', mouth: D + 'mouth.webp', tool: D + 'hand.webp', sit: D + 'walk.webp', feet: D + 'feet.webp' } };
     /** 地圖上的小屋：長地圖座標（第二區左上的空草地，腳底 y）；第 53 格觸發任務 */
-    var HOUSE = { gx: 252, gy: 2950, w: 230, tile: 53 };   // 2026-11-20 家長：放大佔滿草地
+    var HOUSE = { gx: 228, gy: 2950, w: 207, tile: 53 };   // 2026-11-20 家長：佔滿草地，再縮 0.9 倍、左邊緣對齊草地左側（x 約 127）
     var NAME = { kid: '小齒', mom: '媽媽', house: '齒輪小屋' };
 
     function rule(id) { return GAME.MEAL_RULES.filter(function (r) { return r.id === id; })[0]; }

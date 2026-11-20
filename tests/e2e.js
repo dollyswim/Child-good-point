@@ -2278,7 +2278,10 @@ async function main() {
     await q.goto(url + '#map-' + id);
     await q.waitForSelector('.story-guide[data-story=ore] .story-bang');
     assert.equal(await q.locator('.story-guide[data-story=rail]').count(), 1, '兩個劇情點都有技師導遊');
-    await q.click('.story-guide[data-story=ore]', { force: true });   // 點技師：請孩子幫忙（2026-11-20 家長台詞）
+    await q.evaluate(() => {   // 點技師：請孩子幫忙（2026-11-20 家長台詞）；技師可能在鏡頭邊緣，直接送「按下＋放開」給地圖
+      const el = document.querySelector('.story-guide[data-story=ore]'), o = { bubbles: true, pointerId: 7, clientX: 10, clientY: 10, isPrimary: true };
+      document.getElementById('map-view').setPointerCapture = () => {};
+      el.dispatchEvent(new PointerEvent('pointerdown', o)); el.dispatchEvent(new PointerEvent('pointerup', o)); });
     await q.waitForSelector('#tech-bubble');
     assert.match(await q.locator('#tech-bubble').innerText(), /抱歉，我的金礦石掉得到處都是，能幫我撿回來嗎/);
     const stars0 = await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id);

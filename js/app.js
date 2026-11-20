@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.20-235';
+  var APP_VERSION = '2026.11.20-236';
   var store;
   try {
     store = new CGP.Store();
@@ -977,7 +977,7 @@
       rel: false,
       guide: { cls: 'gold-tech', label: '技師', img: 'images/gold/technician2.webp', iw: 373, ih: 769, w: TECH.w },
       spots: {
-        ore: { type: 'collect', guide: [860, 5062], cam: [720, 5000], top: true,
+        ore: { type: 'collect', guide: [815, 4895],   /* 2026-11-20 家長：技師移到礦石左上、齒輪下方的草地 */ cam: [720, 5000], top: true,
           items: [[800, 4952], [866, 4918], [600, 5112], [520, 5012], [760, 5160]], itemCls: 'story-ore', itemLabel: '金礦石',
           title: '⛏️ 幫技師撿回金礦石！', sub: '點地圖上發光的礦石',
           hint: '抱歉，我的金礦石掉得到處都是，能幫我撿回來嗎？', intro: '我的金礦石滾得到處都是！幫我把 5 顆發光的礦石撿回來！', done: '太好了！礦石都找回來了，謝謝你！' },
