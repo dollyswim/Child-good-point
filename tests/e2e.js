@@ -2382,17 +2382,21 @@ async function main() {
     const before = await info();
     // 經過第 53 格：媽媽請孩子幫忙 → 等一下（任務留著）
     await q.click('.dice-btn.d6');
-    await q.waitForSelector('#mg.gh-mg [data-talk=later]', { timeout: 15000 });
-    assert.match(await q.locator('#gh-talk').innerText(), /媽媽[\s\S]*可以幫我陪小齒吃飯嗎/);
-    if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'gear-intro.png') });
-    await q.click('[data-talk=later]');
-    await q.waitForSelector('#mg', { state: 'detached' });
+    await q.waitForSelector('#gh-call [data-call=later]', { timeout: 15000 });   // 2026-11-20：媽媽先在地圖上喊人
+    assert.match(await q.locator('#gh-call').innerText(), /媽媽[\s\S]*可以來幫我個忙嗎/);
+    assert.equal(await q.locator('#mg').count(), 0, '還沒進小屋');
+    if (SHOT_DIR) await q.screenshot({ path: path.join(SHOT_DIR, 'gear-call.png') });
+    await q.click('[data-call=later]');
+    await q.waitForSelector('#gh-call', { state: 'detached' });
     assert.equal((await info()).meal, null, '選等一下：任務還沒完成');
     // 點小屋再進去
     await q.waitForFunction(() => !document.body.classList.contains('pawn-acting'), null, { timeout: 10000 });
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).pos, id), 55);
     await tapHouse();
+    await q.click('#gh-call [data-call=ok]');
     await q.waitForSelector('#mg [data-talk=ok]');
+    assert.match(await q.locator('#gh-talk').innerText(), /我得去工坊幫小齒的爸爸拿個東西，可以幫我陪小齒吃飯嗎/);
+    assert.equal(await q.locator('#gh-talk [data-talk=later]').count(), 0, '地圖上答應過了：只有「好啊！」');
     await q.click('[data-talk=ok]');
     assert.match(await q.locator('#gh-talk').innerText(), /我有教小齒吃飯的時候，要注意 6 個吃飯好行為，如果他忘記了，幫我提醒他喔/);
     await q.click('[data-talk=next]');
@@ -2449,6 +2453,7 @@ async function main() {
     assert.equal(after.stars, before.stars + 3, '第一次完成 ⭐3');
     assert.deepEqual([after.gift, after.chest], [1, 0], '第一次完成：免鑰匙神祕寶箱');
     assert.match(await q.locator('#toast').innerText(), /神祕寶箱/);
+    assert.match(await q.locator('#tech-bubble').innerText(), /技師[\s\S]*謝謝你陪我家小齒吃飯！我是小齒的爸爸/);
     assert.equal(after.plays, 1, '選等一下那次沒有開始，不算一局');
     await q.waitForTimeout(600);
     assert.equal(await q.locator('#gear-house .story-bang').count(), 0, '完成後小屋沒有「！」');

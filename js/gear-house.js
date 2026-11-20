@@ -181,7 +181,8 @@
 
         (async function () {
           scene('eat'); line('');
-          var ans = await talk('mom', '我得去工坊拿個東西，可以幫我陪' + NAME.kid + '吃飯嗎？', [['later', '等一下', false], ['ok', '好啊！', true]]);
+          var ask = '我得去工坊幫' + NAME.kid + '的爸爸拿個東西，可以幫我陪' + NAME.kid + '吃飯嗎？';   // 2026-11-20 家長：技師是小齒的爸爸
+          var ans = await talk('mom', ask, opts.asked ? [['ok', '好啊！', true]] : [['later', '等一下', false], ['ok', '好啊！', true]]);   // 地圖上已經答應過：只有「好啊！」
           if (ans === 'later') { finish({ later: true }); return; }
           ids = pick(); progEl.textContent = '0 / ' + ids.length;
           await talk('mom', '謝謝你！我有教' + NAME.kid + '吃飯的時候，要注意 6 個吃飯好行為，如果他忘記了，幫我提醒他喔！', [['next', '好！', true]]);   // 2026-11-19 家長改台詞
@@ -193,6 +194,27 @@
       });
     }
 
-    return { HOUSE: HOUSE, houseDecor: houseDecor, reached: reached, preload: preload, play: play, assets: assets };
+    /**
+     * 走到第 53 格：媽媽在地圖上喊玩家（2026-11-20 家長）。按「好！」才打開小屋。
+     * @returns {Promise<'ok'|'later'>}
+     */
+    function call() {
+      return new Promise(function (resolve) {
+        var el = document.createElement('div');
+        el.className = 'pilot-talk'; el.id = 'gh-call';
+        el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', NAME.mom);
+        el.innerHTML = '<div class="we-talk pilot-box gh-call-box">' + (GH_ART.mom ? talkPortrait(GH_ART.mom) : '') + '<span class="we-who">' + NAME.mom + '</span>' +
+          '<p class="we-line">可以來幫我個忙嗎？</p><div class="pilot-acts"><button type="button" class="btn" data-call="later">等一下</button>' +
+          '<button type="button" class="btn primary" data-call="ok">好！</button></div></div>';
+        el.addEventListener('click', function (e) {
+          var t = e.target.closest('[data-call]');
+          if (!t) return;
+          el.remove(); resolve(t.getAttribute('data-call'));
+        });
+        document.body.appendChild(el);
+      });
+    }
+
+    return { HOUSE: HOUSE, houseDecor: houseDecor, reached: reached, preload: preload, play: play, call: call, assets: assets };
   };
 })();

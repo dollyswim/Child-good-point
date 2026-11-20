@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.20-232';
+  var APP_VERSION = '2026.11.20-233';
   var store;
   try {
     store = new CGP.Store();
@@ -864,7 +864,7 @@
   /** 金島的最遠格子（人在其他島時讀金島保存的進度） */
   function goldMaxOf(p) { return p.island === 'gold' ? (p.maxReached || 0) : (((p.islands || {}).gold || {}).maxReached || 0); }
   var TOWER_LIT_AT = 80;   // 第一次走到第 80 格以後通電（家長決定）
-  var TOWER = { gx: 850, gy: 1625, w: 180 }, TECH = { gx: 752, gy: 1632, w: 54 };   // 第三區空地 (850, 190)；gy 為腳底
+  var TOWER = { gx: 850, gy: 1625, w: 180 }, TECH = { gx: 752, gy: 1632, w: 42 };   /* 2026-11-20 換成小齒爸爸的新圖（比較瘦高），寬 42 約 87px 高 */   // 第三區空地 (850, 190)；gy 為腳底
   function towerDecor(board, player) {
     if (board.id !== 'gold' || !board.regions.some(function (r) { return r.id === 'gold-03' && r.available; })) return '';
     var lit = goldMaxOf(player) >= TOWER_LIT_AT;
@@ -873,7 +873,7 @@
       '<img class="tower-on" src="images/gold/tower_on.webp" alt="" width="420" height="537" draggable="false">' +
       '<span class="tower-sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></div>' +
       '<button type="button" class="gold-tech" data-action="tech-talk" data-tap="tech" style="left:' + TECH.gx + 'px;top:' + TECH.gy + 'px;width:' + TECH.w + 'px;z-index:' + Math.round(TECH.gy / 6) + '" aria-label="技師">' +
-      '<img src="images/gold/technician.webp" alt="" width="150" height="231" draggable="false"></button>';
+      '<img src="images/gold/technician2.webp" alt="" width="373" height="769" draggable="false"></button>';
   }
   /** 技師說一句話（地圖上的對話泡泡，約 3 秒消失） */
   function techTalk(child, ms, text, speaker) {
@@ -975,7 +975,7 @@
   var ISLAND_STORY = {
     gold: {
       rel: false,
-      guide: { cls: 'gold-tech', label: '技師', img: 'images/gold/technician.webp', iw: 150, ih: 231, w: TECH.w },
+      guide: { cls: 'gold-tech', label: '技師', img: 'images/gold/technician2.webp', iw: 373, ih: 769, w: TECH.w },
       spots: {
         ore: { type: 'collect', guide: [860, 5062], cam: [720, 5000], top: true,
           items: [[800, 4952], [866, 4918], [600, 5112], [520, 5012], [760, 5160]], itemCls: 'story-ore', itemLabel: '金礦石',
@@ -1775,13 +1775,19 @@
     ui.busy = true; document.body.classList.add('pawn-acting', 'story-on');
     try {
       if (ui.cam) { ui.cam.cx = GEAR.HOUSE.gx + 45; ui.cam.cy = GEAR.HOUSE.gy - 95; applyCam(true); await sleep(reduceMotion ? 50 : 700); }
-      var r = await GEAR.play(child, { replay: replay });
+      var asked = false;
+      if (!replay) {   // 任務還沒完成：媽媽先在地圖上喊人，按「好！」才進小屋
+        asked = (await GEAR.call(child)) === 'ok';
+      }
+      var r = replay || asked ? await GEAR.play(child, { replay: replay, asked: asked }) : { later: true };
       if (r.done) {   // 2026-11-20 家長：完成任務 ⭐3；神祕寶箱（免鑰匙）只給一次；之後再完成給一般寶箱，每天最多 1 個
         var rw = store.finishMealGame(child.id), got = [];
         if (rw.stars) got.push('⭐ 完成任務「' + GAME.STORIES.meal.name + '」：+' + rw.stars + ' 能量星星');
         if (rw.gift) got.push('🎁 得到一個神祕寶箱（不用鑰匙），放進背包了！');
         if (rw.chest) got.push('🧰 得到一個一般寶箱，放進背包了！');
         toast(got.length ? got.join('\n') : '🍚 謝謝你又來陪小齒吃飯！今天的寶箱已經拿過了，明天再來喔！', 'pos');
+        if (rw.stars) { var dad = document.createElement('div'); dad.setAttribute('aria-label', '技師'); dad.innerHTML = '<img src="images/gold/technician2.webp" alt="">';
+          techTalk(child, 3600, '謝謝你陪我家小齒吃飯！我是小齒的爸爸，工坊裡的齒輪都是我修的喔！', dad); }   // 2026-11-20 家長：技師是小齒的爸爸
       } else if (r.later || r.quit) toast('齒輪小屋會一直在這裡，準備好了再點小屋！');
       followPawn(true);
     } finally { ui.busy = false; document.body.classList.remove('pawn-acting', 'story-on'); }   // 比照水島任務：結束就解除鎖定（擲骰途中觸發也一樣）
