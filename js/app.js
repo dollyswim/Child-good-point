@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.21-239';
+  var APP_VERSION = '2026.11.21-240';
   var store;
   try {
     store = new CGP.Store();
@@ -864,7 +864,7 @@
   /** 金島的最遠格子（人在其他島時讀金島保存的進度） */
   function goldMaxOf(p) { return p.island === 'gold' ? (p.maxReached || 0) : (((p.islands || {}).gold || {}).maxReached || 0); }
   var TOWER_LIT_AT = 80;   // 第一次走到第 80 格以後通電（家長決定）
-  var TOWER = { gx: 850, gy: 1625, w: 180 }, TECH = { gx: 752, gy: 1632, w: 52 };   /* 2026-11-20 換成小齒爸爸的新圖（比較瘦高）；家長說太小，寬 52 約 107px 高 */   // 第三區空地 (850, 190)；gy 為腳底
+  var TOWER = { gx: 850, gy: 1625, w: 180 }, TECH = { gx: 750, gy: 1485, w: 52 };   /* 2026-11-21 家長：從懸崖邊往上移到能源塔左邊的草地 */   /* 2026-11-20 換成小齒爸爸的新圖（比較瘦高）；家長說太小，寬 52 約 107px 高 */   // 第三區空地 (850, 190)；gy 為腳底
   function towerDecor(board, player) {
     if (board.id !== 'gold' || !board.regions.some(function (r) { return r.id === 'gold-03' && r.available; })) return '';
     var lit = goldMaxOf(player) >= TOWER_LIT_AT;
