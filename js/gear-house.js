@@ -31,6 +31,17 @@
       Object.keys(GH_ART.after).forEach(function (k) { out.push(GH_ART.after[k]); });
       return out.filter(Boolean);
     }
+    /** 下載並解碼一張圖（同一張只做一次）；換畫面前先等它好，就不會閃空白 */
+    var prepped = {};
+    function prep(src) {
+      if (!src) return Promise.resolve();
+      if (!prepped[src]) {
+        var im = new Image(); im.src = src;
+        prepped[src] = (im.decode ? im.decode() : new Promise(function (r) { im.onload = r; })).catch(function () {}).then(function () { return im; });
+        prepped[src].img = im;   // 留著參照，避免被回收
+      }
+      return prepped[src];
+    }
     var preloaded = false;
     function preload(board, player) {
       if (preloaded || board.id !== 'gold' || player.pos < 45 || player.story.meal) return;
@@ -100,11 +111,30 @@
           (opts.practice ? '<small class="mg-practice gh-practice">🧪 試玩模式：不會得到星星</small>' : '') +
           '<div class="gh-talk" id="gh-talk"></div>';
         document.body.appendChild(el); document.body.classList.add('mg-open');
+        assets().forEach(prep);   // 2026-11-21：媽媽講開場白時，在背景把這局會用到的圖都下載、解碼好
         var sceneEl = el.querySelector('#gh-scene'), lineEl = el.querySelector('#gh-line'), progEl = el.querySelector('#gh-prog'), talkEl = el.querySelector('#gh-talk');
         var idx = -1, cur = null, phase = 'intro', timer = 0, afterShown = false, momHome = false, closed = false;
         var talkNext = null;
 
-        function scene(state) { sceneEl.innerHTML = sceneHtml(state, cur, { momHome: momHome }); sceneEl.setAttribute('data-state', state); }
+        /**
+         * 換畫面（2026-11-21 家長：換圖不要閃一下空白）：新的一層先放在舊的上面、透明；
+         * 圖解碼好才淡入（約 0.3 秒），淡入完把舊的層拿掉。減少動態效果時直接切換。
+         */
+        var sceneTok = 0;
+        function scene(state) {
+          var tok = ++sceneTok, layer = document.createElement('div');
+          layer.className = 'gh-layer';
+          layer.innerHTML = sceneHtml(state, cur, { momHome: momHome });
+          sceneEl.setAttribute('data-state', state);
+          sceneEl.appendChild(layer);
+          var img = layer.querySelector('img');
+          (img ? prep(img.getAttribute('src')) : Promise.resolve()).then(function () {
+            if (tok !== sceneTok || !layer.parentNode) { if (layer.parentNode && tok !== sceneTok) layer.remove(); return; }
+            var old = [].filter.call(sceneEl.children, function (c) { return c !== layer; });
+            layer.classList.add('show');
+            setTimeout(function () { old.forEach(function (c) { c.remove(); }); }, still() ? 0 : 320);
+          });
+        }
         function line(text, cls) { lineEl.className = 'gh-line' + (cls ? ' ' + cls : ''); lineEl.textContent = text; }
         /** 下方對話框：who＝mom／me／kid／narr；acts＝按鈕 [[代號, 文字, primary]] */
         function talk(who, text, acts) {

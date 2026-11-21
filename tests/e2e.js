@@ -2443,7 +2443,7 @@ async function main() {
     // 第 5 題「30分鐘吃完」：沒提醒 → 後果換成黃昏的圖 → 再選對
     await q.waitForSelector('#gh-prog:text("5 / 5")');
     await q.waitForSelector('#gh-line.gh-after', { timeout: 6000 });
-    assert.match(await q.locator('#gh-scene img').getAttribute('src'), /dusk\.webp$/, '後果換成黃昏的圖');
+    assert.match(await q.locator('#gh-scene .gh-layer:last-child img').getAttribute('src'), /dusk\.webp$/, '後果換成黃昏的圖');
     assert.match(await q.locator('#gh-line').innerText(), /天色變黃昏了，湯也涼掉了/);
     await q.click('[data-rule=time]');
     await q.waitForSelector('#gh-talk [data-talk=done]', { timeout: 5000 });
