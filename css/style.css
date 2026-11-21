@@ -2600,14 +2600,14 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .gh-house-emoji i { position: absolute; right: 8%; top: 6%; font-style: normal; font-size: 44px; animation: gh-spin 6s linear infinite; }
 .gear-house .story-bang { top: 0; }
 @keyframes gh-spin { to { transform: rotate(360deg); } }
-.mg.gh-mg { grid-template-rows: auto minmax(0, 1fr) auto auto auto; gap: 8px; padding-bottom: max(12px, env(safe-area-inset-bottom)); color: #5a3a1a;
+.mg.gh-mg { grid-template-rows: auto auto minmax(0, 1fr) auto auto;   /* 2026-11-21 家長：圖固定在上方、按鈕固定在下方，中間給文字，字多字少都不會讓圖跳動 */ gap: 8px; padding-bottom: max(12px, env(safe-area-inset-bottom)); color: #5a3a1a;
   background: linear-gradient(#fff3d8, #f3d9a8); }
 .gh-top { grid-template-columns: auto 1fr auto; position: relative; z-index: 4; }   /* 對話時也能按「離開」 */
 .gh-top .mg-count { background: rgba(160, 100, 30, .16); }
 .gh-title { text-align: center; font-size: 1.15rem; color: #8a4f12; }
 .gh-quit { min-height: 40px; padding: 4px 8px; color: #8a4f12; }
 .gh-scene { position: relative; margin: 0 14px; border-radius: 22px; overflow: hidden; background: #fbe8c4; box-shadow: inset 0 0 0 3px rgba(160, 100, 30, .2); min-height: 180px; }
-.gh-scene { align-self: center; aspect-ratio: 4 / 3; min-height: 0; max-height: 100%; }   /* 家長圖是 4:3：畫面框跟圖一樣比例，不裁切 */
+.gh-scene { align-self: start; aspect-ratio: 4 / 3; min-height: 0; max-height: 46vh; }   /* 家長圖是 4:3：畫面框跟圖一樣比例，不裁切；固定在標題下方 */
 .gh-scene-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .gh-layer { position: absolute; inset: 0; opacity: 0; transition: opacity .3s ease-out; }   /* 換畫面：新的一層解碼好才淡入（js/gear-house.js scene） */
 .gh-layer.show { opacity: 1; }
@@ -2629,13 +2629,18 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .gh-mom-here { position: absolute; left: 6%; bottom: 12%; font-size: 60px; line-height: 1; }
 .gh-mom-here img { width: 26vw; max-width: 120px; height: auto; }
 @keyframes gh-pop { from { transform: translate(-50%, -50%) scale(.4); opacity: 0; } }
-.gh-line { margin: 0 14px; min-height: 3.2em; padding: 10px 14px; border-radius: 16px; background: #fffdf6; font-weight: 800; font-size: 1.05rem; line-height: 1.5; box-shadow: 0 2px 6px rgba(90, 58, 26, .15); }
+.gh-line { align-self: center; max-height: 100%; overflow-y: auto; margin: 0 14px; min-height: 3.2em; padding: 10px 14px; border-radius: 16px; background: #fffdf6; font-weight: 800; font-size: 1.05rem; line-height: 1.5; box-shadow: 0 2px 6px rgba(90, 58, 26, .15); }
 .gh-line:empty { visibility: hidden; }
 .gh-line.gh-cue { background: #fff4c9; } .gh-line.gh-after { background: #ffe2d6; } .gh-line.gh-hint { background: #e8f2ff; } .gh-line.gh-ok { background: #e3f7d6; }
 .gh-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 14px; }
 .gh-btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 54px; padding: 6px 8px; border: 0; border-radius: 16px; background: #fff; color: #5a3a1a;
   font: inherit; font-weight: 900; font-size: 1.08rem; box-shadow: 0 3px 0 #d7b27a; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .gh-btn span { font-size: 1.5rem; line-height: 1; }
+.gh-btn { white-space: nowrap; }   /* 2026-11-21：「30分鐘吃完」不換行，按鈕不會被撐高、擠到上面的文字 */
+@media (max-height: 700px) {   /* 矮螢幕（iPhone SE 等）：按鈕縮小一點，留空間給文字 */
+  .gh-btn { min-height: 46px; font-size: 1rem; gap: 6px; } .gh-btn span { font-size: 1.3rem; }
+  .gh-scene { max-height: 29vh; width: calc(29vh * 4 / 3); max-width: calc(100% - 28px); justify-self: center; } .gh-line { font-size: .95rem; padding: 8px 12px; }
+}
 .gh-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #d7b27a; }
 .gh-btn.ok { background: #c9f0b4; }
 .gh-point .gh-btns { position: relative; z-index: 4; pointer-events: none; }   /* 系統提示時，6 個按鈕浮到遮罩上面並閃一下 */
