@@ -2493,6 +2493,87 @@ async function main() {
   }
   console.log('✔ 齒輪小屋：經過第 53 格媽媽請幫忙、可以等一下再點小屋；一局 5 題、選錯有引導、沒提醒播一次後果；屁股坐嗆咳由玩家角色喊媽媽；第一次 ⭐3＋神祕寶箱、重玩一般寶箱每天 1 個；#gear-test 試玩');
 
+  // ---------- 火島小遊戲《熔岩跳跳路》V1.0（2026-11-22；火島未開放，用一筆火島小遊戲紀錄測正式流程） ----------
+  {
+    const c = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block' });
+    await c.addInitScript(() => { window.__cgpLavaSpeed = 0; });   // 障礙物停住，測試結果固定
+    const q = await c.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '小火' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+      s.data.adventure.minigames.push({ id: 'lv-e2e', childId: a.id, date: s.today(), tile: 7, status: 'pending', caught: 0, stars: 0, ts: 1, game: 'lava' }); s.save(); return a.id; });
+    const info = () => q.evaluate((cid) => { const s = window.__cgpStore, p = s.getPlayer(cid), m = s.data.adventure.minigames.find((x) => x.id === 'lv-e2e');
+      return { stars: s.getStarBalance(cid), status: m.status, lava: m.lava || null, mstars: m.stars, bag: JSON.stringify(p.bag) }; }, id);
+    const st = async () => q.evaluate(() => window.__cgpLava.debug());
+    const key = async (k) => { await q.keyboard.press(k); await q.waitForTimeout(260); };
+    // 找一欄：rock 排都沒有落石；needLava＝那一排平台排「沒有」平台（用來測掉進岩漿）
+    const pickCol = (lay, lavaRow) => { for (let col = 0; col < 6; col++) {
+      const ok = lay.every((r, k) => r.t !== 'rock' || r.xs.every((x) => Math.abs(col - x) >= 0.75));
+      const lava = lavaRow == null || lay[lavaRow].xs.every((x) => !(col + 0.5 >= x - 0.1 && col + 0.5 <= x + lay[lavaRow].w + 0.1));
+      if (ok && lava) return col; } return -1; };
+    const walkTo = async (col) => { let p = await st(); while (Math.round(p.px - 0.5) !== col) { await key(Math.round(p.px - 0.5) < col ? 'ArrowRight' : 'ArrowLeft'); p = await st(); } };
+    await q.goto(url + '#map-' + id); await q.waitForSelector('.mg-resume');
+    const before = await info();
+    await q.click('.mg-resume');
+    await q.waitForSelector('#mg.lv-mg #lv-talk [data-talk=next]');
+    assert.match(await q.locator('#lv-talk').innerText(), /洛洛[\s\S]*我是火島嚮導洛洛/);
+    await q.click('[data-talk=next]'); await q.click('[data-talk=go]');
+    assert.equal(await q.locator('.lv-field .lv-lane').count(), 6, '簡易版 6 排');
+    assert.equal(await q.evaluate(() => getComputedStyle(document.querySelector('.lv-field')).width), await q.evaluate(() => document.querySelector('.lv-lane').getBoundingClientRect().width + 'px'));
+    let lay = await q.evaluate(() => window.__cgpLava.layout());
+    assert.deepEqual(lay.map((r) => r.t), ['goal', 'rock', 'safe', 'rock', 'rock', 'start']);
+    // 故意撞落石 1 次：還有 2 次機會、回到起點
+    let bad = -1; for (let col = 0; col < 6 && bad < 0; col++) if (lay[4].xs.some((x) => Math.abs(col - x) < 0.6)) bad = col;
+    await walkTo(bad); await key('ArrowUp');
+    assert.deepEqual([(await st()).fails, (await st()).row], [1, 5], '撞到落石：失敗 1 次、回到起點');
+    assert.equal(await q.locator('#lv-hearts').innerText(), '❤️❤️🤍');
+    await q.waitForTimeout(1100);   // 復位保護結束
+    await walkTo(pickCol(lay));
+    for (let k = 0; k < 5; k++) await key('ArrowUp');
+    await q.waitForSelector('#lv-talk [data-talk=next]', { timeout: 3000 });
+    assert.match(await q.locator('#lv-talk').innerText(), /太棒了！你成功穿過落石/);
+    assert.deepEqual([(await info()).lava, (await info()).status, (await info()).stars], [{ easy: 'clear' }, 'pending', before.stars], '簡易版成績先存起來、還沒發星');
+    // 中途關掉 App：回來直接到「領 10 星／挑戰困難版」
+    await q.reload(); await q.waitForSelector('.mg-resume'); await q.click('.mg-resume');
+    await q.waitForSelector('#lv-talk [data-talk=next]');
+    assert.match(await q.locator('#lv-talk').innerText(), /太棒了！你成功穿過落石/);
+    await q.click('[data-talk=next]');
+    assert.match(await q.locator('#lv-talk').innerText(), /要不要挑戰更刺激的困難版[\s\S]*領取 10 星[\s\S]*繼續挑戰困難版/);
+    await q.click('[data-talk=hard]');
+    await q.waitForSelector('#lv-level:text("困難版")');
+    assert.equal(await q.locator('.lv-field .lv-lane').count(), 8, '困難版 8 排');
+    lay = await q.evaluate(() => window.__cgpLava.layout());
+    assert.deepEqual(lay.map((r) => r.t), ['goal', 'steam', 'plat', 'plat', 'safe', 'rock', 'rock', 'start']);
+    assert.equal(await q.locator('#lv-hearts').innerText(), '❤️❤️❤️', '每關獨立 3 次機會');
+    // 走到安全區，再連續跳進沒有平台的岩漿 3 次 → 洛洛救援
+    await walkTo(pickCol(lay, 3));
+    for (let k = 0; k < 3; k++) await key('ArrowUp');
+    assert.equal((await st()).row, 4, '到中途安全區');
+    for (let k = 0; k < 3; k++) { await key('ArrowUp'); assert.deepEqual([(await st()).fails, (await st()).row], [k + 1, 4], '掉進岩漿：回到中途安全區'); await q.waitForTimeout(1100); }
+    await q.waitForSelector('#lv-talk [data-talk=next]', { timeout: 3000 });
+    assert.match(await q.locator('#lv-talk').innerText(), /這段路有點難呢/);
+    await q.click('[data-talk=next]');
+    assert.match(await q.locator('#lv-talk').innerText(), /我給你一個防護罩/);
+    await q.click('[data-talk=next]');
+    await q.waitForSelector('#lv-me.shielded');
+    await q.waitForSelector('#lv-talk [data-talk=done]', { timeout: 6000 });
+    assert.match(await q.locator('#lv-talk').innerText(), /得到 ⭐10 能量星星/);
+    await noHScroll('熔岩跳跳路');
+    await q.click('[data-talk=done]');
+    await q.waitForSelector('#mg', { state: 'detached' });
+    const after = await info();
+    assert.deepEqual([after.status, after.mstars, after.stars - before.stars, after.lava.outcome], ['done', 10, 10, 'hardRescue'], '困難版救援：保留 10 星、只結算一次');
+    assert.equal(after.bag, before.bag, '洛洛的防護罩不動背包');
+    assert.equal(await q.locator('.mg-resume').count(), 0, '兩關只用掉今天這一次小遊戲');
+    // 家長試玩網址
+    await q.goto(url + '#lava-test'); await q.waitForSelector('#mg.lv-mg');
+    assert.match(await q.locator('#mg').innerText(), /試玩模式/);
+    await q.click('[data-lv=quit]');
+    await q.waitForFunction(() => location.hash === '#home');
+    await c.close();
+  }
+  console.log('✔ 熔岩跳跳路：簡易版 6×6、困難版 6×8；撞落石／掉岩漿扣機會並回安全區；簡易版過關先存成績（重新整理保留）；困難版救援 10 星、只結算一次、不動背包；#lava-test 試玩');
+
   // ---------- 木島劇情「森林派對」（用測試假地圖：複製金島格子當木島）：小精靈導遊、第 8 格找松果、第 40 格採花摘莓果、第 65 格邀請卡、第 92 格布置派對 ----------
   {
     const cw = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block', story: true });

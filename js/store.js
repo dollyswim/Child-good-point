@@ -351,7 +351,9 @@
         }).map(function (x) {
           return { id: String(x.id), childId: String(x.childId), date: x.date, tile: toInt(x.tile, 0), bonus: !!x.bonus,
             status: x.status === 'done' || x.status === 'expired' ? x.status : 'pending', caught: Math.max(0, toInt(x.caught, 0)), stars: Math.max(0, toInt(x.stars, 0)),
-            ts: toInt(x.ts, Date.now()), doneTs: x.doneTs ? toInt(x.doneTs, 0) : undefined, limitReset: !!x.limitReset || undefined, starCall: !!x.starCall || undefined, game: x.game === 'leaf' ? 'leaf' : undefined, squirrels: x.game === 'leaf' && x.squirrels ? Math.max(0, toInt(x.squirrels, 0)) : undefined };   // game：leaf＝木島落葉找松果（沒有＝抓住星星）
+            ts: toInt(x.ts, Date.now()), doneTs: x.doneTs ? toInt(x.doneTs, 0) : undefined, limitReset: !!x.limitReset || undefined, starCall: !!x.starCall || undefined, game: x.game === 'leaf' || x.game === 'fish' || x.game === 'lava' ? x.game : undefined, squirrels: x.game === 'leaf' && x.squirrels ? Math.max(0, toInt(x.squirrels, 0)) : undefined,
+            lava: x.game === 'lava' && x.lava && typeof x.lava === 'object' ? { easy: x.lava.easy === 'clear' || x.lava.easy === 'rescue' ? x.lava.easy : undefined, hard: x.lava.hard || undefined, outcome: x.lava.outcome || undefined } : undefined };
+          // game：leaf＝木島落葉找松果、fish＝水島撈魚（2026-11-22 修正：之前重新整理後會被當成抓住星星）、lava＝火島熔岩跳跳路（lava.easy＝簡易版成績）；沒有＝抓住星星
         });
       })(),
       // 結束今日冒險（當天鎖住）

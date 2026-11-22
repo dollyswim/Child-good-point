@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.22-241';
+  var APP_VERSION = '2026.11.22-242';
   var store;
   try {
     store = new CGP.Store();
@@ -90,7 +90,8 @@
     if (hs === 'minigame-test') return { name: 'minigame-test', arg: null }; // 家長試玩小遊戲（不給星星、不算次數）
     if (hs === 'leaf-test') return { name: 'leaf-test', arg: null };         // 家長試玩木島「落葉找松果」
     if (hs === 'fish-test') return { name: 'fish-test', arg: null };         // 家長試玩水島「珊瑚灣撈魚趣」
-    if (hs === 'gear-test') return { name: 'gear-test', arg: null };         // 家長試玩金島「齒輪小屋：吃飯好行為大挑戰」
+    if (hs === 'gear-test') return { name: 'gear-test', arg: null };
+    if (hs === 'lava-test') return { name: 'lava-test', arg: null };         // 家長試玩火島「熔岩跳跳路」（2026-11-22）         // 家長試玩金島「齒輪小屋：吃飯好行為大挑戰」
     var m = hs.match(/^(child|rules|challenge|shop|adventure|map)(?:-(.+))?$/);
     if (!m) return { name: 'home', arg: null };
     return { name: m[1] === 'rules' ? 'settings' : m[1], arg: m[2] || null };
@@ -271,6 +272,7 @@
     if (r.name === 'minigame-test') openMinigame(null, null, { practice: true });
     if (r.name === 'leaf-test') openMinigame(null, null, { practice: true, leaf: true });
     if (r.name === 'fish-test' && !document.getElementById('mg')) openFishMinigame(null, null, { practice: true });
+    if (r.name === 'lava-test' && !document.getElementById('mg')) openMinigame(null, null, { practice: true, lava: true });
     if (r.name === 'gear-test' && !document.getElementById('mg')) GEAR.play(null, { practice: true }).then(function () { location.replace('#home'); render(); });
     if (r.name === 'adventure') showBlessings(r.arg);
     if (notes.length) toast(notes.join('\n'), 'pos');
@@ -1760,6 +1762,8 @@
     waterNotes = WATER.waterNotes, waterWelcome = WATER.waterWelcome, waterTask = WATER.waterTask, callBeluga = WATER.callBeluga,
     WATER_TRIP = WATER.WATER_TRIP, FOLK_THANKS = WATER.FOLK_THANKS, waterEnding = WATER.waterEnding, waterOpening = WATER.waterOpening,
     waterLeave = WATER.waterLeave, openFishMinigame = WATER.openFishMinigame;
+  // ---------- 火島小遊戲「熔岩跳跳路」在 js/lava.js（2026-11-22）----------
+  var LAVA = window.CGPLava({ store: store, h: h, toast: toast, render: render, charIdOf: charIdOf, talkPortrait: talkPortrait });
   // ---------- 金島第 53 格：齒輪小屋「吃飯好行為大挑戰」在 js/gear-house.js（2026-11-19）----------
   var GEAR = window.CGPGearHouse({
     store: store, h: h, toast: toast, GAME: GAME, talkPortrait: talkPortrait, charIdOf: charIdOf, preloadImages: preloadImages,
@@ -2736,6 +2740,7 @@
     if (document.getElementById('mg')) return;
     if (!practice && !store.getPendingMinigame(childId)) return;
     if (practice ? opts.leaf : store.getPendingMinigame(childId).game === 'leaf') { openLeafMinigame(childId, subtitle, opts); return; }   // 木島：落葉找松果
+    if (practice ? opts.lava : store.getPendingMinigame(childId).game === 'lava') { LAVA.open(childId, subtitle, opts); return; }   // 火島：熔岩跳跳路（2026-11-22）
     if (practice ? opts.fish : store.getPendingMinigame(childId).game === 'fish') { document.body.classList.remove('mg-open'); openFishMinigame(childId, subtitle, opts); return; }   // 水島：珊瑚灣撈魚趣
     var MAX = GAME.MINIGAME_MAX_STARS, SEC = GAME.MINIGAME_SECONDS;
     // 2026-11-08 家長調整（孩子反映星星消失太快）：每顆多停留 0.5 秒、出現數量 1.5 倍（間隔縮為 2/3）

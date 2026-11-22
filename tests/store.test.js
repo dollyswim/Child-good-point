@@ -3155,3 +3155,42 @@ test('金島小英雄改成 4 個任務（2026-11-19）：已經拿到的成就�
   s2.checkAchievements(a.id);
   assert.ok(s2.data.achievements[a.id].goldHero, '舊的徽章還在');
 });
+
+test('火島《熔岩跳跳路》（2026-11-22）：四種結果 5／10／10／15 星；只結算一次；兩關只算一次小遊戲；中途保留簡易版成績；困難版要先過簡易版', () => {
+  const { store, a } = p3Store();
+  assert.equal(G.minigameOf('fire', () => 0.5), 'lava');
+  assert.deepEqual(G.LAVA_STARS, { easyRescue: 5, easyClear: 10, hardRescue: 10, hardClear: 15 });
+  const mk = (id) => { store.data.adventure.minigames = store.data.adventure.minigames.filter(m => m.childId !== a.id);
+    store.data.adventure.minigames.push({ id, childId: a.id, date: store.today(), status: 'pending', caught: 0, stars: 0, ts: 1, game: 'lava' }); };
+  const cases = [['easyRescue', 'rescue', 5], ['easyClear', 'clear', 10], ['hardRescue', 'clear', 10], ['hardClear', 'clear', 15]];
+  cases.forEach(([outcome, easy, stars], k) => {
+    mk('lv' + k);
+    const bal = store.getStarBalance(a.id);
+    store.saveLavaEasy(a.id, easy);
+    assert.equal(store.getPendingMinigame(a.id).lava.easy, easy, '簡易版成績先存起來（還沒給星）');
+    assert.equal(store.getStarBalance(a.id), bal, '進入困難版前不先發星');
+    const m = store.finishLava(a.id, outcome);
+    assert.equal(m.stars, stars, outcome);
+    assert.equal(store.getStarBalance(a.id), bal + stars);
+    assert.equal(store.getPendingMinigame(a.id), null, '兩關結束只用掉這一筆小遊戲');
+    assert.throws(() => store.finishLava(a.id, outcome), /沒有可以玩/, '不能重複領星');
+  });
+  mk('lv9');
+  assert.throws(() => store.finishLava(a.id, 'hardClear'), /簡易版還沒過關/);
+  store.saveLavaEasy(a.id, 'rescue');
+  assert.equal(store.finishLava(a.id, 'easyClear').stars, 5, '簡易版救援過，一律 5 星');
+  const bag = JSON.stringify(store.getPlayer(a.id).bag);
+  mk('lv10'); store.saveLavaEasy(a.id, 'clear'); store.finishLava(a.id, 'hardRescue');
+  assert.equal(JSON.stringify(store.getPlayer(a.id).bag), bag, '洛洛的防護罩不動背包');
+});
+
+test('小遊戲紀錄重新載入（2026-11-22 修正）：撈魚、熔岩跳跳路的遊戲種類與簡易版成績都保留', () => {
+  const { store, a, storage } = p3Store();
+  store.data.adventure.minigames.push({ id: 'f1', childId: a.id, date: store.today(), status: 'pending', caught: 0, stars: 0, ts: 1, game: 'fish' });
+  store.data.adventure.minigames.push({ id: 'l1', childId: a.id, date: '2026-11-01', status: 'pending', caught: 0, stars: 0, ts: 1, game: 'lava', lava: { easy: 'clear' } });
+  store.save();
+  const s2 = new Store({ storage, seed: false, now: () => store.now() });
+  const f = s2.data.adventure.minigames.find(m => m.id === 'f1'), l = s2.data.adventure.minigames.find(m => m.id === 'l1');
+  assert.equal(f.game, 'fish', '撈魚不會變成抓住星星');
+  assert.deepEqual([l.game, l.lava.easy], ['lava', 'clear']);
+});

@@ -2654,3 +2654,54 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 .gh-box .pilot-acts { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
 .gh-narr .we-line { color: #2f6a8a; }
 @media (prefers-reduced-motion: reduce) { .gh-house-emoji i, .gh-after-ico { animation: none; } .gh-kid { transition: none; } }
+
+/* 火島小遊戲「熔岩跳跳路」V1.0（2026-11-22，js/lava.js；美術圖到貨前用 CSS 圖形暫代） */
+.mg.lv-mg { grid-template-rows: auto auto minmax(0, 1fr) auto auto; gap: 6px; padding-bottom: max(10px, env(safe-area-inset-bottom)); color: #fff;
+  background: linear-gradient(#3a1d14, #22100b); touch-action: none; overscroll-behavior: none; }
+.lv-top { position: relative; z-index: 6; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: max(10px, env(safe-area-inset-top)) 12px 0; }
+.lv-top b { text-align: center; font-size: 1.1rem; color: #ffd36b; }
+.lv-quit { color: #ffd9b0; min-height: 40px; padding: 4px 6px; }
+#lv-hearts { font-size: 1.15rem; letter-spacing: 1px; }
+.lv-tip { margin: 0 12px; min-height: 1.5em; text-align: center; font-weight: 800; color: #ffe8c9; }
+.lv-stage { position: relative; display: grid; place-items: center; min-height: 0; margin: 0 8px; }
+.lv-field { position: relative; border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 3px #5c2a17, 0 8px 20px rgba(0, 0, 0, .5); }
+.lv-lane { position: absolute; left: 0; right: 0; height: var(--c); display: grid; place-items: center; }
+.lv-lane b { font-size: calc(var(--c) * .3); color: rgba(255, 255, 255, .55); letter-spacing: 2px; }
+.lv-goal { background: linear-gradient(#ffcf6b, #e8953a); } .lv-goal b { color: #6b2d0d; }
+.lv-safe, .lv-start { background: repeating-linear-gradient(90deg, #4a4040 0 calc(var(--c) - 2px), #3d3434 0 var(--c)); }
+.lv-rock { background: linear-gradient(#6b4a3a, #533628); }   /* 落石排的地面 */
+.lv-lane.lv-plat { background: linear-gradient(90deg, #ff6a1f, #ffb02e, #ff5414); background-size: 200% 100%; animation: lv-flow 3s linear infinite; }
+@keyframes lv-flow { to { background-position: -200% 0; } }
+.lv-steam { background: #5a4038; }
+.lv-vent { position: absolute; top: 0; bottom: 0; width: 50%; display: block; }
+.lv-vent[data-half="L"] { left: 0; } .lv-vent[data-half="R"] { right: 0; }
+.lv-vent[data-s="warn"] { background: radial-gradient(circle at 50% 75%, rgba(255, 255, 255, .55) 0 12%, transparent 13%), repeating-radial-gradient(circle at 50% 80%, rgba(255, 255, 255, .25) 0 4px, transparent 4px 12px); animation: lv-blink .4s steps(2) infinite; }
+.lv-vent[data-s="burst"] { background: linear-gradient(0deg, rgba(255, 255, 255, .95), rgba(255, 255, 255, .55)); box-shadow: inset 0 0 20px #fff; }
+@keyframes lv-blink { 50% { opacity: .5; } }
+i.lv-rock { position: absolute; left: 0; width: var(--c); height: var(--c); display: block; border-radius: 50%; transform-origin: center;
+  background: radial-gradient(circle at 35% 30%, #6e6e6e, #2c2c2c 70%); box-shadow: inset -4px -6px 0 rgba(0, 0, 0, .35), 0 0 0 2px rgba(255, 120, 40, .5); scale: .86; }
+i.lv-plat { position: absolute; left: 0; height: var(--c); display: block; border-radius: 12px; scale: 1 .78;
+  background: linear-gradient(#a8968a, #7a675b); box-shadow: inset 0 4px 0 #c8b8ab, 0 0 0 2px #3b2a20; }
+.lv-me { position: absolute; left: 0; top: 0; width: var(--c); height: var(--c); z-index: 3; display: grid; place-items: center; will-change: transform; }
+.lv-me img { width: 92%; height: auto; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .5)); }
+.lv-me span { font-size: calc(var(--c) * .7); }
+.lv-shield { position: absolute; inset: -8%; border-radius: 50%; display: none; background: radial-gradient(circle, rgba(255, 215, 90, .15), rgba(255, 200, 60, .55)); box-shadow: 0 0 14px #ffd24a; }
+.lv-me.shielded .lv-shield { display: block; }
+.lv-warn { position: absolute; top: -40%; display: none; padding: 1px 6px; border-radius: 8px; background: #e33; color: #fff; font-size: calc(var(--c) * .28); white-space: nowrap; }
+.lv-me.edge .lv-warn { display: block; } .lv-me.edge img { filter: drop-shadow(0 0 6px #f33); animation: lv-blink .3s steps(2) infinite; }
+.lv-me.guard img { animation: lv-blink .2s steps(2) infinite; }
+.lv-me.bump { animation: lv-bump .35s; } .lv-me.k-lava::after { content: '💨'; position: absolute; font-size: calc(var(--c) * .6); }
+@keyframes lv-bump { 30% { scale: 1.15; } 60% { scale: .9; } }
+.lv-pad { display: grid; grid-template-columns: repeat(3, 72px); grid-template-rows: 62px 62px; gap: 8px; justify-content: center; touch-action: none; user-select: none; -webkit-user-select: none; }
+.lv-pad button { border: 0; border-radius: 18px; background: #ffb43a; color: #5a2a0a; font-size: 1.6rem; font-weight: 900; box-shadow: 0 4px 0 #b86b14; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.lv-pad button.on { transform: translateY(3px); box-shadow: 0 1px 0 #b86b14; }
+.lv-pad [data-d="up"] { grid-column: 2; grid-row: 1; } .lv-pad [data-d="left"] { grid-column: 1; grid-row: 2; }
+.lv-pad [data-d="down"] { grid-column: 2; grid-row: 2; } .lv-pad [data-d="right"] { grid-column: 3; grid-row: 2; }
+.lv-practice { text-align: center; color: #ffd9b0; }
+.lv-talk:empty { display: none; }
+.lv-talk { position: absolute; inset: 0; z-index: 5; background: rgba(20, 8, 4, .45); }
+.lv-box { bottom: calc(env(safe-area-inset-bottom) + 20px); }
+.lv-box .we-who { color: #c2410c; }
+.lv-box .pilot-acts { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.lv-lolo { position: absolute; left: 14px; bottom: calc(100% - 10px); font-size: 64px; line-height: 1; }
+@media (prefers-reduced-motion: reduce) { .lv-lane.lv-plat, .lv-vent[data-s="warn"], .lv-me.edge img, .lv-me.guard img { animation: none; } }
