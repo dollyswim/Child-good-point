@@ -2849,7 +2849,7 @@ test('水島地圖：101 格、4 個場景 25／34／24／18、格子類型照�
   assert.ok(B.scenes);
   assert.deepEqual(B.regions.map((r) => B.tiles.filter((t) => t.regionId === r.id).length), [25, 34, 24, 18]);
   const cnt = (ty) => B.tiles.filter((t) => t.type === ty).length;
-  assert.deepEqual([cnt('chest'), cnt('chance'), cnt('fate'), cnt('minigame'), cnt('end'), cnt('start')], [10, 12, 7, 6, 1, 1]);
+  assert.deepEqual([cnt('chest'), cnt('chance'), cnt('fate'), cnt('minigame'), cnt('end'), cnt('start')], [10, 12, 7, 8, 1, 1]);
   assert.deepEqual(G.storiesOf('water').map((k) => G.STORIES[k].tile), [8, 16, 34, 48, 56, 100]);
   G.storiesOf('water').forEach((k) => { const t = G.STORIES[k].tile; if (t < 100) assert.equal(B.tiles[t].type, 'normal', '關卡格底層是一般格'); });
   assert.deepEqual([B.tiles[49].type, B.tiles[0].id, B.tiles[100].id], ['normal', 'water-01-start', 'water-04-100']);
