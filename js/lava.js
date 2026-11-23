@@ -185,7 +185,10 @@
             } else me.classList.remove('edge');
             if (!rescue && !done) check();
           }
-          obs.forEach(function (o) { o.el.style.transform = 'translateX(' + (obsX(o.row, o.i, t) * cell) + 'px)'; });
+          obs.forEach(function (o) {   // 2026-11-24 家長：落石邊走邊滾（旋轉角度＝移動距離÷半徑，跟移動同一個 transform，不額外耗效能）
+            var x = obsX(o.row, o.i, t);
+            o.el.style.transform = 'translateX(' + (x * cell) + 'px)' + (o.row.t === 'rock' ? ' rotate(' + (o.row.dir * o.row.speed * t / 0.45).toFixed(3) + 'rad)' : '');
+          });
           [].forEach.call(field.querySelectorAll('.lv-vent'), function (v) { v.setAttribute('data-s', steamState(t, v.getAttribute('data-half'))); });
           vis();
           if (!done || anim) raf = requestAnimationFrame(frame);
