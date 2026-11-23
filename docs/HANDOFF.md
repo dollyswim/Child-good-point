@@ -61,6 +61,7 @@
 - 家長預覽連結 `?preview=…`；換島不受任務影響的單元測試；`docs/WOOD_TO_WATER_HANDOFF.md` 全面更新（11-16）。
 
 ### 待辦（家長尚未指定先後）
+- **火島（2026-11-24 規劃）**：規格 `docs/fire/FIRE_ISLAND_SPEC.md`、家長決定 `docs/fire/FIRE_ISLAND_REVIEW.md`、正式計畫 `docs/fire/FIRE_ISLAND_PLAN.md`、地圖需求給 Codex `docs/fire/CODEX_FIRE_MAP_BRIEF.md`。下一步：等 Codex 交 4 張草圖＋座標 JSON（第 0 批），每批施工前先交分鏡、對話草稿、互動方案、提示詞給家長審。
 - **火島小遊戲《熔岩跳跳路》V1.0（2026-11-22）**：`js/lava.js`、計畫與美術需求 `docs/fire/LAVA_GAME_PLAN.md`、試玩 `#lava-test`。火島未開放，`minigameOf('fire')` 已設成 `lava`。待家長試玩手感、待美術 L-1～L-7（洛洛等）。同日修正：小遊戲紀錄重新載入時撈魚會被當成抓住星星（`store.js` 只保留 leaf 的舊問題）。
 - **齒輪小屋（金島第 53 格，2026-11-19 完成，家長圖 13 張已換上）**：程式 `js/gear-house.js`、題庫 `js/game.js` 的 `MEAL_RULES`、試玩 `#gear-test`、計畫 `docs/gold/GEAR_HOUSE_PLAN.md`。「金島小英雄」改成 4 個任務（已拿到的保留）；傳送門也不能跳過第 53 格。圖在 `images/gold/gear-house/`（`GH_ART`）：小屋外觀放 SHELL，餐廳與媽媽圖不放 SHELL、第一次用到才下載（金島第 45 格起背景先下載）。2026-11-20 起一局 5 題、第一次完成 ⭐3＋免鑰匙神祕寶箱、之後一般寶箱每天 1 個（細節見計畫書最後一節）。**待實機驗收**：按鈕大小、文字、嗆咳情境是否合適。
 - **待家長決定**：已經通關木島、回到金島的孩子，要再走完金島、木島才會到水島（島嶼順序金 → 木 → 水）；家長若希望直接到水島要另外做。
