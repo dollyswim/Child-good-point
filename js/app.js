@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.24-247';
+  var APP_VERSION = '2026.11.24-248';
   var store;
   try {
     store = new CGP.Store();
@@ -2342,6 +2342,7 @@
     .forEach(function (id) { BADGE_IMG[id] = 'images/badges/badge_' + id + '.webp'; });
   BADGE_IMG.woodClear1 = 'images/badges/badge_woodClear1v2.webp';
   ['waterHero', 'fish20', 'fish90'].forEach(function (id) { BADGE_IMG[id] = 'images/badges/badge_' + id + '.webp'; });   // 2026-11-19 家長 Gemini 圖（去外圍白底、256×256）；水島圖不放進 SHELL
+  ['lavaEasy', 'lavaHard', 'lavaKing'].forEach(function (id) { BADGE_IMG[id] = 'images/badges/badge_' + id + '.webp'; });   // 2026-11-24 熔岩跳跳路三關徽章（家長 Gemini 圖，紫框；火島開放後才出現，不放 SHELL）
   BADGE_IMG.waterClear1 = 'images/badges/badge_waterClear1.webp';   // 2026-11-17 家長提供（沉船＋小白鯨＋星星旗）；水島圖不放進 SHELL，第一次用到才下載   // 2026-11-13 換上家長提供的專屬圖（換檔名讓圖片快取立刻生效）
   /** 主徽章挑選：越高階／越稀有分數越高（只影響演出，不影響成就條件） */
   var ACH_RANK = { goldClear1: 300, woodClear1: 300, waterClear1: 300, fish90: 105, fish20: 50, streak7: 120, reachR4: 110, catch10: 100, special5: 95, reachR3: 80, chests10: 75, mystery1: 70,

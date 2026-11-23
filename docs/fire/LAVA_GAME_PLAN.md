@@ -105,3 +105,5 @@
 - `lavaEasy` 落石閃避高手：`inside the badge: a cute small adventurer jumping over a round dark lava boulder with glowing orange cracks, warm orange background`（內圈：可愛小冒險家跳過一顆有橘色發光裂紋的圓落石，暖橘色底）
 - `lavaHard` 熔岩小勇士：`inside the badge: a dark basalt stone raft floating on bright orange lava with a small white steam puff, deep red-orange background`（內圈：深色玄武岩石板浮在亮橘岩漿上，旁邊一小團白蒸氣，深紅橘底）
 - `lavaKing` 熔岩王者：`inside the badge: a small golden crown on top of a cute erupting volcano with glowing lava, rich red background with a few sparkles`（內圈：可愛噴發火山頂上一頂小金冠，濃紅底、幾顆閃光）
+
+- 2026-11-24（版本 248）：三個徽章圖到貨（家長 Gemini 圖，紫框，外框含淺紫內圈約徽章直徑 15%、比舊徽章略粗，家長確認可用）→ `images/badges/badge_lavaEasy／lavaHard／lavaKing.webp`（只去外框相連白底、256×256、徽章佔 94%）。
