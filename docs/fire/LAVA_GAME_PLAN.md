@@ -38,7 +38,7 @@
 |---|---|---|---|
 | L-1 | `lolo.webp` | 洛洛全身：可愛的火山蜥蜴，深灰色身體、橘金色火山紋路、推到額頭的探險護目鏡、小背包，一手舉起打招呼、表情活潑勇敢 | 白底、直式約 2:3、至少 800×1200 |
 | L-2 | `rock.webp` | 圓滾滾的火山落石：深灰黑色、表面有幾道發光橘色裂紋，圓潤不尖銳、側面看起來在滾 | 白底、正方形 512 |
-| L-3 | `platform.webp` | 冷卻的火山岩平台：扁平長條、頂面是比較亮的灰褐色可以踩、邊緣有一點橘光，**要一眼和岩漿區分** | 白底、橫式 2:1、1024×512 |
+| L-3 | `platform.webp` | 冷卻的火山岩平台：扁平長條、頂面是比較亮的灰褐色可以踩、邊緣有一點橘光，**要一眼和岩漿區分**；**正面略高、左右水平擺正、兩端一樣大、幾乎填滿寬度**（2026-11-23：第一版斜放有透視，請重畫） | 白底、橫式約 5:2 |
 | L-4 | `lava.webp` | 岩漿河紋理：橘紅色流動岩漿、有亮黃色光點，可以左右無縫重複 | 畫滿、橫式 4:1、1600×400 |
 | L-5 | `ground.webp` | 安全地面紋理（起點、中途安全區用）：黑色火山岩地面、有幾株小草和小石頭，可以左右無縫重複 | 畫滿、橫式 4:1、1600×400 |
 | L-6 | `vent_warn.webp`／`vent_burst.webp` | 地熱孔兩個狀態：①地面圓孔冒小泡泡和一點白煙（預警）②白色蒸氣柱往上噴（危險），同一個孔、同一個視角 | 白底、正方形 512，兩張一組 |
@@ -50,8 +50,8 @@
   中文：可愛的 Q 版火山蜥蜴探險家「洛洛」，全身站姿；深灰色身體、發光的橘金色火山紋路；探險護目鏡推到額頭、背小背包；一手舉起打招呼，表情活潑勇敢、大眼睛很友善；2.5D 黏土玩具風，跟金島技師同系列；純白背景、置中留邊、直式 2:3、不要文字。
 - **L-2** `A single round chubby volcanic boulder rolling sideways, dark charcoal stone with a few glowing orange cracks, soft rounded shape not sharp, 2.5D clay toy style, plain white background, centered, square, no text`
   中文：一顆圓滾滾的火山落石，側面看起來在滾；深炭灰色石頭、有幾道發光的橘色裂紋；圓潤不尖銳；2.5D 黏土風；純白背景、置中、正方形、不要文字。
-- **L-3** `A flat long cooled volcanic rock raft seen slightly from above, lighter grey-brown walkable top surface, a little warm orange glow at the edges, clearly solid and safe to stand on, 2.5D clay toy style, plain white background, horizontal 2:1, no text`
-  中文：從略高處看的扁平長條冷卻火山岩平台；頂面是比較亮的灰褐色、可以踩；邊緣有一點溫暖橘光；看起來很堅固、站上去很安全；2.5D 黏土風；純白背景、橫式 2:1、不要文字。
+- **L-3** `A flat long cooled volcanic rock raft seen from the front and slightly above, perfectly straight and horizontal (long side exactly left to right, both ends the same size, no perspective tilt, no rotation), lighter grey-brown walkable top surface, thin warm orange glow along the bottom edges, fills almost the full width with a small margin, clearly solid and safe to stand on, 2.5D clay toy style, plain white background, horizontal about 5:2, no text`
+  中文：扁平長條冷卻火山岩平台，從正面略高一點看、**左右水平擺正**（長邊左右平放、兩端一樣大、不要透視傾斜或旋轉）；頂面是比較亮的灰褐色、可以踩；底部邊緣有一圈細細的溫暖橘光；幾乎填滿整張寬度、只留一點邊；看起來很堅固；2.5D 黏土風；純白背景、橫式約 5:2、不要文字。（2026-11-23 家長第一版質感很好但斜放，可上傳第一版當參考重畫）
 - **L-4** `Seamless horizontally tileable texture of a flowing lava river seen from above, bright orange-red molten lava with glowing yellow spots and soft swirls, cute 2.5D clay style, fills the whole image, horizontal 4:1, no text`
   中文：從上方看的流動岩漿河，左右可以無縫重複；亮橘紅色岩漿、有發光黃點和柔和漩渦；可愛 2.5D 黏土風；畫滿整張、橫式 4:1、不要文字。
 - **L-5** `Seamless horizontally tileable texture of safe black volcanic rock ground seen from above, a few tiny green sprouts and small pebbles, cute 2.5D clay style, fills the whole image, horizontal 4:1, no text`
