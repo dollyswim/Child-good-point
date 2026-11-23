@@ -2657,7 +2657,7 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 
 /* 火島小遊戲「熔岩跳跳路」V1.0（2026-11-22，js/lava.js；美術圖到貨前用 CSS 圖形暫代） */
 .mg.lv-mg { grid-template-rows: auto auto minmax(0, 1fr) auto auto; gap: 6px; padding-bottom: max(10px, env(safe-area-inset-bottom)); color: #fff;
-  background: #2a140d url(../images/fire/lava/bg.webp) center / cover no-repeat; touch-action: none; overscroll-behavior: none; }   /* L-8 背景 */
+  background: #2a140d url(../images/fire/lava/bg2.webp) center / cover no-repeat; touch-action: none; overscroll-behavior: none; }   /* L-8 背景 */
 .lv-top { position: relative; z-index: 6; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: max(10px, env(safe-area-inset-top)) 12px 0; }
 .lv-top b { text-align: center; font-size: 1.1rem; color: #ffd36b; }
 .lv-quit { color: #ffd9b0; min-height: 40px; padding: 4px 6px; }
@@ -2724,7 +2724,7 @@ i.lv-plat { position: absolute; left: 0; height: var(--c); display: block;
   color: #4a2c14; background: linear-gradient(#e9cf9c, #c9a46a); box-shadow: 0 2px 0 #8a6a3c, 0 3px 4px rgba(0, 0, 0, .4); text-shadow: none; }   /* 安全區小木牌 */
 .lv-me img { width: 108%; max-width: none; transform-origin: 50% 100%; margin-top: -10%; }   /* 角色外觀放大約 18%（碰撞範圍不變） */
 .lv-foot { position: absolute; left: 22%; right: 22%; bottom: 6%; height: 14%; border-radius: 50%; background: rgba(0, 0, 0, .38); filter: blur(2px); }
-i.lv-rock { filter: drop-shadow(0 4px 3px rgba(0, 0, 0, .6)) drop-shadow(0 0 4px rgba(255, 120, 40, .45)); }
+i.lv-rock { filter: drop-shadow(0 0 4px rgba(0, 0, 0, .7)) drop-shadow(0 0 4px rgba(255, 120, 40, .45)); }   /* 滾動時影子不跟著轉：不用位移的影子 */
 i.lv-plat { filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .5)); }   /* 2026-11-24 家長深色玄武岩新圖（platform2） */
 .lv-vent u { opacity: .55; filter: grayscale(.8) brightness(.75); }   /* 休息：深灰 */
 .lv-vent[data-s="warn"] u { filter: sepia(.6) saturate(2.2) hue-rotate(-12deg) brightness(1.08) drop-shadow(0 0 6px rgba(255, 140, 40, .9)); }   /* 預警：暖橘發光 */
@@ -2743,3 +2743,4 @@ i.lv-plat { filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .5)); }   /* 2026-11-24 
 .lv-tip { border: 2px solid #d9873a; box-shadow: 0 0 0 2px #6b3a1e, 0 3px 6px rgba(0, 0, 0, .4); }
 .lv-pad button { background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, .35), transparent 40%), radial-gradient(circle at 75% 70%, rgba(150, 100, 40, .18), transparent 35%), linear-gradient(#f0cf88, #d6a756); border: 2px solid #b78446; }
 .lv-field { box-shadow: 0 0 0 4px #6b4a36, 0 0 0 6px #3a281e, 0 10px 22px rgba(0, 0, 0, .55); }
+.lv-lane b.lv-sign.hi { animation: lv-sign-hi .5s ease-in-out 3; } @keyframes lv-sign-hi { 50% { transform: translateY(-50%) scale(1.25); box-shadow: 0 0 0 3px #ffd36b, 0 3px 4px rgba(0, 0, 0, .4); } }   /* 示範走到安全區：木牌跳一下 */

@@ -11,7 +11,7 @@
     var COLS = 6, STEP_MS = 180, GUARD_MS = 1000, GOAL_EXTRA = 0.4;   // 2026-11-23 家長：終點排加高 0.4 格，終點門放大
     var D = 'images/fire/lava/';   // 2026-11-23 家長美術 L-1～L-8（不放 SHELL，打開小遊戲時才下載）
     var ART = { lolo: D + 'lolo.webp', rock: D + 'rock.webp', platform: D + 'platform2.webp', lava: D + 'lava.webp', ground: D + 'ground.webp',
-      ventWarn: D + 'vent_warn.webp', ventBurst: D + 'vent_burst.webp', goal: D + 'goal.webp', bg: D + 'bg.webp' };
+      ventWarn: D + 'vent_warn.webp', ventBurst: D + 'vent_burst.webp', goal: D + 'goal.webp', bg: D + 'bg2.webp' };
     function preload() { Object.keys(ART).forEach(function (k) { var im = new Image(); im.src = ART[k]; }); }
     var LOLO = '洛洛';
     /**
@@ -59,7 +59,7 @@
           lane.className = 'lv-lane lv-' + row.t; lane.style.top = r ? 'calc(var(--c) * ' + r + ' + var(--g))' : '0';
           if (row.t === 'steam') lane.innerHTML = '<i class="lv-vent" data-half="L"><u></u><u></u><u></u></i><i class="lv-vent" data-half="R"><u></u><u></u><u></u></i>';   // 每格一個地熱孔
           if (row.t === 'goal') lane.innerHTML = '<img class="lv-goal-art" src="' + ART.goal + '" alt="終點" draggable="false">';
-          if (row.t === 'safe') lane.innerHTML = '<b class="lv-sign">安全區</b>';   // 2026-11-23 V1.1：角落小石牌
+          if (row.t === 'safe' && demo) lane.innerHTML = '<b class="lv-sign">安全區</b>';   // 2026-11-23 家長：安全區只在洛洛示範時標示，正式玩不放字
           field.appendChild(lane);
           if (row.t === 'rock' || row.t === 'plat') for (var i = 0; i < row.count; i++) {
             var o = document.createElement('i');
@@ -152,7 +152,8 @@
               hooks.tip(L.rows[r].t === 'goal' ? '到終點了！' : '現在跳！');
               anim = { x: p.px, y: p.row, t0: performance.now() }; p.row = r; steps++;
               if (L.rows[r].t === 'goal') { win(); return; }
-              setTimeout(function () { hooks.tip(L.rows[p.row].t === 'safe' ? '安全區可以慢慢觀察～' : '等空隙…'); tick(); }, L.rows[r].t === 'safe' ? 1300 : 450);
+              if (L.rows[r].t === 'safe') { var sg = field.querySelector('.lv-sign'); if (sg) sg.classList.add('hi'); }
+              setTimeout(function () { hooks.tip(L.rows[p.row].t === 'safe' ? '這排是安全區，沒有落石，可以慢慢觀察～' : '等空隙…'); tick(); }, L.rows[r].t === 'safe' ? 2000 : 450);
             } else { hooks.tip('等空隙…'); setTimeout(tick, 120); }
           })();
         }
@@ -184,7 +185,10 @@
             } else me.classList.remove('edge');
             if (!rescue && !done) check();
           }
-          obs.forEach(function (o) { o.el.style.transform = 'translateX(' + (obsX(o.row, o.i, t) * cell) + 'px)'; });
+          obs.forEach(function (o) {   // 2026-11-24 家長：落石邊走邊滾（旋轉角度＝移動距離÷半徑，跟移動同一個 transform，不額外耗效能）
+            var x = obsX(o.row, o.i, t);
+            o.el.style.transform = 'translateX(' + (x * cell) + 'px)' + (o.row.t === 'rock' ? ' rotate(' + (o.row.dir * o.row.speed * t / 0.45).toFixed(3) + 'rad)' : '');
+          });
           [].forEach.call(field.querySelectorAll('.lv-vent'), function (v) { v.setAttribute('data-s', steamState(t, v.getAttribute('data-half'))); });
           vis();
           if (!done || anim) raf = requestAnimationFrame(frame);
