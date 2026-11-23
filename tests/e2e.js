@@ -2501,7 +2501,7 @@ async function main() {
     q.on('pageerror', (e) => errors.push(e.message));
     await q.goto(url);
     const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '小火' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
-      s.data.adventure.minigames.push({ id: 'lv-e2e', childId: a.id, date: s.today(), tile: 7, status: 'pending', caught: 0, stars: 0, ts: 1, game: 'lava' }); s.save(); return a.id; });
+      s.data.adventure.minigames.push({ id: 'lv-e2e', childId: a.id, date: s.today(), tile: 7, status: 'pending', caught: 0, stars: 0, ts: 1, game: 'lava' }); s.getPlayer(a.id).lavaDemo = '2026-11-01'; s.save(); return a.id; });   // 已看過洛洛示範（示範另外測）
     const info = () => q.evaluate((cid) => { const s = window.__cgpStore, p = s.getPlayer(cid), m = s.data.adventure.minigames.find((x) => x.id === 'lv-e2e');
       return { stars: s.getStarBalance(cid), status: m.status, lava: m.lava || null, mstars: m.stars, bag: JSON.stringify(p.bag) }; }, id);
     const st = async () => q.evaluate(() => window.__cgpLava.debug());
@@ -2568,6 +2568,19 @@ async function main() {
     // 家長試玩網址
     await q.goto(url + '#lava-test'); await q.waitForSelector('#mg.lv-mg');
     assert.match(await q.locator('#mg').innerText(), /試玩模式/);
+    // 洛洛示範（2026-11-23）：沒看過會先示範，可以跳過；示範時角色是洛洛、不算失敗
+    await q.evaluate(() => { window.__cgpLavaSpeed = 1; });
+    await q.click('[data-talk=next]'); await q.click('[data-talk=next]');
+    assert.match(await q.locator('#lv-talk').innerText(), /先看我示範一次/);
+    await q.click('[data-talk=demo]');
+    await q.waitForSelector('#lv-skip:not([hidden])');
+    assert.match(await q.locator('#lv-me img').getAttribute('src'), /lolo\.webp$/);
+    await q.click('#lv-skip');
+    await q.waitForSelector('#lv-talk [data-talk=next]');
+    assert.match(await q.locator('#lv-talk').innerText(), /等落石過去再跳/);
+    await q.click('[data-talk=next]'); await q.click('[data-talk=go]');
+    assert.match(await q.locator('#lv-me img').getAttribute('src'), /characters\/roundear\.webp$/, '試玩用預設冒險夥伴');
+    assert.equal(await q.locator('#lv-hearts').innerText(), '❤️❤️❤️', '示範不算失敗');
     await q.click('[data-lv=quit]');
     await q.waitForFunction(() => location.hash === '#home');
     await c.close();

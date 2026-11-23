@@ -2657,31 +2657,35 @@ img.pilot-art { display: block; width: 100%; height: auto; filter: drop-shadow(0
 
 /* 火島小遊戲「熔岩跳跳路」V1.0（2026-11-22，js/lava.js；美術圖到貨前用 CSS 圖形暫代） */
 .mg.lv-mg { grid-template-rows: auto auto minmax(0, 1fr) auto auto; gap: 6px; padding-bottom: max(10px, env(safe-area-inset-bottom)); color: #fff;
-  background: linear-gradient(#3a1d14, #22100b); touch-action: none; overscroll-behavior: none; }
+  background: #2a140d url(../images/fire/lava/bg.webp) center / cover no-repeat; touch-action: none; overscroll-behavior: none; }   /* L-8 背景 */
 .lv-top { position: relative; z-index: 6; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: max(10px, env(safe-area-inset-top)) 12px 0; }
 .lv-top b { text-align: center; font-size: 1.1rem; color: #ffd36b; }
 .lv-quit { color: #ffd9b0; min-height: 40px; padding: 4px 6px; }
 #lv-hearts { font-size: 1.15rem; letter-spacing: 1px; }
-.lv-tip { margin: 0 12px; min-height: 1.5em; text-align: center; font-weight: 800; color: #ffe8c9; }
-.lv-stage { position: relative; display: grid; place-items: center; min-height: 0; margin: 0 8px; }
+.lv-tip { margin: 0 12px; min-height: 1.4em; text-align: center; font-weight: 800; font-size: .92rem; color: #ffe8c9; text-shadow: 0 1px 2px rgba(0, 0, 0, .6); }
+.lv-stage { position: relative; display: grid; place-items: end center; min-height: 0; margin: 4px 8px 18px; }   /* 遊戲區貼在方向鍵上方，多的空間留在上面（露出背景火山） */   /* 2026-11-23 家長：遊戲區和向上鍵不要黏在一起 */
 .lv-field { position: relative; border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 3px #5c2a17, 0 8px 20px rgba(0, 0, 0, .5); }
 .lv-lane { position: absolute; left: 0; right: 0; height: var(--c); display: grid; place-items: center; }
 .lv-lane b { font-size: calc(var(--c) * .3); color: rgba(255, 255, 255, .55); letter-spacing: 2px; }
-.lv-goal { background: linear-gradient(#ffcf6b, #e8953a); } .lv-goal b { color: #6b2d0d; }
-.lv-safe, .lv-start { background: repeating-linear-gradient(90deg, #4a4040 0 calc(var(--c) - 2px), #3d3434 0 var(--c)); }
-.lv-rock { background: linear-gradient(#6b4a3a, #533628); }   /* 落石排的地面 */
-.lv-lane.lv-plat { background: linear-gradient(90deg, #ff6a1f, #ffb02e, #ff5414); background-size: 200% 100%; animation: lv-flow 3s linear infinite; }
-@keyframes lv-flow { to { background-position: -200% 0; } }
-.lv-steam { background: #5a4038; }
+.lv-lane.lv-goal, .lv-lane.lv-safe, .lv-lane.lv-start, .lv-lane.lv-steam { background: #5e524e url(../images/fire/lava/ground.webp) 0 0 / auto 100% repeat-x; }   /* L-5 安全地面 */
+.lv-lane.lv-safe b { text-shadow: 0 1px 2px rgba(0, 0, 0, .6); color: rgba(255, 255, 255, .7); }
+.lv-lane.lv-rock { background: #3f3330 url(../images/fire/lava/ground.webp) 0 0 / auto 100% repeat-x; filter: brightness(.72) sepia(.25); }   /* 落石排：同樣的地面調暗，和安全區分開 */
+.lv-lane.lv-plat { background: #e8541a url(../images/fire/lava/lava.webp) 0 0 / auto 100% repeat-x; animation: lv-flow 6s linear infinite; }   /* L-4 岩漿 */
+@keyframes lv-flow { to { background-position: calc(var(--c) * -4.03) 0; } }
+.lv-lane.lv-goal { height: calc(var(--c) + var(--g)); }   /* 終點排加高 */
+.lv-goal-art { height: calc((var(--c) + var(--g)) * .96) !important; width: auto !important; max-width: none; pointer-events: none; }   /* L-7 終點門 */
 .lv-vent { position: absolute; top: 0; bottom: 0; width: 50%; display: block; }
 .lv-vent[data-half="L"] { left: 0; } .lv-vent[data-half="R"] { right: 0; }
-.lv-vent[data-s="warn"] { background: radial-gradient(circle at 50% 75%, rgba(255, 255, 255, .55) 0 12%, transparent 13%), repeating-radial-gradient(circle at 50% 80%, rgba(255, 255, 255, .25) 0 4px, transparent 4px 12px); animation: lv-blink .4s steps(2) infinite; }
-.lv-vent[data-s="burst"] { background: linear-gradient(0deg, rgba(255, 255, 255, .95), rgba(255, 255, 255, .55)); box-shadow: inset 0 0 20px #fff; }
+.lv-vent { display: flex !important; justify-content: space-around; align-items: flex-end; }
+.lv-vent u { width: 31%; height: 96%; background: url(../images/fire/lava/vent_warn.webp) center bottom / contain no-repeat; opacity: .45; filter: grayscale(.6); }   /* 安全：地熱孔安靜 */
+.lv-vent[data-s="warn"] u { opacity: 1; filter: none; animation: lv-blink .4s steps(2) infinite; }   /* L-6 預警：冒煙閃爍 */
+.lv-vent[data-s="burst"] u { opacity: 1; filter: none; background-image: url(../images/fire/lava/vent_burst.webp); }   /* L-6 噴發 */
+.lv-vent[data-s="burst"] { background: linear-gradient(0deg, rgba(255, 255, 255, .55), rgba(255, 255, 255, .15)); }
 @keyframes lv-blink { 50% { opacity: .5; } }
-i.lv-rock { position: absolute; left: 0; width: var(--c); height: var(--c); display: block; border-radius: 50%; transform-origin: center;
-  background: radial-gradient(circle at 35% 30%, #6e6e6e, #2c2c2c 70%); box-shadow: inset -4px -6px 0 rgba(0, 0, 0, .35), 0 0 0 2px rgba(255, 120, 40, .5); scale: .86; }
-i.lv-plat { position: absolute; left: 0; height: var(--c); display: block; border-radius: 12px; scale: 1 .78;
-  background: linear-gradient(#a8968a, #7a675b); box-shadow: inset 0 4px 0 #c8b8ab, 0 0 0 2px #3b2a20; }
+i.lv-rock { position: absolute; left: 0; width: var(--c); height: var(--c); display: block; transform-origin: center; scale: .9;
+  background: url(../images/fire/lava/rock.webp) center / contain no-repeat; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .5)); }   /* L-2 落石 */
+i.lv-plat { position: absolute; left: 0; height: var(--c); display: block;
+  background: url(../images/fire/lava/platform.webp) center / 100% 88% no-repeat; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .45)); }   /* L-3 平台 */
 .lv-me { position: absolute; left: 0; top: 0; width: var(--c); height: var(--c); z-index: 3; display: grid; place-items: center; will-change: transform; }
 .lv-me img { width: 92%; height: auto; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .5)); }
 .lv-me span { font-size: calc(var(--c) * .7); }
@@ -2692,7 +2696,7 @@ i.lv-plat { position: absolute; left: 0; height: var(--c); display: block; borde
 .lv-me.guard img { animation: lv-blink .2s steps(2) infinite; }
 .lv-me.bump { animation: lv-bump .35s; } .lv-me.k-lava::after { content: '💨'; position: absolute; font-size: calc(var(--c) * .6); }
 @keyframes lv-bump { 30% { scale: 1.15; } 60% { scale: .9; } }
-.lv-pad { display: grid; grid-template-columns: repeat(3, 72px); grid-template-rows: 62px 62px; gap: 8px; justify-content: center; touch-action: none; user-select: none; -webkit-user-select: none; }
+.lv-pad { display: grid; grid-template-columns: repeat(3, 72px); grid-template-rows: 58px 58px; gap: 8px; margin-bottom: 6px; justify-content: center; touch-action: none; user-select: none; -webkit-user-select: none; }
 .lv-pad button { border: 0; border-radius: 18px; background: #ffb43a; color: #5a2a0a; font-size: 1.6rem; font-weight: 900; box-shadow: 0 4px 0 #b86b14; touch-action: none; -webkit-tap-highlight-color: transparent; }
 .lv-pad button.on { transform: translateY(3px); box-shadow: 0 1px 0 #b86b14; }
 .lv-pad [data-d="up"] { grid-column: 2; grid-row: 1; } .lv-pad [data-d="left"] { grid-column: 1; grid-row: 2; }
@@ -2704,4 +2708,32 @@ i.lv-plat { position: absolute; left: 0; height: var(--c); display: block; borde
 .lv-box .we-who { color: #c2410c; }
 .lv-box .pilot-acts { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
 .lv-lolo { position: absolute; left: 14px; bottom: calc(100% - 10px); font-size: 64px; line-height: 1; }
-@media (prefers-reduced-motion: reduce) { .lv-lane.lv-plat, .lv-vent[data-s="warn"], .lv-me.edge img, .lv-me.guard img { animation: none; } }
+.lv-box .we-portrait { width: min(36vw, 150px); }   /* 洛洛半身 */
+@media (prefers-reduced-motion: reduce) { .lv-lane.lv-plat, .lv-vent[data-s="warn"] u, .lv-me.edge img, .lv-me.guard img { animation: none; } }
+
+/* 熔岩跳跳路 V1.1（2026-11-23 家長：介面美化，只改樣式，玩法與判定不變） */
+.lv-top { margin: 8px 10px 0; padding: 6px 10px; border-radius: 18px; background: linear-gradient(#5a3d30, #3b261d); box-shadow: 0 0 0 2px rgba(232, 178, 92, .55), 0 4px 10px rgba(0, 0, 0, .45); }
+.lv-top b { font-size: 1.05rem; color: #ffe3a3; white-space: nowrap; }
+.lv-quit { color: #ffe3a3; font-size: .9rem; white-space: nowrap; min-height: 36px; }
+#lv-hearts { white-space: nowrap; font-size: 1.05rem; }
+.lv-tip { justify-self: center; margin: 2px 12px 0; padding: 4px 14px; border-radius: 99px; background: #f6e7c8; color: #5a3a1a; text-shadow: none; font-size: .9rem; min-height: 0; box-shadow: 0 2px 4px rgba(0, 0, 0, .35); }
+.lv-field { border-radius: 20px; box-shadow: 0 0 0 3px #4a3a33, 0 0 0 5px rgba(232, 178, 92, .45), 0 10px 22px rgba(0, 0, 0, .55); overflow: hidden; }
+.lv-stage::before, .lv-stage::after { content: ''; position: absolute; bottom: -10px; width: 26px; height: 20px; border-radius: 50% 50% 40% 40%; background: radial-gradient(circle at 35% 30%, #7a6a62, #3c302b); z-index: 2; pointer-events: none; }
+.lv-stage::before { left: 2px; } .lv-stage::after { right: 2px; }   /* 場地兩個下角的小石頭（在框外，不佔格子） */
+.lv-lane b.lv-sign { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); padding: 2px 8px; border-radius: 8px; font-size: calc(var(--c) * .22); letter-spacing: 1px;
+  color: #4a2c14; background: linear-gradient(#e9cf9c, #c9a46a); box-shadow: 0 2px 0 #8a6a3c, 0 3px 4px rgba(0, 0, 0, .4); text-shadow: none; }   /* 安全區小木牌 */
+.lv-me img { width: 108%; max-width: none; transform-origin: 50% 100%; margin-top: -10%; }   /* 角色外觀放大約 18%（碰撞範圍不變） */
+.lv-foot { position: absolute; left: 22%; right: 22%; bottom: 6%; height: 14%; border-radius: 50%; background: rgba(0, 0, 0, .38); filter: blur(2px); }
+i.lv-rock { filter: drop-shadow(0 4px 3px rgba(0, 0, 0, .6)) drop-shadow(0 0 4px rgba(255, 120, 40, .45)); }
+i.lv-plat { filter: brightness(.58) contrast(1.15) saturate(.9) drop-shadow(0 0 5px rgba(255, 110, 40, .65)) drop-shadow(0 3px 2px rgba(0, 0, 0, .5)); }   /* 深色玄武岩（新圖到之前用濾鏡暫代） */
+.lv-vent u { opacity: .55; filter: grayscale(.8) brightness(.75); }   /* 休息：深灰 */
+.lv-vent[data-s="warn"] u { filter: sepia(.6) saturate(2.2) hue-rotate(-12deg) brightness(1.08) drop-shadow(0 0 6px rgba(255, 140, 40, .9)); }   /* 預警：暖橘發光 */
+.lv-vent[data-s="warn"] { background: radial-gradient(ellipse at 50% 85%, rgba(255, 140, 40, .35), transparent 70%); }
+.lv-vent[data-s="burst"] { background: linear-gradient(0deg, rgba(255, 255, 255, .7), rgba(255, 255, 255, .2)); }
+.lv-pad { grid-template-columns: repeat(3, 66px); grid-template-rows: 56px 56px; gap: 8px; }
+.lv-pad button { border-radius: 16px; font-size: 1.4rem; color: #5a3416; background: linear-gradient(#f2d58f, #d9ae5c); box-shadow: 0 4px 0 #9c7136, 0 6px 8px rgba(0, 0, 0, .4), inset 0 2px 0 rgba(255, 255, 255, .45); }
+.lv-pad button.on { transform: translateY(3px); box-shadow: 0 1px 0 #9c7136, 0 2px 4px rgba(0, 0, 0, .4), inset 0 2px 0 rgba(255, 255, 255, .3); }
+.lv-practice { justify-self: center; padding: 3px 12px; border-radius: 99px; background: rgba(58, 32, 20, .85); color: #f6e7c8; font-size: .78rem; margin-bottom: 2px; }
+.lv-skip { position: absolute; right: 6px; top: 4px; z-index: 4; padding: 6px 12px; border: 0; border-radius: 99px; background: rgba(58, 32, 20, .88); color: #ffe3a3; font: inherit; font-weight: 800; font-size: .85rem; }
+.lv-skip[hidden] { display: none; }
+@media (max-height: 700px) { .lv-pad { grid-template-rows: 50px 50px; grid-template-columns: repeat(3, 60px); gap: 6px; } .lv-top { margin-top: 4px; padding: 4px 8px; } }

@@ -1095,6 +1095,9 @@
    * 熔岩跳跳路結算（只結算一次）：outcome＝easyRescue／easyClear（過關後選擇結束）／hardRescue／hardClear。
    * 困難版的結果要先有簡易版過關紀錄；簡易版救援一律 5 星。
    */
+  /** 洛洛示範看過了沒（2026-11-23：每個孩子第一次自動播放） */
+  Store.prototype.lavaDemoSeen = function (childId) { return !!this.getPlayer(childId).lavaDemo; };
+  Store.prototype.markLavaDemo = function (childId) { var p = this.getPlayer(childId); if (!p.lavaDemo) { p.lavaDemo = this.today(); this.save(); } };
   Store.prototype.finishLava = function (childId, outcome) {
     this._requirePlay(childId);
     var m = this.getPendingMinigame(childId);

@@ -3114,7 +3114,7 @@ test('齒輪小屋（第 53 格）：題庫 6 種都完整；每局 5 題、30�
   assert.deepEqual(p.gearHouse, { plays: 0 });
   delete p.gearHouse; store.save();
   const s2 = new Store({ storage, seed: false, now: () => store.now() });
-  assert.deepEqual(s2.getPlayer(a.id).gearHouse, { plays: 0 }, 'migrate 補預設值');
+  assert.equal(s2.getPlayer(a.id).gearHouse.plays, 0, 'migrate 補預設值');
   const bal = store.getStarBalance(a.id), rolls = store.getRollsLeft(a.id);
   for (let i = 0; i < 3; i++) assert.equal(store.startMealGame(a.id).length, 5);
   assert.equal(store.getPlayer(a.id).gearHouse.plays, 3);
@@ -3193,4 +3193,16 @@ test('小遊戲紀錄重新載入（2026-11-22 修正）：撈魚、熔岩跳跳
   const f = s2.data.adventure.minigames.find(m => m.id === 'f1'), l = s2.data.adventure.minigames.find(m => m.id === 'l1');
   assert.equal(f.game, 'fish', '撈魚不會變成抓住星星');
   assert.deepEqual([l.game, l.lava.easy], ['lava', 'clear']);
+});
+
+test('齒輪小屋紀錄與洛洛示範重新載入後保留（2026-11-23 修正：之前會被洗掉，神祕寶箱可能重複給）', () => {
+  const { store, a, storage } = p3Store();
+  store.finishMealGame(a.id); store.finishMealGame(a.id);
+  store.markLavaDemo(a.id);
+  const s2 = new Store({ storage, seed: false, now: () => store.now() });
+  const g = s2.getPlayer(a.id).gearHouse;
+  assert.equal(g.giftDone, store.today()); assert.equal(g.chestDate, store.today());
+  assert.deepEqual(s2.finishMealGame(a.id), { stars: 0, gift: false, chest: false }, '重新載入後不會再給神祕寶箱或一般寶箱');
+  assert.equal(s2.lavaDemoSeen(a.id), true);
+  assert.equal(s2.lavaDemoSeen(s2.addChild({ name: 'B' }).id), false);
 });

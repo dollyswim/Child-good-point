@@ -428,6 +428,12 @@
               if (w.seen && typeof w.seen === 'object') Object.keys(w.seen).forEach(function (k) { if (/^[a-z0-9]{1,16}$/.test(k) && w.seen[k]) seen[k] = true; });
               return { seen: seen, bucket: !!w.bucket, bottle: !!w.bottle, welcomed: !!w.welcomed, rulesSeen: !!w.rulesSeen, bossStage: Math.max(0, Math.min(3, toInt(w.bossStage, 0))), folkMet: !!w.folkMet, fishCaught: Math.max(0, Math.min(99, toInt(w.fishCaught, 0))) };   // fishCaught：2026-11-19 第 34 格撈魚累積   // folkMet：2026-11-18 看過結尾的火島居民
             })(),
+            // 齒輪小屋（2026-11-19；2026-11-23 補上：之前重新載入會被洗掉，神祕寶箱可能重複給）
+            gearHouse: (function () {
+              var g = p.gearHouse && typeof p.gearHouse === 'object' ? p.gearHouse : {}, day = function (d) { return typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : undefined; };
+              return { plays: Math.max(0, toInt(g.plays, 0)), giftDone: day(g.giftDone), chestDate: day(g.chestDate) };
+            })(),
+            lavaDemo: typeof p.lavaDemo === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.lavaDemo) ? p.lavaDemo : undefined,   // 熔岩跳跳路：洛洛示範看過的日期
             // 換島：其他島的保存進度 { 島: { laps, maxReached } }、金島以外的通關次數 { 島: 次數 }
             islands: (function () {
               var o = {}, src2 = p.islands && typeof p.islands === 'object' ? p.islands : {};

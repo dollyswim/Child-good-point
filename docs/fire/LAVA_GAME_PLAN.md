@@ -68,3 +68,14 @@
 - 測試：單元（四種結果 5／10／10／15、只結算一次、困難版要先過簡易版、不動背包、重新載入保留成績）；E2E（6×6／6×8、撞落石與掉岩漿扣機會回安全區、重新整理後回到選擇、困難版救援 10 星、只用一次每日小遊戲、#lava-test）；動態檢查（平台載著走約 0.7 格／秒、邊緣「快跳！」提醒、出界算失敗、蒸氣左右輪流不會同時噴）。
 - 測試專用：`window.__cgpLavaSpeed`（0＝障礙物停住）、`window.__cgpLava.debug()／layout()／setTime()`。
 - 待家長：手機試玩手感（速度、空隙、方向鍵大小）；美術 L-1～L-7。
+
+## 6. V1.1 介面美化＋美術換上（2026-11-23，版本 243）
+- 美術 L-1～L-8 換上（`images/fire/lava/`，共約 120KB，不放 SHELL）：洛洛、落石、平台、岩漿、安全地面、地熱孔兩狀態、終點拱門（只有拱門那張）、背景。白底只去外框相連白底＋拱門中間。
+- 版面：資訊列改圓角深棕金邊；短提示牌（簡易「看準空隙，跳過落石！」、困難「躲落石、跳石板、避蒸氣！」，失敗訊息 2.2 秒後恢復）；場地細金邊＋圓角＋陰影、下角小石頭在框外；遊戲區貼方向鍵上方、中間留空；終點排加高 0.4 格（拱門放大，判定不變）；安全區改小木牌；方向鍵暖金砂岩色；試玩標籤深棕小圓角。
+- 角色：正式玩用孩子的夥伴圖；試玩改用預設夥伴（roundear）；外觀放大約 18%＋腳下影子，碰撞不變。
+- 平台：家長決定請 Gemini 重畫深色玄武岩版（提示詞見對話／下方）；新圖到之前用濾鏡調暗暫代。
+  `Same flat cooled lava rock raft as the reference image, same shape and straight horizontal angle, but recolor it as dark charcoal grey basalt stone with a slightly uneven clay surface, a flat walkable top, and a thin warm orange-red glow along the bottom edges reflecting the lava, strong contrast against bright orange lava, 2.5D clay toy style, plain white background, horizontal about 5:2, no text, no watermark`
+- 蒸氣孔：休息深灰、預警暖橘發光、噴發白色蒸氣（時間與判定不變）。
+- **洛洛示範**：每個孩子第一次自動播（`p.lavaDemo` 記日期），洛洛自己走簡易版，等空隙才跳、安全區停一下；可「跳過示範」；之後開場可選「再看一次示範」。示範不算失敗、不給星、不用每日次數。
+- 同時修正：齒輪小屋紀錄（giftDone／chestDate）重新載入會被洗掉，可能重複給神祕寶箱 → `store.js` 補上保留。
+- 版面測試：Pixel 5、iPhone SE、Galaxy S9+，兩關完整顯示、無橫向捲動。

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.22-242';
+  var APP_VERSION = '2026.11.23-243';
   var store;
   try {
     store = new CGP.Store();
@@ -1763,7 +1763,7 @@
     WATER_TRIP = WATER.WATER_TRIP, FOLK_THANKS = WATER.FOLK_THANKS, waterEnding = WATER.waterEnding, waterOpening = WATER.waterOpening,
     waterLeave = WATER.waterLeave, openFishMinigame = WATER.openFishMinigame;
   // ---------- 火島小遊戲「熔岩跳跳路」在 js/lava.js（2026-11-22）----------
-  var LAVA = window.CGPLava({ store: store, h: h, toast: toast, render: render, charIdOf: charIdOf, talkPortrait: talkPortrait });
+  var LAVA = window.CGPLava({ store: store, h: h, toast: toast, render: render, charIdOf: charIdOf, talkPortrait: talkPortrait, defaultChar: GAME.DEFAULT_CHARACTER });
   // ---------- 金島第 53 格：齒輪小屋「吃飯好行為大挑戰」在 js/gear-house.js（2026-11-19）----------
   var GEAR = window.CGPGearHouse({
     store: store, h: h, toast: toast, GAME: GAME, talkPortrait: talkPortrait, charIdOf: charIdOf, preloadImages: preloadImages,
