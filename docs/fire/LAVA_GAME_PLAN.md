@@ -90,8 +90,18 @@
 - 成就徽章（火島開放後才出現在成就清單）：落石閃避高手（簡易）、熔岩小勇士（困難）、熔岩王者（王者路），第一次正常過關才算，記在 `p.lavaBest`。圖先用表情符號。
 - 可通過性模擬（`docs` 外的腳本，BFS、每 0.05 秒一步、跳一格後 0.2 秒冷卻）：三關從 60 個不同時間出發都找得到不失敗的路線。
 
-### 徽章提示詞（Gemini，白底、正方形 1024，交件後去白底、256×256）
-共用：`A round game achievement badge medal, 2.5D clay toy style, same series as the other island badges, thick golden rim, plain white background, centered, no text, no letters`
-- `lavaEasy` 落石閃避高手：`inside the badge: a cute small adventurer jumping over a round dark lava boulder with glowing orange cracks, bronze-orange background`
-- `lavaHard` 熔岩小勇士：`inside the badge: a dark basalt stone raft floating on bright orange lava with a small white steam puff, silver-orange background`
-- `lavaKing` 熔岩王者：`inside the badge: a small golden crown on top of a cute erupting volcano with glowing lava, rich gold and red background, a few sparkles`
+### 徽章提示詞（Gemini；2026-11-24 家長：改成紫色外框，和其他小遊戲徽章一致）
+**規格**（量過現有小遊戲徽章 catch5、fish20：256×256 裡徽章直徑約 94%、紫框厚約徽章直徑的 10%）：
+- 正方形 **1024×1024**、純白背景、徽章置中。
+- 圓形徽章直徑約為圖寬的 **92%**（約 940px），四周各留約 40px 白邊。
+- **紫色外框厚度約為徽章直徑的 10%**（約 90px），深紫 #5b2fa0～#7a45c8，帶淺紫 #c9a2ff 亮面。
+- 外框內的圖案圓直徑約為徽章直徑的 **80%**；主角圖案佔內圓約 70%，不要碰到外框。
+- 不要文字、字母、數字；交件後 Claude 只去除外框相連的白底，縮成 256×256。
+
+共用：`A round game achievement badge medal, 2.5D clay toy style, same series as the other mini-game badges, square 1024x1024 image, the round badge is centered and its diameter is about 92% of the image width with an even white margin, a thick purple rim (deep purple #5b2fa0 to #7a45c8 with soft lavender #c9a2ff highlights) whose thickness is about 10% of the badge diameter, the inner picture circle is about 80% of the badge diameter and the main subject fills about 70% of that inner circle without touching the rim, plain white background, no text, no letters, no numbers`
+
+中文共用：圓形成就徽章，2.5D 黏土玩具風，跟其他小遊戲徽章同系列；正方形 1024×1024，徽章置中、直徑約圖寬 92%，四周白邊一樣寬；**粗紫色外框**（深紫配淺紫亮面），厚度約徽章直徑的 10%；外框裡的圖案圓直徑約徽章 80%，主角約佔內圓 70%、不碰到外框；純白背景；不要文字、字母、數字。
+
+- `lavaEasy` 落石閃避高手：`inside the badge: a cute small adventurer jumping over a round dark lava boulder with glowing orange cracks, warm orange background`（內圈：可愛小冒險家跳過一顆有橘色發光裂紋的圓落石，暖橘色底）
+- `lavaHard` 熔岩小勇士：`inside the badge: a dark basalt stone raft floating on bright orange lava with a small white steam puff, deep red-orange background`（內圈：深色玄武岩石板浮在亮橘岩漿上，旁邊一小團白蒸氣，深紅橘底）
+- `lavaKing` 熔岩王者：`inside the badge: a small golden crown on top of a cute erupting volcano with glowing lava, rich red background with a few sparkles`（內圈：可愛噴發火山頂上一頂小金冠，濃紅底、幾顆閃光）
