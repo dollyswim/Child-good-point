@@ -352,7 +352,7 @@
           return { id: String(x.id), childId: String(x.childId), date: x.date, tile: toInt(x.tile, 0), bonus: !!x.bonus,
             status: x.status === 'done' || x.status === 'expired' ? x.status : 'pending', caught: Math.max(0, toInt(x.caught, 0)), stars: Math.max(0, toInt(x.stars, 0)),
             ts: toInt(x.ts, Date.now()), doneTs: x.doneTs ? toInt(x.doneTs, 0) : undefined, limitReset: !!x.limitReset || undefined, starCall: !!x.starCall || undefined, game: x.game === 'leaf' || x.game === 'fish' || x.game === 'lava' ? x.game : undefined, squirrels: x.game === 'leaf' && x.squirrels ? Math.max(0, toInt(x.squirrels, 0)) : undefined,
-            lava: x.game === 'lava' && x.lava && typeof x.lava === 'object' ? { easy: x.lava.easy === 'clear' || x.lava.easy === 'rescue' ? x.lava.easy : undefined, hard: x.lava.hard || undefined, outcome: x.lava.outcome || undefined } : undefined };
+            lava: x.game === 'lava' && x.lava && typeof x.lava === 'object' ? { easy: x.lava.easy === 'clear' || x.lava.easy === 'rescue' ? x.lava.easy : undefined, hard: x.lava.hard === 'clear' || x.lava.hard === 'rescue' ? x.lava.hard : undefined, king: x.lava.king === 'clear' || x.lava.king === 'rescue' ? x.lava.king : undefined, outcome: x.lava.outcome || undefined } : undefined };
           // game：leaf＝木島落葉找松果、fish＝水島撈魚（2026-11-22 修正：之前重新整理後會被當成抓住星星）、lava＝火島熔岩跳跳路（lava.easy＝簡易版成績）；沒有＝抓住星星
         });
       })(),
@@ -433,6 +433,7 @@
               var g = p.gearHouse && typeof p.gearHouse === 'object' ? p.gearHouse : {}, day = function (d) { return typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : undefined; };
               return { plays: Math.max(0, toInt(g.plays, 0)), giftDone: day(g.giftDone), chestDate: day(g.chestDate) };
             })(),
+            lavaBest: (function () { var b = p.lavaBest && typeof p.lavaBest === 'object' ? p.lavaBest : {}, o = {}; ['easy', 'hard', 'king'].forEach(function (k) { if (typeof b[k] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b[k])) o[k] = b[k]; }); return o; })(),   // 熔岩跳跳路各關第一次正常過關日期（成就）
             lavaDemo: typeof p.lavaDemo === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.lavaDemo) ? p.lavaDemo : undefined,   // 熔岩跳跳路：洛洛示範看過的日期
             // 換島：其他島的保存進度 { 島: { laps, maxReached } }、金島以外的通關次數 { 島: 次數 }
             islands: (function () {

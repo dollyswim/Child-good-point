@@ -25,8 +25,29 @@
       hard: { name: '困難版', tip: '躲落石、跳石板、避蒸氣！', rows: [
         { t: 'goal' }, { t: 'steam' }, { t: 'plat', speed: 0.75, dir: -1, count: 3, loop: 10, base: 0, w: 2 },
         { t: 'plat', speed: 0.7, dir: 1, count: 3, loop: 10, base: 1.5, w: 2 }, { t: 'safe' },
-        { t: 'rock', speed: 1.15, dir: -1, count: 3, loop: 10.5, base: 2 }, { t: 'rock', speed: 1.1, dir: 1, count: 3, loop: 10.5, base: 0 }, { t: 'start' }] }
+        { t: 'rock', speed: 1.15, dir: -1, count: 3, loop: 10.5, base: 2 }, { t: 'rock', speed: 1.1, dir: 1, count: 3, loop: 10.5, base: 0 }, { t: 'start' }] },
+      // 2026-11-24 家長：第 3 關「熔岩王者路」——沒有中途安全區、落石更快、平台只有 1.5 格（其中一排會下沉）、蒸氣一格一格像波浪噴
+      king: { name: '熔岩王者路', tip: '石板會下沉、蒸氣像波浪！', rows: [
+        { t: 'goal' }, { t: 'steam', wave: true },
+        { t: 'plat', speed: 0.9, dir: -1, count: 3, loop: 8, base: 0, w: 1.5, sink: { period: 6, warn: 1, down: 1.6, gap: 2 } },
+        { t: 'plat', speed: 0.85, dir: 1, count: 3, loop: 8, base: 1, w: 1.5 },
+        { t: 'rock', speed: 1.5, dir: -1, count: 3, loop: 10, base: 2 }, { t: 'rock', speed: 1.45, dir: 1, count: 3, loop: 10, base: 0 },
+        { t: 'rock', speed: 1.3, dir: -1, count: 3, loop: 10, base: 4 }, { t: 'start' }] }
     };
+    // 王者路的蒸氣波浪：6 個孔從左到右依序噴（每格晚 0.7 秒，週期 4.2 秒；預警 0.9 秒、噴發 1.2 秒），任何時候都有一半以上的孔安全
+    var WAVE = { period: 4.2, warn: 0.9, burst: 1.2, step: 0.7 };
+    function waveState(t, k) {
+      var p = ((t - k * WAVE.step) % WAVE.period + WAVE.period) % WAVE.period;
+      return p < WAVE.warn ? 'warn' : p < WAVE.warn + WAVE.burst ? 'burst' : 'safe';
+    }
+    /** 某一排蒸氣在 px 位置的狀態 */
+    function steamAt(row, t, px) { return row.wave ? waveState(t, Math.max(0, Math.min(5, Math.floor(px)))) : steamState(t, px < 3 ? 'L' : 'R'); }
+    /** 會下沉的平台：up 浮著、warn 冒泡閃爍（1 秒預警）、down 沉下去（不能站）；同一排各塊錯開 gap 秒 */
+    function sinkState(row, i, t) {
+      if (!row.sink) return 'up';
+      var S = row.sink, p = ((t + i * S.gap) % S.period + S.period) % S.period;
+      return p < S.period - S.warn - S.down ? 'up' : p < S.period - S.down ? 'warn' : 'down';
+    }
     // 地熱蒸氣：左 3 格、右 3 格輪流（家長決定）。週期 7 秒：預警 1.2 秒 → 噴發 2 秒 → 安全；右邊晚 3.5 秒，永遠有一邊安全
     var STEAM = { period: 7, warn: 1.2, burst: 2, offset: { L: 0, R: 3.5 } };
     function steamState(t, half) {
@@ -57,7 +78,8 @@
         L.rows.forEach(function (row, r) {
           var lane = document.createElement('div');
           lane.className = 'lv-lane lv-' + row.t; lane.style.top = r ? 'calc(var(--c) * ' + r + ' + var(--g))' : '0';
-          if (row.t === 'steam') lane.innerHTML = '<i class="lv-vent" data-half="L"><u></u><u></u><u></u></i><i class="lv-vent" data-half="R"><u></u><u></u><u></u></i>';   // 每格一個地熱孔
+          if (row.t === 'steam') lane.innerHTML = row.wave ? [0, 1, 2, 3, 4, 5].map(function (k) { return '<i class="lv-vent one" data-k="' + k + '" style="left:' + (k * 100 / 6).toFixed(3) + '%"><u></u></i>'; }).join('')   // 王者路：每個孔各自噴
+            : '<i class="lv-vent" data-half="L"><u></u><u></u><u></u></i><i class="lv-vent" data-half="R"><u></u><u></u><u></u></i>';   // 每格一個地熱孔
           if (row.t === 'goal') lane.innerHTML = '<img class="lv-goal-art" src="' + ART.goal + '" alt="終點" draggable="false">';
           if (row.t === 'safe' && demo) lane.innerHTML = '<b class="lv-sign">安全區</b>';   // 2026-11-23 家長：安全區只在洛洛示範時標示，正式玩不放字
           field.appendChild(lane);
@@ -92,7 +114,7 @@
         }
         function support(row, r) {   // 站在第 r 排（平台排）時，腳下的平台
           var hit = null;
-          obs.forEach(function (o) { if (o.r === r) { var x = obsX(row, o.i, t); if (p.px >= x + 0.05 && p.px <= x + row.w - 0.05) hit = o; } });
+          obs.forEach(function (o) { if (o.r === r && sinkState(row, o.i, t) !== 'down') { var x = obsX(row, o.i, t); if (p.px >= x + 0.05 && p.px <= x + row.w - 0.05) hit = o; } });
           return hit;
         }
         function safeBelow(r) { for (var k = r + 1; k < R; k++) if (L.rows[k].t === 'safe' || L.rows[k].t === 'start') return k; return R - 1; }
@@ -114,7 +136,7 @@
           var row = L.rows[p.row];
           if (row.t === 'rock') obs.forEach(function (o) { if (o.r === p.row && Math.abs(p.px - (obsX(row, o.i, t) + 0.5)) < 0.68) fail('rock'); });
           if (row.t === 'plat' && !support(row, p.row)) fail('lava');
-          if (row.t === 'steam' && steamState(t, p.px < 3 ? 'L' : 'R') === 'burst') fail('steam');
+          if (row.t === 'steam' && steamAt(row, t, p.px) === 'burst') fail('steam');
         }
         function move(dx, dy) {
           if (done || rescue || paused || anim) return;
@@ -191,7 +213,8 @@
             var x = obsX(o.row, o.i, t);
             o.el.style.transform = 'translateX(' + (x * cell) + 'px)' + (o.row.t === 'rock' ? ' rotate(' + (o.row.dir * o.row.speed * t / 0.45).toFixed(3) + 'rad)' : '');
           });
-          [].forEach.call(field.querySelectorAll('.lv-vent'), function (v) { v.setAttribute('data-s', steamState(t, v.getAttribute('data-half'))); });
+          [].forEach.call(field.querySelectorAll('.lv-vent'), function (v) { var k = v.getAttribute('data-k'); v.setAttribute('data-s', k != null ? waveState(t, +k) : steamState(t, v.getAttribute('data-half'))); });
+          obs.forEach(function (o) { if (o.row.sink) o.el.setAttribute('data-sink', sinkState(o.row, o.i, t)); });
           vis();
           if (!done || anim) raf = requestAnimationFrame(frame);
         }
@@ -202,7 +225,7 @@
         hooks.debug = function () { return { row: p.row, px: p.px, fails: fails, t: t, rescue: rescue }; };
         hooks.setTime = function (v) { t = v; };
         hooks.layout = function () {   // 自動測試用：每一排的類型與障礙物左緣（格）
-          return L.rows.map(function (row, r) { return { t: row.t, w: row.w || 1, xs: obs.filter(function (o) { return o.r === r; }).map(function (o) { return obsX(row, o.i, t); }) }; });
+          return L.rows.map(function (row, r) { return { t: row.t, w: row.w || 1, xs: obs.filter(function (o) { return o.r === r; }).map(function (o) { return obsX(row, o.i, t); }), sink: obs.filter(function (o) { return o.r === r; }).map(function (o) { return sinkState(row, o.i, t); }) }; });
         };
         raf = requestAnimationFrame(frame);
       });
@@ -278,28 +301,41 @@
           if (window.__cgpLava === hooks) window.__cgpLava = null;
           resolve(r);
         }
+        var STARS = A.lavaStars || { easyRescue: 4, easyClear: 8, hardRescue: 8, hardClear: 12, kingRescue: 12, kingClear: 15 };
         function settle(outcome) {
-          var stars = { easyRescue: 5, easyClear: 10, hardRescue: 10, hardClear: 15 }[outcome];
+          var stars = STARS[outcome];
           if (!practice) { try { stars = store.finishLava(childId, outcome).stars; } catch (err) { toast(err.message, 'neg'); } }
-          var line = outcome === 'hardClear' ? '你連困難版都過了！真是火島小勇士！' : outcome === 'easyRescue' ? '下次再試試看，你一定會越來越厲害！' : '做得很好！下次再來挑戰喔！';
+          var line = outcome === 'kingClear' ? '你走完熔岩王者路了！你是真正的熔岩王者！' : outcome === 'hardClear' ? '你連困難版都過了！真是火島小勇士！'
+            : /Rescue$/.test(outcome) && outcome !== 'easyRescue' ? '差一點點！下次一定可以自己衝過去！' : outcome === 'easyRescue' ? '下次再試試看，你一定會越來越厲害！' : '做得很好！下次再來挑戰喔！';
           return talk([LOLO + '：「' + line + '」'], [['done', (practice ? '試玩結束（' : '得到 ⭐') + stars + (practice ? ' 星）' : ' 能量星星！'), true]])
             .then(function () { finish({ outcome: outcome, stars: stars }); });
         }
+        function save(stage, res) { if (!practice) try { store.saveLavaStage(childId, stage, res); } catch (e) {} }
         function afterEasy(res) {
           if (res === 'quit') { finish({ quit: true }); return; }
-          if (res === 'rescue') { if (!practice) try { store.saveLavaEasy(childId, 'rescue'); } catch (e) {} settle('easyRescue'); return; }
-          if (!practice) try { store.saveLavaEasy(childId, 'clear'); } catch (e) {}
-          talk([LOLO + '：「太棒了！你成功穿過落石！」', LOLO + '：「要不要挑戰更刺激的困難版？」'], [['take', '領取 10 星，結束', false], ['hard', '繼續挑戰困難版', true]]).then(function (a) {
+          if (res === 'rescue') { save('easy', 'rescue'); settle('easyRescue'); return; }
+          save('easy', 'clear');
+          talk([LOLO + '：「太棒了！你成功穿過落石！」', LOLO + '：「要不要挑戰更刺激的困難版？」'], [['take', '領取 ' + STARS.easyClear + ' 星，結束', false], ['hard', '繼續挑戰困難版', true]]).then(function (a) {
             if (a === 'take') { settle('easyClear'); return; }
-            hooks.tip('困難版：落石更快，還要跳上岩漿平台、躲開蒸氣！');
-            runLevel(el, child, 'hard', hooks).then(function (r2) {
-              if (r2 === 'quit') { finish({ quit: true }); return; }
-              settle(r2 === 'clear' ? 'hardClear' : 'hardRescue');
+            runLevel(el, child, 'hard', hooks).then(afterHard);
+          });
+        }
+        function afterHard(res) {
+          if (res === 'quit') { finish({ quit: true }); return; }
+          if (res === 'rescue') { save('hard', 'rescue'); settle('hardRescue'); return; }
+          save('hard', 'clear');
+          talk([LOLO + '：「哇！困難版也難不倒你！」', LOLO + '：「最後還有最難的熔岩王者路：石板會沉下去，蒸氣像波浪一樣噴，要挑戰嗎？」'],
+            [['take', '領取 ' + STARS.hardClear + ' 星，結束', false], ['king', '挑戰熔岩王者路', true]]).then(function (a) {
+            if (a === 'take') { settle('hardClear'); return; }
+            runLevel(el, child, 'king', hooks).then(function (r3) {
+              if (r3 === 'quit') { finish({ quit: true }); return; }
+              settle(r3 === 'clear' ? 'kingClear' : 'kingRescue');
             });
           });
         }
-        var saved = !practice && store.getPendingMinigame(childId) && (store.getPendingMinigame(childId).lava || {}).easy;
-        if (saved) { afterEasy(saved); return; }   // 家長決定：中途關掉 App，回來保留簡易版成績
+        var savedLv = !practice && store.getPendingMinigame(childId) && (store.getPendingMinigame(childId).lava || {});
+        if (savedLv && savedLv.hard) { afterHard(savedLv.hard); return; }   // 家長決定：中途關掉 App，回來保留已過的關卡
+        if (savedLv && savedLv.easy) { afterEasy(savedLv.easy); return; }
         // 2026-11-23 家長：洛洛示範怎麼玩——每個孩子第一次自動播放（可跳過），之後開場可選「再看一次示範」
         var seen = practice ? false : store.lavaDemoSeen(childId);
         var intro = [LOLO + '：「哇，是火島常見的落石流和岩漿！」', LOLO + '：「按下面的方向鍵一格一格跳，看準落石的空隙，跳到最上面的終點！」'];
@@ -329,6 +365,6 @@
       });
     }
 
-    return { open: open, play: play, LEVELS: LEVELS, STEAM: STEAM, steamState: steamState, obsX: obsX };
+    return { open: open, play: play, LEVELS: LEVELS, STEAM: STEAM, WAVE: WAVE, steamState: steamState, waveState: waveState, steamAt: steamAt, sinkState: sinkState, obsX: obsX };
   };
 })();

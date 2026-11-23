@@ -966,6 +966,13 @@
   if (waterOn) ACHIEVEMENTS.splice(ACHIEVEMENTS.findIndex(function (a) { return a.id === 'squirrel5'; }) + 1, 0,
     { id: 'fish20', cat: 'collect', icon: '🐟', name: '晚上就吃魚', desc: '「珊瑚灣撈魚趣」單局撈到 20 條以上', check: function (s, c) { return bestFish(s, c) >= 20; } },
     { id: 'fish90', cat: 'collect', icon: '🐠', name: '都能開水族館了', desc: '「珊瑚灣撈魚趣」單局撈到 90 條以上', check: function (s, c) { return bestFish(s, c) >= 90; } });
+  // 2026-11-24 家長：熔岩跳跳路三關各一個徽章（第一次正常過關；救援不算）。火島開放後才放進成就清單
+  var LAVA_ACH = [
+    { id: 'lavaEasy', cat: 'collect', icon: '🪨', name: '落石閃避高手', desc: '「熔岩跳跳路」第一次正常通過簡易版', check: function (s, c) { return !!(s.getPlayer(c).lavaBest || {}).easy; } },
+    { id: 'lavaHard', cat: 'collect', icon: '🌋', name: '熔岩小勇士', desc: '「熔岩跳跳路」第一次正常通過困難版', check: function (s, c) { return !!(s.getPlayer(c).lavaBest || {}).hard; } },
+    { id: 'lavaKing', cat: 'collect', icon: '👑', name: '熔岩王者', desc: '「熔岩跳跳路」第一次正常通過熔岩王者路', check: function (s, c) { return !!(s.getPlayer(c).lavaBest || {}).king; } }
+  ];
+  if (BOARDS.fire || flagRoot.__cgpFireOpen) ACHIEVEMENTS.push.apply(ACHIEVEMENTS, LAVA_ACH);
   /** 「抓住星星」單局最多抓到幾顆 */
   /** 落葉找松果單局最佳成績：key＝caught（找到的松果）或 squirrels（翻到的松鼠）；含封存結轉 */
   function bestLeaf(s, c, key) {
@@ -1080,35 +1087,52 @@
   };
 
   // ---------- 火島《熔岩跳跳路》（2026-11-22 家長草稿；兩關合計一次小遊戲，整場結束才一次給星） ----------
-  var LAVA_STARS = { easyRescue: 5, easyClear: 10, hardRescue: 10, hardClear: 15 };
-  /** 簡易版結束先記下成績（不給星）：clear＝3 次內過關、rescue＝洛洛救援。中途關掉 App 回來時用（家長決定保留簡易版成績） */
-  Store.prototype.saveLavaEasy = function (childId, result) {
+  // 2026-11-24 家長：加第 3 關「熔岩王者路」，星星重分 8／12／15（上限不變）；救援保留前一關（簡易版救援 4）
+  var LAVA_STARS = { easyRescue: 4, easyClear: 8, hardRescue: 8, hardClear: 12, kingRescue: 12, kingClear: 15 };
+  var LAVA_STAGES = ['easy', 'hard', 'king'];
+  /**
+   * 一關結束先記下成績（不給星）：stage＝easy／hard，result＝clear（3 次內過關）或 rescue（洛洛救援）。
+   * 中途關掉 App 回來時用（家長決定保留成績）；下一關要先正常過前一關。
+   */
+  Store.prototype.saveLavaStage = function (childId, stage, result) {
     this._requirePlay(childId);
     var m = this.getPendingMinigame(childId);
     if (!m || m.game !== 'lava') throw new Error('今天沒有可以玩的熔岩跳跳路');
-    if (result !== 'clear' && result !== 'rescue') throw new Error('簡易版結果不正確');
-    m.lava = { easy: result };
+    if (result !== 'clear' && result !== 'rescue') throw new Error('結果不正確');
+    var k = LAVA_STAGES.indexOf(stage);
+    if (k < 0 || k > 1) throw new Error('沒有這一關');
+    var lv = m.lava || {};
+    if (k === 1 && lv.easy !== 'clear') throw new Error('簡易版還沒過關');
+    m.lava = k === 0 ? { easy: result } : { easy: 'clear', hard: result };
     this.save();
     return m;
   };
-  /**
-   * 熔岩跳跳路結算（只結算一次）：outcome＝easyRescue／easyClear（過關後選擇結束）／hardRescue／hardClear。
-   * 困難版的結果要先有簡易版過關紀錄；簡易版救援一律 5 星。
-   */
+  Store.prototype.saveLavaEasy = function (childId, result) { return this.saveLavaStage(childId, 'easy', result); };   // 相容舊呼叫
   /** 洛洛示範看過了沒（2026-11-23：每個孩子第一次自動播放） */
   Store.prototype.lavaDemoSeen = function (childId) { return !!this.getPlayer(childId).lavaDemo; };
   Store.prototype.markLavaDemo = function (childId) { var p = this.getPlayer(childId); if (!p.lavaDemo) { p.lavaDemo = this.today(); this.save(); } };
+  /**
+   * 熔岩跳跳路結算（只結算一次）：outcome＝easyRescue／easyClear（過關後選擇結束）／hardRescue／hardClear（過關後選擇結束）／kingRescue／kingClear。
+   * 困難版要先正常過簡易版、王者路要先正常過困難版；前一關是救援的，一律算成前一關救援。
+   * 正常過關的關卡記進 p.lavaBest（成就用，不會被每日紀錄封存影響）。
+   */
   Store.prototype.finishLava = function (childId, outcome) {
     this._requirePlay(childId);
     var m = this.getPendingMinigame(childId);
     if (!m || m.game !== 'lava') throw new Error('今天沒有可以玩的熔岩跳跳路');
     if (!LAVA_STARS[outcome]) throw new Error('沒有這種結果');
-    var easy = (m.lava || {}).easy;
-    if (/^hard/.test(outcome) && easy !== 'clear') throw new Error('簡易版還沒過關');
-    if (easy === 'rescue') outcome = 'easyRescue';
-    var n = LAVA_STARS[outcome];
-    m.status = 'done'; m.caught = 0; m.stars = n; m.doneTs = this.now().getTime();
-    m.lava = { easy: /^easy/.test(outcome) ? (outcome === 'easyRescue' ? 'rescue' : 'clear') : 'clear', hard: outcome === 'hardClear' ? 'clear' : outcome === 'hardRescue' ? 'rescue' : null, outcome: outcome };
+    var lv = m.lava || {};
+    if (/^hard/.test(outcome) && lv.easy !== 'clear') throw new Error('簡易版還沒過關');
+    if (/^king/.test(outcome) && lv.hard !== 'clear') throw new Error('困難版還沒過關');
+    if (lv.easy === 'rescue') outcome = 'easyRescue';
+    else if (lv.hard === 'rescue' && !/^easy/.test(outcome)) outcome = 'hardRescue';
+    var n = LAVA_STARS[outcome], stage = outcome.replace(/(Rescue|Clear)$/, ''), res = /Clear$/.test(outcome) ? 'clear' : 'rescue';
+    var out = { outcome: outcome };
+    LAVA_STAGES.forEach(function (st, i) { var si = LAVA_STAGES.indexOf(stage); if (i < si) out[st] = 'clear'; else if (i === si) out[st] = res; });
+    m.status = 'done'; m.caught = 0; m.stars = n; m.doneTs = this.now().getTime(); m.lava = out;
+    var p = this.getPlayer(childId), today = this.today();
+    if (!p.lavaBest || typeof p.lavaBest !== 'object') p.lavaBest = {};
+    LAVA_STAGES.forEach(function (st) { if (out[st] === 'clear' && !p.lavaBest[st]) p.lavaBest[st] = today; });
     this._ledger(childId, n, '小遊戲：熔岩跳跳路');
     this.save();
     return m;
@@ -1694,7 +1718,7 @@
     return this.getBonusQuota(childId);
   };
 
-  var api = { CARD_TEXT: CARD_TEXT, LEAF_GAME: LEAF_GAME, LEAF_MAX_FOUND: LEAF_MAX_FOUND, leafStars: leafStars, minigameOf: minigameOf, STORIES: STORIES, storiesOf: storiesOf, LAVA_STARS: LAVA_STARS, MEAL_RULES: MEAL_RULES, MEAL_GAME: MEAL_GAME, pickMealRounds: pickMealRounds, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, buildWood: buildWood, WOOD_OPEN: WOOD_OPEN, buildWater: buildWater, WATER_OPEN: WATER_OPEN, WATER_TRIAL: waterTrial, waterOn: waterOn, WATER_TYPES: WATER_TYPES, SHARK_PASS: SHARK_PASS, SHARK_SHIELD_STARS: SHARK_SHIELD_STARS, SHARK_PAY_STARS: SHARK_PAY_STARS, FISH_GAME: FISH_GAME, fishStars: fishStars, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
+  var api = { CARD_TEXT: CARD_TEXT, LEAF_GAME: LEAF_GAME, LEAF_MAX_FOUND: LEAF_MAX_FOUND, leafStars: leafStars, minigameOf: minigameOf, STORIES: STORIES, storiesOf: storiesOf, LAVA_STARS: LAVA_STARS, LAVA_ACH: LAVA_ACH, MEAL_RULES: MEAL_RULES, MEAL_GAME: MEAL_GAME, pickMealRounds: pickMealRounds, STORY_STARS: STORY_STARS, ISLAND_ORDER: ISLAND_ORDER, registerBoard: registerBoard, buildWood: buildWood, WOOD_OPEN: WOOD_OPEN, buildWater: buildWater, WATER_OPEN: WATER_OPEN, WATER_TRIAL: waterTrial, waterOn: waterOn, WATER_TYPES: WATER_TYPES, SHARK_PASS: SHARK_PASS, SHARK_SHIELD_STARS: SHARK_SHIELD_STARS, SHARK_PAY_STARS: SHARK_PAY_STARS, FISH_GAME: FISH_GAME, fishStars: fishStars, nextIsland: nextIsland, ACHIEVEMENTS: ACHIEVEMENTS, GOLD_CLEAR_STARS: GOLD_CLEAR_STARS, buildGold: buildGold, WORLD: WORLD, OPEN_REGIONS: OPEN_REGIONS, REGION02_TILES: REGION02.tiles, REGION03_TILES: REGION03.tiles, REGION04_TILES: REGION04.tiles, MAGNET_RANGE: MAGNET_RANGE, MOVE_DAILY_LIMIT: MOVE_DAILY_LIMIT, DOOR_DAILY_LIMIT: DOOR_DAILY_LIMIT, OVERFLOW_CHEST_DAILY: OVERFLOW_CHEST_DAILY, MILESTONE_KEY: MILESTONE_KEY, MILESTONE_CHEST: MILESTONE_CHEST, BLESSINGS: BLESSINGS, BLESSING_MAX_QTY: BLESSING_MAX_QTY, LUCKY_STAR: LUCKY_STAR, MYSTERY_POOL: MYSTERY_POOL, TREASURES: TREASURES, TREASURE_WEEKLY_LIMIT: TREASURE_WEEKLY_LIMIT, TREASURE_HOLD_LIMIT: TREASURE_HOLD_LIMIT, MINIGAME_MAX_STARS: MINIGAME_MAX_STARS, MINIGAME_RATE: MINIGAME_RATE, minigameStars: minigameStars, MINIGAME_SECONDS: MINIGAME_SECONDS, DAILY_MINIGAME_LIMIT: DAILY_MINIGAME_LIMIT, REGIONS: REGIONS, SHOP: SHOP, FATE_CARDS: FATE_CARDS, CHARACTERS: CHARACTERS, DEFAULT_CHARACTER: DEFAULT_CHARACTER, BOARDS: BOARDS, DAILY_DICE_LIMIT: DAILY_DICE_LIMIT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CGPGame = api;
 })(typeof self !== 'undefined' ? self : this);

@@ -2538,7 +2538,7 @@ async function main() {
     await q.waitForSelector('#lv-talk [data-talk=next]');
     assert.match(await q.locator('#lv-talk').innerText(), /太棒了！你成功穿過落石/);
     await q.click('[data-talk=next]');
-    assert.match(await q.locator('#lv-talk').innerText(), /要不要挑戰更刺激的困難版[\s\S]*領取 10 星[\s\S]*繼續挑戰困難版/);
+    assert.match(await q.locator('#lv-talk').innerText(), /要不要挑戰更刺激的困難版[\s\S]*領取 8 星[\s\S]*繼續挑戰困難版/);
     await q.click('[data-talk=hard]');
     await q.waitForSelector('#lv-level:text("困難版")');
     assert.equal(await q.locator('.lv-field .lv-lane').count(), 8, '困難版 8 排');
@@ -2557,14 +2557,35 @@ async function main() {
     await q.click('[data-talk=next]');
     await q.waitForSelector('#lv-me.shielded');
     await q.waitForSelector('#lv-talk [data-talk=done]', { timeout: 6000 });
-    assert.match(await q.locator('#lv-talk').innerText(), /得到 ⭐10 能量星星/);
+    assert.match(await q.locator('#lv-talk').innerText(), /得到 ⭐8 能量星星/);
     await noHScroll('熔岩跳跳路');
     await q.click('[data-talk=done]');
     await q.waitForSelector('#mg', { state: 'detached' });
     const after = await info();
-    assert.deepEqual([after.status, after.mstars, after.stars - before.stars, after.lava.outcome], ['done', 10, 10, 'hardRescue'], '困難版救援：保留 10 星、只結算一次');
+    assert.deepEqual([after.status, after.mstars, after.stars - before.stars, after.lava.outcome], ['done', 8, 8, 'hardRescue'], '困難版救援：保留簡易版的 8 星、只結算一次');
     assert.equal(after.bag, before.bag, '洛洛的防護罩不動背包');
     assert.equal(await q.locator('.mg-resume').count(), 0, '兩關只用掉今天這一次小遊戲');
+    // 第 3 關「熔岩王者路」（2026-11-24）：困難版正常過關後可選；8 排、沒有中途安全區、平台會下沉、蒸氣一格一個；重新整理回到選擇
+    const kid3 = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '小王者' }); const it = s.addItem({ kind: 'bonus', name: '大3', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+      s.getPlayer(a.id).lavaDemo = '2026-11-01';
+      s.data.adventure.minigames.push({ id: 'lv-king', childId: a.id, date: s.today(), tile: 7, status: 'pending', caught: 0, stars: 0, ts: 2, game: 'lava', lava: { easy: 'clear', hard: 'clear' } }); s.save(); return a.id; });
+    await q.goto(url + '#map-' + kid3); await q.waitForSelector('.mg-resume'); await q.click('.mg-resume');
+    await q.waitForSelector('#lv-talk [data-talk=next]');
+    assert.match(await q.locator('#lv-talk').innerText(), /困難版也難不倒你/);
+    await q.click('[data-talk=next]');
+    assert.match(await q.locator('#lv-talk').innerText(), /熔岩王者路[\s\S]*領取 12 星[\s\S]*挑戰熔岩王者路/);
+    await q.click('[data-talk=king]');
+    await q.waitForSelector('#lv-level:text("熔岩王者路")');
+    lay = await q.evaluate(() => window.__cgpLava.layout());
+    assert.deepEqual(lay.map((r) => r.t), ['goal', 'steam', 'plat', 'plat', 'rock', 'rock', 'rock', 'start'], '王者路沒有中途安全區');
+    assert.equal(await q.locator('.lv-vent.one').count(), 6, '蒸氣孔一格一個');
+    assert.ok(lay[2].sink.length === 3, '第 3 排平台會下沉');
+    await q.evaluate(() => { window.__cgpLava.setTime(4.6); });   // 第 0 塊平台此時沉下去
+    await q.waitForTimeout(150);
+    assert.equal(await q.locator('i.lv-plat[data-sink="down"]').count(), 1, '同一排一次只沉一塊');
+    await q.click('[data-lv=quit]');
+    await q.waitForSelector('#mg', { state: 'detached' });
+    assert.deepEqual(await q.evaluate(() => { const m = window.__cgpStore.data.adventure.minigames.find((x) => x.id === 'lv-king'); return [m.status, m.lava.hard]; }), ['pending', 'clear'], '中途離開：保留到困難版的成績');
     // 家長試玩網址
     await q.goto(url + '#lava-test'); await q.waitForSelector('#mg.lv-mg');
     assert.match(await q.locator('#mg').innerText(), /試玩模式/);
@@ -2585,7 +2606,7 @@ async function main() {
     await q.waitForFunction(() => location.hash === '#home');
     await c.close();
   }
-  console.log('✔ 熔岩跳跳路：簡易版 6×6、困難版 6×8；撞落石／掉岩漿扣機會並回安全區；簡易版過關先存成績（重新整理保留）；困難版救援 10 星、只結算一次、不動背包；#lava-test 試玩');
+  console.log('✔ 熔岩跳跳路：簡易版 6×6、困難版 6×8；撞落石／掉岩漿扣機會並回安全區；簡易版過關先存成績（重新整理保留）；困難版救援 8 星、只結算一次、不動背包；#lava-test 試玩');
 
   // ---------- 木島劇情「森林派對」（用測試假地圖：複製金島格子當木島）：小精靈導遊、第 8 格找松果、第 40 格採花摘莓果、第 65 格邀請卡、第 92 格布置派對 ----------
   {

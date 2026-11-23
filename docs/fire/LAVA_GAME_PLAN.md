@@ -82,3 +82,16 @@
 - 2026-11-23（版本 244）：深色玄武岩平台到貨（家長圖已是透明底）→ `platform2.webp`（新檔名，立即生效），拿掉暫代濾鏡；依家長參考圖微調：資訊列分隔線、提示牌橘邊、方向鍵砂岩光澤、場地木石雙層框。
 - 2026-11-24（版本 245）：新背景 `bg2.webp`（家長圖，遠方多座岩漿火山、下方岩漿池）；安全區木牌只在洛洛示範時出現（走到時跳一下、提示「這排是安全區，沒有落石，可以慢慢觀察」），正式玩不放字；落石邊走邊滾（旋轉＝移動距離÷半徑，同一個 transform；CPU 降速 4 倍仍 60 fps；碰撞不變）。
 - 2026-11-24（版本 246）：洛洛開場第一句改成「哇，是火島常見的落石流和岩漿！」（不再自我介紹）；角色圖以高度為準、不超出一排（洛洛一排高）；抵達終點時走到拱門正下方、站進終點排。
+
+## 7. 第 3 關「熔岩王者路」（2026-11-24 家長，版本 247）
+- 開放：困難版正常過關後，洛洛問要不要挑戰（可領 12 星結束）；三關仍只算一次每日小遊戲；中途離開保留到困難版的成績。
+- 場地 6×8、格子一樣大：終點／蒸氣波浪（6 孔從左到右每格晚 0.7 秒，預警 0.9、噴 1.2）／會下沉的短平台（1.5 格、0.9 格／秒；冒泡閃爍 1 秒後沉 1.6 秒，同排錯開，一次只沉一塊）／短平台（0.85）／落石 1.5、1.45、1.3 格／秒。**沒有中途安全區**，失敗回起點。
+- 星星重分（上限 15）：簡易救援 4、簡易過關 8、困難救援 8、困難過關 12、王者救援 12、王者過關 15。
+- 成就徽章（火島開放後才出現在成就清單）：落石閃避高手（簡易）、熔岩小勇士（困難）、熔岩王者（王者路），第一次正常過關才算，記在 `p.lavaBest`。圖先用表情符號。
+- 可通過性模擬（`docs` 外的腳本，BFS、每 0.05 秒一步、跳一格後 0.2 秒冷卻）：三關從 60 個不同時間出發都找得到不失敗的路線。
+
+### 徽章提示詞（Gemini，白底、正方形 1024，交件後去白底、256×256）
+共用：`A round game achievement badge medal, 2.5D clay toy style, same series as the other island badges, thick golden rim, plain white background, centered, no text, no letters`
+- `lavaEasy` 落石閃避高手：`inside the badge: a cute small adventurer jumping over a round dark lava boulder with glowing orange cracks, bronze-orange background`
+- `lavaHard` 熔岩小勇士：`inside the badge: a dark basalt stone raft floating on bright orange lava with a small white steam puff, silver-orange background`
+- `lavaKing` 熔岩王者：`inside the badge: a small golden crown on top of a cute erupting volcano with glowing lava, rich gold and red background, a few sparkles`

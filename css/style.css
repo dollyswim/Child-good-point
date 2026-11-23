@@ -2746,3 +2746,10 @@ i.lv-plat { filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .5)); }   /* 2026-11-24 
 .lv-pad button { background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, .35), transparent 40%), radial-gradient(circle at 75% 70%, rgba(150, 100, 40, .18), transparent 35%), linear-gradient(#f0cf88, #d6a756); border: 2px solid #b78446; }
 .lv-field { box-shadow: 0 0 0 4px #6b4a36, 0 0 0 6px #3a281e, 0 10px 22px rgba(0, 0, 0, .55); }
 .lv-lane b.lv-sign.hi { animation: lv-sign-hi .5s ease-in-out 3; } @keyframes lv-sign-hi { 50% { transform: translateY(-50%) scale(1.25); box-shadow: 0 0 0 3px #ffd36b, 0 3px 4px rgba(0, 0, 0, .4); } }   /* 示範走到安全區：木牌跳一下 */
+
+/* 熔岩王者路（2026-11-24）：一格一個的蒸氣孔、會下沉的平台 */
+.lv-vent.one { width: calc(100% / 6); justify-content: center; }
+.lv-vent.one u { width: 92%; }
+i.lv-plat[data-sink="warn"] { animation: lv-blink .25s steps(2) infinite; filter: drop-shadow(0 0 8px rgba(255, 120, 30, 1)) drop-shadow(0 3px 2px rgba(0, 0, 0, .5)); }   /* 下沉預警：橘光閃爍 */
+i.lv-plat[data-sink="down"] { opacity: .18; scale: .85 .6; transition: opacity .25s, scale .25s; }   /* 沉下去：幾乎看不到，不能站 */
+i.lv-plat[data-sink="up"] { transition: opacity .25s, scale .25s; }

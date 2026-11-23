@@ -3156,31 +3156,44 @@ test('金島小英雄改成 4 個任務（2026-11-19）：已經拿到的成就�
   assert.ok(s2.data.achievements[a.id].goldHero, '舊的徽章還在');
 });
 
-test('火島《熔岩跳跳路》（2026-11-22）：四種結果 5／10／10／15 星；只結算一次；兩關只算一次小遊戲；中途保留簡易版成績；困難版要先過簡易版', () => {
+test('火島《熔岩跳跳路》（2026-11-24 三關）：六種結果 4／8／8／12／12／15 星；只結算一次；三關只算一次小遊戲；中途保留成績；下一關要先正常過前一關；三關成就', () => {
   const { store, a } = p3Store();
   assert.equal(G.minigameOf('fire', () => 0.5), 'lava');
-  assert.deepEqual(G.LAVA_STARS, { easyRescue: 5, easyClear: 10, hardRescue: 10, hardClear: 15 });
+  assert.deepEqual(G.LAVA_STARS, { easyRescue: 4, easyClear: 8, hardRescue: 8, hardClear: 12, kingRescue: 12, kingClear: 15 });
   const mk = (id) => { store.data.adventure.minigames = store.data.adventure.minigames.filter(m => m.childId !== a.id);
     store.data.adventure.minigames.push({ id, childId: a.id, date: store.today(), status: 'pending', caught: 0, stars: 0, ts: 1, game: 'lava' }); };
-  const cases = [['easyRescue', 'rescue', 5], ['easyClear', 'clear', 10], ['hardRescue', 'clear', 10], ['hardClear', 'clear', 15]];
-  cases.forEach(([outcome, easy, stars], k) => {
+  const ach = (id) => G.LAVA_ACH.find(x => x.id === id).check(store, a.id);
+  const bag = JSON.stringify(store.getPlayer(a.id).bag);
+  // [結果, 簡易版成績, 困難版成績, 星星]
+  const cases = [['easyRescue', 'rescue', null, 4], ['easyClear', 'clear', null, 8], ['hardRescue', 'clear', null, 8], ['hardClear', 'clear', null, 12],
+    ['kingRescue', 'clear', 'clear', 12], ['kingClear', 'clear', 'clear', 15]];
+  cases.forEach(([outcome, easy, hard, stars], k) => {
     mk('lv' + k);
     const bal = store.getStarBalance(a.id);
-    store.saveLavaEasy(a.id, easy);
-    assert.equal(store.getPendingMinigame(a.id).lava.easy, easy, '簡易版成績先存起來（還沒給星）');
-    assert.equal(store.getStarBalance(a.id), bal, '進入困難版前不先發星');
+    store.saveLavaStage(a.id, 'easy', easy);
+    if (hard) store.saveLavaStage(a.id, 'hard', hard);
+    assert.equal(store.getStarBalance(a.id), bal, '進下一關前不先發星');
     const m = store.finishLava(a.id, outcome);
     assert.equal(m.stars, stars, outcome);
     assert.equal(store.getStarBalance(a.id), bal + stars);
-    assert.equal(store.getPendingMinigame(a.id), null, '兩關結束只用掉這一筆小遊戲');
+    assert.equal(store.getPendingMinigame(a.id), null, '三關結束只用掉這一筆小遊戲');
     assert.throws(() => store.finishLava(a.id, outcome), /沒有可以玩/, '不能重複領星');
+    if (k === 0) assert.equal(ach('lavaEasy'), false, '救援不算成就');
+    if (k === 1) assert.equal(ach('lavaEasy'), true);
+    if (k === 2) assert.equal(ach('lavaHard'), false);
+    if (k === 3) assert.equal(ach('lavaHard'), true);
+    if (k === 4) assert.equal(ach('lavaKing'), false);
+    if (k === 5) assert.equal(ach('lavaKing'), true);
   });
   mk('lv9');
   assert.throws(() => store.finishLava(a.id, 'hardClear'), /簡易版還沒過關/);
-  store.saveLavaEasy(a.id, 'rescue');
-  assert.equal(store.finishLava(a.id, 'easyClear').stars, 5, '簡易版救援過，一律 5 星');
-  const bag = JSON.stringify(store.getPlayer(a.id).bag);
-  mk('lv10'); store.saveLavaEasy(a.id, 'clear'); store.finishLava(a.id, 'hardRescue');
+  assert.throws(() => store.saveLavaStage(a.id, 'hard', 'clear'), /簡易版還沒過關/);
+  store.saveLavaStage(a.id, 'easy', 'clear');
+  assert.throws(() => store.finishLava(a.id, 'kingClear'), /困難版還沒過關/);
+  store.saveLavaStage(a.id, 'hard', 'rescue');
+  assert.equal(store.finishLava(a.id, 'hardClear').stars, 8, '困難版救援過，一律 8 星');
+  mk('lv10'); store.saveLavaStage(a.id, 'easy', 'rescue');
+  assert.equal(store.finishLava(a.id, 'easyClear').stars, 4, '簡易版救援過，一律 4 星');
   assert.equal(JSON.stringify(store.getPlayer(a.id).bag), bag, '洛洛的防護罩不動背包');
 });
 
