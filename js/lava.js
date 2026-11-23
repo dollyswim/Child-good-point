@@ -10,7 +10,7 @@
     var store = A.store, h = A.h, toast = A.toast, render = A.render, charIdOf = A.charIdOf, talkPortrait = A.talkPortrait;
     var COLS = 6, STEP_MS = 180, GUARD_MS = 1000, GOAL_EXTRA = 0.4;   // 2026-11-23 家長：終點排加高 0.4 格，終點門放大
     var D = 'images/fire/lava/';   // 2026-11-23 家長美術 L-1～L-8（不放 SHELL，打開小遊戲時才下載）
-    var ART = { lolo: D + 'lolo.webp', rock: D + 'rock.webp', platform: D + 'platform.webp', lava: D + 'lava.webp', ground: D + 'ground.webp',
+    var ART = { lolo: D + 'lolo.webp', rock: D + 'rock.webp', platform: D + 'platform2.webp', lava: D + 'lava.webp', ground: D + 'ground.webp',
       ventWarn: D + 'vent_warn.webp', ventBurst: D + 'vent_burst.webp', goal: D + 'goal.webp', bg: D + 'bg.webp' };
     function preload() { Object.keys(ART).forEach(function (k) { var im = new Image(); im.src = ART[k]; }); }
     var LOLO = '洛洛';
