@@ -69,7 +69,7 @@
           }
         });
         var me = document.createElement('div');
-        me.className = 'lv-me'; me.id = 'lv-me';
+        me.className = 'lv-me' + (demo ? ' lolo' : ''); me.id = 'lv-me';
         var who = demo ? ART.lolo : 'images/characters/' + h(child ? charIdOf(child) : (A.defaultChar || 'roundear')) + '.webp';   // 試玩：預設冒險夥伴；示範：洛洛
         me.innerHTML = '<i class="lv-foot"></i><img src="' + who + '" alt="" draggable="false">' + '<i class="lv-shield"></i><b class="lv-warn">快跳！</b>';
         field.appendChild(me);
@@ -132,6 +132,8 @@
         if (demo) startDemo();
         function win() {
           done = true;
+          // 2026-11-24 家長：抵達終點要真的站在拱門裡——走到終點排正中間（拱門下），站在終點排裡面
+          setTimeout(function () { anim = { x: p.px, y: p.row, t0: performance.now() }; p.px = 3; me.classList.add('at-goal'); last = 0; raf = requestAnimationFrame(frame); }, STEP_MS + 20);   // 動畫迴圈已停，重新跑一次讓角色走過去
           setTimeout(function () { stop(); resolve(demo ? 'demo' : rescue ? 'rescue' : 'clear'); }, STEP_MS + (demo ? 700 : 250));
         }
         /** 洛洛示範：預先看 0.7 秒內前一排有沒有落石，有空隙才往上跳；到安全區停一下（只在簡易版） */
@@ -300,7 +302,7 @@
         if (saved) { afterEasy(saved); return; }   // 家長決定：中途關掉 App，回來保留簡易版成績
         // 2026-11-23 家長：洛洛示範怎麼玩——每個孩子第一次自動播放（可跳過），之後開場可選「再看一次示範」
         var seen = practice ? false : store.lavaDemoSeen(childId);
-        var intro = [LOLO + '：「嗨！我是火島嚮導洛洛！」', LOLO + '：「按下面的方向鍵一格一格跳，看準落石的空隙，跳到最上面的終點！」'];
+        var intro = [LOLO + '：「哇，是火島常見的落石流和岩漿！」', LOLO + '：「按下面的方向鍵一格一格跳，看準落石的空隙，跳到最上面的終點！」'];
         function demo() {
           demoing = true; skipBtn.hidden = false;
           return runLevel(el, child, 'easy', hooks, true).then(function () {

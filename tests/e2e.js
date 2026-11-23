@@ -2516,7 +2516,7 @@ async function main() {
     const before = await info();
     await q.click('.mg-resume');
     await q.waitForSelector('#mg.lv-mg #lv-talk [data-talk=next]');
-    assert.match(await q.locator('#lv-talk').innerText(), /洛洛[\s\S]*我是火島嚮導洛洛/);
+    assert.match(await q.locator('#lv-talk').innerText(), /洛洛[\s\S]*哇，是火島常見的落石流和岩漿/);
     await q.click('[data-talk=next]'); await q.click('[data-talk=go]');
     assert.equal(await q.locator('.lv-field .lv-lane').count(), 6, '簡易版 6 排');
     assert.equal(await q.evaluate(() => getComputedStyle(document.querySelector('.lv-field')).width), await q.evaluate(() => document.querySelector('.lv-lane').getBoundingClientRect().width + 'px'));

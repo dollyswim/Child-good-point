@@ -2722,7 +2722,9 @@ i.lv-plat { position: absolute; left: 0; height: var(--c); display: block;
 .lv-stage::before { left: 2px; } .lv-stage::after { right: 2px; }   /* 場地兩個下角的小石頭（在框外，不佔格子） */
 .lv-lane b.lv-sign { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); padding: 2px 8px; border-radius: 8px; font-size: calc(var(--c) * .22); letter-spacing: 1px;
   color: #4a2c14; background: linear-gradient(#e9cf9c, #c9a46a); box-shadow: 0 2px 0 #8a6a3c, 0 3px 4px rgba(0, 0, 0, .4); text-shadow: none; }   /* 安全區小木牌 */
-.lv-me img { width: 108%; max-width: none; transform-origin: 50% 100%; margin-top: -10%; }   /* 角色外觀放大約 18%（碰撞範圍不變） */
+.lv-me img { position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); width: auto; height: 112%; max-width: 118%; object-fit: contain; object-position: 50% 100%; margin: 0; }   /* 角色外觀放大約 15%，以高度為準：再高的圖也不超出一排（碰撞範圍不變） */
+.lv-me.lolo img { height: 96%; }   /* 洛洛圖比較瘦高：一排高 */
+.lv-me.at-goal { margin-top: calc(var(--g) * -.45); transition: margin-top .2s; }   /* 抵達終點：站進拱門底下 */
 .lv-foot { position: absolute; left: 22%; right: 22%; bottom: 6%; height: 14%; border-radius: 50%; background: rgba(0, 0, 0, .38); filter: blur(2px); }
 i.lv-rock { filter: drop-shadow(0 0 4px rgba(0, 0, 0, .7)) drop-shadow(0 0 4px rgba(255, 120, 40, .45)); }   /* 滾動時影子不跟著轉：不用位移的影子 */
 i.lv-plat { filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .5)); }   /* 2026-11-24 家長深色玄武岩新圖（platform2） */
