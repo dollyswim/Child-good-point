@@ -19,22 +19,22 @@
 - 中文：可愛的兒童舞台典禮背景，直式。深紫藍色的夜空舞台，兩側是紅色絲絨布幕，上方有兩道溫暖的金色聚光燈照向舞台中央，空中飄著彩色紙花（黃、粉紅、薄荷綠）與小星星，舞台地板是木頭色。**舞台中央空著**（之後放角色與獎狀），畫面沒有任何文字、沒有人物。柔和 3D 光澤兒童遊戲 App 風格。
 - English: A cute children's award ceremony stage background, portrait orientation. A deep purple-blue night stage, red velvet curtains on both sides, two warm golden spotlights shining down onto the center, colorful confetti (yellow, pink, mint green) and little stars floating in the air, a wooden stage floor. **Leave the center of the stage empty** (a character and a certificate will be placed there later). No text, no characters. Soft glossy 3D children's game app style.
 
-## 4. 冒險夥伴「拿著獎狀恭喜」（8 張，每位夥伴 1 張）
-- 規格：正方形 1024×1024，角色全身、置中，透明背景（或白底）。
-- 參考圖：附上該夥伴的原圖（`images/characters/<代號>.webp`），一定要同一隻角色、同樣的顏色和特徵。
-- 共同中文：依照附上的角色參考圖，畫同一隻角色（外形、顏色、表情特徵完全一致）。角色開心地笑、眼睛彎彎，雙手（或雙翼）高高舉著一張捲起一半的米白色小獎狀，獎狀上繫著紅色緞帶，**獎狀上沒有任何文字**。身邊有幾顆小金星與彩色紙花。正面略側、全身、置中，柔和 3D 光澤兒童遊戲 App 風格，透明背景。
-- Common English: Based on the attached character reference, draw the exact same character (same shape, colors and features). The character is smiling happily with curved happy eyes, holding up a half-rolled cream certificate tied with a red ribbon with both hands (or wings). **No text on the certificate.** A few small gold stars and colorful confetti around. Slight three-quarter front view, full body, centered, soft glossy 3D children's game app style, transparent background.
+## 4. 冒險夥伴「拿著獎狀恭喜」（8 張；2026-11-24 改用新版黏土風）
+- 規格：正方形 2000×2000，角色全身、置中、純白背景（不要畫出來的透明格子）。
+- 參考圖：附上該夥伴的新版圖 `images/characters/v2/<代號>.webp`（同一隻角色、同樣顏色和特徵、同樣黏土畫風）。
+- 共同中文：依照附上的角色參考圖，畫同一隻角色，外形、顏色、配件和畫風完全一致：霧面黏土質感的 3D 公仔、柔和明亮的攝影棚打光、表面有細細的黏土紋理、大大的亮面眼睛。角色開心地笑、眼睛閃閃發亮，雙手（或雙翼）高高舉起一張米白色的小獎狀卷軸，獎狀用紅色緞帶綁著，**獎狀上沒有任何文字或圖案**。角色身邊飄著幾顆小金星和彩色黏土紙花（黃、粉紅、薄荷綠）。全身、正面略側、置中，整體明亮清爽，純白背景，畫面中沒有文字。正方形 2000×2000。
+- Common English: Based on the attached character reference, draw the exact same character with identical shape, colors, accessories and style: a matte clay-textured 3D figurine, soft bright studio lighting, subtle clay surface texture, big glossy eyes. The character smiles happily with sparkling eyes and holds up a small cream-colored certificate scroll tied with a red ribbon with both hands (or wings). **No text or pattern on the certificate.** A few small gold stars and colorful clay confetti (yellow, pink, mint green) float around. Full body, slight three-quarter front view, centered, bright and clean overall, plain white background, no text. Square 2000×2000.
 - 每位夥伴補一句：
   | 代號 | 夥伴 | 中文補充 | English addition |
   |---|---|---|---|
-  | roundear | 圓耳獸 | 紅色圍巾上的星星徽章閃閃發光，尾巴開心地翹起來 | The star badge on its red scarf sparkles, tail raised happily |
-  | longear | 長耳獸 | 頭上的粉紅花朵和長耳朵一起輕輕擺動 | The pink flower and long ears sway gently |
-  | horn | 小角龍獸 | 張大嘴巴歡呼，背上的黃色角刺發亮 | Cheering with mouth wide open, yellow spikes glowing |
-  | wing | 小翼獸 | 用兩隻紫色翅膀把獎狀舉高，輕輕飛起 | Holding the certificate up with both purple wings, slightly hovering |
-  | drop | 水滴獸 | 身邊飄著小水泡，用兩隻小手托著獎狀 | Little bubbles floating around, holding the certificate with two small hands |
-  | sprout | 葉芽獸 | 頭上的葉子和小白花向上伸展 | The leaves and little white flower on its head stretch upward |
-  | flame | 火苗獸 | 頭上的火焰變得更旺、溫暖明亮（獎狀不會燒到） | Its head flame burns brighter and warm (the certificate is safe) |
-  | stone | 石球獸 | 用強壯的雙手穩穩舉起獎狀，頭上的水晶閃亮 | Holding the certificate steadily with strong arms, crystals on its head shining |
+  | roundear | 圓耳獸 | 紅色圍巾上的黃色星星閃閃發亮，蓬鬆的尾巴開心地翹起來 | The yellow star on its red scarf sparkles, its fluffy tail raised happily |
+  | longear | 長耳獸 | 頭上的粉紅花朵和長耳朵一起輕輕擺動，葉子披肩上的小花也很明顯 | The pink flower and long floppy ears sway gently; the little flower on its leaf cape is clearly visible |
+  | horn | 小角龍獸 | 站著張大嘴巴歡呼，黃色背刺和尾巴一起翹起來 | Standing and cheering with mouth wide open, yellow spikes and tail lifted |
+  | wing | 小翼獸 | 用兩隻紫色翅膀把獎狀舉高，腳尖踮起像要飛起來，金項圈和月亮墜子閃亮 | Holding the certificate up with both purple wings, on tiptoe as if about to fly, gold collar and moon charm shining |
+  | drop | 水滴獸 | 用兩隻小短手托著獎狀，身邊飄著幾顆小水泡 | Holding the certificate with two short arms, a few small bubbles floating around |
+  | sprout | 葉芽獸 | 頭上的兩片大葉子和小白花向上伸展，胸前的黃色小葉子很明顯 | The two big leaves and little white flower on its head stretch upward; the small yellow leaf on its chest is clearly visible |
+  | flame | 火苗獸 | 頭上的火焰頭髮更蓬更亮，尾巴尖的小火苗也開心地搖（獎狀不會燒到） | Its flame hair is fuller and brighter, the little tail flame wags happily (the certificate is safe) |
+  | stone | 石球獸 | 用強壯的石頭雙手穩穩舉起獎狀，頭上的青苔和白色水晶閃亮 | Holding the certificate steadily with strong stone arms, the moss and white crystals on its head shining |
 
 ## 5. 好習慣稱號圖示（5 張）
 - 規格：正方形 512×512，圖示置中，透明背景；5 張是同一套、同樣大小與畫風，越後面越華麗。
