@@ -3,10 +3,10 @@
 共同規格：PNG，透明背景最好（白底也可以，只去除與外框相連的白底）；可愛兒童遊戲 App 風格，和現有冒險夥伴、金幣徽章同一種柔和 3D 光澤畫風；**圖上不要有任何文字或數字**（文字都由程式寫上）。
 交件後先收齊檢查規格，家長確認才換上。檔名換上時由程式決定（新檔名，避免圖片快取）。
 
-## 1. 升級獎狀框（1 張）
-- 規格：直式 3:4（建議 1200×1600），中間 70% 是空白的淡米色紙面。
-- 中文：一張可愛的兒童獎狀卷軸框，直式。米白色羊皮紙紙面，四周是金色圓弧花邊框，上方中央有一個小金色星星裝飾，四個角落有綠色小葉子與小星星點綴，下方中央有一個紅色緞帶蝴蝶結。**紙面中央大面積完全空白，沒有任何文字、線條或圖案**，用來之後寫字。柔和 3D 光澤的兒童遊戲 App 風格，透明背景，正面視角。
-- English: A cute children's certificate scroll frame, portrait orientation. Cream parchment paper, a rounded golden ornamental border, a small golden star at the top center, tiny green leaves and little stars in the four corners, a red ribbon bow at the bottom center. **The large central area of the paper must be completely blank — no text, no lines, no patterns** — for text to be added later. Soft glossy 3D children's game app style, transparent background, front view.
+## 1. 升級獎狀框（1 張；2026-11-24 改成橫式、黏土風）
+- 規格：橫式 4:3（建議 2000×1500），純白背景（不要畫出來的透明格子、沒有光暈）。中間約 75% 是空白紙面，程式會寫上項目名稱、「○○高手」、家長的話和日期。
+- 中文：一張可愛的獎狀框，橫式，霧面黏土質感的 3D 風格，柔和明亮的攝影棚打光。米白色厚紙面、四周是圓潤的金色黏土花邊框，上方中央一顆小金星、左右兩側各一條紅色緞帶垂下來，四個角落點綴綠色小葉子和小金星。**紙面中央大面積完全空白，沒有任何文字、線條、格線或圖案**，顏色均勻。正面平視、置中，純白背景，沒有光暈、沒有陰影。
+- English: A cute certificate frame, landscape orientation, matte clay-textured 3D style with soft bright studio lighting. A thick cream paper sheet with a rounded golden clay ornamental border, a small gold star at the top center, a red ribbon hanging on each side, tiny green leaves and little gold stars in the four corners. **The large central area of the paper must be completely blank and evenly colored — no text, no lines, no grid, no patterns.** Straight front view, centered, plain white background, no glow, no drop shadow.
 
 ## 2. 好習慣徽章底圖（1 張，所有項目共用；2026-11-24 家長：酒紅＋金）
 - 規格：正方形 1024×1024，徽章置中、四周留一點邊。
@@ -14,10 +14,10 @@
 - English: A cute yet regal royal medal badge. The round body is a deep burgundy disc with a velvety sheen, framed by a thick 3D gold rim with a ring of tiny gold stars; golden laurel leaves wrap around both sides; a small golden crown sits at the top center; two burgundy-and-gold striped ribbon tails hang below. **The center of the disc must be completely blank and evenly colored — no text, numbers or symbols** — so the habit name can be overlaid later. Soft glossy 3D children's game app style, matching the lighting and line weight of the attached gold coin badge reference, transparent background, front view.
 - 參考圖：`images/badges/badge_earn_blank.webp`（空白金幣）。
 
-## 3. 升級典禮背景（1 張）
-- 規格：直式 9:16（建議 1080×1920），下方 1/3 比較暗、比較簡單（會放按鈕）。
-- 中文：可愛的兒童舞台典禮背景，直式。深紫藍色的夜空舞台，兩側是紅色絲絨布幕，上方有兩道溫暖的金色聚光燈照向舞台中央，空中飄著彩色紙花（黃、粉紅、薄荷綠）與小星星，舞台地板是木頭色。**舞台中央空著**（之後放角色與獎狀），畫面沒有任何文字、沒有人物。柔和 3D 光澤兒童遊戲 App 風格。
-- English: A cute children's award ceremony stage background, portrait orientation. A deep purple-blue night stage, red velvet curtains on both sides, two warm golden spotlights shining down onto the center, colorful confetti (yellow, pink, mint green) and little stars floating in the air, a wooden stage floor. **Leave the center of the stage empty** (a character and a certificate will be placed there later). No text, no characters. Soft glossy 3D children's game app style.
+## 3. 升級典禮背景（1 張；2026-11-24 改成黏土風）
+- 規格：直式 9:16（建議 1080×1920），整張滿版（不用去背）。畫面由上到下：最上方 15% 放標題、中間 60% 放夥伴和獎狀、最下方 25% 放按鈕，所以**中間和下方要簡單、偏暗、沒有重要物件**。
+- 中文：可愛的兒童頒獎舞台背景，直式，霧面黏土質感的 3D 風格。深紫藍色的夜晚舞台，兩側是厚厚的紅色絲絨布幕（只佔畫面左右各 12%），上方掛著金色小星星串和彩旗，兩道溫暖的金色聚光燈從上方照向舞台中央，空中飄著少量彩色黏土紙花（黃、粉紅、薄荷綠）。舞台中央和下方保持空曠、顏色柔和偏暗，木頭色的舞台地板只在最下方露出一點。畫面沒有任何文字、沒有人物或角色。
+- English: A cute children's award ceremony stage background, portrait orientation, matte clay-textured 3D style. A deep purple-blue night stage, thick red velvet curtains on both sides (each taking only about 12% of the width), a string of small gold stars and bunting hanging at the top, two warm golden spotlights shining down onto the center, a little colorful clay confetti (yellow, pink, mint green) floating in the air. **Keep the center and lower part of the stage empty, soft and slightly dark**; only a little wooden stage floor shows at the very bottom. No text, no people or characters.
 
 ## 4. 冒險夥伴「拿著獎狀恭喜」（8 張；2026-11-24 改用新版黏土風）
 - 規格：正方形 2000×2000，角色全身、置中、純白背景（不要畫出來的透明格子）。
