@@ -92,7 +92,7 @@
         });
         var me = document.createElement('div');
         me.className = 'lv-me' + (demo ? ' lolo' : ''); me.id = 'lv-me';
-        var who = demo ? ART.lolo : 'images/characters/' + h(child ? charIdOf(child) : (A.defaultChar || 'roundear')) + '.webp';   // 試玩：預設冒險夥伴；示範：洛洛
+        var who = demo ? ART.lolo : 'images/characters/v2/' + h(child ? charIdOf(child) : (A.defaultChar || 'roundear')) + '.webp';   // 試玩：預設冒險夥伴；示範：洛洛
         me.innerHTML = '<i class="lv-foot"></i><img src="' + who + '" alt="" draggable="false">' + '<i class="lv-shield"></i><b class="lv-warn">快跳！</b>';
         field.appendChild(me);
         // 玩家：row 第幾排、px 中心 x（格）；anim 跳躍補間

@@ -2609,7 +2609,7 @@ async function main() {
     await q.waitForSelector('#lv-talk [data-talk=next]');
     assert.match(await q.locator('#lv-talk').innerText(), /等落石過去再跳/);
     await q.click('[data-talk=next]'); await q.click('[data-talk=go]');
-    assert.match(await q.locator('#lv-me img').getAttribute('src'), /characters\/roundear\.webp$/, '試玩用預設冒險夥伴');
+    assert.match(await q.locator('#lv-me img').getAttribute('src'), /characters\/v2\/roundear\.webp$/, '試玩用預設冒險夥伴');
     assert.equal(await q.locator('#lv-hearts').innerText(), '❤️❤️❤️', '示範不算失敗');
     await q.click('[data-lv=quit]');
     await q.waitForFunction(() => location.hash === '#home');

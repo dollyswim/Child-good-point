@@ -97,7 +97,7 @@
           return forced ? forced.slice() : got;
         }
         var C = GAME.MEAL_GAME, waitMs = window.__cgpMealWait || C.waitSec * 1000, calmMs = window.__cgpMealCalm || (still() ? 1200 : 2500);
-        var meImg = child ? 'images/characters/' + charIdOf(child) + '.webp' : null;
+        var meImg = child ? 'images/characters/v2/' + charIdOf(child) + '.webp' : null;
         var el = document.createElement('div');
         el.className = 'mg gh-mg'; el.id = 'mg';
         el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', NAME.house + '：吃飯好行為大挑戰');

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.24-253';
+  var APP_VERSION = '2026.11.24-254';
   var store;
   try {
     store = new CGP.Store();
@@ -159,7 +159,7 @@
   function avatar(child, size) {
     // 頭像 = 孩子選的冒險夥伴
     return '<span class="avatar ' + (size || '') + '" style="--c:' + h(child.color) + '">' +
-      '<img src="images/characters/' + h(charIdOf(child)) + '.webp" data-char="' + h(charIdOf(child)) + '" alt="" width="300" height="310" decoding="async"></span>';
+      '<img src="images/characters/v2/' + h(charIdOf(child)) + '.webp" data-char="' + h(charIdOf(child)) + '" alt="" width="300" height="310" decoding="async"></span>';
   }
   function charIdOf(child) {
     return CGP.CHARACTER_IDS.indexOf(child.avatar) >= 0 ? child.avatar : CGP.CHARACTER_IDS[0];
@@ -985,7 +985,7 @@
   function characterId(child) { return charIdOf(child); }
   function charImg(id, cls) {
     var c = GAME.CHARACTERS.find(function (x) { return x.id === id; });
-    return '<img class="' + (cls || 'char-img') + '" src="images/characters/' + id + '.webp" alt="' + h(c.name) + '" width="300" height="310" decoding="async">';
+    return '<img class="' + (cls || 'char-img') + '" src="images/characters/v2/' + id + '.webp" alt="' + h(c.name) + '" width="300" height="310" decoding="async">';
   }
   function characterArt(child) { return charImg(characterId(child)); }
   /** 地圖左下角商店按鈕圖（透明去背＋白色描邊的貼紙圖，直接浮在地圖上） */
@@ -2826,7 +2826,7 @@
         return new Promise(function (res) {
           var L = WOOD_END_LINES[i];
           el.querySelector('.we-who').textContent = L[0] === 'elf' ? '森林小精靈' : child.name;
-          el.querySelector('.we-port').innerHTML = noPortrait ? '' : L[0] === 'elf' ? talkPortrait('images/wood/elf.webp') : talkPortrait('images/characters/' + charIdOf(child) + '.webp', true);
+          el.querySelector('.we-port').innerHTML = noPortrait ? '' : L[0] === 'elf' ? talkPortrait('images/wood/elf.webp') : talkPortrait('images/characters/v2/' + charIdOf(child) + '.webp', true);
           el.querySelector('.we-talk').className = 'we-talk we-' + L[0];
           el.querySelector('.we-line').textContent = L[1];
           stepWait = res;

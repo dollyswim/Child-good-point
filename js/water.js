@@ -76,7 +76,7 @@
       bottle: 'images/water/items/bottle.webp', potion: 'images/water/items/potion.webp', fish: 'images/water/items/fish.webp', bucket: 'images/water/items/fish_bucket.webp',
       blanket: 'images/water/items/blanket.webp'
     };
-    function kidImg(child) { return 'images/characters/' + charIdOf(child) + '.webp'; }
+    function kidImg(child) { return 'images/characters/v2/' + charIdOf(child) + '.webp'; }
     function waterImg(src, alt, cls, emoji) {
       return src ? '<img class="' + (cls || '') + '" src="' + src + '" alt="' + (alt || '') + '" draggable="false">' : '<span class="w-emoji ' + (cls || '') + '" aria-hidden="true">' + (emoji || '❔') + '</span>';
     }

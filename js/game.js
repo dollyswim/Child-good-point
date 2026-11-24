@@ -92,7 +92,7 @@
     { id: 'magnet', name: '寶物磁鐵', icon: '🧲', img: 'images/items/treasure_magnet.webp', price: 10, desc: '吸取前後 5 格內的寶箱' }
   ];
 
-  /** 8 種原創冒險夥伴（家長提供的原創設計），圖檔在 images/characters/<id>.webp */
+  /** 8 種原創冒險夥伴（家長提供的原創設計），圖檔在 images/characters/v2/<id>.webp（2026-11-24 換新版黏土風） */
   var CHARACTERS = [
     { id: 'roundear', name: '圓耳獸', trait: '陽光・活力', icon: '🐾' },
     { id: 'longear', name: '長耳獸', trait: '溫柔・親切', icon: '🌿' },
