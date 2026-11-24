@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.24-255';
+  var APP_VERSION = '2026.11.24-256';
   var store;
   try {
     store = new CGP.Store();
@@ -780,7 +780,8 @@
       dlg.setAttribute('data-testid', 'grad-ceremony');
       dlg.innerHTML = '<div class="gc-stage"><div class="gc-confetti" aria-hidden="true">' + new Array(17).join('<i></i>') + '</div>' +
         '<h2>⭐ 升級典禮 ⭐</h2>' +
-        '<div class="gc-buddy">' + avatar(child, 'lg') + '<span class="gc-say">恭喜你，' + h(child.name) + '！</span></div>' +
+        '<div class="gc-buddy"><img class="gc-hero" src="images/habit/cert_' + h(charIdOf(child)) + '.webp" alt="" width="640" height="640" decoding="async" draggable="false" onerror="this.replaceWith(document.createRange().createContextualFragment(this.dataset.fb))" data-fb="' + h(avatar(child, 'lg')) + '">' +   // 2026-11-24 家長 Gemini 圖：夥伴拿獎狀恭喜（讀不到時改用圓形頭像）
+          '<span class="gc-say">恭喜你，' + h(child.name) + '！</span></div>' +
         '<div class="gc-cert"><p class="gc-kicker">好習慣升級獎狀</p>' +
           '<p class="gc-item">「' + h(name) + '」</p><p class="gc-text">已經變成你的好習慣，升級成</p>' +
           '<p class="gc-badge">🏅 ' + h(name) + '高手</p>' +

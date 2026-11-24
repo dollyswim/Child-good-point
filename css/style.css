@@ -2812,6 +2812,8 @@ i.lv-plat[data-sink="up"] { transition: opacity .25s, scale .25s; }
   background: linear-gradient(180deg, #3b2c7a, #6a3fa0); box-shadow: 0 0 0 4px #ffd75e, 0 12px 40px rgba(0, 0, 0, .4); overflow: hidden; }
 .gc-stage h2 { margin: 0; font-size: 1.35rem; color: #ffe27a; text-shadow: 0 2px 0 #8a4f06; }
 .gc-buddy { display: flex; align-items: center; gap: 10px; animation: gc-pop .6s cubic-bezier(.2, 1.4, .4, 1) .2s both; }
+.gc-hero { width: 150px; height: 150px; object-fit: contain; flex: none; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .3)); animation: gc-cheer 1.6s ease-in-out .8s infinite; }
+@keyframes gc-cheer { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
 .gc-say { background: #fff; color: #5a3a00; font-weight: 800; padding: 6px 12px; border-radius: 14px; position: relative; }
 .gc-cert { width: 100%; padding: 14px 14px 10px; border-radius: 12px; color: #5a3a00; background: #fff8e2; border: 3px double #d9a520;
   box-shadow: inset 0 0 0 6px #fff8e2, inset 0 0 0 8px #f0cf6a; animation: gc-pop .6s cubic-bezier(.2, 1.4, .4, 1) .45s both; }
@@ -2832,7 +2834,7 @@ i.lv-plat[data-sink="up"] { transition: opacity .25s, scale .25s; }
 .gc-confetti i:nth-child(13) { left: 89%; animation-delay: 1.5s; } .gc-confetti i:nth-child(14) { left: 94%; animation-delay: .8s; } .gc-confetti i:nth-child(15) { left: 58%; animation-delay: 2.3s; } .gc-confetti i:nth-child(16) { left: 22%; animation-delay: 2.1s; }
 @keyframes gc-fall { to { transform: translateY(620px) rotate(540deg); } }
 @keyframes gc-pop { from { transform: scale(.4); opacity: 0; } to { transform: none; opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .gc-confetti, .gc-buddy, .gc-cert { animation: none !important; } .gc-confetti i { display: none; } }
+@media (prefers-reduced-motion: reduce) { .gc-confetti, .gc-buddy, .gc-cert, .gc-hero { animation: none !important; } .gc-confetti i { display: none; } }
 .nc-list { display: grid; gap: 8px; }
 .nc-opt { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border: 2px solid #c9b8ff; border-radius: 14px; background: #f6f2ff; font: inherit; cursor: pointer; }
 .nc-opt span { font-weight: 900; color: #3f8f4a; }
