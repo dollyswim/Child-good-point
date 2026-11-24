@@ -2916,6 +2916,77 @@ async function main() {
     await cg.close();
   }
 
+  // ---------- 2026-11-24：好習慣升級（提醒 → 升級 → 典禮 → 新挑戰 → 今天我也有做到 → 回到練習） ----------
+  {
+    const cz = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block' });
+    const q = await cz.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    const ids = await q.evaluate(() => {
+      const s = window.__cgpStore, C = window.CGP;
+      const a = s.addChild({ name: '小安' }), b = s.addChild({ name: '小樂' });
+      const brush = s.data.items.find(i => i.name === '刷牙');
+      brush.createdAt = new Date(2020, 0, 1).getTime();
+      const ws = C.weekStartKey(s.now());
+      for (let k = 1; k <= 4; k++) for (let d = 0; d < 7; d++) {
+        const day = C.addDaysKey(ws, -7 * k + d);
+        s.data.records.push({ id: 'g' + k + d, childId: a.id, type: 'task', refId: brush.id, name: '刷牙', points: 5, date: day, stars: 0, ts: 1 });
+      }
+      s.save(); return { a: a.id, b: b.id, brush: brush.id };
+    });
+    await q.goto(url + '#home');
+    await q.waitForSelector('[data-testid=grad-remind]');
+    assert.match(await q.locator('[data-testid=grad-remind]').innerText(), /小安的「刷牙」已連續 4 週完成 100%，要讓它升級嗎？[\s\S]*升級[\s\S]*先問問孩子[\s\S]*再等等/);
+    if (SHOT_DIR) await q.locator('[data-testid=grad-remind]').screenshot({ path: path.join(SHOT_DIR, 'grad-remind.png') });
+    await q.click('[data-testid=grad-remind] [data-action=grad-yes]');
+    await q.waitForSelector('#confirm[open] [data-testid=grad-confirm]');
+    assert.match(await q.locator('[data-testid=grad-confirm]').innerText(), /不再加分[\s\S]*升級典禮[\s\S]*神祕寶箱[\s\S]*每週約少 35 分/);
+    await q.fill('[data-testid=grad-confirm] input[name=note]', '你每天都記得，好厲害！');
+    if (SHOT_DIR) await q.locator('[data-testid=grad-confirm]').screenshot({ path: path.join(SHOT_DIR, 'grad-confirm.png') });
+    await q.fill('[data-testid=grad-confirm] input[name=pin]', '1234');   // 還沒有家長密碼：在這裡設定
+    await q.click('[data-testid=grad-confirm] [data-yes]');
+    await q.waitForFunction((x) => window.__cgpStore.isGraduated(x.a, x.brush), ids);
+    assert.equal(await q.locator('[data-testid=grad-remind]').count(), 0);
+    // 典禮：打開小孩頁播一次
+    await q.goto(url + '#child-' + ids.a);
+    await q.waitForSelector('[data-testid=grad-ceremony]');
+    assert.match(await q.locator('[data-testid=grad-ceremony]').innerText(), /升級典禮[\s\S]*好習慣升級獎狀[\s\S]*「刷牙」[\s\S]*刷牙高手[\s\S]*你每天都記得，好厲害！[\s\S]*神祕寶箱已經放進背包/);
+    if (SHOT_DIR) await q.locator('[data-testid=grad-ceremony] .gc-stage').screenshot({ path: path.join(SHOT_DIR, 'grad-ceremony.png') });
+    await q.click('[data-testid=grad-ceremony] [data-gc=ok]');
+    await q.waitForSelector('#confirm[open] [data-testid=new-challenge]');
+    assert.match(await q.locator('[data-testid=new-challenge]').innerText(), /要不要挑戰一個新任務[\s\S]*\+6/);
+    await q.click('[data-testid=new-challenge] [data-nc="0"]');
+    await q.waitForSelector('#confirm[open] [data-testid=new-challenge-ok]');
+    await q.fill('[data-testid=new-challenge-ok] input[name=pin]', '1234');
+    await q.click('[data-testid=new-challenge-ok] [data-yes]');
+    await q.waitForFunction((a) => window.__cgpStore.data.items.some(i => Array.isArray(i.childIds) && i.childIds[0] === a && i.points === 6), ids.a);
+    assert.equal(await q.evaluate((x) => window.__cgpStore.getPendingCeremonies(x.a).length, ids), 0, '典禮只播一次');
+    // 已升級的好習慣：從任務移走；今天我也有做到不加分
+    await q.waitForSelector('[data-testid=habits]');
+    assert.match(await q.locator('[data-testid=habits]').innerText(), /已升級的好習慣[\s\S]*銀刃衛士[\s\S]*刷牙[\s\S]*今天我也有做到/);
+    assert.equal(await q.locator('.tasks .task-name', { hasText: '刷牙' }).count(), 0, '刷牙不在任務按鈕');
+    const t0 = await q.evaluate((a) => window.__cgpStore.getTotal(a), ids.a);
+    await q.click('[data-testid=habits] [data-action=habit-done]');
+    await q.waitForSelector('[data-testid=habits] .habit-check.on');
+    assert.equal(await q.evaluate((a) => window.__cgpStore.getTotal(a), ids.a), t0, '不加點數');
+    if (SHOT_DIR) await q.locator('[data-testid=habits]').screenshot({ path: path.join(SHOT_DIR, 'grad-habits.png') });
+    // B 不受影響
+    assert.equal(await q.evaluate((x) => window.__cgpStore.getTodayTasks(x.b).some(t => t.task.id === x.brush), ids), true);
+    // 回到練習：徽章保留
+    await q.click('[data-testid=habits] [data-action=grad-back]');
+    await q.waitForSelector('#confirm[open] [data-testid=grad-back]');
+    await q.fill('[data-testid=grad-back] input[name=pin]', '0000');
+    await q.click('[data-testid=grad-back] [data-yes]');
+    assert.match(await q.locator('[data-testid=grad-back] .form-error').innerText(), /不正確/);
+    await q.fill('[data-testid=grad-back] input[name=pin]', '1234');
+    await q.click('[data-testid=grad-back] [data-yes]');
+    await q.waitForFunction((x) => !window.__cgpStore.isGraduated(x.a, x.brush), ids);
+    assert.equal(await q.locator('[data-testid=habits]').count(), 0);
+    assert.equal(await q.evaluate((a) => window.__cgpStore.getHabitBadges(a).length, ids.a), 1, '徽章保留');
+    console.log('✔ 好習慣升級：家長提醒、升級確認（家長的話）、升級典禮、新挑戰、今天我也有做到不加分、回到練習保留徽章');
+    await cz.close();
+  }
+
   // ---------- 2026-11-09：能量星星在現實生活的用途（加分另外給星星、冒險每日上限、用星星兌換獎勵） ----------
   {
     const cz = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block' });

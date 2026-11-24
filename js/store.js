@@ -106,7 +106,7 @@
   function emptyData() {
     return { schemaVersion: SCHEMA_VERSION, children: [], items: [], rewards: [], records: [], challenges: [], specialTasks: [], parentPin: null, achievements: {}, carry: {}, backup: { lastExportAt: 0, since: 0, snoozeUntil: '' },
       settings: { limits: {} }, flags: { tourSeen: false, tipsDone: false, rulesSeen: false },   // 新安裝：要看新手導覽與新手任務
-      milestones: {}, adventure: { settlements: [], ledger: [], rolls: [], minigames: [], bonusQuota: [], mapChests: [], dayEnds: [], blessings: [], itemLog: [], limitResets: [], players: {} } };
+      milestones: {}, graduation: {}, adventure: { settlements: [], ledger: [], rolls: [], minigames: [], bonusQuota: [], mapChests: [], dayEnds: [], blessings: [], itemLog: [], limitResets: [], players: {} } };
   }
 
   function defaultData() {
@@ -155,6 +155,17 @@
     return out;
   }
 
+  /**
+   * 好習慣升級設定（2026-11-24）：off＝這個項目不升級；weeks＝連續幾週；rate＝每週完成率（%）；
+   * n＝沒有頻率的加分項目「每週至少幾次」（預設 3）。扣分項目沒有。
+   */
+  var GRAD_DEFAULT = { weeks: 4, rate: 85, n: 3 };
+  function normalizeGrad(kind, g) {
+    if (kind === 'penalty') return undefined;
+    g = g && typeof g === 'object' ? g : {};
+    return { off: !!g.off, weeks: Math.max(1, Math.min(12, toInt(g.weeks, GRAD_DEFAULT.weeks))),
+      rate: Math.max(50, Math.min(100, toInt(g.rate, GRAD_DEFAULT.rate))), n: Math.max(1, Math.min(7, toInt(g.n, GRAD_DEFAULT.n))) };
+  }
   function normalizeItemPoints(kind, points) {
     var p = Math.abs(toInt(points, 0));
     return kind === 'penalty' ? -p : p;
@@ -208,7 +219,8 @@
           custom: !!i.custom,
           stars: Math.max(0, toInt(i.stars, 0)),
           sourceId: i.sourceId ? String(i.sourceId) : null,
-          createdAt: toInt(i.createdAt, Date.now())
+          createdAt: toInt(i.createdAt, Date.now()),
+          grad: normalizeGrad(i.kind, i.grad)
         };
       });
 
@@ -280,6 +292,32 @@
         if (!childIdSet.has(cid) || !b || typeof b !== 'object') return;
         var e = Number(b.earned), u = Number(b.units);
         if (isFinite(e) && isFinite(u) && u >= 0) out[cid] = { earned: Math.max(0, e), units: u };
+      });
+      return out;
+    })();
+    // 2026-11-24 好習慣升級：{ childId: { itemId: 狀態 } }；舊資料沒有任何項目升級
+    d.graduation = (function () {
+      var src = d.graduation && typeof d.graduation === 'object' ? d.graduation : {}, out = {};
+      var dk = function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : ''; };
+      Object.keys(src).forEach(function (cid) {
+        if (!childIdSet.has(cid) || !src[cid] || typeof src[cid] !== 'object') return;
+        out[cid] = {};
+        Object.keys(src[cid]).forEach(function (iid) {
+          var g = src[cid][iid];
+          if (!g || typeof g !== 'object') return;
+          var arch = {};
+          if (g.arch && typeof g.arch === 'object') Object.keys(g.arch).forEach(function (wk) { var v = Number(g.arch[wk]); if (dk(wk) && isFinite(v)) arch[wk] = Math.max(0, Math.min(1, v)); });
+          out[cid][iid] = {
+            status: g.status === 'graduated' ? 'graduated' : 'practice',
+            since: dk(g.since), snoozeUntil: dk(g.snoozeUntil),
+            graduatedAt: dk(g.graduatedAt), note: String(g.note || '').slice(0, 60), name: String(g.name || ''),
+            ceremonySeen: g.ceremonySeen !== false, badgeDate: dk(g.badgeDate), chestGiven: !!g.chestGiven, chestAt: dk(g.chestAt),
+            doneDates: Array.isArray(g.doneDates) ? g.doneDates.map(String).filter(dk).slice(-400) : [],
+            arch: arch,
+            history: Array.isArray(g.history) ? g.history.filter(function (x) { return x && dk(x.at); }).map(function (x) { return { at: x.at, action: String(x.action || '') }; }).slice(-50) : [],
+            extra: g.extra && typeof g.extra === 'object' ? g.extra : {}   // 預留：夥伴小屋裝飾等
+          };
+        });
       });
       return out;
     })();
@@ -837,7 +875,8 @@
       custom: !!input.custom,
       stars: Math.max(0, toInt(input.stars, 0)),
       sourceId: input.sourceId ? String(input.sourceId) : null,
-      createdAt: this.now().getTime()
+      createdAt: this.now().getTime(),
+      grad: normalizeGrad(input.kind, input.grad)
     };
     this.data.items.push(item);
     this.save();
@@ -862,6 +901,7 @@
     if (patch.points != null) item.points = normalizeItemPoints(item.kind, patch.points);
     if (patch.childIds != null) item.childIds = this._normalizeChildIds(patch.childIds);
     if (patch.frequency != null) item.frequency = normalizeFrequency(patch.frequency);
+    if (patch.grad != null) item.grad = normalizeGrad(item.kind, Object.assign({}, item.grad, patch.grad));
     if (patch.custom != null) item.custom = !!patch.custom;
     if (patch.stars != null) item.stars = Math.max(0, toInt(patch.stars, 0));
     this.save();
@@ -1987,6 +2027,7 @@
     SPECIAL_TASK_POINTS: SPECIAL_TASK_POINTS,
     CHARACTER_IDS: CHARACTER_IDS,
     starsForNet: starsForNet, starsForNetAt: starsForNetAt, scalePoints: scalePoints, pointScale: pointScale, SCALE_PRESETS: SCALE_PRESETS, TYPICAL_DAY_DEFAULT: TYPICAL_DAY_DEFAULT,
+    GRAD_DEFAULT: GRAD_DEFAULT, normalizeGrad: normalizeGrad, addDaysKey: addDaysKey,
     STORAGE_KEY: STORAGE_KEY
   };
 

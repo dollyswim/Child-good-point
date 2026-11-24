@@ -3328,3 +3328,189 @@ test('點數尺度：新家庭第一次選小額制，沒改過的範例項目�
   assert.equal(brush.points, 1, '不是從 200 改的 → 不再換算');
   void ctx;
 });
+
+// ---------- 好習慣升級（graduation，2026-11-24） ----------
+const GR = require('../js/graduation.js');
+/** 從 2026-11-02（週一）開始的 Store；items 建立在 10/26 之前，整週都能算 */
+function gradStore() {
+  const ctx = makeStore('2026-10-20T09:00:00');
+  const a = ctx.store.addChild({ name: '小安' });
+  const b = ctx.store.addChild({ name: '小樂' });
+  const brush = ctx.store.addItem({ kind: 'task', name: '刷牙', points: 5, frequency: { type: 'daily' } });
+  const hw = ctx.store.addItem({ kind: 'task', name: '完成功課', points: 10, frequency: { type: 'weekdays' } });
+  const run = ctx.store.addItem({ kind: 'task', name: '運動', points: 8, frequency: { type: 'weeklyN', n: 3 } });
+  const help = ctx.store.addItem({ kind: 'bonus', name: '主動幫忙', points: 5 });
+  const bad = ctx.store.addItem({ kind: 'penalty', name: '發脾氣', points: 3 });
+  /** 在某天替孩子完成任務／加分 */
+  const doOn = (childId, item, day) => { ctx.setDate(day + 'T08:00:00'); if (item.kind === 'task') ctx.store.completeTask(childId, item.id); else ctx.store.recordItem(childId, item.id); };
+  return Object.assign(ctx, { a, b, brush, hw, run, help, bad, doOn });
+}
+const WEEKS = ['2026-10-26', '2026-11-02', '2026-11-09', '2026-11-16'];   // 4 個整週（週一）
+const dayOf = (ws, i) => S.addDaysKey(ws, i);
+
+test('好習慣升級：預設 4 週、85%；每天任務每週 6 天剛好達標、5 天差一點沒達標（進度重算、沒有失敗訊息）', () => {
+  const g = gradStore();
+  assert.deepEqual(g.brush.grad, { off: false, weeks: 4, rate: 85, n: 3 });
+  assert.equal(g.bad.grad, undefined, '扣分項目不升級');
+  WEEKS.forEach(ws => [0, 1, 2, 3, 4, 5].forEach(i => g.doOn(g.a.id, g.brush, dayOf(ws, i))));   // 每週 6/7＝85.7%
+  g.setDate('2026-11-23T09:00:00');
+  let p = g.store.getGradProgress(g.a.id, g.brush.id);
+  assert.deepEqual([p.streak, p.ready, p.left, p.avg], [4, true, 0, 86]);
+  // 差一點：最後一週只有 5 天（71%）
+  const h = gradStore();
+  WEEKS.forEach((ws, k) => [0, 1, 2, 3, 4, 5].slice(0, k === 3 ? 5 : 6).forEach(i => h.doOn(h.a.id, h.brush, dayOf(ws, i))));
+  h.setDate('2026-11-23T09:00:00');
+  p = h.store.getGradProgress(h.a.id, h.brush.id);
+  assert.deepEqual([p.streak, p.ready, p.left], [0, false, 4], '最近一週沒達標 → 從 0 重新累積');
+  assert.deepEqual(h.store.getGradReminders(), []);
+  // 本週進行中
+  h.doOn(h.a.id, h.brush, '2026-11-23');
+  assert.deepEqual(h.store.getGradProgress(h.a.id, h.brush.id).thisWeek, { mode: 'days', done: 1, target: 7 });
+});
+
+test('好習慣升級：平日只算週一到週五（週末做不算）、每週 N 次與沒有頻率的加分以次數計算', () => {
+  const g = gradStore();
+  // 平日：每週一～五都做 → 100%；週末另外做不影響
+  WEEKS.forEach(ws => [0, 1, 2, 3, 4].forEach(i => g.doOn(g.a.id, g.hw, dayOf(ws, i))));
+  g.setDate('2026-11-23T09:00:00');
+  assert.equal(g.store.gradWeekRate(g.a.id, g.hw, WEEKS[0]), 1);
+  assert.equal(g.store.getGradProgress(g.a.id, g.hw.id).ready, true);
+  // 4/5＝80% 不到 85%；家長把門檻調成 80 → 達標
+  const h = gradStore();
+  WEEKS.forEach(ws => [0, 1, 2, 3].forEach(i => h.doOn(h.a.id, h.hw, dayOf(ws, i))));
+  h.setDate('2026-11-23T09:00:00');
+  assert.equal(h.store.gradWeekRate(h.a.id, h.hw, WEEKS[0]), 0.8);
+  assert.equal(h.store.getGradProgress(h.a.id, h.hw.id).ready, false);
+  h.store.updateItem(h.hw.id, { grad: { rate: 80 } });
+  assert.equal(h.store.getGradProgress(h.a.id, h.hw.id).ready, true);
+  // 每週 3 次：第 3 週只有 2 次 → 只連續 1 週
+  const r = gradStore();
+  WEEKS.forEach((ws, k) => [0, 2, 4].slice(0, k === 2 ? 2 : 3).forEach(i => r.doOn(r.a.id, r.run, dayOf(ws, i))));
+  r.setDate('2026-11-23T09:00:00');
+  assert.deepEqual(WEEKS.map(w => r.store.gradWeekRate(r.a.id, r.run, w)), [1, 1, 0, 1]);
+  assert.equal(r.store.getGradProgress(r.a.id, r.run.id).streak, 1);
+  // 沒有頻率的加分：預設每週 3 次
+  WEEKS.forEach(ws => [1, 1, 3].forEach(i => r.doOn(r.a.id, r.help, dayOf(ws, i))));
+  r.setDate('2026-11-23T09:00:00');
+  assert.equal(r.store.getGradProgress(r.a.id, r.help.id).ready, true, '同一天 2 次也算次數');
+  // 不升級
+  r.store.updateItem(r.help.id, { grad: { off: true } });
+  assert.equal(r.store.getGradProgress(r.a.id, r.help.id).eligible, false);
+  assert.equal(GR.gradRule({ kind: 'task', frequency: { type: 'once' } }), null, '單次任務不升級');
+});
+
+test('好習慣升級：共同任務 A 升級，B 不受影響；要家長密碼；送一個免鑰匙神祕寶箱', () => {
+  const g = gradStore();
+  WEEKS.forEach(ws => [0, 1, 2, 3, 4, 5, 6].forEach(i => { g.doOn(g.a.id, g.brush, dayOf(ws, i)); g.doOn(g.b.id, g.brush, dayOf(ws, i)); }));
+  g.setDate('2026-11-23T09:00:00');
+  assert.equal(g.store.getGradReminders().length, 2);
+  g.store.data.parentPin = '1234'; g.store.lockParent();
+  assert.throws(() => g.store.graduate(g.a.id, g.brush.id), /家長密碼/);
+  g.store.allowPinReset();
+  const res = g.store.graduate(g.a.id, g.brush.id, { note: '你每天都記得，好棒！' });
+  assert.equal(res.chest, true);
+  assert.equal(g.store.getPlayer(g.a.id).bag.giftMysteryChest, 1);
+  assert.equal(g.store.getPlayer(g.b.id).bag.giftMysteryChest, 0);
+  assert.equal(g.store.isGraduated(g.a.id, g.brush.id), true);
+  assert.equal(g.store.isGraduated(g.b.id, g.brush.id), false);
+  assert.deepEqual(g.store.getTodayTasks(g.a.id).map(t => t.task.name).includes('刷牙'), false, 'A 的按鈕移走');
+  assert.deepEqual(g.store.getTodayTasks(g.b.id).map(t => t.task.name).includes('刷牙'), true, 'B 照常');
+  assert.deepEqual(g.store.getGradReminders().map(x => x.childId), [g.b.id]);
+  assert.equal(g.store.getPendingCeremonies(g.a.id)[0].state.note, '你每天都記得，好棒！');
+  g.store.markCeremonySeen(g.a.id, g.brush.id);
+  assert.equal(g.store.getPendingCeremonies(g.a.id).length, 0, '典禮只播一次');
+  assert.deepEqual(g.store.getHabitBadges(g.a.id).map(x => x.name), ['刷牙高手']);
+});
+
+test('好習慣升級：升級後「今天我也有做到」不加點數、不影響今日淨得分與星星', () => {
+  const g = gradStore();
+  g.setDate('2026-11-23T09:00:00');
+  g.store.allowPinReset();
+  g.store.graduate(g.a.id, g.brush.id, { force: true });
+  const total = g.store.getTotal(g.a.id), net = g.store.getTodayNet(g.a.id), recs = g.store.data.records.length;
+  assert.throws(() => g.store.completeTask(g.a.id, g.brush.id), /已經升級/);
+  assert.equal(g.store.toggleHabitDone(g.a.id, g.brush.id), true);
+  assert.equal(g.store.habitDoneToday(g.a.id, g.brush.id), true);
+  assert.deepEqual([g.store.getTotal(g.a.id), g.store.getTodayNet(g.a.id), g.store.data.records.length], [total, net, recs]);
+  g.store.recordItem(g.a.id, g.help.id);   // 其他項目照常
+  assert.equal(g.store.settleToday(g.a.id).baseStars, 1, '星星只算其他加分（5 分 → 1 顆）');
+  assert.equal(g.store.toggleHabitDone(g.a.id, g.brush.id), false, '再按一次取消');
+});
+
+test('好習慣升級：「先問問孩子」14 天後、「再等等」7 天後才再提醒', () => {
+  const g = gradStore();
+  WEEKS.forEach(ws => [0, 1, 2, 3, 4, 5, 6].forEach(i => { g.doOn(g.a.id, g.brush, dayOf(ws, i)); if (i < 5) g.doOn(g.a.id, g.hw, dayOf(ws, i)); }));
+  g.setDate('2026-11-23T09:00:00');
+  assert.equal(g.store.getGradReminders().length, 2);
+  g.store.snoozeGrad(g.a.id, g.brush.id, 'ask');
+  g.store.snoozeGrad(g.a.id, g.hw.id, 'wait');
+  assert.equal(g.store.getGradReminders().length, 0);
+  // 之後每天都繼續做，維持達標
+  let kept = '2026-11-23';
+  const keep = (to) => { for (let d = kept; d <= to; d = S.addDaysKey(d, 1)) { kept = S.addDaysKey(d, 1); g.doOn(g.a.id, g.brush, d); if ([1, 2, 3, 4, 5].includes(S.parseDateKey(d).getDay())) g.doOn(g.a.id, g.hw, d); } };
+  keep('2026-11-29'); g.setDate('2026-11-29T20:00:00');
+  assert.deepEqual(g.store.getGradReminders().map(x => x.name), [], '第 6 天還不提醒');
+  keep('2026-11-30'); g.setDate('2026-11-30T20:00:00');
+  assert.deepEqual(g.store.getGradReminders().map(x => x.name), ['完成功課'], '再等等：7 天後');
+  keep('2026-12-07'); g.setDate('2026-12-06T20:00:00');
+  assert.ok(!g.store.getGradReminders().some(x => x.name === '刷牙'), '第 13 天還不提醒');
+  g.setDate('2026-12-07T20:00:00');
+  assert.ok(g.store.getGradReminders().some(x => x.name === '刷牙'), '先問問孩子：14 天後');
+});
+
+test('好習慣升級：回到練習 → 恢復加分、進度重算；徽章不收回、神祕寶箱不重複發；再升級典禮再播一次', () => {
+  const g = gradStore();
+  g.setDate('2026-11-23T09:00:00');
+  g.store.allowPinReset();
+  g.store.graduate(g.a.id, g.brush.id, { force: true });
+  g.store.markCeremonySeen(g.a.id, g.brush.id);
+  g.store.ungraduate(g.a.id, g.brush.id);
+  assert.equal(g.store.isGraduated(g.a.id, g.brush.id), false);
+  assert.ok(g.store.completeTask(g.a.id, g.brush.id).points === 5, '恢復加分');
+  assert.equal(g.store.getGradProgress(g.a.id, g.brush.id).streak, 0, '進度從今天重新計算');
+  assert.deepEqual(g.store.getHabitBadges(g.a.id).map(x => x.name), ['刷牙高手'], '徽章保留');
+  const again = g.store.graduate(g.a.id, g.brush.id, { force: true });
+  assert.equal(again.chest, false);
+  assert.equal(g.store.getPlayer(g.a.id).bag.giftMysteryChest, 1, '寶箱只發一次');
+  assert.equal(g.store.getHabitBadges(g.a.id).length, 1, '徽章不重複');
+  assert.equal(g.store.getPendingCeremonies(g.a.id).length, 1);
+});
+
+test('好習慣升級：稱號依升級數量 1／3／6／10／15 變化；新挑戰點數比升級項目高', () => {
+  const g = gradStore();
+  g.setDate('2026-11-23T09:00:00');
+  g.store.allowPinReset();
+  assert.equal(g.store.getHabitTitle(g.a.id).title, null);
+  const names = [];
+  for (let i = 0; i < 15; i++) names.push(g.store.addItem({ kind: 'task', name: '習慣' + i, points: 5 }));
+  const seen = [];
+  names.forEach((it, i) => { g.store.graduate(g.a.id, it.id, { force: true }); seen.push((g.store.getHabitTitle(g.a.id).title || {}).name); });
+  assert.deepEqual([seen[0], seen[1], seen[2], seen[5], seen[9], seen[14]], ['銀刃衛士', '銀刃衛士', '幻影遊俠', '破曉劍聖', '聖龍騎兵', '星辰統帥']);
+  assert.equal(g.store.getHabitTitle(g.b.id).count, 0, '另一位孩子不受影響');
+  const ideas = g.store.suggestChallenges(g.a.id, g.hw.id);
+  assert.ok(ideas.length >= 3 && ideas.every(x => x.points >= 12), '完成功課 10 分 → 新挑戰 12 分');
+  const made = g.store.addChallengeItem(g.a.id, ideas[0]);
+  assert.deepEqual([made.kind, made.childIds, made.points], ['task', [g.a.id], 12]);
+});
+
+test('好習慣升級：JSON 匯出／匯入後升級狀態、紀錄、設定都保留；舊存檔補預設', () => {
+  const g = gradStore();
+  g.setDate('2026-11-23T09:00:00');
+  g.store.allowPinReset();
+  g.store.updateItem(g.help.id, { grad: { weeks: 6, rate: 90, n: 4 } });
+  g.store.graduate(g.a.id, g.brush.id, { force: true, note: '加油' });
+  g.store.toggleHabitDone(g.a.id, g.brush.id);
+  g.store.snoozeGrad(g.a.id, g.hw.id, 'ask');
+  const s2 = new Store({ storage: memoryStorage(), seed: false, now: () => new Date('2026-11-23T10:00:00') });
+  s2.importJSON(g.store.exportJSON());
+  assert.equal(s2.isGraduated(g.a.id, g.brush.id), true);
+  assert.equal(s2.habitDoneToday(g.a.id, g.brush.id), true);
+  assert.equal(s2.data.graduation[g.a.id][g.brush.id].note, '加油');
+  assert.equal(s2.data.graduation[g.a.id][g.hw.id].snoozeUntil, '2026-12-07');
+  assert.deepEqual(s2.getItem(g.help.id).grad, { off: false, weeks: 6, rate: 90, n: 4 });
+  assert.equal(s2.getPlayer(g.a.id).bag.giftMysteryChest, 1);
+  const old = migrate({ children: [{ id: 'c', name: 'A' }], items: [{ id: 'i', kind: 'task', name: '刷牙', points: 5 }, { id: 'p', kind: 'penalty', name: '扣', points: -3 }] });
+  assert.deepEqual(old.graduation, {});
+  assert.deepEqual(old.items[0].grad, { off: false, weeks: 4, rate: 85, n: 3 });
+  assert.equal(old.items[1].grad, undefined);
+});

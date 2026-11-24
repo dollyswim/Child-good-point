@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.24-250';
+  var APP_VERSION = '2026.11.24-251';
   var store;
   try {
     store = new CGP.Store();
@@ -248,6 +248,7 @@
     }
     app.innerHTML = html;
     app.dataset.view = r.name;
+    if (r.name === 'child' || r.name === 'adventure') { var cerId = r.arg; setTimeout(function () { maybeCeremony(cerId); }, 500); }   // 好習慣升級典禮
     alignHeroLinks();
     var notes = [];   // 同時有多則提示時合併顯示，避免互相蓋掉
     var sr = document.getElementById('story-reset');   // 離開地圖、或已經不用問了：收起「要不要重置任務」的詢問
@@ -420,7 +421,7 @@
       (children.length
         ? '<div class="child-list">' + cards + '</div>'
         : '<div class="empty card"><p class="big-emoji">👋</p><p><b>還沒有孩子資料</b></p><p class="muted">先新增孩子，就可以開始記錄生活積分。</p></div>') +
-      storageWarning() + onboardSteps(children) + homeAchievements(children) + week + backupReminder() +
+      storageWarning() + onboardSteps(children) + gradReminders() + homeAchievements(children) + week + backupReminder() +
       (children.length ? '' : '<button class="btn add-child" data-action="add-child">＋ 新增孩子</button>') +   // 有孩子後改在小孩頁面右上角新增
       '</main>';
   }
@@ -657,6 +658,7 @@
       '<input type="search" id="score-search" class="search" data-search="score" placeholder="🔍 搜尋規定，例如：功課" ' +
       'autocomplete="off" enterkeyhint="search" value="' + h(ui.query) + '">' +
       '<div id="score-list">' + renderScoreList(id) + '</div></section>' +
+      habitsPanel(child) +
       achievementDetails(child) +
       '<section class="panel"><h2>🕘 最近紀錄</h2>' + recHtml +
       (allCount > 8 ? '<button class="btn link" data-action="toggle-history">' +
@@ -665,6 +667,172 @@
       '<div class="undo-bar"><button class="btn undo" data-action="undo"' + (last ? '' : ' disabled') + '>' +
       '<span class="undo-label">↶ 撤銷上一筆</span>' + (last ? '<small>' + h(last.name) + ' ' + signed(last.points) + '</small>' : '') +
       '</button></div>';
+  }
+
+  // ---------- 好習慣升級（graduation，2026-11-24 家長）----------
+  /** 項目上的升級進度（正向文字；沒達標的週只是重新累積，不顯示失敗） */
+  function gradMini(childId, itemId) {
+    if (!childId || !store.getGradProgress) return '';
+    var p = store.getGradProgress(childId, itemId);
+    if (!p.eligible || p.status !== 'practice' || !p.streak) return '';   // 至少連續 1 週才顯示，避免每個按鈕都多一行
+    var dots = '';
+    for (var i = 0; i < p.need; i++) dots += i < p.streak ? '●' : '○';
+    var txt = p.ready ? '🌟 準備升級！' : '🌱 ' + dots + ' 再 ' + p.left + ' 週升級';
+    return '<small class="grad-mini' + (p.ready ? ' ready' : '') + '" data-testid="grad-mini">' + txt + '</small>';
+  }
+  function habitTitleHtml(t) {
+    if (!t.title) return '';
+    return '<p class="habit-title" data-testid="habit-title"><span class="ht-icon" aria-hidden="true">' + t.title.icon + '</span><b>' + h(t.title.name) + '</b>' +
+      (t.next ? '<small>再升級 ' + (t.next.n - t.count) + ' 個好習慣 → ' + t.next.icon + ' ' + h(t.next.name) + '</small>' : '<small>最高稱號！</small>') + '</p>';
+  }
+  /** 孩子頁：已升級的好習慣＋好習慣稱號 */
+  function habitsPanel(child) {
+    var list = store.getGraduatedItems ? store.getGraduatedItems(child.id) : [];
+    if (!list.length) return '';
+    return '<section class="panel habit-panel" data-testid="habits"><h2>🏅 已升級的好習慣 <small>' + list.length + ' 個</small></h2>' +
+      habitTitleHtml(store.getHabitTitle(child.id)) +
+      '<div class="habit-list">' + list.map(function (x) {
+        return '<div class="habit-row"><button type="button" class="habit-check' + (x.doneToday ? ' on' : '') + '" data-action="habit-done" data-id="' + h(x.item.id) + '" aria-pressed="' + x.doneToday + '">' +
+          '<span class="check-box">' + (x.doneToday ? '✓' : '') + '</span><span class="habit-main"><b>' + h(x.item.name) + '</b><small>' +
+          (x.doneToday ? '🌟 今天也做到了！' : '今天我也有做到 ✓') + '</small></span><span class="habit-badge">🏅 高手</span></button>' +
+          '<button type="button" class="habit-back" data-action="grad-back" data-id="' + h(x.item.id) + '" aria-label="回到練習（家長）" title="回到練習（家長）">↺</button></div>';
+      }).join('') + '</div><p class="muted small">升級的好習慣不再加分；按「今天我也有做到」會留下紀錄。</p></section>';
+  }
+  /** 家長首頁：達到升級條件的提醒 */
+  function gradReminders() {
+    var list = store.getGradReminders ? store.getGradReminders() : [];
+    if (!list.length) return '';
+    return '<section class="panel grad-remind" data-testid="grad-remind"><h2>🌟 好習慣升級 <small>給家長</small></h2>' + list.map(function (x) {
+      var c = store.getChild(x.childId), da = ' data-id="' + h(x.itemId) + '" data-child="' + h(x.childId) + '"';
+      return '<div class="grad-row">' + avatar(c, 'sm') + '<div class="grad-body"><p>' + h(c.name) + '的「' + h(x.name) + '」已連續 ' + x.weeks + ' 週完成 ' + x.avg + '%，要讓它升級嗎？</p>' +
+        '<div class="grad-btns"><button type="button" class="btn small primary" data-action="grad-yes"' + da + '>升級</button>' +
+        '<button type="button" class="btn small" data-action="grad-ask"' + da + '>先問問孩子</button>' +
+        '<button type="button" class="btn small" data-action="grad-wait"' + da + '>再等等</button></div></div></div>';
+    }).join('') + '</section>';
+  }
+  /** 需要家長密碼的對話框：resolve(form)；取消 resolve(null) */
+  function parentDialog(title, bodyHtml, okLabel, testid) {
+    return new Promise(function (resolve) {
+      var needPin = !store.isParentUnlocked(), newPin = needPin && !store.hasParentPin();   // 還沒有家長密碼：在這裡設定一組
+      confirmEl.innerHTML = '<form class="confirm-box parent-dlg"' + (testid ? ' data-testid="' + testid + '"' : '') + '><h2>' + h(title) + '</h2>' + bodyHtml +
+        (needPin ? '<label class="field">' + (newPin ? '設定家長密碼（4 位數字，之後設定頁也用這組）' : '家長密碼') + '<input type="password" name="pin" inputmode="numeric" maxlength="4" autocomplete="off" required></label>' : '') +
+        '<p class="form-error" hidden></p><div class="modal-actions"><button type="button" class="btn" data-no>取消</button><button type="submit" class="btn primary" data-yes>' + h(okLabel) + '</button></div></form>';
+      var form = confirmEl.querySelector('form'), err = form.querySelector('.form-error'), settled = false;
+      function done(v) { if (settled) return; settled = true; if (confirmEl.open) confirmEl.close(); resolve(v); }
+      form.querySelector('[data-no]').onclick = function () { done(null); };
+      confirmEl.oncancel = function (e) { e.preventDefault(); done(null); };
+      form.onsubmit = function (e) {
+        e.preventDefault();
+        if (newPin) {
+          try { store.setParentPin(form.elements.pin.value); } catch (e2) { err.textContent = e2.message; err.hidden = false; return; }
+        } else if (needPin && !store.unlockParent(form.elements.pin.value)) { err.textContent = '家長密碼不正確'; err.hidden = false; return; }
+        done(form);
+      };
+      if (!confirmEl.open) confirmEl.showModal();
+    });
+  }
+  /** 家長動作做完就上鎖（在設定頁以外） */
+  function parentDone() { if (route().name !== 'settings') store.lockParent(); }
+  function gradConfirm(childId, itemId) {
+    var c = store.getChild(childId), item = store.getItem(itemId), g = store._gradState(childId, itemId), rule = store.gradRule(itemId);
+    var perWeek = Math.abs(item.points) * (rule ? (rule.mode === 'count' ? rule.n : rule.days.length) : 0);
+    var inChallenge = store.data.challenges.some(function (x) { return x.metric === 'item' && x.itemId === itemId; });
+    var body = '<p>「' + h(item.name) + '」升級後：</p><ul class="grad-list">' +
+      '<li>不再加分，改成「今天我也有做到 ✓」（只留紀錄）</li>' +
+      '<li>' + h(c.name) + '下次打開小孩頁或冒險時，會看到<b>升級典禮</b>和「' + h(item.name) + '高手」徽章</li>' +
+      (g && g.chestGiven ? '' : '<li>送 1 個神祕寶箱（不用鑰匙）</li>') + '</ul>' +
+      (perWeek ? '<p class="muted small">提醒：每週約少 ' + perWeek + ' 分加分，能量星星也會少一些；典禮後可以一起選分數更高的新挑戰。</p>' : '') +
+      (inChallenge ? '<p class="muted small">⚠️ 這個項目在「本週挑戰」裡，升級後就不能再用它累積挑戰次數。</p>' : '') +
+      '<label class="field">想對' + h(c.name) + '說的話（選填，會寫在升級獎狀上）<input type="text" name="note" maxlength="40" placeholder="例如：你每天都記得，好厲害！"></label>' +
+      '<div class="grad-future" data-future="partner-house" hidden></div>';   // 預留：夥伴小屋裝飾（這次不做）
+    parentDialog('🌟 讓「' + item.name + '」升級', body, '升級', 'grad-confirm').then(function (form) {
+      if (!form) return;
+      try {
+        var res = store.graduate(childId, itemId, { note: form.elements.note.value });
+        toast('🌟 ' + c.name + '的「' + item.name + '」升級了！' + (res.chest ? '已送神祕寶箱 🎁' : ''), 'pos');
+      } catch (err) { toast(err.message, 'neg'); }
+      parentDone(); render();
+    });
+  }
+  /** 升級典禮：孩子下次打開小孩頁或冒險大廳時播一次 */
+  var cerBusy = false;
+  function maybeCeremony(childId) {
+    if (cerBusy || ui.busy || window.__cgpNoCeremony || !store.getPendingCeremonies) return;
+    var r = route();
+    if ((r.name !== 'child' && r.name !== 'adventure') || r.arg !== childId) return;
+    var list = store.getPendingCeremonies(childId);
+    if (!list.length) return;
+    if ((confirmEl && confirmEl.open) || (modal && modal.open) || document.getElementById('ach-theater') || theaterBusy) { setTimeout(function () { maybeCeremony(childId); }, 600); return; }
+    cerBusy = true;
+    showCeremony(store.getChild(childId), list[0]).then(function () { cerBusy = false; maybeCeremony(childId); });
+  }
+  function whenIdle(fn) {
+    if (document.getElementById('ach-theater') || theaterBusy || (confirmEl && confirmEl.open)) { setTimeout(function () { whenIdle(fn); }, 400); return; }
+    fn();
+  }
+  function longDate(key) { var p = String(key).split('-'); return p[0] + ' 年 ' + Number(p[1]) + ' 月 ' + Number(p[2]) + ' 日'; }
+  function showCeremony(child, x) {
+    return new Promise(function (resolve) {
+      var g = x.state, item = x.item, name = item.name;
+      var dlg = document.createElement('dialog');
+      dlg.className = 'grad-cer';
+      dlg.setAttribute('data-testid', 'grad-ceremony');
+      dlg.innerHTML = '<div class="gc-stage"><div class="gc-confetti" aria-hidden="true">' + new Array(17).join('<i></i>') + '</div>' +
+        '<h2>⭐ 升級典禮 ⭐</h2>' +
+        '<div class="gc-buddy">' + avatar(child, 'lg') + '<span class="gc-say">恭喜你，' + h(child.name) + '！</span></div>' +
+        '<div class="gc-cert"><p class="gc-kicker">好習慣升級獎狀</p>' +
+          '<p class="gc-item">「' + h(name) + '」</p><p class="gc-text">已經變成你的好習慣，升級成</p>' +
+          '<p class="gc-badge">🏅 ' + h(name) + '高手</p>' +
+          (g.note ? '<p class="gc-note">' + h(g.note) + '</p>' : '') +
+          '<p class="gc-date">' + longDate(g.graduatedAt) + '</p></div>' +
+        (g.chestAt && g.chestAt === g.graduatedAt ? '<p class="gc-gift">🎁 神祕寶箱已經放進背包！（不用鑰匙）</p>' : '') +
+        '<button type="button" class="btn primary block" data-gc="ok">太棒了！</button></div>';
+      document.body.appendChild(dlg);
+      if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+      if (soundOn()) playFanfare();
+      var closed = false;
+      function close() {
+        if (closed) return;
+        closed = true;
+        store.markCeremonySeen(child.id, item.id);
+        try { dlg.close(); } catch (e) { /* 已關閉 */ }
+        dlg.remove();
+        var badge = store.getHabitBadges(child.id).filter(function (b) { return b.itemId === item.id; })[0];
+        if (badge) showAchTheater(child, [badge]);
+        whenIdle(function () { askNewChallenge(child, item).then(function () { render(); resolve(); }); });
+      }
+      dlg.querySelector('[data-gc=ok]').onclick = close;
+      dlg.addEventListener('cancel', function (e) { e.preventDefault(); close(); });
+    });
+  }
+  /** 典禮後：要不要挑戰一個新任務？（建議點數比升級的項目高；可以略過） */
+  function askNewChallenge(child, item) {
+    var ideas = store.suggestChallenges(child.id, item.id);
+    if (!ideas.length) return Promise.resolve();
+    return new Promise(function (resolve) {
+      confirmEl.innerHTML = '<div class="confirm-box new-ch" data-testid="new-challenge"><h2>🚀 要不要挑戰一個新任務？</h2>' +
+        '<p class="muted small">和爸爸媽媽一起選一個，挑戰更難、分數更高！</p><div class="nc-list">' + ideas.map(function (x, i) {
+          return '<button type="button" class="nc-opt" data-nc="' + i + '"><b>' + h(x.name) + '</b><span>+' + x.points + '</span></button>';
+        }).join('') + '</div><div class="modal-actions"><button type="button" class="btn" data-no>先不用</button></div></div>';
+      var settled = false;
+      function done() { if (settled) return; settled = true; if (confirmEl.open) confirmEl.close(); resolve(); }
+      confirmEl.querySelector('[data-no]').onclick = done;
+      confirmEl.oncancel = function (e) { e.preventDefault(); done(); };
+      Array.prototype.forEach.call(confirmEl.querySelectorAll('[data-nc]'), function (b) {
+        b.onclick = function () {
+          var idea = ideas[Number(b.getAttribute('data-nc'))];
+          settled = true;
+          parentDialog('🚀 新挑戰：' + idea.name, '<p>新增每日任務「' + h(idea.name) + '」+' + idea.points + ' 分，只給' + h(child.name) + '。</p>', '新增', 'new-challenge-ok').then(function (form) {
+            if (form) {
+              try { store.addChallengeItem(child.id, idea); toast('🚀 新挑戰：' + idea.name + ' +' + idea.points, 'pos'); } catch (err) { toast(err.message, 'neg'); }
+              parentDone();
+            }
+            resolve();
+          });
+        };
+      });
+      if (!confirmEl.open) confirmEl.showModal();
+    });
   }
 
   /** Phase 4 命運卡得到的特殊任務：可勾選完成（+20 點），再點一次取消勾選；今天完成的仍顯示打勾 */
@@ -2285,7 +2453,15 @@
           return '<button type="button" class="ach ach-' + a.cat + (a.done ? ' done' : '') + (ui.achNew && ui.achNew.indexOf(a.id) >= 0 ? ' is-new' : '') + '" data-action="ach-info" data-id="' + a.id + '" aria-label="' + h(a.name) + (a.done ? '（已解鎖）' : '（未解鎖）') + '">' +
             (a.done ? badgeHtml(a, 'xs') : '<span class="ach-badge"><img src="' + BADGE_IMG.locked + '" alt="未解鎖" width="256" height="256" decoding="async" draggable="false"></span>') + '<small>' + h(a.name) + '</small></button>';   // 已解鎖：完整彩色徽章
         }).join('') + '</div></div>';
-      }).join('') + '</div>';
+      }).join('') + habitBadgeCat(child) + '</div>';
+  }
+  /** 成就收藏的「好習慣」分類（升級徽章；回到練習也保留） */
+  function habitBadgeCat(child) {
+    var hb = store.getHabitBadges ? store.getHabitBadges(child.id) : [];
+    if (!hb.length) return '';
+    return '<div class="ach-cat"><h3>🏅 好習慣</h3><div class="ach-grid">' + hb.map(function (a) {
+      return '<button type="button" class="ach ach-habit done" data-action="ach-info" data-id="' + h(a.id) + '" aria-label="' + h(a.name) + '（已解鎖）">' + badgeHtml(a, 'xs') + '<small>' + h(a.name) + '</small></button>';
+    }).join('') + '</div></div>';
   }
   /** 首頁成就欄：每位孩子最近得到的 3 個成就（還沒有成就的孩子不顯示；都沒有就整欄不出現），點一列進到小孩頁面並展開全部成就 */
   function homeAchievements(children) {
@@ -2311,7 +2487,7 @@
       : '<span class="ach-latest muted">還沒有成就，繼續加油！</span>';
     return '<details class="panel ach-details" id="ach-details" data-testid="achievements"' + (open ? ' open' : '') + '>' +
       '<summary><span class="ach-sum"><h2>🏆 全部成就 <small>已解鎖 ' + done.length + ' / ' + list.length + '</small></h2>' + peek + '</span></summary>' +
-      (done.length ? achievementPanel(child) : '') + '</details>';
+      (done.length || (store.getHabitBadges && store.getHabitBadges(child.id).length) ? achievementPanel(child) : '') + '</details>';
   }
   /** 撤銷／刪除會收回成就時先提醒；沒有影響就直接執行 */
   function achNames(list) { return list.map(function (a) { return a.icon + ' ' + a.name; }).join('、'); }
@@ -3439,20 +3615,20 @@
       (!s.doneToday && !s.canComplete ? ' disabled' : '') + '>' +
       '<span class="check" aria-hidden="true">' + (s.doneToday ? '✓' : '') + '</span>' +
       '<span class="task-name">' + h(t.task.name) +
-      (s.label ? '<small>' + h(s.label) + '</small>' : '') + '</span>' +
+      (s.label ? '<small>' + h(s.label) + '</small>' : '') + gradMini(route().arg, t.task.id) + '</span>' +
       '<span class="pts pos">' + h(ptsLabel(t.task)) + '</span></button>';
   }
 
   /** 孩子頁的加減分清單（搜尋與篩選時只重畫這一塊，輸入框不會失去焦點） */
   function renderScoreList(childId) {
-    var bonus = store.getItemsFor(childId, 'bonus');
+    var bonus = store.getItemsFor(childId, 'bonus').filter(function (i) { return !store.isGraduated(childId, i.id); });   // 已升級的好習慣移到「已升級的好習慣」
     var penalty = store.getItemsFor(childId, 'penalty');
     if (!bonus.length && !penalty.length && !store.getItemsFor(childId, 'task').length) return '<p class="muted small">尚未設定加分或扣分項目，可到設定頁新增</p>';
 
     function btns(items) {
       return '<div class="score-list">' + items.map(function (i) {
         return '<button class="score-btn ' + i.kind + '" data-action="record" data-id="' + h(i.id) + '">' +
-          '<span class="score-name">' + h(i.name) + '</span>' +
+          '<span class="score-name">' + h(i.name) + (i.kind === 'bonus' ? gradMini(childId, i.id) : '') + '</span>' +
           '<span class="score-pts">' + h(ptsLabel(i)) + '</span></button>';
       }).join('') + '</div>';
     }
@@ -4002,6 +4178,17 @@
   }
   modalForm.addEventListener('change', syncConditional);
 
+  /** 項目設定：好習慣升級（連續幾週、完成率、沒有頻率的加分每週幾次、不升級） */
+  function gradFields(g) {
+    var D = window.CGP.GRAD_DEFAULT;
+    g = g || { off: false, weeks: D.weeks, rate: D.rate, n: D.n };
+    return '<fieldset class="grad-set" data-testid="grad-set"><legend>🌱 好習慣升級</legend>' +
+      '<label class="radio"><input type="checkbox" name="gradOn" value="1"' + (g.off ? '' : ' checked') + '> 這個項目會升級（達標時首頁提醒你決定）</label>' +
+      '<div class="grad-grid"><label class="field">連續幾週<input type="number" name="gradWeeks" min="1" max="12" step="1" inputmode="numeric" value="' + g.weeks + '"></label>' +
+      '<label class="field">每週完成率（%）<input type="number" name="gradRate" min="50" max="100" step="1" inputmode="numeric" value="' + g.rate + '"></label>' +
+      '<label class="field" data-show-when="daily=">每週至少幾次<input type="number" name="gradN" min="1" max="7" step="1" inputmode="numeric" value="' + g.n + '"></label></div>' +
+      '<small class="muted">每日任務依頻率計算（平日只算週一到週五；每週 N 次看有沒有達到）；一般加分看每週次數。單次任務不升級。</small></fieldset>';
+  }
   /** 新增或編輯加分／扣分項目；加分可勾選「每日任務」（內部 kind 為 task） */
   function openItemForm(kind, item) {
     var base = kind === 'penalty' ? 'penalty' : 'bonus';
@@ -4016,6 +4203,7 @@
       '<label class="radio" data-show-when="daily="><input type="checkbox" name="custom" value="1"' + (it.custom ? ' checked' : '') + '> 每次由家長自填點數（上方數字為預設值）</label>' +
       '<label class="field">額外能量星星<input type="number" name="stars" min="0" step="1" inputmode="numeric" value="' + (it.stars || 0) + '">' +
       '<small class="muted">Phase 1 只記錄，冒險功能（Phase 2）推出後才會發放。</small></label>' +
+      (base === 'bonus' ? gradFields(it.grad) : '') +
       childPicker(it.childIds);
     openModal((item ? '編輯' : '新增') + KIND_LABELS[base], fields, function (fd) {
       var scope = fd.get('scope');
@@ -4037,6 +4225,7 @@
         };
         if (data.frequency.type === 'days' && !data.frequency.days.length) throw new Error('請至少選擇一個星期');
       }
+      if (base === 'bonus') data.grad = { off: fd.get('gradOn') !== '1', weeks: fd.get('gradWeeks'), rate: fd.get('gradRate'), n: fd.get('gradN') };
       if (item) store.updateItem(item.id, data);
       else store.addItem(data);
       toast('已儲存');
@@ -4319,6 +4508,29 @@
           confirmThen('把「表現不錯的一天」從 ' + old + ' 分改成 ' + sv + ' 分？\n只影響之後：已結算的星星、已兌換的寶物不變；里程碑重新起算、等級只升不降。', '修改', false, function () { store.setTypicalDay(sv); toast('已改成每天約 ' + sv + ' 分', 'pos'); render(); });
           break;
         }
+        case 'habit-done': {
+          var hdOn = store.toggleHabitDone(childId, id), hdItem = store.getItem(id);
+          toast(hdOn ? '🌟 今天也做到「' + hdItem.name + '」了！（好習慣紀錄，不加分）' : '已取消今天的紀錄', hdOn ? 'pos' : undefined);
+          render();
+          break;
+        }
+        case 'grad-yes': gradConfirm(el.getAttribute('data-child'), id); break;
+        case 'grad-ask':
+        case 'grad-wait': {
+          store.snoozeGrad(el.getAttribute('data-child'), id, action === 'grad-ask' ? 'ask' : 'wait');
+          toast(action === 'grad-ask' ? '好的，先問問孩子；兩週後再提醒你' : '好的，再等等；一週後再提醒你');
+          render();
+          break;
+        }
+        case 'grad-back': {
+          var gbItem = store.getItem(id), gbChild = store.getChild(childId);
+          parentDialog('↺ 回到練習', '<p>把「' + h(gbItem.name) + '」放回' + h(gbChild.name) + '的加分按鈕？</p><p class="muted small">升級進度會從今天重新開始；已經得到的徽章會保留，神祕寶箱不會重複送。</p>', '回到練習', 'grad-back').then(function (form) {
+            if (!form) return;
+            try { store.ungraduate(childId, id); toast('已把「' + gbItem.name + '」放回練習'); } catch (err) { toast(err.message, 'neg'); }
+            parentDone(); render();
+          });
+          break;
+        }
         case 'limits-reset':
           confirmThen('把冒險世界的每日上限全部恢復預設？', '恢復預設', false, function () { store.setLimits({}, true); toast('已恢復預設上限'); });
           break;
@@ -4488,7 +4700,7 @@
         case 'show-summary': showSummary(childId, false); break;
         case 'open-achievements': ui.achOpen = id; ui.achScroll = true; go('#child-' + id); break;
         case 'ach-info': {
-          var ach = store.getAchievements(childId).find(function (a) { return a.id === id; });
+          var ach = store.getAchievements(childId).concat(store.getHabitBadges ? store.getHabitBadges(childId) : []).find(function (a) { return a.id === id; });
           openTheater({ child: store.getChild(childId), list: [ach], view: true });   // 2026-11-09：比照得到成就的視窗，徽章放大
           break;
         }
