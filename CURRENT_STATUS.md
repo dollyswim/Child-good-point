@@ -167,7 +167,7 @@
   | 島 | 地圖形式 | 終點 | 程式／資料 |
   |---|---|---|---|
   | 金島 | 一張長地圖（1080×5400），4 區由下往上 | 金冠城堡 | `js/board-gold.js`～`board-gold-04.js`，`data/gold_region0N_tiles.json` |
-  | 木島 | 一張長地圖，4 區 | 精靈巨樹樹洞 | `js/board-wood.js`，`data/wood_island_coordinates_0_100.json` |
+  | 木島 | 一張長地圖，4 區 | 精靈巨樹 | `js/board-wood.js`，`data/wood_island_coordinates_0_100.json` |
   | 水島 | 4 張獨立場景（各 1080×1350） | 萊莫的沉船 | `js/board-water.js`，`data/water/water_scene0N_tiles_final.json` |
   - 火島：資料尚未建立；土島：未做。
 - **資料結構範例**（`js/game.js` 組合後的金島 board）：
