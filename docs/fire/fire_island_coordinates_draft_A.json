@@ -1,0 +1,863 @@
+{
+  "schemaVersion": "fire-1.0",
+  "coordinateSystem": {
+    "origin": "top-left",
+    "xDirection": "right",
+    "yDirection": "down",
+    "unit": "px",
+    "sceneWidth": 1080,
+    "sceneHeight": 1350
+  },
+  "scenes": [
+    {
+      "sceneId": "fire-01",
+      "file": "fire_scene01.png",
+      "name": "港口村莊",
+      "from": 0,
+      "to": 20
+    },
+    {
+      "sceneId": "fire-02",
+      "file": "fire_scene02.png",
+      "name": "山坡農園",
+      "from": 21,
+      "to": 40
+    },
+    {
+      "sceneId": "fire-03",
+      "file": "fire_scene03.png",
+      "name": "火山峭壁",
+      "from": 41,
+      "to": 65
+    },
+    {
+      "sceneId": "fire-04",
+      "file": "fire_scene04.png",
+      "name": "秘密基地",
+      "from": 66,
+      "to": 100
+    }
+  ],
+  "tiles": [
+    {
+      "tile": 0,
+      "id": "fire-01-start",
+      "sceneId": "fire-01",
+      "x": 515.0,
+      "y": 1205.0
+    },
+    {
+      "tile": 1,
+      "id": "fire-01-001",
+      "sceneId": "fire-01",
+      "x": 574.09,
+      "y": 1161.02
+    },
+    {
+      "tile": 2,
+      "id": "fire-01-002",
+      "sceneId": "fire-01",
+      "x": 619.69,
+      "y": 1110.2
+    },
+    {
+      "tile": 3,
+      "id": "fire-01-003",
+      "sceneId": "fire-01",
+      "x": 660.3,
+      "y": 1055.37
+    },
+    {
+      "tile": 4,
+      "id": "fire-01-004",
+      "sceneId": "fire-01",
+      "x": 691.28,
+      "y": 994.62
+    },
+    {
+      "tile": 5,
+      "id": "fire-01-005",
+      "sceneId": "fire-01",
+      "x": 707.52,
+      "y": 928.52
+    },
+    {
+      "tile": 6,
+      "id": "fire-01-006",
+      "sceneId": "fire-01",
+      "x": 699.51,
+      "y": 861.42
+    },
+    {
+      "tile": 7,
+      "id": "fire-01-007",
+      "sceneId": "fire-01",
+      "x": 664.55,
+      "y": 803.19
+    },
+    {
+      "tile": 8,
+      "id": "fire-01-008",
+      "sceneId": "fire-01",
+      "x": 615.86,
+      "y": 755.34
+    },
+    {
+      "tile": 9,
+      "id": "fire-01-009",
+      "sceneId": "fire-01",
+      "x": 563.62,
+      "y": 711.35
+    },
+    {
+      "tile": 10,
+      "id": "fire-01-010",
+      "sceneId": "fire-01",
+      "x": 507.63,
+      "y": 672.56
+    },
+    {
+      "tile": 11,
+      "id": "fire-01-011",
+      "sceneId": "fire-01",
+      "x": 446.28,
+      "y": 642.6
+    },
+    {
+      "tile": 12,
+      "id": "fire-01-012",
+      "sceneId": "fire-01",
+      "x": 391.11,
+      "y": 603.69
+    },
+    {
+      "tile": 13,
+      "id": "fire-01-013",
+      "sceneId": "fire-01",
+      "x": 361.11,
+      "y": 542.8
+    },
+    {
+      "tile": 14,
+      "id": "fire-01-014",
+      "sceneId": "fire-01",
+      "x": 354.62,
+      "y": 475.12
+    },
+    {
+      "tile": 15,
+      "id": "fire-01-015",
+      "sceneId": "fire-01",
+      "x": 370.45,
+      "y": 409.08
+    },
+    {
+      "tile": 16,
+      "id": "fire-01-016",
+      "sceneId": "fire-01",
+      "x": 408.78,
+      "y": 352.81
+    },
+    {
+      "tile": 17,
+      "id": "fire-01-017",
+      "sceneId": "fire-01",
+      "x": 458.73,
+      "y": 306.3
+    },
+    {
+      "tile": 18,
+      "id": "fire-01-018",
+      "sceneId": "fire-01",
+      "x": 511.74,
+      "y": 263.26
+    },
+    {
+      "tile": 19,
+      "id": "fire-01-019",
+      "sceneId": "fire-01",
+      "x": 566.04,
+      "y": 221.86
+    },
+    {
+      "tile": 20,
+      "id": "fire-01-020",
+      "sceneId": "fire-01",
+      "x": 620.0,
+      "y": 180.0
+    },
+    {
+      "tile": 21,
+      "id": "fire-02-021",
+      "sceneId": "fire-02",
+      "x": 480.0,
+      "y": 1240.0
+    },
+    {
+      "tile": 22,
+      "id": "fire-02-022",
+      "sceneId": "fire-02",
+      "x": 539.0,
+      "y": 1194.92
+    },
+    {
+      "tile": 23,
+      "id": "fire-02-023",
+      "sceneId": "fire-02",
+      "x": 597.83,
+      "y": 1149.6
+    },
+    {
+      "tile": 24,
+      "id": "fire-02-024",
+      "sceneId": "fire-02",
+      "x": 653.96,
+      "y": 1101.01
+    },
+    {
+      "tile": 25,
+      "id": "fire-02-025",
+      "sceneId": "fire-02",
+      "x": 700.26,
+      "y": 1043.35
+    },
+    {
+      "tile": 26,
+      "id": "fire-02-026",
+      "sceneId": "fire-02",
+      "x": 726.41,
+      "y": 974.18
+    },
+    {
+      "tile": 27,
+      "id": "fire-02-027",
+      "sceneId": "fire-02",
+      "x": 725.96,
+      "y": 900.45,
+      "hazard": "lava-stream"
+    },
+    {
+      "tile": 28,
+      "id": "fire-02-028",
+      "sceneId": "fire-02",
+      "x": 692.5,
+      "y": 835.06
+    },
+    {
+      "tile": 29,
+      "id": "fire-02-029",
+      "sceneId": "fire-02",
+      "x": 639.06,
+      "y": 783.63
+    },
+    {
+      "tile": 30,
+      "id": "fire-02-030",
+      "sceneId": "fire-02",
+      "x": 580.49,
+      "y": 737.99
+    },
+    {
+      "tile": 31,
+      "id": "fire-02-031",
+      "sceneId": "fire-02",
+      "x": 516.94,
+      "y": 700.01
+    },
+    {
+      "tile": 32,
+      "id": "fire-02-032",
+      "sceneId": "fire-02",
+      "x": 448.73,
+      "y": 670.65
+    },
+    {
+      "tile": 33,
+      "id": "fire-02-033",
+      "sceneId": "fire-02",
+      "x": 387.29,
+      "y": 629.93
+    },
+    {
+      "tile": 34,
+      "id": "fire-02-034",
+      "sceneId": "fire-02",
+      "x": 358.23,
+      "y": 562.36
+    },
+    {
+      "tile": 35,
+      "id": "fire-02-035",
+      "sceneId": "fire-02",
+      "x": 356.9,
+      "y": 488.48
+    },
+    {
+      "tile": 36,
+      "id": "fire-02-036",
+      "sceneId": "fire-02",
+      "x": 380.8,
+      "y": 418.59
+    },
+    {
+      "tile": 37,
+      "id": "fire-02-037",
+      "sceneId": "fire-02",
+      "x": 428.29,
+      "y": 361.79
+    },
+    {
+      "tile": 38,
+      "id": "fire-02-038",
+      "sceneId": "fire-02",
+      "x": 483.86,
+      "y": 312.55
+    },
+    {
+      "tile": 39,
+      "id": "fire-02-039",
+      "sceneId": "fire-02",
+      "x": 541.95,
+      "y": 266.3
+    },
+    {
+      "tile": 40,
+      "id": "fire-02-040",
+      "sceneId": "fire-02",
+      "x": 600.0,
+      "y": 220.0
+    },
+    {
+      "tile": 41,
+      "id": "fire-03-041",
+      "sceneId": "fire-03",
+      "x": 350.0,
+      "y": 1240.0
+    },
+    {
+      "tile": 42,
+      "id": "fire-03-042",
+      "sceneId": "fire-03",
+      "x": 419.08,
+      "y": 1220.13
+    },
+    {
+      "tile": 43,
+      "id": "fire-03-043",
+      "sceneId": "fire-03",
+      "x": 488.28,
+      "y": 1200.67
+    },
+    {
+      "tile": 44,
+      "id": "fire-03-044",
+      "sceneId": "fire-03",
+      "x": 557.17,
+      "y": 1180.13,
+      "hazard": "lava-fissure"
+    },
+    {
+      "tile": 45,
+      "id": "fire-03-045",
+      "sceneId": "fire-03",
+      "x": 621.62,
+      "y": 1158.71
+    },
+    {
+      "tile": 46,
+      "id": "fire-03-046",
+      "sceneId": "fire-03",
+      "x": 684.36,
+      "y": 1132.77
+    },
+    {
+      "tile": 47,
+      "id": "fire-03-047",
+      "sceneId": "fire-03",
+      "x": 743.1,
+      "y": 1098.79
+    },
+    {
+      "tile": 48,
+      "id": "fire-03-048",
+      "sceneId": "fire-03",
+      "x": 795.94,
+      "y": 1056.24
+    },
+    {
+      "tile": 49,
+      "id": "fire-03-049",
+      "sceneId": "fire-03",
+      "x": 837.98,
+      "y": 1003.11
+    },
+    {
+      "tile": 50,
+      "id": "fire-03-050",
+      "sceneId": "fire-03",
+      "x": 863.5,
+      "y": 940.44
+    },
+    {
+      "tile": 51,
+      "id": "fire-03-051",
+      "sceneId": "fire-03",
+      "x": 869.66,
+      "y": 873.04
+    },
+    {
+      "tile": 52,
+      "id": "fire-03-052",
+      "sceneId": "fire-03",
+      "x": 851.12,
+      "y": 808.24
+    },
+    {
+      "tile": 53,
+      "id": "fire-03-053",
+      "sceneId": "fire-03",
+      "x": 804.51,
+      "y": 760.32
+    },
+    {
+      "tile": 54,
+      "id": "fire-03-054",
+      "sceneId": "fire-03",
+      "x": 743.87,
+      "y": 729.81
+    },
+    {
+      "tile": 55,
+      "id": "fire-03-055",
+      "sceneId": "fire-03",
+      "x": 681.42,
+      "y": 703.12
+    },
+    {
+      "tile": 56,
+      "id": "fire-03-056",
+      "sceneId": "fire-03",
+      "x": 622.73,
+      "y": 669.39
+    },
+    {
+      "tile": 57,
+      "id": "fire-03-057",
+      "sceneId": "fire-03",
+      "x": 586.15,
+      "y": 615.08
+    },
+    {
+      "tile": 58,
+      "id": "fire-03-058",
+      "sceneId": "fire-03",
+      "x": 584.05,
+      "y": 547.31
+    },
+    {
+      "tile": 59,
+      "id": "fire-03-059",
+      "sceneId": "fire-03",
+      "x": 575.0,
+      "y": 480.0,
+      "hazard": "rockfall"
+    },
+    {
+      "tile": 60,
+      "id": "fire-03-060",
+      "sceneId": "fire-03",
+      "x": 510,
+      "y": 442
+    },
+    {
+      "tile": 61,
+      "id": "fire-03-061",
+      "sceneId": "fire-03",
+      "x": 445,
+      "y": 425
+    },
+    {
+      "tile": 62,
+      "id": "fire-03-062",
+      "sceneId": "fire-03",
+      "x": 395,
+      "y": 370
+    },
+    {
+      "tile": 63,
+      "id": "fire-03-063",
+      "sceneId": "fire-03",
+      "x": 425,
+      "y": 305
+    },
+    {
+      "tile": 64,
+      "id": "fire-03-064",
+      "sceneId": "fire-03",
+      "x": 490,
+      "y": 270
+    },
+    {
+      "tile": 65,
+      "id": "fire-03-065",
+      "sceneId": "fire-03",
+      "x": 565,
+      "y": 260
+    },
+    {
+      "tile": 66,
+      "id": "fire-04-066",
+      "sceneId": "fire-04",
+      "x": 800.0,
+      "y": 1240.0
+    },
+    {
+      "tile": 67,
+      "id": "fire-04-067",
+      "sceneId": "fire-04",
+      "x": 728.75,
+      "y": 1242.17
+    },
+    {
+      "tile": 68,
+      "id": "fire-04-068",
+      "sceneId": "fire-04",
+      "x": 657.52,
+      "y": 1245.16
+    },
+    {
+      "tile": 69,
+      "id": "fire-04-069",
+      "sceneId": "fire-04",
+      "x": 586.28,
+      "y": 1247.75
+    },
+    {
+      "tile": 70,
+      "id": "fire-04-070",
+      "sceneId": "fire-04",
+      "x": 515.01,
+      "y": 1249.39
+    },
+    {
+      "tile": 71,
+      "id": "fire-04-071",
+      "sceneId": "fire-04",
+      "x": 443.73,
+      "y": 1249.28
+    },
+    {
+      "tile": 72,
+      "id": "fire-04-072",
+      "sceneId": "fire-04",
+      "x": 372.57,
+      "y": 1245.34
+    },
+    {
+      "tile": 73,
+      "id": "fire-04-073",
+      "sceneId": "fire-04",
+      "x": 304.88,
+      "y": 1225.31
+    },
+    {
+      "tile": 74,
+      "id": "fire-04-074",
+      "sceneId": "fire-04",
+      "x": 265,
+      "y": 1161
+    },
+    {
+      "tile": 75,
+      "id": "fire-04-075",
+      "sceneId": "fire-04",
+      "x": 245,
+      "y": 1090
+    },
+    {
+      "tile": 76,
+      "id": "fire-04-076",
+      "sceneId": "fire-04",
+      "x": 280,
+      "y": 1025,
+      "hazard": "lava-fountain"
+    },
+    {
+      "tile": 77,
+      "id": "fire-04-077",
+      "sceneId": "fire-04",
+      "x": 335,
+      "y": 975
+    },
+    {
+      "tile": 78,
+      "id": "fire-04-078",
+      "sceneId": "fire-04",
+      "x": 407,
+      "y": 970
+    },
+    {
+      "tile": 79,
+      "id": "fire-04-079",
+      "sceneId": "fire-04",
+      "x": 479,
+      "y": 975
+    },
+    {
+      "tile": 80,
+      "id": "fire-04-080",
+      "sceneId": "fire-04",
+      "x": 551,
+      "y": 979
+    },
+    {
+      "tile": 81,
+      "id": "fire-04-081",
+      "sceneId": "fire-04",
+      "x": 622,
+      "y": 970
+    },
+    {
+      "tile": 82,
+      "id": "fire-04-082",
+      "sceneId": "fire-04",
+      "x": 692,
+      "y": 950
+    },
+    {
+      "tile": 83,
+      "id": "fire-04-083",
+      "sceneId": "fire-04",
+      "x": 760,
+      "y": 924
+    },
+    {
+      "tile": 84,
+      "id": "fire-04-084",
+      "sceneId": "fire-04",
+      "x": 826,
+      "y": 887
+    },
+    {
+      "tile": 85,
+      "id": "fire-04-085",
+      "sceneId": "fire-04",
+      "x": 873,
+      "y": 832
+    },
+    {
+      "tile": 86,
+      "id": "fire-04-086",
+      "sceneId": "fire-04",
+      "x": 884,
+      "y": 766.84,
+      "hazard": "steam-valve"
+    },
+    {
+      "tile": 87,
+      "id": "fire-04-087",
+      "sceneId": "fire-04",
+      "x": 873.87,
+      "y": 696.3
+    },
+    {
+      "tile": 88,
+      "id": "fire-04-088",
+      "sceneId": "fire-04",
+      "x": 855.56,
+      "y": 627.44
+    },
+    {
+      "tile": 89,
+      "id": "fire-04-089",
+      "sceneId": "fire-04",
+      "x": 828.7,
+      "y": 561.49
+    },
+    {
+      "tile": 90,
+      "id": "fire-04-090",
+      "sceneId": "fire-04",
+      "x": 790,
+      "y": 505
+    },
+    {
+      "tile": 91,
+      "id": "fire-04-091",
+      "sceneId": "fire-04",
+      "x": 724,
+      "y": 470
+    },
+    {
+      "tile": 92,
+      "id": "fire-04-092",
+      "sceneId": "fire-04",
+      "x": 650,
+      "y": 466
+    },
+    {
+      "tile": 93,
+      "id": "fire-04-093",
+      "sceneId": "fire-04",
+      "x": 576,
+      "y": 474
+    },
+    {
+      "tile": 94,
+      "id": "fire-04-094",
+      "sceneId": "fire-04",
+      "x": 503,
+      "y": 466
+    },
+    {
+      "tile": 95,
+      "id": "fire-04-095",
+      "sceneId": "fire-04",
+      "x": 441.09,
+      "y": 434.87
+    },
+    {
+      "tile": 96,
+      "id": "fire-04-096",
+      "sceneId": "fire-04",
+      "x": 441.97,
+      "y": 369.32
+    },
+    {
+      "tile": 97,
+      "id": "fire-04-097",
+      "sceneId": "fire-04",
+      "x": 499.68,
+      "y": 327.7
+    },
+    {
+      "tile": 98,
+      "id": "fire-04-098",
+      "sceneId": "fire-04",
+      "x": 550.37,
+      "y": 279.05
+    },
+    {
+      "tile": 99,
+      "id": "fire-04-099",
+      "sceneId": "fire-04",
+      "x": 548.84,
+      "y": 208.72
+    },
+    {
+      "tile": 100,
+      "id": "fire-04-100",
+      "sceneId": "fire-04",
+      "x": 530.0,
+      "y": 140.0
+    }
+  ],
+  "npcSpots": [
+    {
+      "npc": "lolo",
+      "tile": 1,
+      "sceneId": "fire-01",
+      "x": 300,
+      "y": 1110,
+      "w": 120,
+      "h": 140,
+      "note": "洛洛望遠鏡站位／港口岩石頂"
+    },
+    {
+      "npc": "otis_door",
+      "tile": 5,
+      "sceneId": "fire-01",
+      "x": 440,
+      "y": 830,
+      "w": 140,
+      "h": 160,
+      "note": "奧提斯家門前空地；白屋在空地西側，門朝東面向路"
+    },
+    {
+      "npc": "village_square",
+      "tile": 12,
+      "sceneId": "fire-01",
+      "x": 540,
+      "y": 350,
+      "w": 300,
+      "h": 220,
+      "note": "村莊廣場與團結火堆；中央允許圓形石圍火坑、木柴與周圍長椅，火堆不得壓主路或格子，仍留居民集合空間"
+    },
+    {
+      "npc": "mis_rumo",
+      "tile": 30,
+      "sceneId": "fire-02",
+      "x": 660,
+      "y": 570,
+      "w": 220,
+      "h": 160,
+      "note": "米斯與魯莫站位；受損田地在空地東側"
+    },
+    {
+      "npc": "dongdong",
+      "tile": 55,
+      "sceneId": "fire-03",
+      "x": 150,
+      "y": 590,
+      "w": 360,
+      "h": 260,
+      "note": "咚咚平台；不畫石頭村莊模型"
+    },
+    {
+      "npc": "hidden_metal_door",
+      "tile": 65,
+      "sceneId": "fire-03",
+      "x": 620,
+      "y": 120,
+      "w": 160,
+      "h": 200,
+      "note": "通往 S4 的鐵門完整露出，門檻接向同一岩台上的平坦空地；路尾向內彎入岩台。"
+    },
+    {
+      "npc": "igni_rocket_core",
+      "tile": 80,
+      "sceneId": "fire-04",
+      "x": 400,
+      "y": 590,
+      "w": 260,
+      "h": 300,
+      "note": "伊格尼與火箭核心空地；保留伊格尼站位，背景沿路為科學儀器、無人機與機械手臂，最上方發射台保留一枚主火箭"
+    },
+    {
+      "npc": "repair_area",
+      "tile": 90,
+      "sceneId": "fire-04",
+      "x": 820,
+      "y": 250,
+      "w": 240,
+      "h": 200,
+      "note": "修復區平坦空地；控制台與管線在空地上方／外側"
+    },
+    {
+      "npc": "launch_pad",
+      "tile": 100,
+      "sceneId": "fire-04",
+      "x": 20,
+      "y": 50,
+      "w": 360,
+      "h": 300,
+      "note": "最上方主發射台與唯一主火箭；平台完整位於畫面內，其餘沿路設施為科學儀器、無人機與機械手臂"
+    }
+  ],
+  "safeZones": [
+    {
+      "sceneId": "all",
+      "x": 0,
+      "y": 1130,
+      "w": 180,
+      "h": 220
+    },
+    {
+      "sceneId": "all",
+      "x": 1000,
+      "y": 1170,
+      "w": 80,
+      "h": 180
+    }
+  ]
+}
