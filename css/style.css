@@ -2800,7 +2800,7 @@ i.lv-plat[data-sink="up"] { transition: opacity .25s, scale .25s; }
 .grad-set { border: 2px dashed #b9e0bf; border-radius: 12px; padding: 8px 12px 10px; margin: 6px 0; }
 .grad-set legend { font-weight: 800; color: #3f8f4a; padding: 0 4px; }
 .grad-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
-.badge-habit { background: conic-gradient(from 200deg, #2e9b4d, #9be3a9, #3fb35f, #c8f2d0, #2e9b4d); box-shadow: 0 3px 0 #1f7a38, 0 6px 14px rgba(40, 140, 70, .3); }
+.badge-habit { background: radial-gradient(circle at 50% 45%, #8e1f3a 0 52%, transparent 53%), conic-gradient(from 200deg, #c99a1e, #ffe58a, #d9a520, #fff0b0, #c99a1e); box-shadow: 0 3px 0 #5e1023, 0 6px 14px rgba(110, 20, 45, .35); }   /* 2026-11-24 家長：酒紅＋金（正式圖到之前的佔位） */
 .grad-cer { border: 0; padding: 0; background: transparent; max-width: min(420px, 94vw); width: 100%; overflow: visible; }
 .grad-cer::backdrop { background: radial-gradient(circle at 50% 30%, rgba(60, 40, 120, .75), rgba(10, 10, 30, .9)); }
 .gc-stage { position: relative; display: grid; gap: 12px; justify-items: center; padding: 22px 18px 18px; border-radius: 22px; color: #fff; text-align: center;

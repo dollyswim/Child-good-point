@@ -8,10 +8,10 @@
 - 中文：一張可愛的兒童獎狀卷軸框，直式。米白色羊皮紙紙面，四周是金色圓弧花邊框，上方中央有一個小金色星星裝飾，四個角落有綠色小葉子與小星星點綴，下方中央有一個紅色緞帶蝴蝶結。**紙面中央大面積完全空白，沒有任何文字、線條或圖案**，用來之後寫字。柔和 3D 光澤的兒童遊戲 App 風格，透明背景，正面視角。
 - English: A cute children's certificate scroll frame, portrait orientation. Cream parchment paper, a rounded golden ornamental border, a small golden star at the top center, tiny green leaves and little stars in the four corners, a red ribbon bow at the bottom center. **The large central area of the paper must be completely blank — no text, no lines, no patterns** — for text to be added later. Soft glossy 3D children's game app style, transparent background, front view.
 
-## 2. 好習慣徽章底圖（1 張，所有項目共用）
+## 2. 好習慣徽章底圖（1 張，所有項目共用；2026-11-24 家長：酒紅＋金）
 - 規格：正方形 1024×1024，徽章置中、四周留一點邊。
-- 中文：一枚可愛的綠色緞帶獎章徽章。圓形徽章主體是亮綠色帶光澤的金邊圓盤，外圈一圈金色小星星，下方垂著兩條綠色與金色的緞帶尾巴，上方有一片小嫩芽葉子裝飾。**圓盤中央完全空白、顏色均勻**，沒有任何文字、數字或圖案，用來之後疊上項目名稱。柔和 3D 光澤兒童遊戲 App 風格，和附上的金幣徽章參考圖同樣的光影與線條粗細，透明背景，正面視角。
-- English: A cute green ribbon medal badge. The round body is a glossy bright-green disc with a gold rim, a ring of tiny golden stars around it, two green-and-gold ribbon tails hanging below, and a small sprout leaf on top. **The center of the disc must be completely blank and evenly colored — no text, numbers or symbols** — so the habit name can be overlaid later. Soft glossy 3D children's game app style, matching the lighting and line weight of the attached gold coin badge reference, transparent background, front view.
+- 中文：一枚可愛又尊貴的皇家勳章徽章。圓形主體是深酒紅色、帶絲絨光澤的圓盤，外面是一圈立體的金色厚邊，金邊上有一圈小金色星星；圓盤兩側有金色月桂葉環繞；上方中央有一頂小小的金色皇冠；下方垂著兩條酒紅色與金色條紋的緞帶尾巴。**圓盤中央完全空白、顏色均勻**，沒有任何文字、數字或圖案，用來之後疊上項目名稱。柔和 3D 光澤兒童遊戲 App 風格，和附上的金幣徽章參考圖同樣的光影與線條粗細，透明背景，正面視角。
+- English: A cute yet regal royal medal badge. The round body is a deep burgundy disc with a velvety sheen, framed by a thick 3D gold rim with a ring of tiny gold stars; golden laurel leaves wrap around both sides; a small golden crown sits at the top center; two burgundy-and-gold striped ribbon tails hang below. **The center of the disc must be completely blank and evenly colored — no text, numbers or symbols** — so the habit name can be overlaid later. Soft glossy 3D children's game app style, matching the lighting and line weight of the attached gold coin badge reference, transparent background, front view.
 - 參考圖：`images/badges/badge_earn_blank.webp`（空白金幣）。
 
 ## 3. 升級典禮背景（1 張）
