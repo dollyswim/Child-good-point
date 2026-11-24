@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.24-249';
+  var APP_VERSION = '2026.11.24-250';
   var store;
   try {
     store = new CGP.Store();
@@ -2352,7 +2352,12 @@
   function badgeHtml(a, size) {
     var m = /^earn(\d+)$/.exec(a.id);
     var scaled = m && store.pointScale() !== 1;   // 2026-11-24 家庭點數尺度不是 200：分數徽章圖上的數字不對，改用程式畫的金牌＋換算後數字
-    if (BADGE_IMG[a.id] && !scaled) return '<span class="badge badge-' + size + ' badge-img"><img src="' + BADGE_IMG[a.id] + '" alt="" width="256" height="256" decoding="async" draggable="false"></span>';
+    if (scaled) {   // 2026-11-24 家長 Gemini 圖：中間空白的同款金幣，程式寫上換算後的分數
+      var sn = store.scalePoints(+m[1]);
+      return '<span class="badge badge-' + size + ' badge-img badge-coin"><img src="images/badges/badge_earn_blank.webp" alt="" width="256" height="256" decoding="async" draggable="false">' +
+        '<span class="coin-n' + (String(sn).length >= 4 ? ' long' : '') + '"><b>' + sn + '</b><i>分</i></span></span>';
+    }
+    if (BADGE_IMG[a.id]) return '<span class="badge badge-' + size + ' badge-img"><img src="' + BADGE_IMG[a.id] + '" alt="" width="256" height="256" decoding="async" draggable="false"></span>';
     return '<span class="badge badge-' + size + ' badge-' + a.cat + '" aria-hidden="true"><span class="badge-face">' + (m ? '🏅' : a.icon) + '</span>' +   // 分數金牌用不帶數字的獎牌，數字另標
       (m ? '<span class="badge-n">' + Number(scaled ? store.scalePoints(+m[1]) : m[1]).toLocaleString('en-US') + '</span>' : '') + '</span>';
   }

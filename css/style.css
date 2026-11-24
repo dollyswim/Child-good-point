@@ -2763,3 +2763,11 @@ i.lv-plat[data-sink="up"] { transition: opacity .25s, scale .25s; }
 .scale-opt input[type=number] { width: 6em; padding: 4px 6px; font-size: 1rem; }
 .scale-preview { margin: 6px 0 12px; padding: 10px 12px; border-radius: 10px; background: #f4f8ff; line-height: 1.6; font-size: .92rem; }
 .scale-box { max-width: 420px; }
+/* 家庭點數尺度：空白金幣＋換算後分數（2026-11-24） */
+.badge-coin { container-type: inline-size; }
+.coin-n { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: .95; pointer-events: none;
+  font-weight: 900; color: #ffe9a6; -webkit-text-stroke: .9cqw #a8650c; paint-order: stroke fill;
+  text-shadow: 0 .8cqw 0 #8a4f06, 0 0 2cqw rgba(255, 240, 180, .5); }
+.coin-n b { font-size: 27cqw; letter-spacing: -.5cqw; }
+.coin-n.long b { font-size: 21cqw; }
+.coin-n i { font-style: normal; font-size: 17cqw; margin-top: 1cqw; }
