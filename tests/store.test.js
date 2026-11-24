@@ -3219,3 +3219,112 @@ test('齒輪小屋紀錄與洛洛示範重新載入後保留（2026-11-23 修正
   assert.equal(s2.lavaDemoSeen(a.id), true);
   assert.equal(s2.lavaDemoSeen(s2.addChild({ name: 'B' }).id), false);
 });
+
+// ---------- 家庭點數尺度（2026-11-24）：typicalDay；倍率＝typicalDay / 200 ----------
+const S = require('../js/store.js');
+test('點數尺度：預設 200；舊存檔補 200、舊家庭不再詢問、新家庭要詢問；匯出／匯入保留', () => {
+  assert.equal(migrate({ children: [] }).settings.typicalDay, 200);
+  assert.equal(migrate({ children: [{ id: 'c', name: 'A' }] }).flags.scaleAsked, true, '已有孩子的舊家庭不跳詢問');
+  assert.equal(migrate({ children: [] }).flags.scaleAsked, false, '還沒有孩子：新增第一個孩子時詢問');
+  assert.equal(migrate({ children: [], settings: { typicalDay: 0 } }).settings.typicalDay, 200, '不合法的值回到 200');
+  const { store } = makeStore();
+  store.addChild({ name: 'A' });
+  store.setTypicalDay(20, { firstAsk: true });
+  const s2 = new Store({ storage: memoryStorage(), seed: false });
+  s2.importJSON(store.exportJSON());
+  assert.equal(s2.getTypicalDay(), 20);
+  assert.equal(s2.data.flags.scaleAsked, true);
+});
+
+test('點數尺度：scale = 1 時所有數值和目前完全相同', () => {
+  const { store } = tsStore(0);
+  assert.equal(store.pointScale(), 1);
+  for (let n = 1; n <= 600; n++) assert.equal(S.starsForNetAt(n, 200), starsForNet(n));
+  [1, 3, 5, 10, 20, 30, 50, 100, 200, 500, 1000, 3000].forEach(x => assert.equal(store.scalePoints(x), x));
+  assert.deepEqual(G.TREASURES.map(t => store.treasurePrice(t.id)), G.TREASURES.map(t => t.price));
+  assert.equal(store.previewScale(200).stars, 40);
+  assert.equal(store.previewScale(200).level, 1000);
+  assert.equal(store.previewScale(200).special, 20);
+  assert.ok(store.getAchievements(store.getChildren()[0].id).filter(a => /^earn/.test(a.id)).every(a => a.name === '獲得 ' + a.earn + ' 分'));
+});
+
+test('點數尺度：typicalDay = 20 → 星星、寶物價格、里程碑、特殊任務、等級正確換算，沒有 0 或小數', () => {
+  const { store } = makeStore();
+  const a = store.addChild({ name: 'A', startPoints: 0 });
+  store.setTypicalDay(20, { firstAsk: true });
+  assert.equal(store.pointScale(), 0.1);
+  // 星星：除數 max(1, 5×0.1)＝1 → 一分一顆
+  assert.deepEqual([1, 7, 20].map(n => S.starsForNetAt(n, 20)), [1, 7, 20]);
+  assert.deepEqual([1, 25, 50].map(n => S.starsForNetAt(n, 50)), [1, 20, 40], '中額制：除數 5×0.25＝1.25');
+  assert.deepEqual([1, 3, 4].map(n => S.starsForNetAt(n, 400)), [1, 1, 1], '大於 200 也正常（除數 10）');
+  // 寶物價格：10→1、50→5、100→10、200→20
+  assert.deepEqual(G.TREASURES.map(t => store.treasurePrice(t.id)), [1, 1, 1, 10, 10, 5, 5, 20]);
+  G.TREASURES.forEach(t => { const v = store.treasurePrice(t.id); assert.ok(Number.isInteger(v) && v >= 1); });
+  // 小數點 / 0 檢查：各種原始值與尺度
+  [1, 7, 13, 33, 77, 199].forEach(td => [1, 3, 5, 10, 20, 50, 100, 500, 1000].forEach(x => {
+    const v = S.scalePoints(x, td); assert.ok(Number.isInteger(v) && v >= 1, td + ':' + x + '→' + v);
+  }));
+  // 特殊任務 +2
+  assert.equal(store.addSpecialTask(a.id, Object.keys(G.SPECIAL_TASKS || { praise: 1 })[0] || 'praise').task.points, 2);
+  // 等級：每 100 分一級
+  const big = store.addItem({ kind: 'bonus', name: '大', points: 30 });
+  for (let i = 0; i < 4; i++) store.recordItem(a.id, big.id);   // 120 分
+  assert.equal(store.getLevel(a.id).level, 2);
+  // 里程碑：每 +50 黃金鑰匙、每 +100 神祕寶箱
+  assert.equal(store.getPlayer(a.id).bag.goldenKey, 2);
+  assert.equal(store.data.adventure.mapChests.filter(c => c.source === 'milestone').length, 1);
+  // 分數成就：獲得 100 分（原 1000）
+  assert.ok(store.checkAchievements(a.id).some(x => x.id === 'earn1000' && x.name === '獲得 100 分'));
+  const ach = store.getAchievements(a.id).find(x => x.id === 'earn1000');
+  assert.equal(ach.name, '獲得 100 分'); assert.equal(ach.done, true);
+  // 星星結算
+  assert.equal(store.settleToday(a.id).baseStars, 120);
+});
+
+test('點數尺度：中途修改只影響之後，不重複發放；等級只升不降；已拿到的成就不收回', () => {
+  const { store } = makeStore();
+  const a = store.addChild({ name: 'A', startPoints: 0 });
+  const p = store.addItem({ kind: 'bonus', name: 'p', points: 100 });
+  for (let i = 0; i < 26; i++) store.recordItem(a.id, p.id);   // 2600 分（200 制）
+  assert.equal(store.getPlayer(a.id).bag.goldenKey, 5);
+  assert.equal(store.getLevel(a.id).level, 3);
+  const settled = store.settleToday(a.id).stars;
+  const chests = store.data.adventure.mapChests.length, buy = store.treasurePrice('shield');
+  assert.equal(buy, 10);
+  store.allowPinReset();
+  store.setTypicalDay(20);                                      // 門檻變成 1/10
+  assert.equal(store.getPlayer(a.id).bag.goldenKey, 5, '不會因門檻變低一次補發黃金鑰匙');
+  assert.equal(store.data.adventure.mapChests.length, chests, '不補發神祕寶箱');
+  assert.equal(store.getSettlement(a.id).stars, settled, '已結算星星不變');
+  assert.equal(store.getLevel(a.id).level, 3, '等級不因門檻變低暴衝（只升不降）');
+  const before = store.checkAchievements(a.id).filter(x => /^earn/.test(x.id));
+  assert.deepEqual(before, [], '分數成就靜默標記，不跳劇場');
+  store.recordItem(a.id, store.addItem({ kind: 'bonus', name: 'q', points: 50 }).id);   // 之後 +50 → 1 把鑰匙
+  assert.equal(store.getPlayer(a.id).bag.goldenKey, 6);
+  // 改回大額：已拿到的成就不收回、等級不降
+  store.setTypicalDay(200);
+  assert.ok(store.getAchievements(a.id).find(x => x.id === 'earn1000').done);
+  assert.ok(store.getLevel(a.id).level >= 3);
+  assert.equal(store.getPlayer(a.id).bag.goldenKey, 6);
+  // 沒解鎖家長密碼不能改
+  store.data.parentPin = '1234'; store.lockParent();
+  assert.throws(() => store.setTypicalDay(50), /家長密碼/);
+});
+
+test('點數尺度：新家庭第一次選小額制，沒改過的範例項目一併換算；改過的不動；之後再改不換算', () => {
+  const ctx = makeStore();
+  const store = new Store({ storage: memoryStorage(), seed: true, now: () => new Date('2026-11-06T10:00:00') });
+  const brush = store.data.items.find(i => i.name === '刷牙');
+  const hw = store.data.items.find(i => i.name === '完成功課'); hw.points = 12;   // 家長改過
+  store.addChild({ name: 'A' });
+  store.setTypicalDay(20, { firstAsk: true, seedRescale: true });
+  assert.equal(brush.points, 1);
+  assert.equal(hw.points, 12, '改過的不動');
+  const bad = store.data.items.find(i => i.name === '違反約定'); assert.equal(bad.points, -1);
+  const ch = store.data.challenges.find(c => /淨得分/.test(c.name));
+  if (ch) { assert.equal(ch.target, 10); assert.equal(ch.name, '本週淨得分 10 點'); }
+  store.data.items.concat(store.data.rewards).forEach(x => { const v = x.points != null ? x.points : x.cost; if (typeof v === 'number') assert.ok(Number.isInteger(v) && v !== 0); });
+  store.setTypicalDay(50, { firstAsk: true, seedRescale: true });
+  assert.equal(brush.points, 1, '不是從 200 改的 → 不再換算');
+  void ctx;
+});

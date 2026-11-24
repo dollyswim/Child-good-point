@@ -48,6 +48,14 @@
   // 2026-11-09 家長決定：冒險世界每日使用上限的預設值（設定裡可調 0～LIMIT_MAX）
   var DEFAULT_LIMITS = { dice: 3, minigame: 1, move: 5, door: 1, magic: 1, starCall: 1, pineHide: 1, beluga: 3, sub: 1 };   // beluga／sub：水島小白鯨、潛水艇（2026-11-16）
   var LIMIT_MAX = 10;
+  // 2026-11-24 家長：家庭點數尺度。typicalDay＝「表現不錯的一天大約拿幾分」，倍率 scale＝typicalDay / 200（我們家 200＝倍率 1，行為完全不變）
+  var TYPICAL_DAY_DEFAULT = 200, TYPICAL_DAY_MIN = 1, TYPICAL_DAY_MAX = 100000;
+  var SCALE_PRESETS = [{ id: 'small', label: '小額制', typicalDay: 20 }, { id: 'medium', label: '中額制', typicalDay: 50 }, { id: 'large', label: '大額制', typicalDay: 200 }];
+  function normTypicalDay(v) { var n = Math.round(Number(v)); return Number.isFinite(n) && n >= TYPICAL_DAY_MIN ? Math.min(TYPICAL_DAY_MAX, n) : TYPICAL_DAY_DEFAULT; }
+  /** 倍率 */
+  function pointScale(typicalDay) { return normTypicalDay(typicalDay) / TYPICAL_DAY_DEFAULT; }
+  /** 生活點數換算（唯一的換算函式）：x × 倍率，四捨五入成整數、最少 1 */
+  function scalePoints(x, typicalDay) { return Math.max(1, Math.round(x * pointScale(typicalDay))); }
   var EXTRA_STARS_MAX = 20;   // 加分時另外給的能量星星上限
   var STAR_REWARD_DEFAULT = { name: '愛的飛高高', cost: 5 };   // 能量星星兌換的預設獎勵
   /** Phase 4 命運卡特殊任務：抽到當天就出現在任務頁、含當天 3 天內有效、完成 +20 點（生活點數） */
@@ -221,6 +229,7 @@
     d.flags.tourSeen = 'tourSeen' in oldFlags ? !!oldFlags.tourSeen : d.children.length > 0;
     d.flags.tipsDone = 'tipsDone' in oldFlags ? !!oldFlags.tipsDone : d.children.length > 0;
     d.flags.rulesSeen = 'rulesSeen' in oldFlags ? !!oldFlags.rulesSeen : d.children.length > 0;   // 看過加扣分設定
+    d.flags.scaleAsked = 'scaleAsked' in oldFlags ? !!oldFlags.scaleAsked : d.children.length > 0;   // 2026-11-24：新家庭新增第一個孩子時問一次點數尺度；舊使用者不問
     if (!d.flags.starRewardSeeded) {
       d.rewards.push({ id: uid(), name: STAR_REWARD_DEFAULT.name, cost: STAR_REWARD_DEFAULT.cost, currency: 'stars', createdAt: Date.now() });
       d.flags.starRewardSeeded = true;
@@ -229,7 +238,7 @@
     d.settings = (function () {
       var src = d.settings && typeof d.settings === 'object' && d.settings.limits && typeof d.settings.limits === 'object' ? d.settings.limits : {}, lim = {};
       Object.keys(DEFAULT_LIMITS).forEach(function (k) { if (src[k] != null && src[k] !== '') lim[k] = Math.max(0, Math.min(LIMIT_MAX, toInt(src[k], DEFAULT_LIMITS[k]))); });
-      return { limits: lim };
+      return { limits: lim, typicalDay: normTypicalDay(d.settings && d.settings.typicalDay) };   // 舊資料沒有 typicalDay → 200（倍率 1）
     })();
 
     var records = Array.isArray(d.records) ? d.records : [];
@@ -262,6 +271,18 @@
         startDate: x.startDate, endDate: x.endDate, cancelled: !!x.cancelled, doneArchived: !!x.doneArchived, ts: toInt(x.ts, Date.now()) };
     });
 
+    // 2026-11-24 改點數尺度時記下每個孩子的等級進度（{ childId: { earned: 當時累計得分, units: 當時的（等級−1＋進度） } }）
+    // 之後的等級＝當時進度＋（之後多拿的分數 ÷ 新的每級分數）；不會因門檻變低暴衝，也不會因門檻變高降級
+    d.levelBase = (function () {
+      var src = d.levelBase && typeof d.levelBase === 'object' ? d.levelBase : {}, out = {};
+      Object.keys(src).forEach(function (cid) {
+        var b = src[cid];
+        if (!childIdSet.has(cid) || !b || typeof b !== 'object') return;
+        var e = Number(b.earned), u = Number(b.units);
+        if (isFinite(e) && isFinite(u) && u >= 0) out[cid] = { earned: Math.max(0, e), units: u };
+      });
+      return out;
+    })();
     // 累計得分里程碑：base＝開始計算時的累計得分；keys／chests＝已發的黃金鑰匙／神祕寶箱數
     d.milestones = (function () {
       var src = d.milestones && typeof d.milestones === 'object' ? d.milestones : {}, out = {};
@@ -289,7 +310,7 @@
       Object.keys(src).forEach(function (cid) {
         if (!childIdSet.has(cid) || !src[cid] || typeof src[cid] !== 'object') return;
         out[cid] = {};
-        Object.keys(src[cid]).forEach(function (k) { var a = src[cid][k] || {}; out[cid][k] = { date: String(a.date || ''), ts: toInt(a.ts, 0) }; });
+        Object.keys(src[cid]).forEach(function (k) { var a = src[cid][k] || {}; out[cid][k] = { date: String(a.date || ''), ts: toInt(a.ts, 0) }; if (a.keep) out[cid][k].keep = true; });   // keep：改點數尺度前已拿到的分數成就，不因門檻變高而收回
       });
       return out;
     })();
@@ -967,7 +988,7 @@
       return s === 'upcoming' || s === 'active';
     });
     if (open) return { task: open, duplicate: true };
-    var task = { id: uid(), childId: childId, kind: kind, name: SPECIAL_TASKS[kind].name, points: SPECIAL_TASK_POINTS,
+    var task = { id: uid(), childId: childId, kind: kind, name: SPECIAL_TASKS[kind].name, points: this.scalePoints(SPECIAL_TASK_POINTS),
       createdDate: today, startDate: today, endDate: addDaysKey(today, SPECIAL_TASK_DAYS - 1), cancelled: false, ts: this.now().getTime() };
     this.data.specialTasks.push(task);
     this.save();
@@ -1484,6 +1505,56 @@
 
   // ----- 冒險世界每日使用上限（2026-11-09 家長決定：設定裡可調 0～10，全部孩子共用） -----
   /** @returns {{ dice, minigame, move, door, magic, starCall, pineHide }} 目前的上限（沒設定的用預設） */
+  // ----- 家庭點數尺度（2026-11-24 家長） -----
+  /** 表現不錯的一天大約拿幾分（預設 200） */
+  Store.prototype.getTypicalDay = function () { return normTypicalDay(this.data.settings && this.data.settings.typicalDay); };
+  /** 倍率＝typicalDay / 200 */
+  Store.prototype.pointScale = function () { return pointScale(this.getTypicalDay()); };
+  /** 依家庭尺度換算生活點數（四捨五入、最少 1） */
+  Store.prototype.scalePoints = function (x) { return scalePoints(x, this.getTypicalDay()); };
+  /** 依目前尺度：表現不錯的一天約可換幾顆星星（預覽用） */
+  Store.prototype.previewScale = function (typicalDay) {
+    var td = normTypicalDay(typicalDay);
+    return { typicalDay: td, scale: pointScale(td), stars: starsForNetAt(td, td), level: scalePoints(1000, td), special: scalePoints(SPECIAL_TASK_POINTS, td), sp: function (x) { return scalePoints(x, td); } };
+  };
+  /**
+   * 修改家庭點數尺度（需家長密碼）。只影響之後：已結算的星星、已兌換的寶物、已發出的獎勵都不回溯。
+   * 避免門檻變低時一次大量發放：
+   * - 里程碑（黃金鑰匙、神祕寶箱）以「現在的累計得分」重新起算（同功能上線時，不補發）
+   * - 等級只升不降：記下每個孩子目前的等級
+   * - 由 game.js 的 _onScaleChange 處理分數成就（當下已達成的一併標記、不跳劇場；已拿到的不收回）
+   * opts.seedRescale：新家庭第一次選尺度時，把還沒改過的範例項目一併換算
+   */
+  Store.prototype.setTypicalDay = function (v, opts) {
+    if (this._requireParent && !(opts && opts.firstAsk)) this._requireParent();
+    var td = normTypicalDay(v), old = this.getTypicalDay(), self = this;
+    if (!this.data.settings) this.data.settings = { limits: {} };
+    this.data.flags.scaleAsked = true;
+    if (td === old) { this.save(); return td; }
+    if (!this.data.levelBase) this.data.levelBase = {};
+    this.data.children.forEach(function (c) { var lv = self.getLevel(c.id); self.data.levelBase[c.id] = { earned: lv.earned, units: lv.level - 1 + lv.progress }; });
+    this.data.settings.typicalDay = td;
+    if (this.data.milestones) this.data.children.forEach(function (c) { self.data.milestones[c.id] = { base: self.getEarned(c.id), keys: 0, chests: 0 }; });
+    if (opts && opts.seedRescale) this._rescaleSeeds(old, td);
+    if (this._onScaleChange) this._onScaleChange();
+    this.save();
+    return td;
+  };
+  /** 範例項目原始值（defaultData）：只換算名稱、點數都還沒被改過的 */
+  var SEED_POINTS = { items: { '刷牙': 5, '完成功課': 10, '整理書包': 5, '主動幫忙': 5, '自己收玩具': 3, '違反約定': -5, '發脾氣': -3 },
+    rewards: { '看卡通 30 分鐘': 30, '小點心': 50 }, challenges: { '本週主動幫忙 3 次': [0, 20], '本週淨得分 100 點': [100, 30] } };
+  Store.prototype._rescaleSeeds = function (oldTd, td) {
+    var sp = function (x) { return x < 0 ? -scalePoints(-x, td) : scalePoints(x, td); };
+    if (normTypicalDay(oldTd) !== TYPICAL_DAY_DEFAULT) return;
+    this.data.items.forEach(function (i) { if (SEED_POINTS.items[i.name] === i.points) i.points = sp(i.points); });
+    this.data.rewards.forEach(function (r) { if (r.currency !== 'stars' && SEED_POINTS.rewards[r.name] === r.cost) r.cost = sp(r.cost); });
+    this.data.challenges.forEach(function (c) {
+      var o = SEED_POINTS.challenges[c.name];
+      if (!o || c.rewardPoints !== o[1] || (o[0] && c.target !== o[0])) return;
+      c.rewardPoints = sp(c.rewardPoints);
+      if (o[0]) { c.target = sp(c.target); c.name = '本週淨得分 ' + c.target + ' 點'; }
+    });
+  };
   Store.prototype.getLimits = function (childId) {
     var set = (this.data.settings && this.data.settings.limits) || {}, out = {};
     var tester = childId && this.isTester(childId);   // 測試孩子：各種每日上限都不限（999）
@@ -1510,7 +1581,10 @@
 
   // ----- 冒險解鎖與能量星星（Phase 2） -----
   /** 能量星星 = ceil(今日淨得分 / 5)；淨得分 ≤ 0 時為 0 */
-  function starsForNet(net) { return net > 0 ? Math.ceil(net / 5) : 0; }
+  /** 能量星星 = ceil(今日淨得分 / (5 × 倍率))，除數最小 1；淨得分 ≤ 0 時為 0 */
+  function starsForNetAt(net, typicalDay) { return net > 0 ? Math.ceil(net / Math.max(1, 5 * pointScale(typicalDay))) : 0; }
+  /** 舊介面：倍率 1（我們家 200 分）＝ ceil(net / 5) */
+  function starsForNet(net) { return starsForNetAt(net, TYPICAL_DAY_DEFAULT); }
 
   Store.prototype.getSettlement = function (childId, key) {
     key = key || this.today();
@@ -1566,7 +1640,7 @@
     var settlement = this.getSettlement(childId);
     var bonus = this._unpaidStarRecords(childId).reduce(function (sum, r) { return sum + r.stars; }, 0);
     var late = settlement ? 0 : this._lateBonusRecords(childId).reduce(function (sum, r) { return sum + r.points; }, 0);
-    var base = net > 0 ? starsForNet(net + late) : 0;   // 出發後的加分併入（解鎖仍只看今日淨得分）
+    var base = net > 0 ? starsForNetAt(net + late, this.getTypicalDay()) : 0;   // 出發後的加分併入（解鎖仍只看今日淨得分）
     return {
       unlocked: !!settlement || net > 0,     // 今天結算過就維持解鎖
       settled: !!settlement,
@@ -1592,7 +1666,7 @@
     var unpaid = this._unpaidStarRecords(childId);
     var late = this._lateBonusRecords(childId);   // 之前出發後才拿到的加分，這次一起換成星星
     var latePoints = late.reduce(function (sum, r) { return sum + r.points; }, 0);
-    var base = starsForNet(net + latePoints);
+    var base = starsForNetAt(net + latePoints, this.getTypicalDay());
     var bonus = unpaid.reduce(function (sum, r) { return sum + r.stars; }, 0);
     var x = {
       id: uid(), childId: childId, date: this.today(), net: net,
@@ -1625,7 +1699,7 @@
     var x = this.getSettlement(childId);
     if (!x) return null;
     var net = this.getTodayNet(childId);
-    var base = Math.max(0, starsForNet(net + (x.latePoints || 0)) - x.baseStars);
+    var base = Math.max(0, starsForNetAt(net + (x.latePoints || 0), this.getTypicalDay()) - x.baseStars);
     var unpaid = this._unpaidStarRecords(childId);
     var bonus = unpaid.reduce(function (sum, r) { return sum + r.stars; }, 0);
     // 重新結算會把今天出發後的加分算進今天 → 標記為已換星星，明天不再重複併入
@@ -1659,7 +1733,7 @@
   // ----- 等級 -----
   /** 升到 Lv.n 需要的累積加分：每 1000 點 1 級，Lv.1 從 0 開始，Lv.2 = 2000、Lv.3 = 3000…Lv.10 = 10000 */
   /** 每 1000 分升 1 級：Lv.1＝0～999、Lv.2＝1000～1999… */
-  function levelThreshold(n) { return n <= 1 ? 0 : 1000 * (n - 1); }
+  function levelThreshold(n, typicalDay) { return n <= 1 ? 0 : scalePoints(1000, typicalDay) * (n - 1); }   // 2026-11-24：每級門檻跟著點數尺度
 
   /** 等級用的總分＝起始點數＋累計得分（加分、每日任務累加，扣分抵銷；兌換獎勵不影響），最少 0 */
   Store.prototype.getEarned = function (childId) {
@@ -1674,10 +1748,18 @@
   /** @returns {{level, earned, current, next, progress}} progress 為 0～1 */
   Store.prototype.getLevel = function (childId) {
     var earned = this.getEarned(childId);
-    var level = 1;
-    while (earned >= levelThreshold(level + 1)) level++;
-    var cur = levelThreshold(level), next = levelThreshold(level + 1);
-    return { level: level, earned: earned, current: cur, next: next, progress: (earned - cur) / (next - cur) };
+    var td = this.getTypicalDay(), level = 1;
+    var base = (this.data.levelBase || {})[childId];
+    if (base) {   // 改過點數尺度：從當時的進度接著算（不暴衝、不降級）
+      var step = scalePoints(1000, td), minLv = Math.floor(base.units + 1e-9) + 1;
+      var units = base.units + (earned - base.earned) / step;
+      level = Math.max(minLv, Math.floor(units + 1e-9) + 1);
+      var c0 = Math.round(base.earned + (level - 1 - base.units) * step);
+      return { level: level, earned: earned, current: Math.max(0, c0), next: Math.max(0, c0) + step, progress: Math.max(0, Math.min(1, units - (level - 1))) };
+    }
+    while (earned >= levelThreshold(level + 1, td)) level++;
+    var cur = levelThreshold(level, td), next = levelThreshold(level + 1, td);
+    return { level: level, earned: earned, current: cur, next: next, progress: Math.max(0, Math.min(1, (earned - cur) / (next - cur))) };
   };
 
   // ----- 每週目標 -----
@@ -1904,7 +1986,7 @@
     DEFAULT_LIMITS: DEFAULT_LIMITS, LIMIT_MAX: LIMIT_MAX, EXTRA_STARS_MAX: EXTRA_STARS_MAX, STAR_REWARD_DEFAULT: STAR_REWARD_DEFAULT,
     SPECIAL_TASK_POINTS: SPECIAL_TASK_POINTS,
     CHARACTER_IDS: CHARACTER_IDS,
-    starsForNet: starsForNet,
+    starsForNet: starsForNet, starsForNetAt: starsForNetAt, scalePoints: scalePoints, pointScale: pointScale, SCALE_PRESETS: SCALE_PRESETS, TYPICAL_DAY_DEFAULT: TYPICAL_DAY_DEFAULT,
     STORAGE_KEY: STORAGE_KEY
   };
 

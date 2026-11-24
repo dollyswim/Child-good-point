@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.24-248';
+  var APP_VERSION = '2026.11.24-249';
   var store;
   try {
     store = new CGP.Store();
@@ -26,7 +26,7 @@
   var KIND_LABELS = { bonus: '加分項目', penalty: '扣分項目', task: '加分項目' };
   var SETTINGS_TABS = [
     ['children', '孩子'], ['bonus', '加分'],
-    ['penalty', '扣分'], ['challenge', '挑戰'], ['reward', '獎勵'], ['limits', '冒險上限'], ['blessing', '神諭祝福'], ['backup', '備份']
+    ['penalty', '扣分'], ['challenge', '挑戰'], ['reward', '獎勵'], ['scale', '點數尺度'], ['limits', '冒險上限'], ['blessing', '神諭祝福'], ['backup', '備份']
   ];
 
   var app = document.getElementById('app');
@@ -494,7 +494,7 @@
       { done: !!store.data.flags.rulesSeen, text: '設定加分扣分規則', how: '已先準備好常用規則，照你家的習慣改一改（第一次會請你設家長密碼）', href: '#rules-bonus' },
       { done: store.data.records.some(function (r) { return r.type === 'bonus' || r.type === 'task'; }), text: '記錄第一筆加分',
         how: '到「小孩」頁，點一個加分項目（例如「主動幫忙」）', href: '#child-' + c.id },
-      { done: ad.settlements.length > 0, text: '進入今日冒險', how: '今天得分大於 0 後，在「小孩」頁按「進入今日冒險」，點數會換成能量星星（建議每天 30 分以上再出發，5 分換 1 顆星，才買得起骰子）', href: '#child-' + c.id },
+      { done: ad.settlements.length > 0, text: '進入今日冒險', how: '今天得分大於 0 後，在「小孩」頁按「進入今日冒險」，點數會換成能量星星（建議每天 ' + store.scalePoints(30) + ' 分以上再出發，' + (store.pointScale() * 5 <= 1 ? '1 分' : store.scalePoints(5) + ' 分') + '換 1 顆星，才買得起骰子）', href: '#child-' + c.id },
       { done: children.some(function (k) { return store.getPlayer(k.id).maxReached > 0; }), text: '在金島地圖擲一次骰子', how: '冒險大廳點孩子進入地圖，按骰子前進', href: '#adventure-' + c.id }
     ];
     var left = steps.filter(function (x) { return !x.done; }).length;
@@ -2351,9 +2351,10 @@
   /** 徽章 HTML（size：lg 主徽章、sm 小徽章、xs 收藏格） */
   function badgeHtml(a, size) {
     var m = /^earn(\d+)$/.exec(a.id);
-    if (BADGE_IMG[a.id]) return '<span class="badge badge-' + size + ' badge-img"><img src="' + BADGE_IMG[a.id] + '" alt="" width="256" height="256" decoding="async" draggable="false"></span>';
+    var scaled = m && store.pointScale() !== 1;   // 2026-11-24 家庭點數尺度不是 200：分數徽章圖上的數字不對，改用程式畫的金牌＋換算後數字
+    if (BADGE_IMG[a.id] && !scaled) return '<span class="badge badge-' + size + ' badge-img"><img src="' + BADGE_IMG[a.id] + '" alt="" width="256" height="256" decoding="async" draggable="false"></span>';
     return '<span class="badge badge-' + size + ' badge-' + a.cat + '" aria-hidden="true"><span class="badge-face">' + (m ? '🏅' : a.icon) + '</span>' +   // 分數金牌用不帶數字的獎牌，數字另標
-      (m ? '<span class="badge-n">' + Number(m[1]).toLocaleString('en-US') + '</span>' : '') + '</span>';
+      (m ? '<span class="badge-n">' + Number(scaled ? store.scalePoints(+m[1]) : m[1]).toLocaleString('en-US') + '</span>' : '') + '</span>';
   }
   /** 音效開關（存在這台裝置的瀏覽器，只影響成就音效） */
   var SOUND_KEY = 'cgp-ach-sound';
@@ -3088,8 +3089,8 @@
     }).join('');
     confirmEl.innerHTML = '<div class="confirm-box go-box"><h2>🚀 今日冒險出發</h2>' +
       '<p class="muted small">勾選要一起出發的孩子。出發時用今日淨得分結算能量星星，之後再加的分不會再增加星星（一天只結算一次）。</p>' +
-      (store.getChildren().some(function (c) { return !store.getSettlement(c.id) && store.getTodayNet(c.id) > 0 && store.getTodayNet(c.id) < 30; })
-        ? '<p class="go-tip">💡 建議每天得到 <b>30 分以上</b>再出發（可換 ⭐6），孩子才買得起骰子、玩得到後面的冒險。</p>' : '') +   // 2026-11-19 家長
+      (store.getChildren().some(function (c) { return !store.getSettlement(c.id) && store.getTodayNet(c.id) > 0 && store.getTodayNet(c.id) < store.scalePoints(30); })
+        ? '<p class="go-tip">💡 建議每天得到 <b>' + store.scalePoints(30) + ' 分以上</b>再出發（可換 ⭐' + CGP.starsForNetAt(store.scalePoints(30), store.getTypicalDay()) + '），孩子才買得起骰子、玩得到後面的冒險。</p>' : '') +   // 2026-11-19 家長
       '<div class="go-list">' + rows + '</div>' +
       '<div class="modal-actions"><button type="button" class="btn" data-no>取消</button>' +
       '<button type="button" class="btn primary" data-yes>一起出發！</button></div></div>';
@@ -3380,7 +3381,7 @@
     shield: '🛡️ 防護罩：停在命運格抽到「往回退」或「路障」時會自動用掉 1 個：擋住往回退；推開路障還能前進 1 格。不用手動使用。',
     rerollTicket: '🎲 命運重骰券：擲骰後會先問你要不要重擲；重擲以新的點數為準，同一次只能用 1 張。',
     airplane: '✈️ 呼叫專機：可以直接飛到其他島嶼的入口，其他島嶼開放後才能使用。',
-    goldenKey: '🔑 黃金鑰匙：打開地圖上撿到的神祕寶箱。累計得分每 +500 點送 1 把，星星商店也有賣。'
+    get goldenKey() { return '🔑 黃金鑰匙：打開地圖上撿到的神祕寶箱。累計得分每 +' + store.scalePoints(500) + ' 點送 1 把，星星商店也有賣。'; }   // 2026-11-24 跟著家庭點數尺度
   };
 
   /** 冒險寶物商店：用生活點數兌換冒險寶物（每週 3 件、同款持有 2 件） */
@@ -3393,7 +3394,7 @@
         return '<div class="treasure-card' + (chk.ok ? ' can' : '') + '" data-treasure="' + t.id + '">' +
           '<span class="item-art treasure-art">' + (t.img ? '<img src="' + t.img + '" alt="" aria-hidden="true" width="256" height="256" decoding="async" draggable="false">' : '<span class="bag-emoji">' + t.icon + '</span>') + '</span>' +
           '<span class="treasure-main"><b>' + h(t.name) + '</b><small>' + h(t.desc) + '</small>' +
-          '<span class="treasure-meta"><span class="treasure-price"><i class="coin" aria-hidden="true">點</i>' + t.price + ' 點</span><span class="treasure-own">背包 ×' + (bag[t.id] || 0) + '</span></span></span>' +
+          '<span class="treasure-meta"><span class="treasure-price"><i class="coin" aria-hidden="true">點</i>' + store.treasurePrice(t.id) + ' 點</span><span class="treasure-own">背包 ×' + (bag[t.id] || 0) + '</span></span></span>' +
           '<button class="btn ' + (chk.ok ? 'primary' : '') + ' small treasure-buy" data-action="buy-treasure" data-id="' + t.id + '"' + (chk.ok ? '' : ' disabled') + '>' +
           (chk.ok ? '兌換' : h(chk.reason)) + '</button></div>';
       }).join('') + '</div>' +
@@ -3611,6 +3612,7 @@
     else if (tab === 'challenge') body = settingsChallenges();
     else if (tab === 'backup') body = settingsBackup();
     else if (tab === 'blessing') body = settingsBlessing();
+    else if (tab === 'scale') body = settingsScale();
     else if (tab === 'limits') body = settingsLimits();
     else if (tab === 'task') { tab = 'bonus'; body = settingsItems('bonus'); } // 舊網址相容
     else if (KIND_LABELS[tab]) body = settingsItems(tab);
@@ -3755,6 +3757,51 @@
       '<button class="btn primary block" data-action="add-reward">＋ 新增獎勵</button>';
   }
 
+  // ---------- 家庭點數尺度（2026-11-24 家長）：表現不錯的一天大約拿幾分；倍率＝typicalDay / 200 ----------
+  /** 換算預覽文字 */
+  function scalePreview(td) {
+    var pv = store.previewScale(td), wings = pv.sp(GAME.TREASURES.filter(function (t) { return t.id === 'wings'; })[0].price);
+    return '表現不錯的一天（' + pv.typicalDay + ' 分）約可換 <b>⭐' + pv.stars + '</b>；飛行翼需要 <b>' + wings + ' 點</b>、每 <b>' + pv.level + ' 分</b>升 1 級、' +
+      '累計 +' + pv.sp(500) + ' 分送黃金鑰匙、特殊任務 +' + pv.special + ' 點。';
+  }
+  /** 尺度選擇區塊（設定頁與新手詢問共用） */
+  function scalePicker(td) {
+    var presets = window.CGP.SCALE_PRESETS, isPreset = presets.some(function (x) { return x.typicalDay === td; });
+    return '<div class="scale-picker" data-testid="scale-picker">' + presets.map(function (x) {
+      return '<label class="scale-opt"><input type="radio" name="scale" value="' + x.typicalDay + '"' + (x.typicalDay === td ? ' checked' : '') + '><span><b>' + x.label + '</b><small>約 ' + x.typicalDay + ' 分</small></span></label>';
+    }).join('') +
+      '<label class="scale-opt"><input type="radio" name="scale" value="custom"' + (isPreset ? '' : ' checked') + '><span><b>自訂</b><small><input type="number" id="scale-custom" min="1" step="1" inputmode="numeric" value="' + td + '" aria-label="自訂每天大約幾分"> 分</small></span></label></div>' +
+      '<p class="scale-preview" id="scale-preview">' + scalePreview(td) + '</p>';
+  }
+  function pickedScale(root) {
+    var r = root.querySelector('input[name=scale]:checked');
+    return r && r.value === 'custom' ? Math.max(1, Math.round(Number(root.querySelector('#scale-custom').value) || 0)) : Number(r ? r.value : 200);
+  }
+  function bindScalePicker(root) {
+    function upd() { root.querySelector('#scale-preview').innerHTML = scalePreview(pickedScale(root)); }
+    root.addEventListener('change', upd); root.addEventListener('input', function (e) { if (e.target.id === 'scale-custom') { root.querySelector('input[name=scale][value=custom]').checked = true; upd(); } });
+  }
+  function settingsScale() {
+    var td = store.getTypicalDay();
+    return '<section class="panel scale-panel" data-testid="scale"><h2>📏 家庭點數尺度</h2>' +
+      '<p class="muted small">「表現不錯的一天，大約會拿幾分？」App 會依照它換算能量星星、寶物價格、里程碑、等級和特殊任務的點數。家長自己設定的加扣分、任務、獎勵、挑戰不會改變。</p>' +
+      scalePicker(td) +
+      '<p class="muted small">改了只影響之後：已結算的星星、已兌換的寶物、已發的獎勵都不變；里程碑從現在的累計分數重新起算、等級只升不降。</p>' +
+      '<button class="btn primary block" data-action="save-scale">儲存</button></section>';
+  }
+  /** 新家庭新增第一個孩子時問一次（舊使用者不問） */
+  function scaleAsk() {
+    return new Promise(function (resolve) {
+      confirmEl.innerHTML = '<div class="confirm-box scale-box" data-testid="scale-ask"><h2>📏 你們家的點數習慣</h2><p class="muted small">表現不錯的一天，孩子大約會拿幾分？（之後可以在 設定 → 點數尺度 修改）</p>' +
+        scalePicker(200) + '<div class="modal-actions"><button type="button" class="btn primary" data-yes>就這樣</button></div></div>';
+      bindScalePicker(confirmEl);
+      confirmEl.querySelector('[data-yes]').onclick = function () {
+        try { store.setTypicalDay(pickedScale(confirmEl), { firstAsk: true, seedRescale: true }); } catch (err) { toast(err.message, 'neg'); }
+        if (confirmEl.open) confirmEl.close(); render(); resolve();
+      };
+      if (!confirmEl.open) confirmEl.showModal();
+    });
+  }
   /** 設定 → 冒險上限：冒險世界各項每日使用上限（0～10，全部孩子共用；2026-11-09 家長決定） */
   var LIMIT_ROWS = [
     ['dice', '🎲 每日擲骰次數', '設 0：今天不能擲骰（只能用道具前進）'],
@@ -3889,13 +3936,13 @@
         return '<label class="pick-item color"><input type="radio" name="color" value="' + col + '"' + (col === c.color ? ' checked' : '') + '><span style="background:' + col + '"></span></label>';
       }).join('') + '</div></fieldset>' +
       '<label class="field">頭銜<input type="text" name="title" maxlength="12" placeholder="例如：小小店長、小小工程師" value="' + h(c.title || '') + '">' +
-      '<small class="muted">會和等級一起顯示，例如「小小店長 Lv.5」。等級依「起始點數＋累計得分」自動換算，每 1000 分升 1 級（兌換獎勵不影響）。</small></label>' +
+      '<small class="muted">會和等級一起顯示，例如「小小店長 Lv.5」。等級依「起始點數＋累計得分」自動換算，每 ' + store.scalePoints(1000) + ' 分升 1 級（兌換獎勵不影響）。</small></label>' +
       '<fieldset class="field"><legend>代表圖示</legend><div class="pick">' +
       '<label class="pick-item"><input type="radio" name="badge" value=""' + (!c.badge ? ' checked' : '') + '><span class="none">無</span></label>' +
       (c.badge && BADGES.indexOf(c.badge) < 0 ? [c.badge] : []).concat(BADGES).map(function (b) {   // 舊的代表圖示不在新清單裡：放在最前面保留，不會被清掉
         return '<label class="pick-item"><input type="radio" name="badge" value="' + b + '"' + (b === c.badge ? ' checked' : '') + '><span>' + b + '</span></label>';
       }).join('') + '</div></fieldset>' +
-      '<label class="field">每週目標點數<input type="number" name="weeklyGoal" min="0" step="10" inputmode="numeric" value="' + (c.weeklyGoal || 0) + '">' +
+      '<label class="field">每週目標點數<input type="number" name="weeklyGoal" min="0" step="1" inputmode="numeric" value="' + (c.weeklyGoal || 0) + '">' +
       '<small class="muted">以本週（週一～週日）淨得分計算，0 表示不設定。</small></label>' +
       '<label class="field">起始點數<input type="number" name="startPoints" inputmode="numeric" step="1" value="' + c.startPoints + '">' +
       '<small class="muted">起始點數會加入總點數，但不算今日得分與等級。</small></label>';
@@ -3905,7 +3952,9 @@
       if (child) store.updateChild(child.id, data);
       else store.addChild(data);
       toast(child ? '已更新' : '已新增 ' + String(data.name).trim());
-      if (!child && !store.data.flags.rulesSeen && !onboardOff()) setTimeout(rulesGuide, 350);   // 2026-11-10：新增孩子後引導設定加扣分
+      var guide = function () { if (!child && !store.data.flags.rulesSeen && !onboardOff()) setTimeout(rulesGuide, 350); };   // 2026-11-10：新增孩子後引導設定加扣分
+      if (!child && !store.data.flags.scaleAsked && !onboardOff()) setTimeout(function () { scaleAsk().then(guide); }, 300);   // 2026-11-24：新家庭先問點數尺度
+      else guide();
     });
   }
 
@@ -4259,6 +4308,12 @@
           render();
           break;
         }
+        case 'save-scale': {
+          var sv = pickedScale(app.querySelector('.scale-panel')), old = store.getTypicalDay();
+          if (sv === old) { toast('沒有變更'); break; }
+          confirmThen('把「表現不錯的一天」從 ' + old + ' 分改成 ' + sv + ' 分？\n只影響之後：已結算的星星、已兌換的寶物不變；里程碑重新起算、等級只升不降。', '修改', false, function () { store.setTypicalDay(sv); toast('已改成每天約 ' + sv + ' 分', 'pos'); render(); });
+          break;
+        }
         case 'limits-reset':
           confirmThen('把冒險世界的每日上限全部恢復預設？', '恢復預設', false, function () { store.setLimits({}, true); toast('已恢復預設上限'); });
           break;
@@ -4366,7 +4421,7 @@
         case 'buy-treasure': {
           var tr0 = GAME.TREASURES.find(function (t) { return t.id === id; });
           var kid = store.getChild(childId);
-          confirmThen('讓 ' + kid.name + ' 用 ' + tr0.price + ' 點兌換「' + tr0.name + '」？\n寶物會放進冒險背包。', '兌換', false, function () {
+          confirmThen('讓 ' + kid.name + ' 用 ' + store.treasurePrice(tr0.id) + ' 點兌換「' + tr0.name + '」？\n寶物會放進冒險背包。', '兌換', false, function () {
             // 防重複：確認視窗的按鈕只會觸發一次；每次兌換前都重新檢查點數、每週件數與持有上限
             store.buyTreasure(childId, id);
             toast('🎒 ' + tr0.name + ' 放進背包了！', 'pos');
@@ -4528,6 +4583,15 @@
     if (e.target.matches('.pin-input#pin-1, .pin-input#pin-2')) { e.preventDefault(); submitPin(); }
     else if (e.target.id === 'pin-quiz') { e.preventDefault(); var q = app.querySelector('[data-action=pin-quiz]'); if (q) q.click(); }
   });
+  // 設定 → 點數尺度：即時更新換算預覽
+  function scalePanelLive(e) {
+    var panel = e.target.closest && e.target.closest('.scale-panel');
+    if (!panel) return;
+    if (e.target.id === 'scale-custom') panel.querySelector('input[name=scale][value=custom]').checked = true;
+    panel.querySelector('#scale-preview').innerHTML = scalePreview(pickedScale(panel));
+  }
+  app.addEventListener('input', scalePanelLive);
+  app.addEventListener('change', scalePanelLive);
   app.addEventListener('input', function (e) {
     var kind = e.target.getAttribute && e.target.getAttribute('data-search');
     if (kind === 'score') { ui.query = e.target.value; updateScoreList(); }

@@ -2753,3 +2753,13 @@ i.lv-plat { filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .5)); }   /* 2026-11-24 
 i.lv-plat[data-sink="warn"] { animation: lv-blink .25s steps(2) infinite; filter: drop-shadow(0 0 8px rgba(255, 120, 30, 1)) drop-shadow(0 3px 2px rgba(0, 0, 0, .5)); }   /* 下沉預警：橘光閃爍 */
 i.lv-plat[data-sink="down"] { opacity: .18; scale: .85 .6; transition: opacity .25s, scale .25s; }   /* 沉下去：幾乎看不到，不能站 */
 i.lv-plat[data-sink="up"] { transition: opacity .25s, scale .25s; }
+
+/* 家庭點數尺度（2026-11-24） */
+.scale-picker { display: grid; gap: 8px; margin: 10px 0; }
+.scale-opt { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 2px solid var(--line, #e3dccb); border-radius: 12px; background: var(--card, #fff); cursor: pointer; }
+.scale-opt:has(input:checked) { border-color: var(--primary, #f0a020); background: #fff8e6; }
+.scale-opt > span { display: flex; flex: 1; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.scale-opt small { color: var(--muted, #776); }
+.scale-opt input[type=number] { width: 6em; padding: 4px 6px; font-size: 1rem; }
+.scale-preview { margin: 6px 0 12px; padding: 10px 12px; border-radius: 10px; background: #f4f8ff; line-height: 1.6; font-size: .92rem; }
+.scale-box { max-width: 420px; }

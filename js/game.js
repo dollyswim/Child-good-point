@@ -80,6 +80,8 @@
     { id: 'door', name: '傳送門', icon: '🚪', img: 'images/items/magic_door.webp', price: 200, desc: '傳送到本島指定的格子（水島不能用）' },
     { id: 'submarine', name: '潛水艇', icon: '🚤', img: 'images/items/submarine.webp', price: 200, hold: 3, desc: '只能在水島用：從第 25 格以後直接開到水中的指定格子', island: 'water' }   // 2026-11-16 新增（2026-11-17 正式圖 E-30 驗收通過）
   ];
+  /** 寶物價格（生活點數）依家庭點數尺度換算（2026-11-24） */
+  Store.prototype.treasurePrice = function (itemId) { var t = TREASURES.find(function (x) { return x.id === itemId; }); return t ? this.scalePoints(t.price) : 0; };
   function treasureHold(id) { var t = TREASURES.find(function (x) { return x.id === id; }); return (t && t.hold) || TREASURE_HOLD_LIMIT; }
 
   var SHOP = [
@@ -563,11 +565,12 @@
     if (!ms) { this._initMilestones(); return { keys: 0, chests: 0 }; }
     var gain = this.getEarned(childId) - ms.base, out = { keys: 0, chests: 0 };
     var p = this.getPlayer(childId);
-    while (ms.keys < Math.floor(gain / MILESTONE_KEY)) {
+    var mKey = this.scalePoints(MILESTONE_KEY), mChest = this.scalePoints(MILESTONE_CHEST);   // 2026-11-24：門檻跟著家庭點數尺度
+    while (ms.keys < Math.floor(gain / mKey)) {
       ms.keys++; out.keys++; p.bag.goldenKey++;
-      this._logItem(childId, 'grant', 'goldenKey', 1, '點數里程碑', '累計得分 +' + (ms.keys * MILESTONE_KEY));
+      this._logItem(childId, 'grant', 'goldenKey', 1, '點數里程碑', '累計得分 +' + (ms.keys * mKey));
     }
-    while (ms.chests < Math.floor(gain / MILESTONE_CHEST)) {
+    while (ms.chests < Math.floor(gain / mChest)) {
       ms.chests++; out.chests++;
       this._addMapChest(childId, 'milestone');
     }
@@ -665,7 +668,7 @@
     if (!item) return { ok: false, reason: '沒有這個寶物' };
     if (this.getTreasureBoughtThisWeek(childId) >= TREASURE_WEEKLY_LIMIT) return { ok: false, reason: '本週已兌換 ' + TREASURE_WEEKLY_LIMIT + ' 件' };
     if ((this.getPlayer(childId).bag[itemId] || 0) >= treasureHold(itemId)) return { ok: false, reason: '已持有 ' + treasureHold(itemId) + ' 件' };
-    var lack = item.price - this.getTotal(childId);
+    var lack = this.treasurePrice(itemId) - this.getTotal(childId);
     if (lack > 0) return { ok: false, reason: '還差 ' + lack + ' 點' };
     return { ok: true, reason: '' };
   };
@@ -677,7 +680,7 @@
     var chk = this.canBuyTreasure(childId, itemId);
     if (!chk.ok) throw new Error(chk.reason.indexOf('還差') === 0 ? '點數不足（' + chk.reason + '）' : chk.reason);
     this.getPlayer(childId).bag[itemId]++;
-    return this._addRecord(childId, 'reward', 'treasure:' + itemId, '寶物：' + item.name, -item.price); // _addRecord 會一併存檔
+    return this._addRecord(childId, 'reward', 'treasure:' + itemId, '寶物：' + item.name, -this.treasurePrice(itemId)); // _addRecord 會一併存檔
   };
 
   // ---------- 移動與事件 ----------
@@ -949,7 +952,10 @@
     { id: 'pine10', cat: 'collect', icon: '🌰', name: '松果躲貓貓', desc: '「落葉找松果」單局找到 10 顆以上松果', check: function (s, c) { return bestLeaf(s, c, 'caught') >= 10; } },
     { id: 'squirrel5', cat: 'collect', icon: '🐿️', name: '怎麼都是松鼠', desc: '「落葉找松果」單局翻到 5 隻松鼠', check: function (s, c) { return bestLeaf(s, c, 'squirrels') >= 5; } }
   ].concat([1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000].map(function (n) {
-    return { id: 'earn' + n, cat: 'life', icon: '🥇', name: '獲得 ' + n + ' 分', desc: '起始點數＋累計得分達到 ' + n, revocable: true, check: function (s, c) { return s.getEarned(c) >= n; } };
+    // 2026-11-24：門檻跟著家庭點數尺度（代號維持 earn1000 等，避免舊存檔對不上）；名稱與徽章數字由 earnLabel 換算
+    return { id: 'earn' + n, earn: n, cat: 'life', icon: '🥇', name: '獲得 ' + n + ' 分', desc: '起始點數＋累計得分達到 ' + n, revocable: true, check: function (s, c) {
+      var mine = (s.data.achievements[c] || {})['earn' + n];
+      return (mine && mine.keep) || s.getEarned(c) >= s.scalePoints(n); } };
   })).concat([
     { id: 'special1', cat: 'life', icon: '🔮', name: '第一個特殊任務', desc: '完成 1 個特殊任務', revocable: true, check: function (s, c) { return specialDone(s, c) >= 1; } },
     { id: 'special5', cat: 'life', icon: '💠', name: '特殊任務達人', desc: '完成 5 個特殊任務', revocable: true, check: function (s, c) { return specialDone(s, c) >= 5; } },
@@ -1002,7 +1008,7 @@
     var lost = ACHIEVEMENTS.filter(function (a) { return a.revocable && mine[a.id] && !a.check(self, childId); });
     lost.forEach(function (a) { delete mine[a.id]; });
     if (lost.length) this.save();
-    return lost;
+    return lost.map(function (a) { return self._achView(a); });
   };
   /** 預覽：如果刪掉這筆紀錄（或改成 patch 的點數／孩子），會收回哪些成就（不改資料） */
   Store.prototype.achievementLossIfChanged = function (recordId, patch) {
@@ -1017,7 +1023,7 @@
       this.data.records = this.data.records.concat([copy]);
     }
     try {
-      return ACHIEVEMENTS.filter(function (a) { return a.revocable && mine[a.id] && !a.check(self, rec.childId); });
+      return ACHIEVEMENTS.filter(function (a) { return a.revocable && mine[a.id] && !a.check(self, rec.childId); }).map(function (a) { return self._achView(a); });
     } finally { this.data.records = orig; }
   };
   Store.prototype.checkAchievements = function (childId) {
@@ -1027,12 +1033,33 @@
     var fresh = ACHIEVEMENTS.filter(function (a) { return !mine[a.id] && a.check(self, childId); });
     fresh.forEach(function (a) { mine[a.id] = { date: self.today(), ts: self.now().getTime() }; });
     if (fresh.length) this.save();
-    return fresh;
+    return fresh.map(function (a) { return self._achView(a); });
   };
   /** 成就列表（含是否達成、達成日期） */
+  /** 分數成就換算後的顯示（2026-11-24 家庭點數尺度）@returns {{ n, name, desc }} */
+  Store.prototype.earnLabel = function (a) { var n = this.scalePoints(a.earn); return { n: n, name: '獲得 ' + n + ' 分', desc: '起始點數＋累計得分達到 ' + n }; };
+  /**
+   * 改了家庭點數尺度：當下已達成的分數成就一併標記、不跳劇場；已拿到的分數成就標記 keep，不因門檻變高而收回
+   */
+  /** 給畫面用的成就（分數成就換成依尺度換算後的名稱與數字） */
+  Store.prototype._achView = function (a) {
+    if (!a.earn) return a;
+    var lb = this.earnLabel(a), o = {};
+    Object.keys(a).forEach(function (k) { o[k] = a[k]; });
+    o.name = lb.name; o.desc = lb.desc; o.earnN = lb.n;
+    return o;
+  };
+  Store.prototype._onScaleChange = function () {
+    var self = this;
+    this.data.children.forEach(function (c) {
+      var mine = self.data.achievements[c.id] || (self.data.achievements[c.id] = {});
+      ACHIEVEMENTS.forEach(function (a) { if (a.earn && mine[a.id]) mine[a.id].keep = true; });
+      ACHIEVEMENTS.forEach(function (a) { if (a.earn && !mine[a.id] && a.check(self, c.id)) mine[a.id] = { date: self.today(), ts: self.now().getTime(), keep: true }; });
+    });
+  };
   Store.prototype.getAchievements = function (childId) {
-    var mine = this.data.achievements[childId] || {};
-    return ACHIEVEMENTS.map(function (a) { return { id: a.id, cat: a.cat, icon: a.icon, name: a.name, desc: a.desc, done: !!mine[a.id], date: mine[a.id] ? mine[a.id].date : '', ts: mine[a.id] ? mine[a.id].ts || 0 : 0 }; });
+    var mine = this.data.achievements[childId] || {}, self = this;
+    return ACHIEVEMENTS.map(function (a) { var lb = a.earn ? self.earnLabel(a) : null; return { id: a.id, earn: a.earn ? lb.n : undefined, cat: a.cat, icon: a.icon, name: lb ? lb.name : a.name, desc: lb ? lb.desc : a.desc, done: !!mine[a.id], date: mine[a.id] ? mine[a.id].date : '', ts: mine[a.id] ? mine[a.id].ts || 0 : 0 }; });
   };
 
   // ---------- 小遊戲「抓住星星」 ----------

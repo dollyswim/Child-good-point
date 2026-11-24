@@ -788,6 +788,15 @@ async function main() {
     await q.waitForSelector('#modal[open] input[name=name]');   // 直接帶到新增孩子
     await q.fill('#modal input[name=name]', '小新');
     await q.click('#modal-form button[type=submit]');
+    // 2026-11-24 新家庭：新增第一個孩子後先問一次點數尺度（預設大額制 200）
+    await q.waitForSelector('#confirm[open] [data-testid=scale-ask]');
+    assert.match(await q.locator('[data-testid=scale-ask]').innerText(), /小額制[\s\S]*中額制[\s\S]*大額制[\s\S]*⭐40[\s\S]*飛行翼需要 100 點/);
+    await q.click('[data-testid=scale-ask] input[value="20"]');
+    assert.match(await q.locator('#scale-preview').innerText(), /⭐20[\s\S]*飛行翼需要 10 點/, '換算預覽即時更新');
+    if (SHOT_DIR && kind === 'Android') await q.locator('[data-testid=scale-ask]').screenshot({ path: path.join(SHOT_DIR, 'scale-ask.png') });
+    await q.click('[data-testid=scale-ask] input[value="200"]');
+    await q.click('[data-testid=scale-ask] [data-yes]');
+    assert.equal(await q.evaluate(() => window.__cgpStore.data.flags.scaleAsked), true);
     // 新增孩子後：引導設定加扣分（列出預設規則）
     await q.waitForSelector('#confirm[open] [data-testid=rules-guide]');
     assert.match(await q.locator('[data-testid=rules-guide]').innerText(), /下一步：設定加分扣分[\s\S]*加分 \d+ 條、每日任務 \d+ 條、扣分 \d+ 條[\s\S]*去設定加扣分/);
@@ -2945,7 +2954,21 @@ async function main() {
     await q.waitForFunction((cid) => window.__cgpStore.getStarBalance(cid) === 3, id);
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), total0, '生活點數不變');
     assert.match(await q.locator('.records').last().innerText(), /愛的飛高高[\s\S]*−⭐5/);
-    console.log('✔ 能量星星：加分清單不再有另外給星星、冒險每日上限設定（家長密碼、＋－、恢復預設）、用星星兌換愛的飛高高');
+    // 4. 2026-11-24 設定 → 點數尺度：舊家庭不跳詢問；改成自訂 20 分 → 寶物價格與預覽換算
+    await q.goto(url + '#rules-scale');
+    await passPin(q);
+    await q.waitForSelector('[data-testid=scale]');
+    assert.equal(await q.locator('#confirm[open] [data-testid=scale-ask]').count(), 0);
+    await q.click('[data-testid=scale] input[value=custom]');
+    await q.fill('#scale-custom', '20');
+    assert.match(await q.locator('#scale-preview').innerText(), /（20 分）[\s\S]*⭐20[\s\S]*飛行翼需要 10 點/);
+    if (SHOT_DIR) await q.locator('[data-testid=scale]').screenshot({ path: path.join(SHOT_DIR, 'scale-settings.png') });
+    await q.click('[data-action=save-scale]');
+    assert.match(await q.locator('#confirm').innerText(), /從 200 分改成 20 分/);
+    await q.click('#confirm [data-yes]');
+    await q.waitForFunction(() => window.__cgpStore.getTypicalDay() === 20);
+    assert.equal(await q.evaluate(() => window.__cgpStore.treasurePrice('wings')), 10);
+    console.log('✔ 能量星星：加分清單不再有另外給星星、冒險每日上限設定（家長密碼、＋－、恢復預設）、用星星兌換愛的飛高高、點數尺度設定');
     await cz.close();
   }
 

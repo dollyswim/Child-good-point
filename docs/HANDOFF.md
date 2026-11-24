@@ -1,6 +1,6 @@
 # 親子集點冒險 App：交接文件
 
-> 最後更新：2026-11-19｜App 版本 `2026.11.24-248`｜Service Worker 快取 `cgp-shell-v258`｜`main` 最新：金島第 53 格齒輪小屋（A 階段，暫代圖）、水島正式開放、撈魚小遊戲、新手教學、水島程式拆到 `js/water.js`
+> 最後更新：2026-11-19｜App 版本 `2026.11.24-249`｜Service Worker 快取 `cgp-shell-v259`｜`main` 最新：金島第 53 格齒輪小屋（A 階段，暫代圖）、水島正式開放、撈魚小遊戲、新手教學、水島程式拆到 `js/water.js`
 > 給接手的開發者（或下一個 Claude session）。**新對話請先讀第 0、1 節**，再依需要查後面各節與 `PROJECT_SPEC.md`。
 
 ---
@@ -15,7 +15,7 @@
 - 木島任務視窗預覽（不寫存檔、不給星星）：`?preview=party`（第 92 格布置派對）、`?preview=flowers`（第 40 格）、`?preview=invite`（第 65 格），例如 https://dollyswim.github.io/Child-good-point/?preview=party
 
 ### 每次修改的固定流程
-1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v258`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.24-248`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
+1. 改圖片或 JS／CSS：新檔加入 `sw.js` 的 `SHELL`，**升 `sw.js` 的 `CACHE`**（目前 `cgp-shell-v259`）與 **`js/app.js` 的 `APP_VERSION`**（目前 `2026.11.24-249`，格式 `日期-流水號`），並更新本文件第 1 行與 `docs/ACCEPTANCE_CHECKLIST.md` 的版本號。
 2. 測試：`npm test`（單元，約 1 秒，目前 166 項）、`npm run test:e2e`（Playwright 手機尺寸，**約 3～4 分鐘**，建議放背景跑）。兩者都通過才算完成。
 3. 提交訊息用繁體中文；推送 `git push origin main`。
 4. 用繁體中文回報：修改檔案、新增功能、測試結果、已知問題、下一步。
@@ -36,6 +36,13 @@
 ---
 
 ## 1. 目前狀態與待辦（2026-11-19 更新）
+
+### 2026-11-24：家庭點數尺度（版本 2026.11.24-249）
+- 新設定 `settings.typicalDay`（預設 200＝原本行為完全不變）；設定 → 點數尺度（家長密碼），快速選項 20／50／200＋自訂，附換算預覽。
+- 新家庭新增第一個孩子時問一次（`flags.scaleAsked`；舊家庭 migrate 時已有孩子 → 不問），並一併換算沒改過的範例項目。
+- 換算：`scalePoints(x)`＝四捨五入、最少 1；星星 `starsForNetAt(net, td)`；寶物 `store.treasurePrice(id)`；里程碑、等級、特殊任務、分數成就（徽章疊數字）。
+- 中途修改：`setTypicalDay()` 重設里程碑起點、記下 `levelBase`（等級接續、只升不降）、`_onScaleChange` 標記分數成就；不回溯已結算星星與已兌換寶物。
+- 單元測試 171 項、E2E 全部通過。
 
 ### 現況一句話（2026-11-19）
 金、木、水三島都已開放：金 →〔飛行員阿翔〕→ 木 →〔樹洞滑梯〕→ 水 →〔小白鯨送回岸、漁夫提到火島〕→ 回金島。單元測試 160 項、E2E 全部通過。
