@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.24-252';
+  var APP_VERSION = '2026.11.24-253';
   var store;
   try {
     store = new CGP.Store();
@@ -682,8 +682,9 @@
   }
   function habitTitleHtml(t) {
     if (!t.title) return '';
-    return '<p class="habit-title" data-testid="habit-title"><span class="ht-icon" aria-hidden="true">' + t.title.icon + '</span><b>' + h(t.title.name) + '</b>' +
-      (t.next ? '<small>再升級 ' + (t.next.n - t.count) + ' 個好習慣 → ' + t.next.icon + ' ' + h(t.next.name) + '</small>' : '<small>最高稱號！</small>') + '</p>';
+    var ic = function (x, cls) { return x.img ? '<img class="' + cls + '" src="' + x.img + '" alt="" width="256" height="256" decoding="async" draggable="false">' : '<span class="' + cls + '" aria-hidden="true">' + x.icon + '</span>'; };
+    return '<p class="habit-title" data-testid="habit-title">' + ic(t.title, 'ht-icon') + '<span class="ht-text"><small class="ht-kicker">好習慣稱號</small><b>' + h(t.title.name) + '</b>' +
+      (t.next ? '<small>再升級 ' + (t.next.n - t.count) + ' 個好習慣 → ' + ic(t.next, 'ht-next') + ' ' + h(t.next.name) + '</small>' : '<small>最高稱號！</small>') + '</span></p>';
   }
   /** 孩子頁：已升級的好習慣＋好習慣稱號 */
   function habitsPanel(child) {

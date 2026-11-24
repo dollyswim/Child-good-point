@@ -2779,8 +2779,13 @@ i.lv-plat[data-sink="up"] { transition: opacity .25s, scale .25s; }
 .habit-panel h2 small { color: var(--muted, #8a7f73); }
 .habit-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px; padding: 8px 12px; border-radius: 12px;
   background: linear-gradient(135deg, #2c3e75, #5b4fb0); color: #fff; }
-.habit-title .ht-icon { font-size: 1.3rem; }
-.habit-title small { flex-basis: 100%; opacity: .85; font-size: .75rem; }
+.habit-title { flex-wrap: nowrap; gap: 12px; }
+.habit-title .ht-icon { flex: none; width: 64px; height: 64px; font-size: 2rem; display: grid; place-items: center; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .35)); }
+.habit-title .ht-text { display: grid; gap: 2px; }
+.habit-title .ht-text b { font-size: 1.15rem; letter-spacing: 1px; }
+.habit-title small { opacity: .85; font-size: .75rem; }
+.habit-title .ht-kicker { opacity: .7; letter-spacing: 2px; }
+.habit-title .ht-next { width: 18px; height: 18px; vertical-align: -4px; font-size: .9rem; }
 .habit-list { display: grid; gap: 8px; }
 .habit-row { display: flex; gap: 6px; align-items: stretch; }
 .habit-check { flex: 1; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 2px solid #b9e0bf; border-radius: 14px; background: #f3fbf4; text-align: left; font: inherit; cursor: pointer; }

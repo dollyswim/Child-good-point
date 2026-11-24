@@ -20,13 +20,13 @@
   var addDaysKey = CGP.addDaysKey, normalizeGrad = CGP.normalizeGrad;
 
   var SNOOZE_ASK = 14, SNOOZE_WAIT = 7;
-  /** 好習慣稱號（2026-11-24 家長：1／3／6／10／15） */
+  /** 好習慣稱號（2026-11-24 家長：1／3／6／10／15；圖示為家長 Gemini 圖，去背、256×256） */
   var HABIT_TITLES = [
-    { n: 1, name: '銀刃衛士', icon: '🗡️' },
-    { n: 3, name: '幻影遊俠', icon: '🏹' },
-    { n: 6, name: '破曉劍聖', icon: '⚔️' },
-    { n: 10, name: '聖龍騎兵', icon: '🐉' },
-    { n: 15, name: '星辰統帥', icon: '🌟' }
+    { n: 1, name: '銀刃衛士', icon: '🗡️', img: 'images/habit/title_silver.webp' },
+    { n: 3, name: '幻影遊俠', icon: '🏹', img: 'images/habit/title_phantom.webp' },
+    { n: 6, name: '破曉劍聖', icon: '⚔️', img: 'images/habit/title_dawn.webp' },
+    { n: 10, name: '聖龍騎兵', icon: '🐉', img: 'images/habit/title_dragon.webp' },
+    { n: 15, name: '星辰統帥', icon: '🌟', img: 'images/habit/title_star.webp' }
   ];
   /** 換新挑戰的內建建議（每日任務） */
   var CHALLENGE_IDEAS = ['自己準備明天的衣服', '睡前自己收拾房間', '主動做一件家事', '自己整理書桌', '閱讀 20 分鐘', '自己洗好餐具', '幫忙摺衣服', '早上自己起床'];
