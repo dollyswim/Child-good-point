@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.24-256';
+  var APP_VERSION = '2026.11.24-257';
   var store;
   try {
     store = new CGP.Store();
@@ -784,7 +784,7 @@
           '<span class="gc-say">恭喜你，' + h(child.name) + '！</span></div>' +
         '<div class="gc-cert"><p class="gc-kicker">好習慣升級獎狀</p>' +
           '<p class="gc-item">「' + h(name) + '」</p><p class="gc-text">已經變成你的好習慣，升級成</p>' +
-          '<p class="gc-badge">🏅 ' + h(name) + '高手</p>' +
+          '<p class="gc-badge"><img src="images/habit/badge_habit.webp" alt="" width="512" height="512" decoding="async">' + h(name) + '高手</p>' +
           (g.note ? '<p class="gc-note">' + h(g.note) + '</p>' : '') +
           '<p class="gc-date">' + longDate(g.graduatedAt) + '</p></div>' +
         (g.chestAt && g.chestAt === g.graduatedAt ? '<p class="gc-gift">🎁 神祕寶箱已經放進背包！（不用鑰匙）</p>' : '') +
@@ -2528,6 +2528,12 @@
   function achRank(a) { var m = /^earn(\d+)$/.exec(a.id); return m ? 50 + Number(m[1]) / 100 : (ACH_RANK[a.id] || 10); }
   /** 徽章 HTML（size：lg 主徽章、sm 小徽章、xs 收藏格） */
   function badgeHtml(a, size) {
+    if (a.cat === 'habit' && a.itemName) {   // 2026-11-24 好習慣徽章：家長 Gemini 圖（酒紅＋金、中間空白），程式寫上項目名稱＋「高手」
+      var nm = Array.from(String(a.itemName)), len = nm.length, rows = len <= 4 ? 1 : len <= 10 ? 2 : 3, per = Math.ceil(len / rows), lines = [];
+      for (var li = 0; li < len; li += per) lines.push(nm.slice(li, li + per).join(''));   // 平均分行，不會只剩一個字掉到下一行
+      return '<span class="badge badge-' + size + ' badge-img badge-habitimg"><img src="images/habit/badge_habit.webp" alt="" width="512" height="512" decoding="async" draggable="false">' +
+        '<span class="hb-name r' + rows + (per >= 5 ? ' wide' : '') + '">' + lines.map(function (t) { return '<b>' + h(t) + '</b>'; }).join('') + '</span><span class="hb-title">高手</span></span>';
+    }
     var m = /^earn(\d+)$/.exec(a.id);
     var scaled = m && store.pointScale() !== 1;   // 2026-11-24 家庭點數尺度不是 200：分數徽章圖上的數字不對，改用程式畫的金牌＋換算後數字
     if (scaled) {   // 2026-11-24 家長 Gemini 圖：中間空白的同款金幣，程式寫上換算後的分數

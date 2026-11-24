@@ -2809,15 +2809,30 @@ i.lv-plat[data-sink="up"] { transition: opacity .25s, scale .25s; }
 .grad-cer { border: 0; padding: 0; background: transparent; max-width: min(420px, 94vw); width: 100%; overflow: visible; }
 .grad-cer::backdrop { background: radial-gradient(circle at 50% 30%, rgba(60, 40, 120, .75), rgba(10, 10, 30, .9)); }
 .gc-stage { position: relative; display: grid; gap: 12px; justify-items: center; padding: 22px 18px 18px; border-radius: 22px; color: #fff; text-align: center;
-  background: linear-gradient(180deg, #3b2c7a, #6a3fa0); box-shadow: 0 0 0 4px #ffd75e, 0 12px 40px rgba(0, 0, 0, .4); overflow: hidden; }
+  background: url(../images/habit/stage_bg.webp) center top / cover no-repeat, linear-gradient(180deg, #3b2c7a, #6a3fa0); box-shadow: 0 0 0 4px #ffd75e, 0 12px 40px rgba(0, 0, 0, .4); overflow: hidden; container-type: inline-size; }   /* 2026-11-24 家長 Gemini 典禮舞台背景 */
+.grad-cer { max-height: 100dvh; overflow-y: auto; }
 .gc-stage h2 { margin: 0; font-size: 1.35rem; color: #ffe27a; text-shadow: 0 2px 0 #8a4f06; }
-.gc-buddy { display: flex; align-items: center; gap: 10px; animation: gc-pop .6s cubic-bezier(.2, 1.4, .4, 1) .2s both; }
-.gc-hero { width: 150px; height: 150px; object-fit: contain; flex: none; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .3)); animation: gc-cheer 1.6s ease-in-out .8s infinite; }
+.gc-buddy { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; animation: gc-pop .6s cubic-bezier(.2, 1.4, .4, 1) .2s both; }
+.gc-hero { width: 136px; height: 136px; position: relative; z-index: 1; object-fit: contain; flex: none; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .3)); animation: gc-cheer 1.6s ease-in-out .8s infinite; }
 @keyframes gc-cheer { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
 .gc-say { background: #fff; color: #5a3a00; font-weight: 800; padding: 6px 12px; border-radius: 14px; position: relative; }
-.gc-cert { width: 100%; padding: 14px 14px 10px; border-radius: 12px; color: #5a3a00; background: #fff8e2; border: 3px double #d9a520;
-  box-shadow: inset 0 0 0 6px #fff8e2, inset 0 0 0 8px #f0cf6a; animation: gc-pop .6s cubic-bezier(.2, 1.4, .4, 1) .45s both; }
-.gc-cert p { margin: 4px 0; }
+.gc-cert { box-sizing: border-box; width: 100%; color: #5a3a00; animation: gc-pop .6s cubic-bezier(.2, 1.4, .4, 1) .45s both; margin-top: -26px; position: relative; z-index: 0;
+  /* 2026-11-24 家長 Gemini 卷軸獎狀框（900×1263）切成上、中、下三段：上下不變形，中間空白紙面依內容伸縮（三段互相重疊，沒有接縫細線） */
+  padding: calc(100cqw * 300 / 900) calc(100cqw * 150 / 900) calc(100cqw * 340 / 900);
+  background: url(../images/habit/cert_top.webp) center top / 100% auto no-repeat, url(../images/habit/cert_bot.webp) center bottom / 100% auto no-repeat,
+    url(../images/habit/cert_mid.webp) center calc(100cqw * 290 / 900) / 100% calc(100% - 100cqw * 600 / 900) no-repeat; }
+.gc-badge img { width: 1.6em; height: 1.6em; vertical-align: middle; margin-right: 4px; }
+.badge-habitimg { container-type: inline-size; }
+.hb-name { position: absolute; left: 50%; top: 43.5%; transform: translate(-50%, -50%); width: 44%; display: grid; place-items: center; line-height: 1.08; pointer-events: none;
+  font-weight: 900; color: #ffe9a6; text-shadow: 0 .8cqw 0 #4a0a1c, 0 0 2cqw rgba(0, 0, 0, .35); white-space: nowrap; }
+.hb-name b { font-size: 11cqw; letter-spacing: -.3cqw; }
+.hb-name.r2 b { font-size: 8.4cqw; }
+.hb-name.r2.wide b { font-size: 7cqw; }
+.hb-name.r3 b { font-size: 6.6cqw; }
+.hb-name.r3.wide b { font-size: 5.6cqw; }
+.hb-title { position: absolute; left: 50%; top: 58.5%; transform: translate(-50%, -50%); font-style: normal; font-weight: 900; font-size: 7cqw; color: #ffd75e; white-space: nowrap; pointer-events: none;
+  text-shadow: 0 .8cqw 0 #4a0a1c; }   /* 2026-11-24 家長：「高手」放在內圈下方，名稱置中在內圈中線 */
+.gc-cert p { margin: 4px 0; text-wrap: balance; }   /* 長名稱平均換行 */
 .gc-kicker { font-weight: 900; letter-spacing: 3px; color: #b07800; }
 .gc-item { font-size: 1.3rem; font-weight: 900; }
 .gc-badge { font-size: 1.15rem; font-weight: 900; color: #2e8a46; }

@@ -210,7 +210,7 @@
     var self = this, mine = (this.data.graduation || {})[childId] || {};
     return Object.keys(mine).filter(function (id) { return mine[id].badgeDate; }).map(function (id) {
       var g = mine[id], item = self.getItem(id), name = (item ? item.name : g.name) || g.name;
-      return { id: 'habit:' + id, itemId: id, cat: 'habit', icon: '🏅', name: name + '高手', desc: '「' + name + '」好習慣升級', date: g.badgeDate, done: true };
+      return { id: 'habit:' + id, itemId: id, itemName: name, cat: 'habit', icon: '🏅', name: name + '高手', desc: '「' + name + '」好習慣升級', date: g.badgeDate, done: true };
     }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
   };
   /** 好習慣稱號：依「已升級的好習慣」數量 */
