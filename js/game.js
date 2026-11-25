@@ -22,7 +22,7 @@
   var DAILY_DICE_LIMIT = 3;
   /** Phase 4「抓住星星」：每天 1 次、約 10 秒；星星出現數不限，每抓 1 顆得 1 顆能量星星，獎勵最多 15 顆 */
   var DAILY_MINIGAME_LIMIT = 1;
-  var MINIGAME_MAX_STARS = 15;
+  var MINIGAME_MAX_STARS = 8;   // 2026-11-25 家長：小遊戲獎勵上限 15 → 8（成就標準不變）
   /** 2026-11-08 家長調整：抓到的星星每 3 顆換 1 顆能量星星（無條件進位），最多 MINIGAME_MAX_STARS 顆 */
   var MINIGAME_RATE = 3;
   function minigameStars(caught) { var c = Math.max(0, Math.floor(Number(caught) || 0)); return Math.min(MINIGAME_MAX_STARS, Math.ceil(c / MINIGAME_RATE)); }
@@ -33,11 +33,11 @@
    * 劇情版（木島第 8 格）：1 回合、松果 5 顆、看 3 秒，翻錯沒關係、找齊就完成。
    */
   // 干擾物（2026-11-08 家長決定）：每回合 2 隻吃松果的松鼠，先看時和松果一起亮出來（同樣淡色底）；翻到松鼠算翻錯 1 次（劇情版不會失敗）
-  var LEAF_GAME = { piles: 25, misses: 3, rate: 1, decoys: 2,   // rate：2026-11-19 家長改成 1 顆松果換 1 顆（最多 15，和其他小遊戲一致）
+  var LEAF_GAME = { piles: 25, misses: 3, rate: 2, decoys: 2,   // rate：2026-11-25 家長改成 2 顆松果換 1 顆（無條件進位，最多 8，和其他小遊戲一致）
     rounds: [{ pine: 4, show: 3000 }, { pine: 5, show: 2500 }, { pine: 6, show: 2000 }],
     story: { pine: 5, show: 3000 } };
   var LEAF_MAX_FOUND = LEAF_GAME.rounds.reduce(function (n, r) { return n + r.pine; }, 0);
-  function leafStars(found) { var c = Math.max(0, Math.min(LEAF_MAX_FOUND, Math.floor(Number(found) || 0))); return Math.ceil(c / LEAF_GAME.rate); }
+  function leafStars(found) { var c = Math.max(0, Math.min(LEAF_MAX_FOUND, Math.floor(Number(found) || 0))); return Math.min(MINIGAME_MAX_STARS, Math.ceil(c / LEAF_GAME.rate)); }
   /** 這座島的小遊戲（木島＝落葉找松果，其他島＝抓住星星） */
   /**
    * 這座島的小遊戲：木島＝落葉找松果；金島在木島上線前（2026-11-08 家長決定）各 1/2 機率抓住星星或落葉找松果，木島上線後回到抓住星星
@@ -49,7 +49,7 @@
    * 日常：水島小遊戲格一律撈魚，每天次數照既有小遊戲規則；能量星星每 3 條換 1 顆（無條件進位，2026-11-19 家長試玩撈到 54 條後調整）、最多 15 顆、至少 1 顆。
    * 劇情：第 34 格餵小白鯨前要撈滿 storyGoal 條（可分好幾局累積、存檔），不算每日次數、不給能量星星。
    */
-  var FISH_GAME = { seconds: 45, nets: 5, durability: 100, grace: 0.5, drainPerSec: 20, puffer: 35, storyGoal: 10, rate: 3, maxStars: 15, maxCaught: 99,
+  var FISH_GAME = { seconds: 45, nets: 5, durability: 100, grace: 0.5, drainPerSec: 20, puffer: 35, storyGoal: 10, rate: 3, maxStars: 8, maxCaught: 99,
     fish: 10, puffers: 1, jellies: 1, warnAt: 35 };   // fish：2026-11-19 家長改 2 倍；warnAt：耐久低於這個值網子變紅、抖動、顯示「快破了！」   // 畫面上同時游動的數量：可撈的魚、河豚、水母
   function fishStars(caught) { var c = Math.max(0, Math.floor(Number(caught) || 0)); return Math.max(1, Math.min(FISH_GAME.maxStars, Math.ceil(c / FISH_GAME.rate))); }
   function minigameOf(island, rand) {
@@ -1116,7 +1116,7 @@
 
   // ---------- 火島《熔岩跳跳路》（2026-11-22 家長草稿；兩關合計一次小遊戲，整場結束才一次給星） ----------
   // 2026-11-24 家長：加第 3 關「熔岩王者路」，星星重分 8／12／15（上限不變）；救援保留前一關（簡易版救援 4）
-  var LAVA_STARS = { easyRescue: 4, easyClear: 8, hardRescue: 8, hardClear: 12, kingRescue: 12, kingClear: 15 };
+  var LAVA_STARS = { easyRescue: 3, easyClear: 5, hardRescue: 5, hardClear: 7, kingRescue: 7, kingClear: 8 };   // 2026-11-25 家長：原 4／8／8／12／12／15
   var LAVA_STAGES = ['easy', 'hard', 'king'];
   /**
    * 一關結束先記下成績（不給星）：stage＝easy／hard，result＝clear（3 次內過關）或 rescue（洛洛救援）。

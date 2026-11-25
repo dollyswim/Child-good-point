@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.24-258';
+  var APP_VERSION = '2026.11.25-259';
   var store;
   try {
     store = new CGP.Store();
@@ -3151,7 +3151,7 @@
       if (lt) lt.onclick = function () { el._stop(); el.remove(); document.body.classList.remove('mg-open'); resolve(null); };
     });
   }
-  /** 木島小遊戲格：落葉找松果（計分版 3 回合；每顆松果換 1 顆能量星星（2026-11-19 起），按「收下」才寫入） */
+  /** 木島小遊戲格：落葉找松果（計分版 3 回合；每 2 顆松果換 1 顆能量星星、最多 8 顆（2026-11-25 起），按「收下」才寫入） */
   async function openLeafMinigame(childId, subtitle, opts) {
     var practice = !!(opts && opts.practice), LG = GAME.LEAF_GAME;
     var res = await leafGame({ rounds: LG.rounds, misses: LG.misses, title: '落葉找松果', subtitle: subtitle, practice: practice, later: true,
@@ -3177,7 +3177,7 @@
     s1.querySelectorAll('.leaf-pine').forEach(function (img, k) { img.style.animationDelay = (still ? 0 : Math.min(k * 0.06, 1.6)) + 's'; });
     await new Promise(function (resolve) { s1.querySelector('[data-mg=merge]').onclick = resolve; });
     s1.remove();
-    // 第 2 個視窗：每 rate 顆松果聚在一起換 1 顆能量星星（2026-11-19 起 rate＝1）（實際得到的數量）
+    // 第 2 個視窗：每 rate 顆松果聚在一起換 1 顆能量星星（2026-11-25 起 rate＝2）（實際得到的數量）
     var groups = [];
     for (var g = 0; g < gain; g++) groups.push(Math.min(rate, Math.max(1, found - g * rate)));   // 最後一組不滿 2 顆也算 1 顆
     var m = document.createElement('div');

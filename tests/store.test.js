@@ -2222,9 +2222,9 @@ test('封存舊紀錄：封存選定日期以前的生活與冒險紀錄；點�
   assert.equal(s2.data.carry[a.id].until, '2026-05-01');
 });
 
-test('小遊戲獎勵：每 3 顆換 1 顆能量星星、無條件進位、最多 15 星', () => {
+test('小遊戲獎勵：每 3 顆換 1 顆能量星星、無條件進位、最多 8 星（2026-11-25 原 15）', () => {
   assert.equal(G.MINIGAME_RATE, 3);
-  assert.deepEqual([0, 1, 2, 3, 4, 18, 27, 44, 45, 60].map(G.minigameStars), [0, 1, 1, 1, 2, 6, 9, 15, 15, 15]);
+  assert.deepEqual([0, 1, 2, 3, 4, 18, 22, 24, 25, 60].map(G.minigameStars), [0, 1, 1, 1, 2, 6, 8, 8, 8, 8]);
 });
 
 test('星海傳說：單局抓到 20 顆以上（19 顆不算）', () => {
@@ -2402,11 +2402,11 @@ test('木島劇情（森林派對）：四個任務（每區 1 個、都在一�
   assert.deepEqual(Object.keys(s2.getPlayer(a.id).story).sort(), ['flowers', 'invite', 'party', 'pinecone']);
 });
 
-test('木島小遊戲「落葉找松果」：木島小遊戲格產生 leaf 小遊戲、每顆松果換 1 星（最多 15 顆 → 15 星）、不算星星捕手、存檔保留', () => {
+test('木島小遊戲「落葉找松果」：木島小遊戲格產生 leaf 小遊戲、每 2 顆松果換 1 星（無條件進位，最多 15 顆 → 8 星，2026-11-25）、不算星星捕手、存檔保留', () => {
   const { store, a, push, storage } = p3Store();
   assert.deepEqual([G.minigameOf('wood'), G.minigameOf('gold')], ['leaf', 'stars']);
   assert.equal(G.LEAF_MAX_FOUND, 15, '3 回合 4＋5＋6 顆');
-  assert.deepEqual([0, 1, 2, 3, 15, 99].map(G.leafStars), [0, 1, 2, 3, 15, 15]);
+  assert.deepEqual([0, 1, 2, 3, 15, 99].map(G.leafStars), [0, 1, 1, 2, 8, 8]);
   G.registerBoard('wood', fakeWood());
   try {
     const p = store.getPlayer(a.id); p.island = 'wood'; p.tileId = 'wood-01-004'; store.save();
@@ -2419,8 +2419,8 @@ test('木島小遊戲「落葉找松果」：木島小遊戲格產生 leaf 小�
     assert.equal(s2.getPendingMinigame(a.id).game, 'leaf', '重新整理後還是落葉找松果');
     const bal = store.getStarBalance(a.id);
     const m = store.finishMinigame(a.id, 30);
-    assert.deepEqual([m.caught, m.stars], [15, 15], '最多 15 顆松果 → 15 星');
-    assert.equal(store.getStarBalance(a.id), bal + 15);
+    assert.deepEqual([m.caught, m.stars], [15, 8], '最多 15 顆松果 → 8 星');
+    assert.equal(store.getStarBalance(a.id), bal + 8);
     assert.ok(store.data.adventure.ledger.some(x => x.reason === '小遊戲：落葉找松果' || x.note === '小遊戲：落葉找松果' || JSON.stringify(x).includes('落葉找松果')));
     assert.ok(!store.checkAchievements(a.id).some(x => x.id === 'catch5'), '松果不算「星星捕手」');
   } finally { delete G.BOARDS.wood; }
@@ -2520,7 +2520,7 @@ test('金島小遊戲（木島上線前）：各 1/2 機率抓住星星或落葉
   assert.equal(store.getPendingMinigame(a.id).game, 'leaf');
   const s2 = new Store({ storage, seed: false, now: () => store.now() });
   assert.equal(s2.getPendingMinigame(a.id).game, 'leaf', '重新整理後還是同一種');
-  assert.equal(store.finishMinigame(a.id, 15).stars, 15, '找松果照松果換算（1 顆 1 星、最多 15）');
+  assert.equal(store.finishMinigame(a.id, 15).stars, 8, '找松果照松果換算（2 顆 1 星、最多 8）');
   // 隔天：0.7 → 抓住星星
   setDate('2026-11-07T10:00:00');
   const it = store.addItem({ kind: 'bonus', name: 'x', points: 10 });
@@ -2539,7 +2539,7 @@ test('金島小遊戲（木島上線前）：各 1/2 機率抓住星星或落葉
   assert.equal(G.minigameOf('gold'), 'stars', '沒有給亂數（例如只是查詢）時當作抓住星星');
 });
 
-test('松果躲躲：寶物商店 50 點、馬上玩一局落葉找松果（不占每天 1 次）、每天最多 1 個、和星星呼喚各自計算、1 顆松果 1 星', () => {
+test('松果躲躲：寶物商店 50 點、馬上玩一局落葉找松果（不占每天 1 次）、每天最多 1 個、和星星呼喚各自計算、2 顆松果 1 星', () => {
   const { store, a } = p3Store();
   const bag = store.getPlayer(a.id).bag;
   bag.pineHide = 2; bag.starCall = 1;
@@ -2547,8 +2547,8 @@ test('松果躲躲：寶物商店 50 點、馬上玩一局落葉找松果（不�
   assert.deepEqual([mg.game, mg.bonus, bag.pineHide], ['leaf', true, 1]);
   assert.throws(() => store.usePineHide(a.id), /先把還沒玩完/);
   const bal = store.getStarBalance(a.id);
-  assert.equal(store.finishMinigame(a.id, 11).stars, 11);
-  assert.equal(store.getStarBalance(a.id), bal + 11);
+  assert.equal(store.finishMinigame(a.id, 11).stars, 6);
+  assert.equal(store.getStarBalance(a.id), bal + 6);
   assert.throws(() => store.usePineHide(a.id), /每天只能用 1 個/);
   assert.equal(store.useStarCall(a.id).game, undefined, '同一天還可以用星星呼喚（抓住星星）');
 });
@@ -3015,9 +3015,9 @@ test('水島卡片文字：海裡版本（效果不變）', () => {
   assert.equal(T.roadblocks.length, 4); assert.ok(T.roadblocks.every((r) => !/礦車|小花/.test(r)));
 });
 
-test('珊瑚灣撈魚趣：水島小遊戲一律撈魚；能量星星每 3 條 1 顆、最多 15、至少 1', () => {
+test('珊瑚灣撈魚趣：水島小遊戲一律撈魚；能量星星每 3 條 1 顆、最多 8（2026-11-25 原 15）、至少 1', () => {
   assert.equal(G.minigameOf('water', () => 0.9), 'fish');
-  assert.deepEqual([0, 1, 3, 4, 7, 45, 54, 99].map(G.fishStars), [1, 1, 1, 2, 3, 15, 15, 15]);
+  assert.deepEqual([0, 1, 3, 4, 7, 22, 24, 25, 99].map(G.fishStars), [1, 1, 1, 2, 3, 8, 8, 8, 8]);
   const { store, a, p } = waterStore('water', 6);
   try {
     doneUpTo(p, []);
@@ -3163,17 +3163,17 @@ test('金島小英雄改成 4 個任務（2026-11-19）：已經拿到的成就�
   assert.ok(s2.data.achievements[a.id].goldHero, '舊的徽章還在');
 });
 
-test('火島《熔岩跳跳路》（2026-11-24 三關）：六種結果 4／8／8／12／12／15 星；只結算一次；三關只算一次小遊戲；中途保留成績；下一關要先正常過前一關；三關成就', () => {
+test('火島《熔岩跳跳路》（2026-11-24 三關）：六種結果 3／5／5／7／7／8 星（2026-11-25 原 4／8／8／12／12／15）；只結算一次；三關只算一次小遊戲；中途保留成績；下一關要先正常過前一關；三關成就', () => {
   const { store, a } = p3Store();
   assert.equal(G.minigameOf('fire', () => 0.5), 'lava');
-  assert.deepEqual(G.LAVA_STARS, { easyRescue: 4, easyClear: 8, hardRescue: 8, hardClear: 12, kingRescue: 12, kingClear: 15 });
+  assert.deepEqual(G.LAVA_STARS, { easyRescue: 3, easyClear: 5, hardRescue: 5, hardClear: 7, kingRescue: 7, kingClear: 8 });
   const mk = (id) => { store.data.adventure.minigames = store.data.adventure.minigames.filter(m => m.childId !== a.id);
     store.data.adventure.minigames.push({ id, childId: a.id, date: store.today(), status: 'pending', caught: 0, stars: 0, ts: 1, game: 'lava' }); };
   const ach = (id) => G.LAVA_ACH.find(x => x.id === id).check(store, a.id);
   const bag = JSON.stringify(store.getPlayer(a.id).bag);
   // [結果, 簡易版成績, 困難版成績, 星星]
-  const cases = [['easyRescue', 'rescue', null, 4], ['easyClear', 'clear', null, 8], ['hardRescue', 'clear', null, 8], ['hardClear', 'clear', null, 12],
-    ['kingRescue', 'clear', 'clear', 12], ['kingClear', 'clear', 'clear', 15]];
+  const cases = [['easyRescue', 'rescue', null, 3], ['easyClear', 'clear', null, 5], ['hardRescue', 'clear', null, 5], ['hardClear', 'clear', null, 7],
+    ['kingRescue', 'clear', 'clear', 7], ['kingClear', 'clear', 'clear', 8]];
   cases.forEach(([outcome, easy, hard, stars], k) => {
     mk('lv' + k);
     const bal = store.getStarBalance(a.id);
@@ -3198,9 +3198,9 @@ test('火島《熔岩跳跳路》（2026-11-24 三關）：六種結果 4／8／
   store.saveLavaStage(a.id, 'easy', 'clear');
   assert.throws(() => store.finishLava(a.id, 'kingClear'), /困難版還沒過關/);
   store.saveLavaStage(a.id, 'hard', 'rescue');
-  assert.equal(store.finishLava(a.id, 'hardClear').stars, 8, '困難版救援過，一律 8 星');
+  assert.equal(store.finishLava(a.id, 'hardClear').stars, 5, '困難版救援過，一律 5 星');
   mk('lv10'); store.saveLavaStage(a.id, 'easy', 'rescue');
-  assert.equal(store.finishLava(a.id, 'easyClear').stars, 4, '簡易版救援過，一律 4 星');
+  assert.equal(store.finishLava(a.id, 'easyClear').stars, 3, '簡易版救援過，一律 3 星');
   assert.equal(JSON.stringify(store.getPlayer(a.id).bag), bag, '洛洛的防護罩不動背包');
 });
 

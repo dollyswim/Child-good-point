@@ -301,7 +301,7 @@
           if (window.__cgpLava === hooks) window.__cgpLava = null;
           resolve(r);
         }
-        var STARS = A.lavaStars || { easyRescue: 4, easyClear: 8, hardRescue: 8, hardClear: 12, kingRescue: 12, kingClear: 15 };
+        var STARS = A.lavaStars || { easyRescue: 3, easyClear: 5, hardRescue: 5, hardClear: 7, kingRescue: 7, kingClear: 8 };
         function settle(outcome) {
           var stars = STARS[outcome];
           if (!practice) { try { stars = store.finishLava(childId, outcome).stars; } catch (err) { toast(err.message, 'neg'); } }
