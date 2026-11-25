@@ -1,0 +1,191 @@
+{
+  "schemaVersion": "fire-1.0",
+  "coordinateSystem": {
+    "origin": "top-left",
+    "xDirection": "right",
+    "yDirection": "down",
+    "unit": "px",
+    "sceneWidth": 1080,
+    "sceneHeight": 1350
+  },
+  "scenes": [
+    {
+      "sceneId": "fire-02",
+      "file": "fire_scene02.png",
+      "name": "山坡農園",
+      "from": 21,
+      "to": 40
+    }
+  ],
+  "tiles": [
+    {
+      "tile": 21,
+      "id": "fire-02-021",
+      "sceneId": "fire-02",
+      "x": 480.0,
+      "y": 1240.0
+    },
+    {
+      "tile": 22,
+      "id": "fire-02-022",
+      "sceneId": "fire-02",
+      "x": 539.0,
+      "y": 1194.92
+    },
+    {
+      "tile": 23,
+      "id": "fire-02-023",
+      "sceneId": "fire-02",
+      "x": 597.83,
+      "y": 1149.6
+    },
+    {
+      "tile": 24,
+      "id": "fire-02-024",
+      "sceneId": "fire-02",
+      "x": 653.96,
+      "y": 1101.01
+    },
+    {
+      "tile": 25,
+      "id": "fire-02-025",
+      "sceneId": "fire-02",
+      "x": 700.26,
+      "y": 1043.35
+    },
+    {
+      "tile": 26,
+      "id": "fire-02-026",
+      "sceneId": "fire-02",
+      "x": 726.41,
+      "y": 974.18
+    },
+    {
+      "tile": 27,
+      "id": "fire-02-027",
+      "sceneId": "fire-02",
+      "x": 725.96,
+      "y": 900.45,
+      "hazard": "lava-stream"
+    },
+    {
+      "tile": 28,
+      "id": "fire-02-028",
+      "sceneId": "fire-02",
+      "x": 692.5,
+      "y": 835.06
+    },
+    {
+      "tile": 29,
+      "id": "fire-02-029",
+      "sceneId": "fire-02",
+      "x": 639.06,
+      "y": 783.63
+    },
+    {
+      "tile": 30,
+      "id": "fire-02-030",
+      "sceneId": "fire-02",
+      "x": 580.49,
+      "y": 737.99
+    },
+    {
+      "tile": 31,
+      "id": "fire-02-031",
+      "sceneId": "fire-02",
+      "x": 516.94,
+      "y": 700.01
+    },
+    {
+      "tile": 32,
+      "id": "fire-02-032",
+      "sceneId": "fire-02",
+      "x": 448.73,
+      "y": 670.65
+    },
+    {
+      "tile": 33,
+      "id": "fire-02-033",
+      "sceneId": "fire-02",
+      "x": 387.29,
+      "y": 629.93
+    },
+    {
+      "tile": 34,
+      "id": "fire-02-034",
+      "sceneId": "fire-02",
+      "x": 358.23,
+      "y": 562.36
+    },
+    {
+      "tile": 35,
+      "id": "fire-02-035",
+      "sceneId": "fire-02",
+      "x": 356.9,
+      "y": 488.48
+    },
+    {
+      "tile": 36,
+      "id": "fire-02-036",
+      "sceneId": "fire-02",
+      "x": 380.8,
+      "y": 418.59
+    },
+    {
+      "tile": 37,
+      "id": "fire-02-037",
+      "sceneId": "fire-02",
+      "x": 428.29,
+      "y": 361.79
+    },
+    {
+      "tile": 38,
+      "id": "fire-02-038",
+      "sceneId": "fire-02",
+      "x": 483.86,
+      "y": 312.55
+    },
+    {
+      "tile": 39,
+      "id": "fire-02-039",
+      "sceneId": "fire-02",
+      "x": 541.95,
+      "y": 266.3
+    },
+    {
+      "tile": 40,
+      "id": "fire-02-040",
+      "sceneId": "fire-02",
+      "x": 600.0,
+      "y": 220.0
+    }
+  ],
+  "npcSpots": [
+    {
+      "npc": "mis_rumo",
+      "tile": 30,
+      "sceneId": "fire-02",
+      "x": 660,
+      "y": 570,
+      "w": 220,
+      "h": 160,
+      "note": "米斯與魯莫站位；受損田地在空地東側"
+    }
+  ],
+  "safeZones": [
+    {
+      "sceneId": "all",
+      "x": 0,
+      "y": 1130,
+      "w": 180,
+      "h": 220
+    },
+    {
+      "sceneId": "all",
+      "x": 1000,
+      "y": 1170,
+      "w": 80,
+      "h": 180
+    }
+  ]
+}

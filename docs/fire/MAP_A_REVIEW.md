@@ -21,3 +21,4 @@
 
 ## 第 B 節驗收紀錄
 - **S1 港口村莊（2026-11-25 家長確認通過）**：`images/fire/map/scene01.webp`（1080×1350，未放 SHELL，火島開放時第一次用到才下載）；座標 `docs/fire/fire_scene01_coordinates.json` 與草圖一致。奧提斯家門已緊貼第 5 格旁空地（第 3 點完成）。尚未接進 App。
+- **S2 山坡農園（2026-11-25 家長確認通過）**：`images/fire/map/scene02.webp`；座標 `docs/fire/fire_scene02_coordinates.json` 與草圖一致。巨大火山佔上半部、第 27 格岩漿支流橫過路面、第 30 格空地東側受損農田。尚未接進 App。
