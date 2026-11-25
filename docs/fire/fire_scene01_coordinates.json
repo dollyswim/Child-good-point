@@ -1,0 +1,217 @@
+{
+  "schemaVersion": "fire-1.0",
+  "coordinateSystem": {
+    "origin": "top-left",
+    "xDirection": "right",
+    "yDirection": "down",
+    "unit": "px",
+    "sceneWidth": 1080,
+    "sceneHeight": 1350
+  },
+  "scenes": [
+    {
+      "sceneId": "fire-01",
+      "file": "fire_scene01.png",
+      "name": "港口村莊",
+      "from": 0,
+      "to": 20
+    }
+  ],
+  "tiles": [
+    {
+      "tile": 0,
+      "id": "fire-01-start",
+      "sceneId": "fire-01",
+      "x": 515.0,
+      "y": 1205.0
+    },
+    {
+      "tile": 1,
+      "id": "fire-01-001",
+      "sceneId": "fire-01",
+      "x": 574.09,
+      "y": 1161.02
+    },
+    {
+      "tile": 2,
+      "id": "fire-01-002",
+      "sceneId": "fire-01",
+      "x": 619.69,
+      "y": 1110.2
+    },
+    {
+      "tile": 3,
+      "id": "fire-01-003",
+      "sceneId": "fire-01",
+      "x": 660.3,
+      "y": 1055.37
+    },
+    {
+      "tile": 4,
+      "id": "fire-01-004",
+      "sceneId": "fire-01",
+      "x": 691.28,
+      "y": 994.62
+    },
+    {
+      "tile": 5,
+      "id": "fire-01-005",
+      "sceneId": "fire-01",
+      "x": 707.52,
+      "y": 928.52
+    },
+    {
+      "tile": 6,
+      "id": "fire-01-006",
+      "sceneId": "fire-01",
+      "x": 699.51,
+      "y": 861.42
+    },
+    {
+      "tile": 7,
+      "id": "fire-01-007",
+      "sceneId": "fire-01",
+      "x": 664.55,
+      "y": 803.19
+    },
+    {
+      "tile": 8,
+      "id": "fire-01-008",
+      "sceneId": "fire-01",
+      "x": 615.86,
+      "y": 755.34
+    },
+    {
+      "tile": 9,
+      "id": "fire-01-009",
+      "sceneId": "fire-01",
+      "x": 563.62,
+      "y": 711.35
+    },
+    {
+      "tile": 10,
+      "id": "fire-01-010",
+      "sceneId": "fire-01",
+      "x": 507.63,
+      "y": 672.56
+    },
+    {
+      "tile": 11,
+      "id": "fire-01-011",
+      "sceneId": "fire-01",
+      "x": 446.28,
+      "y": 642.6
+    },
+    {
+      "tile": 12,
+      "id": "fire-01-012",
+      "sceneId": "fire-01",
+      "x": 391.11,
+      "y": 603.69
+    },
+    {
+      "tile": 13,
+      "id": "fire-01-013",
+      "sceneId": "fire-01",
+      "x": 361.11,
+      "y": 542.8
+    },
+    {
+      "tile": 14,
+      "id": "fire-01-014",
+      "sceneId": "fire-01",
+      "x": 354.62,
+      "y": 475.12
+    },
+    {
+      "tile": 15,
+      "id": "fire-01-015",
+      "sceneId": "fire-01",
+      "x": 370.45,
+      "y": 409.08
+    },
+    {
+      "tile": 16,
+      "id": "fire-01-016",
+      "sceneId": "fire-01",
+      "x": 408.78,
+      "y": 352.81
+    },
+    {
+      "tile": 17,
+      "id": "fire-01-017",
+      "sceneId": "fire-01",
+      "x": 458.73,
+      "y": 306.3
+    },
+    {
+      "tile": 18,
+      "id": "fire-01-018",
+      "sceneId": "fire-01",
+      "x": 511.74,
+      "y": 263.26
+    },
+    {
+      "tile": 19,
+      "id": "fire-01-019",
+      "sceneId": "fire-01",
+      "x": 566.04,
+      "y": 221.86
+    },
+    {
+      "tile": 20,
+      "id": "fire-01-020",
+      "sceneId": "fire-01",
+      "x": 620.0,
+      "y": 180.0
+    }
+  ],
+  "npcSpots": [
+    {
+      "npc": "lolo",
+      "tile": 1,
+      "sceneId": "fire-01",
+      "x": 300,
+      "y": 1110,
+      "w": 120,
+      "h": 140,
+      "note": "洛洛望遠鏡站位／港口岩石頂"
+    },
+    {
+      "npc": "otis_door",
+      "tile": 5,
+      "sceneId": "fire-01",
+      "x": 440,
+      "y": 830,
+      "w": 140,
+      "h": 160,
+      "note": "奧提斯家門前空地；白屋在空地西側，門朝東面向路"
+    },
+    {
+      "npc": "village_square",
+      "tile": 12,
+      "sceneId": "fire-01",
+      "x": 540,
+      "y": 350,
+      "w": 300,
+      "h": 220,
+      "note": "村莊廣場與團結火堆；中央允許圓形石圍火坑、木柴與周圍長椅，火堆不得壓主路或格子，仍留居民集合空間"
+    }
+  ],
+  "safeZones": [
+    {
+      "sceneId": "all",
+      "x": 0,
+      "y": 1130,
+      "w": 180,
+      "h": 220
+    },
+    {
+      "sceneId": "all",
+      "x": 1000,
+      "y": 1170,
+      "w": 80,
+      "h": 180
+    }
+  ]
+}
