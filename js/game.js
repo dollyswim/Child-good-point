@@ -72,7 +72,7 @@
   var TREASURES = [
     { id: 'skates', name: '溜冰鞋', icon: '🛼', img: 'images/items/roller_skate.webp', price: 10, desc: '向前移動 3 格（和飛行翼合計每天最多 5 次）' },
     { id: 'shield', name: '防護罩', icon: '🛡️', img: 'images/items/shield.webp', price: 10, desc: '自動擋住一次命運卡的「往回退」或「路障」（擋住路障還能前進 1 格）' },
-    { id: 'magicDice', name: '神奇骰子', icon: '🎲', img: 'images/items/magic_dice.webp', price: 10, desc: '額外擲一次 12 面骰（不占每日 3 次，每天最多用 1 顆）' },
+    // 2026-11-25 家長：神奇骰子從寶物商店拿掉，改在星星商店賣（⭐50，每週 2 顆）；神祕寶箱照樣會開出
     { id: 'luckyMedal', name: '好運金牌', icon: '🥇', img: 'images/items/lucky_medal.webp', price: 100, desc: '下一次停在寶箱：升級成神祕寶箱（不用鑰匙，直接打開）；停在機會格：效果發生 2 次' },
     { id: 'wings', name: '飛行翼', icon: '🪽', img: 'images/items/flying_wings.webp', price: 100, desc: '向前飛行 20 格（和溜冰鞋合計每天最多 5 次）' },
     { id: 'starCall', name: '星星呼喚', icon: '🌠', img: 'images/minigame/star.webp', price: 50, desc: '馬上玩一局「抓住星星」（不占每天 1 次，每天最多用 1 個）' },   // 2026-11-08 新增

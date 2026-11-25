@@ -1419,23 +1419,23 @@ async function main() {
     await q.goto(url);
     const [id, id2] = await q.evaluate(() => {
       const s = window.__cgpStore;
-      return [s.addChild({ name: '小安', startPoints: 150 }).id, s.addChild({ name: '小樂', startPoints: 150 }).id];
+      return [s.addChild({ name: '小安', startPoints: 250 }).id, s.addChild({ name: '小樂', startPoints: 150 }).id];
     });
     await q.goto(url + '#shop-' + id);
     await q.waitForSelector('[data-testid=treasure]');
     await q.waitForFunction(() => [...document.querySelectorAll('.treasure-art img')].every((i) => i.complete && i.naturalWidth === 256));
     const cards = await q.$$eval('.treasure-card', (cs) => cs.map((c) => [c.dataset.treasure, c.querySelector('.treasure-price').textContent.trim()]));
-    assert.deepEqual(cards, [['skates', '點10 點'], ['shield', '點10 點'], ['magicDice', '點10 點'], ['luckyMedal', '點100 點'], ['wings', '點100 點'], ['starCall', '點50 點'], ['pineHide', '點50 點'], ['door', '點200 點']]);
+    assert.deepEqual(cards, [['skates', '點10 點'], ['shield', '點10 點'], ['luckyMedal', '點100 點'], ['wings', '點100 點'], ['starCall', '點50 點'], ['pineHide', '點50 點'], ['door', '點200 點']]);
     assert.equal(await q.evaluate(() => getComputedStyle(document.querySelector('.treasure-art img')).objectFit), 'contain');
     // 兌換防護罩
     await q.click('[data-treasure=shield] [data-action=buy-treasure]');
     await q.click('#confirm [data-yes]');
     await q.waitForFunction(() => /背包 ×1/.test(document.querySelector('[data-treasure=shield]').textContent));
-    assert.match(await q.locator('[data-testid=total]').innerText(), /140/);   // 150 − 防護罩 10 點
+    assert.match(await q.locator('[data-testid=total]').innerText(), /240/);   // 250 − 防護罩 10 點
     assert.match(await q.locator('[data-testid=treasure] h2').innerText(), /本週已兌換 1 \/ 3 件/);
     assert.match(await q.locator('.records').innerText(), /寶物：防護罩[\s\S]*-10/);
     // 再買 2 件 → 本週 3 件，全部按鈕停用並顯示原因
-    for (const t of ['skates', 'magicDice']) {
+    for (const t of ['skates', 'wings']) {   // 2026-11-25 神奇骰子移到星星商店
       await q.click('[data-treasure=' + t + '] [data-action=buy-treasure]');
       await q.click('#confirm [data-yes]');
       await q.waitForFunction((t) => /背包 ×1/.test(document.querySelector('[data-treasure=' + t + ']').textContent), t);
@@ -1459,7 +1459,7 @@ async function main() {
     await q.goto(url + '#map-' + id);
     await q.waitForSelector('[data-testid=item-bar]');
     assert.match(await q.locator('.dice-btn.skates').innerText(), /×1/);
-    assert.deepEqual(await q.$$eval('.item-btn', (els) => els.map((e) => e.dataset.kind)), ['magicDice', 'shield'], '背包道具在地圖道具列');
+    assert.deepEqual(await q.$$eval('.item-btn', (els) => els.map((e) => e.dataset.kind)), ['wings', 'shield'], '背包道具在地圖道具列');
     // 星星呼喚：背包按一下 → 確認 → 馬上開始一局抓住星星（不占今天的 1 次）
     await q.evaluate((cid) => { const s = window.__cgpStore; s.getPlayer(cid).bag.starCall = 1; s.save(); }, id);
     await q.reload(); await q.waitForSelector('.item-btn[data-kind=starCall]');
@@ -1473,11 +1473,11 @@ async function main() {
     await q.click('#mg [data-mg=later]');
     await q.waitForFunction(() => !document.getElementById('mg'));
     assert.equal(await q.locator('.mg-resume').count(), 1, '稍後再玩：地圖出現繼續按鈕');
-    // 撤銷最後一筆兌換 → 收回神奇骰子、退點
+    // 撤銷最後一筆兌換 → 收回飛行翼、退點
     await q.goto(url + '#child-' + id);
     await q.click('[data-action=undo]');
-    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.magicDice, id), 0);
-    assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), 130);   // 150 − 防護罩 10 − 溜冰鞋 10
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.wings, id), 0);
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getTotal(cid), id), 230);   // 250 − 防護罩 10 − 溜冰鞋 10
     const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(over <= 0);
     console.log('✔ 寶物商店：6 款商品、兌換扣點進背包、每週 3 件、點數不足原因、背包顯示、撤銷收回道具');

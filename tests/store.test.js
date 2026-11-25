@@ -1192,9 +1192,9 @@ function tsStore(startPoints = 1000, dateStr = '2026-11-06T10:00:00') {   // 202
   return Object.assign(ctx, { a, b });
 }
 
-test('寶物商店：8 款商品與價格', () => {
+test('寶物商店：7 款商品與價格（2026-11-25 神奇骰子移到星星商店）', () => {
   assert.deepEqual(G.TREASURES.map(t => [t.id, t.price]),
-    [['skates', 10], ['shield', 10], ['magicDice', 10], ['luckyMedal', 100], ['wings', 100], ['starCall', 50], ['pineHide', 50], ['door', 200]]);
+    [['skates', 10], ['shield', 10], ['luckyMedal', 100], ['wings', 100], ['starCall', 50], ['pineHide', 50], ['door', 200]]);
   assert.ok(!G.TREASURES.some(t => t.id === 'airplane'), '呼叫專機不放商店');
   assert.deepEqual([G.TREASURE_WEEKLY_LIMIT, G.TREASURE_HOLD_LIMIT], [3, 2]);
 });
@@ -1215,7 +1215,7 @@ test('寶物商店：扣生活點數、放進背包，不動能量星星與等�
 
 test('寶物商店：每週最多 3 件、下週重新計算；點數不足不能買', () => {
   const { store, a, setDate } = tsStore(1000);
-  store.buyTreasure(a.id, 'skates'); store.buyTreasure(a.id, 'shield'); store.buyTreasure(a.id, 'magicDice');
+  store.buyTreasure(a.id, 'skates'); store.buyTreasure(a.id, 'shield'); store.buyTreasure(a.id, 'skates');
   assert.equal(store.getTreasureBoughtThisWeek(a.id), 3);
   assert.deepEqual(store.canBuyTreasure(a.id, 'wings'), { ok: false, reason: '本週已兌換 3 件' });
   assert.throws(() => store.buyTreasure(a.id, 'wings'), /本週已兌換 3 件/);
@@ -3265,7 +3265,7 @@ test('點數尺度：typicalDay = 20 → 星星、寶物價格、里程碑、特
   assert.deepEqual([1, 25, 50].map(n => S.starsForNetAt(n, 50)), [1, 20, 40], '中額制：除數 5×0.25＝1.25');
   assert.deepEqual([1, 3, 4].map(n => S.starsForNetAt(n, 400)), [1, 1, 1], '大於 200 也正常（除數 10）');
   // 寶物價格：10→1、50→5、100→10、200→20
-  assert.deepEqual(G.TREASURES.map(t => store.treasurePrice(t.id)), [1, 1, 1, 10, 10, 5, 5, 20]);
+  assert.deepEqual(G.TREASURES.map(t => store.treasurePrice(t.id)), [1, 1, 10, 10, 5, 5, 20]);
   G.TREASURES.forEach(t => { const v = store.treasurePrice(t.id); assert.ok(Number.isInteger(v) && v >= 1); });
   // 小數點 / 0 檢查：各種原始值與尺度
   [1, 7, 13, 33, 77, 199].forEach(td => [1, 3, 5, 10, 20, 50, 100, 500, 1000].forEach(x => {
