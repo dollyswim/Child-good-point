@@ -2110,7 +2110,7 @@ async function main() {
     await q.waitForFunction(() => [...document.querySelectorAll('#confirm .shop-row img')].every((i) => i.complete && i.naturalWidth));
     await checkArt('#confirm .shop-row .item-art img', '商店');
     const prices = await q.$$eval('#confirm [data-buy]', (bs) => bs.map((b) => b.getAttribute('data-buy') + b.textContent.trim()));
-    assert.deepEqual(prices, ['d6⭐5', 'd12⭐10', 'skates⭐4', 'goldenKey⭐10', 'magnet⭐10', 'rerollTicket⭐15']);
+    assert.deepEqual(prices, ['d6⭐5', 'd12⭐10', 'skates⭐4', 'goldenKey⭐10', 'magnet⭐10', 'rerollTicket⭐15', 'magicDice⭐50', 'wings⭐150']);
     assert.match(await q.locator('#confirm [data-item=d12]').innerText(), /12 面骰/);
     if (SHOT_DIR) await q.locator('#confirm .shop-box').screenshot({ path: path.join(SHOT_DIR, '17-shop-items-' + width + '.png') });
     await q.click('#confirm [data-buy=d12]');

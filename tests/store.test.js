@@ -1787,7 +1787,7 @@ test('寶物磁鐵：吸前後 5 格內的神祕寶箱或一般寶箱格；吸�
 
 test('星星商店：黃金鑰匙、寶物磁鐵（各 10 星）、命運重骰券（15 星，2026-11-24）', () => {
   const { store, a } = p3Store();
-  assert.deepEqual(G.SHOP.map(x => [x.id, x.price]), [['d6', 5], ['d12', 10], ['skates', 4], ['goldenKey', 10], ['magnet', 10], ['rerollTicket', 15]]);
+  assert.deepEqual(G.SHOP.map(x => [x.id, x.price]), [['d6', 5], ['d12', 10], ['skates', 4], ['goldenKey', 10], ['magnet', 10], ['rerollTicket', 15], ['magicDice', 50], ['wings', 150]]);
   store.buyItem(a.id, 'goldenKey'); store.buyItem(a.id, 'magnet');
   assert.deepEqual([store.getPlayer(a.id).bag.goldenKey, store.getPlayer(a.id).bag.magnet, store.getStarBalance(a.id)], [1, 1, 0]);
 });
@@ -3532,4 +3532,19 @@ test('寶物平衡（2026-11-24 家長）：寶箱 3～8 星或溜冰鞋／6 面
   store.buyItem(a.id, 'rerollTicket');
   assert.equal(store.getPlayer(a.id).bag.rerollTicket, 1);
   assert.equal(store.getStarBalance(a.id), before - 15);
+});
+
+test('星星商店（2026-11-25 家長）：神奇骰子 ⭐50 每週 2 顆、飛行翼 ⭐150 每週 1 個；下週重算', () => {
+  const { store, a, setDate } = p3Store();
+  store._ledger(a.id, 1000, '測試');
+  assert.equal(store.shopWeeklyLeft(a.id, 'd6'), null, '沒有每週上限');
+  store.buyItem(a.id, 'magicDice'); store.buyItem(a.id, 'magicDice');
+  assert.equal(store.shopWeeklyLeft(a.id, 'magicDice'), 0);
+  assert.throws(() => store.buyItem(a.id, 'magicDice'), /每週最多買 2 個/);
+  store.buyItem(a.id, 'wings');
+  assert.throws(() => store.buyItem(a.id, 'wings'), /每週最多買 1 個/);
+  const p = store.getPlayer(a.id);
+  assert.deepEqual([p.bag.magicDice, p.bag.wings], [2, 1]);
+  setDate('2026-11-16T10:00:00');   // 下週一
+  assert.deepEqual([store.shopWeeklyLeft(a.id, 'magicDice'), store.shopWeeklyLeft(a.id, 'wings')], [2, 1]);
 });

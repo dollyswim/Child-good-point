@@ -90,8 +90,18 @@
     { id: 'skates', name: '溜冰鞋', icon: '🛼', img: 'images/items/roller_skate.webp', price: 4, desc: '直接前進 3 格（不算擲骰次數；和飛行翼合計每天最多 5 次）' },
     { id: 'goldenKey', name: '黃金鑰匙', icon: '🔑', img: 'images/items/golden_key.webp', price: 10, desc: '打開地圖上撿到的神祕寶箱' },
     { id: 'magnet', name: '寶物磁鐵', icon: '🧲', img: 'images/items/treasure_magnet.webp', price: 10, desc: '吸取前後 5 格內的寶箱' },
-    { id: 'rerollTicket', name: '命運重骰券', icon: '🎲', img: 'images/items/reroll_ticket.webp', price: 15, desc: '擲骰後可以重擲一次（不占每日次數；同一次只能用 1 張）' }   // 2026-11-24 家長：星星的新用途
+    { id: 'rerollTicket', name: '命運重骰券', icon: '🎲', img: 'images/items/reroll_ticket.webp', price: 15, desc: '擲骰後可以重擲一次（不占每日次數；同一次只能用 1 張）' },   // 2026-11-24 家長：星星的新用途
+    { id: 'magicDice', name: '神奇骰子', icon: '🎲', img: 'images/items/magic_dice.webp', price: 50, weekly: 2, desc: '額外擲一次 12 面骰（不占每日 3 次，每天最多用 1 顆）' },   // 2026-11-25 家長：每週最多買 2 顆
+    { id: 'wings', name: '飛行翼', icon: '🪽', img: 'images/items/flying_wings.webp', price: 150, weekly: 1, desc: '向前飛行 20 格（和溜冰鞋合計每天最多 5 次）' }   // 2026-11-25 家長：每週最多買 1 個
   ];
+  /** 星星商店本週還能買幾個（沒有每週上限回傳 null） */
+  Store.prototype.shopWeeklyLeft = function (childId, itemId) {
+    var item = SHOP.find(function (x) { return x.id === itemId; });
+    if (!item || !item.weekly) return null;
+    var ws = CGP.weekStartKey(this.now()), reason = '購買' + item.name;
+    var n = this.data.adventure.ledger.filter(function (l) { return l.childId === childId && l.reason === reason && l.date >= ws; }).length;
+    return Math.max(0, item.weekly - n);
+  };
 
   /** 8 種原創冒險夥伴（家長提供的原創設計），圖檔在 images/characters/v2/<id>.webp（2026-11-24 換新版黏土風） */
   var CHARACTERS = [
@@ -375,6 +385,7 @@
     this._requirePlay(childId);
     var item = SHOP.find(function (x) { return x.id === itemId; });
     if (!item) throw new Error('沒有這個商品');
+    if (item.weekly && this.shopWeeklyLeft(childId, item.id) <= 0) throw new Error(item.name + '每週最多買 ' + item.weekly + ' 個，下週再來！');
     if (this.getStarBalance(childId) < item.price) throw new Error('能量星星不夠');
     this._ledger(childId, -item.price, '購買' + item.name);
     var p = this.getPlayer(childId);

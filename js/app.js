@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.25-259';
+  var APP_VERSION = '2026.11.25-260';
   var store;
   try {
     store = new CGP.Store();
@@ -3215,9 +3215,10 @@
       confirmEl.innerHTML = '<div class="confirm-box shop-box"><h2>🛒 星星商店</h2>' + (bonusMsg ? '<p class="shop-bonus">' + bonusMsg + '</p>' : '') +
         '<p class="shop-bal">目前有 <b>' + STAR_IMG + ' ' + num(bal) + '</b></p>' +
         GAME.SHOP.map(function (it) {
-          var ok = bal >= it.price;
+          var left = store.shopWeeklyLeft(childId, it.id), ok = bal >= it.price && left !== 0;   // 2026-11-25：神奇骰子、飛行翼有每週上限
           return '<div class="shop-row" data-item="' + it.id + '">' + itemArt(it.id, 'shop-row-icon') +
-            '<span class="shop-row-main"><b>' + h(it.name) + '</b><small>' + h(it.desc) + '・背包 ×' + bag[it.id] + '</small></span>' +
+            '<span class="shop-row-main"><b>' + h(it.name) + '</b><small>' + h(it.desc) + '・背包 ×' + bag[it.id] +
+            (left == null ? '' : '・<span class="shop-week">本週還能買 ' + left + ' 個</span>') + '</small></span>' +
             '<button class="btn ' + (ok ? 'primary' : '') + ' small" data-buy="' + it.id + '"' + (ok ? '' : ' disabled') + '>⭐' + it.price + '</button></div>';
         }).join('') +
         (function () {   // 2026-11-19：什麼都買不起時說明原因（原本只是按鈕變淡）
