@@ -73,7 +73,7 @@
     { id: 'skates', name: '溜冰鞋', icon: '🛼', img: 'images/items/roller_skate.webp', price: 10, desc: '向前移動 3 格（和飛行翼合計每天最多 5 次）' },
     { id: 'shield', name: '防護罩', icon: '🛡️', img: 'images/items/shield.webp', price: 10, desc: '自動擋住一次命運卡的「往回退」或「路障」（擋住路障還能前進 1 格）' },
     { id: 'magicDice', name: '神奇骰子', icon: '🎲', img: 'images/items/magic_dice.webp', price: 10, desc: '額外擲一次 12 面骰（不占每日 3 次，每天最多用 1 顆）' },
-    { id: 'luckyMedal', name: '好運金牌', icon: '🥇', img: 'images/items/lucky_medal.webp', price: 100, desc: '下一次停在寶箱或機會格，效果發生 2 次' },
+    { id: 'luckyMedal', name: '好運金牌', icon: '🥇', img: 'images/items/lucky_medal.webp', price: 100, desc: '下一次停在寶箱：升級成神祕寶箱（不用鑰匙，直接打開）；停在機會格：效果發生 2 次' },
     { id: 'wings', name: '飛行翼', icon: '🪽', img: 'images/items/flying_wings.webp', price: 100, desc: '向前飛行 20 格（和溜冰鞋合計每天最多 5 次）' },
     { id: 'starCall', name: '星星呼喚', icon: '🌠', img: 'images/minigame/star.webp', price: 50, desc: '馬上玩一局「抓住星星」（不占每天 1 次，每天最多用 1 個）' },   // 2026-11-08 新增
     { id: 'pineHide', name: '松果躲躲', icon: '🌰', img: 'images/wood/leaf_pinecone.webp', price: 50, desc: '馬上玩一局「落葉找松果」（不占每天 1 次，每天最多用 1 個）' },   // 2026-11-08 新增（比照星星呼喚，和星星呼喚各自計算）
@@ -89,7 +89,8 @@
     { id: 'd12', name: '12 面骰', icon: '🎲', img: 'images/items/dice_12.webp', price: 10, desc: '擲出 1～12 步' },
     { id: 'skates', name: '溜冰鞋', icon: '🛼', img: 'images/items/roller_skate.webp', price: 4, desc: '直接前進 3 格（不算擲骰次數；和飛行翼合計每天最多 5 次）' },
     { id: 'goldenKey', name: '黃金鑰匙', icon: '🔑', img: 'images/items/golden_key.webp', price: 10, desc: '打開地圖上撿到的神祕寶箱' },
-    { id: 'magnet', name: '寶物磁鐵', icon: '🧲', img: 'images/items/treasure_magnet.webp', price: 10, desc: '吸取前後 5 格內的寶箱' }
+    { id: 'magnet', name: '寶物磁鐵', icon: '🧲', img: 'images/items/treasure_magnet.webp', price: 10, desc: '吸取前後 5 格內的寶箱' },
+    { id: 'rerollTicket', name: '命運重骰券', icon: '🎲', img: 'images/items/reroll_ticket.webp', price: 15, desc: '擲骰後可以重擲一次（不占每日次數；同一次只能用 1 張）' }   // 2026-11-24 家長：星星的新用途
   ];
 
   /** 8 種原創冒險夥伴（家長提供的原創設計），圖檔在 images/characters/v2/<id>.webp（2026-11-24 換新版黏土風） */
@@ -388,19 +389,21 @@
   };
 
   // ---------- 寶箱內容（地圖寶箱格與背包寶箱共用同一套） ----------
-  /** 一般寶箱：55% 得 1～3 星、25% 溜冰鞋、20% 6 面骰 */
+  /** 一般寶箱（2026-11-24 家長：寶箱變大）：55% 得 3～8 星；其餘溜冰鞋、6 面骰、12 面骰各 15% */
   Store.prototype._rollRegularChest = function (childId, reason) {
     var rand = this.random, p = this.getPlayer(childId), out = { stars: 0, items: {}, text: '' };
     p.stats.chests++;
     var roll = rand();
     if (roll < 0.55) {
-      out.stars = rint(rand, 1, 3);
+      out.stars = rint(rand, 3, 8);
       this._ledger(childId, out.stars, reason);
       out.text = '得到 ⭐' + out.stars + ' 能量星星';
-    } else if (roll < 0.8) {
+    } else if (roll < 0.7) {
       p.bag.skates++; out.items.skates = 1; out.text = '得到一雙 🛼 溜冰鞋';
-    } else {
+    } else if (roll < 0.85) {
       p.bag.d6++; out.items.d6 = 1; out.text = '得到一顆 🎲 6 面骰';
+    } else {
+      p.bag.d12++; out.items.d12 = 1; out.text = '得到一顆 🎲 12 面骰';
     }
     Object.keys(out.items).forEach(function (k) { this._logItem(childId, 'grant', k, out.items[k], reason, out.text); }, this);
     return out;
@@ -705,7 +708,7 @@
     var rand = this.random;
     var ev = { tile: tile.n, type: tile.type, title: '', text: '', stars: 0, items: {}, extraPath: [], backPath: [] };
     var T = cardText(p.island);   // 卡片文字依所在島嶼換主題（效果相同）
-    // 好運金牌：下一次停在寶箱或機會格，效果發生 2 次
+    // 好運金牌（2026-11-24 家長改版）：下一次停在寶箱 → 升級成神祕寶箱（免鑰匙、直接打開）；停在機會格 → 效果發生 2 次
     var looted = tile.type === 'chest' && p.looted.indexOf(tile.id) >= 0;
     var medal = !!(p.medalArmed && ((tile.type === 'chest' && !looted) || tile.type === 'chance'));
     if (medal) { p.medalArmed = false; ev.medal = true; }
@@ -713,13 +716,11 @@
       ev.title = '🎁 寶箱'; ev.text = '這個寶箱已經被寶物磁鐵吸走了，裡面空空的。';
     } else if (tile.type === 'chest') {
       ev.title = (medal ? '🥇 好運金牌！' : '') + '🎁 寶箱！';
-      var texts = [];
-      for (var ci = 0; ci < (medal ? 2 : 1); ci++) {
-        var cr = this._rollRegularChest(childId, '寶箱');
-        ev.stars += cr.stars; texts.push(cr.text);
-        Object.keys(cr.items).forEach(function (k) { ev.items[k] = (ev.items[k] || 0) + cr.items[k]; });
-      }
-      ev.text = texts.join('\n');
+      var cr = medal ? this._rollMysteryChest(childId) : this._rollRegularChest(childId, '寶箱');
+      if (medal) { cr.text = '寶箱升級成 🎁 神祕寶箱！' + cr.text; ev.mysteryUpgrade = true; this._logItem(childId, 'open', 'mysteryChest', 1, '好運金牌', cr.text); }
+      ev.stars += cr.stars || 0;
+      Object.keys(cr.items).forEach(function (k) { ev.items[k] = (ev.items[k] || 0) + cr.items[k]; });
+      ev.text = cr.text;
     } else if (tile.type === 'chance') {
       ev.title = (medal ? '🥇 好運金牌！' : '') + '❓ 機會';
       var lines = [], cart = false;

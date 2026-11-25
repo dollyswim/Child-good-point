@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.24-257';
+  var APP_VERSION = '2026.11.24-258';
   var store;
   try {
     store = new CGP.Store();
@@ -1894,7 +1894,7 @@
       '<p class="map-hint">' + reason + '</p>' +
       (picking ? '<button type="button" class="btn block" data-action="cancel-door">' + (ui.pickKind === 'sub' ? '取消潛水艇' : '取消傳送門') + '</button>' : '') +
       (canPlay && pending ? '<button type="button" class="btn primary block" data-action="roll" data-kind="' + pending.die + '">🎲 已擲出 ' + pending.value + '，點這裡繼續</button>' : '') +
-      (player.medalArmed ? '<p class="medal-on">🥇 好運金牌已啟用：下一次停在寶箱或機會格，效果發生 2 次</p>' : '') +
+      (player.medalArmed ? '<p class="medal-on">🥇 好運金牌已啟用：下一個寶箱升級成神祕寶箱、機會格效果 2 次</p>' : '') +
       (canPlay && store.getPendingMinigame(child.id) ? '<button type="button" class="btn primary block mg-resume" data-action="play-minigame">🎮 今天的小遊戲還沒玩完，點這裡開始</button>' : '') +
       '<section class="dice-bar">' +
       act('d6', '6 面骰', bag.d6, !canPlay || noRolls || !bag.d6 || !!pending || picking) +
@@ -2408,7 +2408,7 @@
         if (got.length) {   // 寶箱／機會拿到東西：每樣獎勵一張奶油黃卡（主獎勵排第一）；機會卡的情境文字、好運金牌放在第一張
           got.forEach(function (g, i) {
             cards.push({ theme: 'reward', kind: e.type, img: g.img, title: g.name + ' ×' + g.qty,
-              lines: [g.desc].concat(i ? [] : (e.medal ? ['🥇 好運金牌：這次效果發生 2 次'] : []).concat(e.type === 'chance' ? lines : [])) });
+              lines: [g.desc].concat(i ? [] : (e.medal ? [e.mysteryUpgrade ? '🥇 好運金牌：寶箱升級成神祕寶箱' : '🥇 好運金牌：這次效果發生 2 次'] : []).concat(e.type === 'chance' ? lines : [])) });
           });
           add(e.then);
           return;
@@ -4745,7 +4745,7 @@
         case 'beluga-ride': playMove(childId, 'beluga'); break;
         case 'call-beluga': callBeluga(); break;
         case 'activate-medal':
-          confirmThen('啟用 🥇 好運金牌？\n下一次停在寶箱或機會格時，效果會發生 2 次。', '啟用', false, function () {
+          confirmThen('啟用 🥇 好運金牌？\n下一次停在寶箱：升級成神祕寶箱（不用鑰匙）；停在機會格：效果發生 2 次。', '啟用', false, function () {
             store.activateMedal(childId); toast('🥇 好運金牌已啟用！', 'pos');
           });
           break;

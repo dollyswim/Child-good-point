@@ -887,12 +887,12 @@ test('寶箱格：星星或道具；機會格：前進 2 格、得 2 星、得 6
   const { store, a, push } = p3Store();
   const bag = store.getPlayer(a.id).bag;
   bag.d6 = 10;
-  // 寶箱在第 5 格：擲 5，寶箱給星（roll<0.55，再擲 1～3 → 3）
+  // 寶箱在第 5 格：擲 5，寶箱給星（roll<0.55，再擲 3～8 → 8；2026-11-24 寶箱變大）
   push(face(5), 0.1, 0.99);
   let r = store.rollDice(a.id, 'd6');
   assert.equal(r.event.type, 'chest');
-  assert.equal(r.event.stars, 3);
-  assert.equal(store.getStarBalance(a.id), 23);
+  assert.equal(r.event.stars, 8);
+  assert.equal(store.getStarBalance(a.id), 28);
   // 機會在第 9 格：擲 4，機會選 1（得 2 星；5 種機會卡，0.3 → 第 2 種）
   push(face(4), 0.3);
   r = store.rollDice(a.id, 'd6');
@@ -1364,20 +1364,23 @@ test('寶箱庫存：一般寶箱沿用地圖寶箱內容；神諭祝福的神�
   store.setParentPin('1234');
   store.sendBlessing(a.id, 'chest', 3);
   store.sendBlessing(a.id, 'mysteryChest', 2);
-  const seq = [0.1, 0.5, 0.7, 0.9, 0.0, 0.999];
+  store.sendBlessing(a.id, 'chest', 1);
+  const seq = [0.1, 0.5, 0.6, 0.8, 0.9, 0.0, 0.999];
   store.random = () => seq.shift();
-  let r = store.openChest(a.id, 'chest');              // 0.1 → 星星，0.5 → 2 星
-  assert.equal(r.stars, 2); assert.equal(store.getStarBalance(a.id), 2);
-  r = store.openChest(a.id, 'chest');                  // 0.7 → 溜冰鞋
+  let r = store.openChest(a.id, 'chest');              // 0.1 → 星星，0.5 → 3＋3 ＝ 6 星（2026-11-24 寶箱變大：3～8）
+  assert.equal(r.stars, 6); assert.equal(store.getStarBalance(a.id), 6);
+  r = store.openChest(a.id, 'chest');                  // 0.6 → 溜冰鞋
   assert.deepEqual(r.items, { skates: 1 });
-  r = store.openChest(a.id, 'chest');                  // 0.9 → 6 面骰
+  r = store.openChest(a.id, 'chest');                  // 0.8 → 6 面骰
   assert.deepEqual(r.items, { d6: 1 });
+  r = store.openChest(a.id, 'chest');                  // 0.9 → 12 面骰（新增）
+  assert.deepEqual(r.items, { d12: 1 });
   assert.throws(() => store.openChest(a.id, 'chest'), /沒有這種寶箱/);
   assert.equal(store.openChest(a.id, 'giftMysteryChest').item, 'skates');    // 0.0 → 第一項
   assert.equal(store.openChest(a.id, 'giftMysteryChest').item, 'door');      // 0.999 → 最後一項；只有金島時不開出呼叫專機
   assert.equal(store.getPlayer(a.id).bag.airplane, 0);
   assert.equal(store.getPlayer(a.id).bag.goldenKey, 0, '沒有用到鑰匙');
-  assert.equal(store.data.adventure.itemLog.filter(x => x.action === 'open').length, 5);
+  assert.equal(store.data.adventure.itemLog.filter(x => x.action === 'open').length, 6);
   assert.deepEqual(G.MYSTERY_POOL.map(x => x.weight).reduce((s, w) => s + w, 0), 100);
 });
 
@@ -1613,7 +1616,7 @@ test('傳送門：傳送到本島指定格子（可跨第一、二區）、落�
   assert.throws(() => store.useDoor(a.id, 5), /沒有傳送門/);
 });
 
-test('好運金牌：啟用後下一次寶箱效果 2 次、機會卡抽 2 張，用完失效', () => {
+test('好運金牌（2026-11-24 改版）：下一個寶箱升級成神祕寶箱（免鑰匙）、機會卡抽 2 張，用完失效', () => {
   const { store, a, push } = p3Store();
   const p = store.getPlayer(a.id);
   p.bag.luckyMedal = 2; p.bag.d6 = 3;
@@ -1621,10 +1624,14 @@ test('好運金牌：啟用後下一次寶箱效果 2 次、機會卡抽 2 張�
   assert.throws(() => store.activateMedal(a.id), /已經啟用/);
   assert.ok(p.medalArmed);
   store.setPlayerTile(a.id, 4);
-  push(face(1), 0.1, 0.5, 0.1, 0.99);                        // 第 5 格寶箱：兩次都開星星（2 星＋3 星）
+  push(face(1), 0.0);                                         // 第 5 格寶箱：升級成神祕寶箱，0.0 → 第一項（溜冰鞋）
+  const keys = p.bag.goldenKey;
   const r = store.rollDice(a.id, 'd6');
-  assert.ok(r.event.medal);
-  assert.equal(r.event.stars, 5);
+  assert.ok(r.event.medal && r.event.mysteryUpgrade);
+  assert.deepEqual([r.event.stars, r.event.items], [0, { skates: 1 }]);
+  assert.match(r.event.text, /升級成 🎁 神祕寶箱/);
+  assert.equal(p.bag.goldenKey, keys, '不用鑰匙');
+  assert.equal(p.stats.mystery, 1);
   assert.equal(p.medalArmed, false, '用完失效');
   push(face(4), 0.99);                                        // 第 9 格機會：沒有金牌只抽 1 張
   assert.equal(store.rollDice(a.id, 'd6').event.text.split('\n').length, 1);
@@ -1778,9 +1785,9 @@ test('寶物磁鐵：吸前後 5 格內的神祕寶箱或一般寶箱格；吸�
   assert.equal(store.getStarBalance(a.id), bal, '沒有獎勵');
 });
 
-test('星星商店新增黃金鑰匙、寶物磁鐵（各 10 星）', () => {
+test('星星商店：黃金鑰匙、寶物磁鐵（各 10 星）、命運重骰券（15 星，2026-11-24）', () => {
   const { store, a } = p3Store();
-  assert.deepEqual(G.SHOP.map(x => [x.id, x.price]), [['d6', 5], ['d12', 10], ['skates', 4], ['goldenKey', 10], ['magnet', 10]]);
+  assert.deepEqual(G.SHOP.map(x => [x.id, x.price]), [['d6', 5], ['d12', 10], ['skates', 4], ['goldenKey', 10], ['magnet', 10], ['rerollTicket', 15]]);
   store.buyItem(a.id, 'goldenKey'); store.buyItem(a.id, 'magnet');
   assert.deepEqual([store.getPlayer(a.id).bag.goldenKey, store.getPlayer(a.id).bag.magnet, store.getStarBalance(a.id)], [1, 1, 0]);
 });
@@ -1827,7 +1834,7 @@ test('今日小結：走了幾格、擲骰次數、星星、道具、小遊戲�
   const { store, a, push } = p3Store();
   const p = store.getPlayer(a.id);
   p.bag.d6 = 2; p.bag.wings = 1;
-  push(face(5), 0.1, 0.99);                                   // 第 5 格寶箱：+3 星
+  push(face(5), 0.1, 0.0);                                    // 第 5 格寶箱：+3 星（3～8 的最小值）
   store.rollDice(a.id, 'd6');
   store.buyItem(a.id, 'd6');                                  // 用掉 5 星
   store.random = () => 0.2;                                   // 飛到第 25 格
@@ -3513,4 +3520,16 @@ test('好習慣升級：JSON 匯出／匯入後升級狀態、紀錄、設定都
   assert.deepEqual(old.graduation, {});
   assert.deepEqual(old.items[0].grad, { off: false, weeks: 4, rate: 85, n: 3 });
   assert.equal(old.items[1].grad, undefined);
+});
+
+test('寶物平衡（2026-11-24 家長）：寶箱 3～8 星或溜冰鞋／6 面骰／12 面骰；星星商店可買命運重骰券', () => {
+  const { store, a } = p3Store();
+  const outs = [0.0, 0.54, 0.55, 0.69, 0.7, 0.84, 0.85, 0.999].map(v => { const seq = [v, 0.999]; store.random = () => seq.shift(); return store._rollRegularChest(a.id, '測試'); });
+  assert.deepEqual(outs.map(o => o.stars || Object.keys(o.items)[0]), [8, 8, 'skates', 'skates', 'd6', 'd6', 'd12', 'd12']);
+  const lows = [0.0].map(v => { const seq = [v, 0.0]; store.random = () => seq.shift(); return store._rollRegularChest(a.id, '測試').stars; });
+  assert.deepEqual(lows, [3]);
+  const before = store.getStarBalance(a.id);
+  store.buyItem(a.id, 'rerollTicket');
+  assert.equal(store.getPlayer(a.id).bag.rerollTicket, 1);
+  assert.equal(store.getStarBalance(a.id), before - 15);
 });

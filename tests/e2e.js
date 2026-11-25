@@ -2110,7 +2110,7 @@ async function main() {
     await q.waitForFunction(() => [...document.querySelectorAll('#confirm .shop-row img')].every((i) => i.complete && i.naturalWidth));
     await checkArt('#confirm .shop-row .item-art img', '商店');
     const prices = await q.$$eval('#confirm [data-buy]', (bs) => bs.map((b) => b.getAttribute('data-buy') + b.textContent.trim()));
-    assert.deepEqual(prices, ['d6⭐5', 'd12⭐10', 'skates⭐4', 'goldenKey⭐10', 'magnet⭐10']);
+    assert.deepEqual(prices, ['d6⭐5', 'd12⭐10', 'skates⭐4', 'goldenKey⭐10', 'magnet⭐10', 'rerollTicket⭐15']);
     assert.match(await q.locator('#confirm [data-item=d12]').innerText(), /12 面骰/);
     if (SHOT_DIR) await q.locator('#confirm .shop-box').screenshot({ path: path.join(SHOT_DIR, '17-shop-items-' + width + '.png') });
     await q.click('#confirm [data-buy=d12]');
@@ -2859,7 +2859,7 @@ async function main() {
       const p = s.getPlayer(a.id); p.bag.d6 = 3; s.setPlayerTile(a.id, 3); s.save(); return a.id; });
     await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
     // 第 5 格寶箱得到 ⭐3：一張奶油黃卡，主圖是能量星星
-    await q.evaluate(() => { const seq = [1.5 / 6, 0.1, 0.9]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0); });
+    await q.evaluate(() => { const seq = [1.5 / 6, 0.1, 0.0]; window.__cgpStore.random = () => (seq.length ? seq.shift() : 0); });
     const s0 = await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id);
     await q.click('.dice-btn.d6');
     await q.waitForSelector('#confirm [data-testid=event]', { timeout: 15000 });
@@ -2871,14 +2871,14 @@ async function main() {
     if (SHOT_DIR) await q.locator('#confirm .ev').screenshot({ path: path.join(SHOT_DIR, 'event-reward.png') });
     await q.click('#confirm [data-yes]');
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getStarBalance(cid), id), s1, '按「繼續冒險！」不會重複發放');
-    // 好運金牌＋寶箱：主獎勵溜冰鞋、另一張 ⭐3；第一張註明好運金牌
+    // 好運金牌＋寶箱（2026-11-24 改版）：寶箱升級成神祕寶箱，開出溜冰鞋；卡片註明好運金牌
     await q.evaluate((cid) => { const s = window.__cgpStore; const p = s.getPlayer(cid); p.bag.luckyMedal = 1; p.medalArmed = true; s.setPlayerTile(cid, 10); s.save(); const seq = [1.5 / 6, 0.1, 0.9, 0.6]; s.random = () => (seq.length ? seq.shift() : 0); }, id);
     await q.goto(url + '#child-' + id); await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
     const sk0 = await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.skates, id);
     await q.click('.dice-btn.d6');
     await q.waitForSelector('#confirm [data-testid=event]', { timeout: 15000 });
-    assert.match(await q.locator('#confirm .ev').innerText(), /冒險新發現！[\s\S]*停在第 12 格[\s\S]*溜冰鞋 ×1[\s\S]*好運金牌[\s\S]*能量星星 ×3/);
-    assert.equal(await q.locator('#confirm .ev-card.ev-reward').count(), 2);
+    assert.match(await q.locator('#confirm .ev').innerText(), /冒險新發現！[\s\S]*停在第 12 格[\s\S]*溜冰鞋 ×1[\s\S]*好運金牌：寶箱升級成神祕寶箱/);
+    assert.equal(await q.locator('#confirm .ev-card.ev-reward').count(), 1);
     assert.ok(await q.evaluate(() => { const b = document.querySelector('.ev-btn').getBoundingClientRect(); return b.bottom <= innerHeight && b.top >= 0; }), '按鈕在畫面內');
     if (SHOT_DIR) await q.locator('#confirm .ev').screenshot({ path: path.join(SHOT_DIR, 'event-medal.png') });
     await q.click('#confirm [data-yes]');
