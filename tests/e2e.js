@@ -2110,7 +2110,7 @@ async function main() {
     await q.waitForFunction(() => [...document.querySelectorAll('#confirm .shop-row img')].every((i) => i.complete && i.naturalWidth));
     await checkArt('#confirm .shop-row .item-art img', '商店');
     const prices = await q.$$eval('#confirm [data-buy]', (bs) => bs.map((b) => b.getAttribute('data-buy') + b.textContent.trim()));
-    assert.deepEqual(prices, ['d6⭐5', 'd12⭐10', 'skates⭐4', 'goldenKey⭐10', 'magnet⭐10', 'rerollTicket⭐15', 'magicDice⭐50', 'wings⭐150']);
+    assert.deepEqual(prices, ['d6⭐5', 'd12⭐10', 'skates⭐4', 'goldenKey⭐10', 'magnet⭐10', 'rerollTicket⭐15', 'magicDice⭐50', 'wings⭐150', 'magicShoes⭐40']);
     assert.match(await q.locator('#confirm [data-item=d12]').innerText(), /12 面骰/);
     if (SHOT_DIR) await q.locator('#confirm .shop-box').screenshot({ path: path.join(SHOT_DIR, '17-shop-items-' + width + '.png') });
     await q.click('#confirm [data-buy=d12]');
@@ -2886,6 +2886,30 @@ async function main() {
     assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.skates, id), sk0 + 1, '溜冰鞋只收 1 雙');
     console.log('✔ 擲骰只拿到獎勵：改用冒險事件視窗（每樣獎勵一張卡、好運金牌註明）、依實際結果顯示、按鈕不重複發放');
     await cr.close();
+  }
+
+  // ---------- 2026-11-25 魔法鞋：自選 1～6 步、預告落點、任務格擋住、不占擲骰與前進道具次數 ----------
+  {
+    const cm = await browser.newContext({ ...devices['Pixel 5'], serviceWorkers: 'block' });
+    const q = await cm.newPage();
+    q.on('pageerror', (e) => errors.push(e.message));
+    await q.goto(url);
+    const id = await q.evaluate(() => { const s = window.__cgpStore; const a = s.addChild({ name: '小樂' }); const it = s.addItem({ kind: 'bonus', name: '大', points: 100 }); s.recordItem(a.id, it.id); s.settleToday(a.id);
+      s.getPlayer(a.id).bag.magicShoes = 1; s.setPlayerTile(a.id, 0); s.random = () => 0; s.save(); return a.id; });
+    await q.goto(url + '#map-' + id); await q.waitForSelector('#pawn');
+    await q.click('.item-btn[data-kind=magicShoes]');
+    await q.waitForSelector('#confirm[open] [data-testid=shoes-pick]');
+    const txt = await q.locator('[data-testid=shoes-pick]').innerText();
+    assert.match(txt, /要走幾步[\s\S]*3 步[\s\S]*第 3 格\n❓ 機會[\s\S]*5 步[\s\S]*第 5 格\n🎁 寶箱[\s\S]*6 步[\s\S]*走不到[\s\S]*礦工求助/);
+    assert.equal(await q.locator('.shoes-opt[data-steps="6"]').isDisabled(), true, '任務格擋住');
+    if (SHOT_DIR) await q.locator('[data-testid=shoes-pick]').screenshot({ path: path.join(SHOT_DIR, 'magic-shoes.png') });
+    const moves0 = await q.evaluate((cid) => window.__cgpStore.getItemLimitsToday(cid).move, id);
+    await q.click('.shoes-opt[data-steps="4"]');   // 第 4 格一般格（第 3 格機會卡可能再前進，不好驗證）
+    await q.waitForFunction((cid) => window.__cgpStore.getPlayer(cid).pos === 4, id, { timeout: 15000 });
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getPlayer(cid).bag.magicShoes, id), 0);
+    assert.equal(await q.evaluate((cid) => window.__cgpStore.getItemLimitsToday(cid).move, id), moves0, '不占前進道具次數');
+    console.log('✔ 魔法鞋：選步數視窗預告落點、任務格擋住、走到指定格、不占前進道具次數');
+    await cm.close();
   }
 
   // ---------- 金島小遊戲（木島上線前）：也會出現落葉找松果 ----------

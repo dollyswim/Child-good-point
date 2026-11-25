@@ -2853,3 +2853,10 @@ i.lv-plat[data-sink="up"] { transition: opacity .25s, scale .25s; }
 .nc-list { display: grid; gap: 8px; }
 .nc-opt { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border: 2px solid #c9b8ff; border-radius: 14px; background: #f6f2ff; font: inherit; cursor: pointer; }
 .nc-opt span { font-weight: 900; color: #3f8f4a; }
+
+/* 魔法鞋：選步數（2026-11-25） */
+.shoes-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.shoes-opt { display: grid; gap: 2px; justify-items: center; padding: 10px 4px; border: 2px solid #c9b8ff; border-radius: 14px; background: #f6f2ff; font: inherit; cursor: pointer; }
+.shoes-opt b { font-size: 1.1rem; color: #6a3fa0; }
+.shoes-opt small { font-size: .72rem; color: #5a4a3a; }
+.shoes-opt:disabled { opacity: .45; cursor: not-allowed; }

@@ -4,7 +4,7 @@
 
   var CGP = window.CGP;
   /** 每次發布更新時修改，方便在「設定 → 備份」確認手機上是不是新版 */
-  var APP_VERSION = '2026.11.25-261';
+  var APP_VERSION = '2026.11.25-262';
   var store;
   try {
     store = new CGP.Store();
@@ -2297,6 +2297,7 @@
         res = store.commitRoll(childId);
       } else if (kind === 'skates') { res = store.useSkates(childId); toast('🛼 溜冰鞋前進 3 格！', 'pos'); }
       else if (kind === 'wings') { res = store.useWings(childId); toast('🪽 飛行翼起飛！', 'pos'); }
+      else if (kind === 'magicShoes') { res = store.useMagicShoes(childId, arg); toast('👟 魔法鞋前進 ' + arg + ' 步！', 'pos'); }
       else if (kind === 'door') { res = store.useDoor(childId, arg); toast('🚪 傳送門傳送到第 ' + arg + ' 格！', 'pos'); }
       else if (kind === 'beluga') { res = store.belugaRide(childId); toast('🐳 小白鯨載你游了 ' + res.value + ' 格！' + (res.ridesLeft ? '' : '牠游累了，明天再載你。'), 'pos'); }
       else if (kind === 'submarine') { res = store.useSubmarine(childId, arg); toast('🚤 潛水艇開到第 ' + arg + ' 格！', 'pos'); }
@@ -3550,6 +3551,7 @@
     if (bag.magicDice) btn('magicDice', 'roll', '神奇骰子', magicUsed ? '今天已用・×' + bag.magicDice : '×' + bag.magicDice + '・不占次數', busy || magicUsed);
     var lim = store.getItemLimitsToday(child.id);   // 前進類合計每天 5 次、傳送門每天 1 次
     var inWater = player.island === 'water';
+    if (bag.magicShoes && !inWater) { var shUsed = store._usesToday(child.id, ['magicShoes']) >= store.getLimits(child.id).shoes; btn('magicShoes', 'pick-shoes', '魔法鞋', shUsed ? '今天已用・×' + bag.magicShoes : '×' + bag.magicShoes + '・選步數', busy || shUsed); }
     if (bag.wings && !inWater) btn('wings', 'use-item', '飛行翼 +20', '×' + bag.wings + (lim.move ? '・今天剩 ' + lim.move + ' 次' : '・今天已用完'), busy || !lim.move);
     if (inWater && player.story.feed) btn('callShell', 'call-beluga', '呼喚貝殼', '叫小白鯨出來玩', st.pending || st.picking);
     if (bag.submarine && inWater) btn('submarine', 'pick-sub', '潛水艇', '×' + bag.submarine + (player.pos < 25 ? '・潛到海裡才能用' : lim.sub ? '・今天剩 ' + lim.sub + ' 次' : '・今天已用完'), busy || !lim.sub || player.pos < 25);
@@ -3573,6 +3575,24 @@
     airplane: '✈️ 呼叫專機：可以直接飛到其他島嶼的入口，其他島嶼開放後才能使用。',
     get goldenKey() { return '🔑 黃金鑰匙：打開地圖上撿到的神祕寶箱。累計得分每 +' + store.scalePoints(500) + ' 點送 1 把，星星商店也有賣。'; }   // 2026-11-24 跟著家庭點數尺度
   };
+
+  /** 魔法鞋：選 1～6 步（每個按鈕預告落在哪一格、什麼格子；走不到的變灰） */
+  var SHOE_TILE = { chest: '🎁 寶箱', chance: '❓ 機會', fate: '🔮 命運', minigame: '🎮 小遊戲', hazard: '🌋 危險', end: '🏁 終點', boundary: '🚪 區域終點', normal: '一般格', start: '起點' };
+  function pickShoes(childId) {
+    var opt = store.magicShoesOptions(childId);
+    confirmEl.innerHTML = '<div class="confirm-box shoes-box" data-testid="shoes-pick"><h2>👟 魔法鞋：要走幾步？</h2>' +
+      '<p class="muted small">看看地圖，選一個想停的格子。不占擲骰和溜冰鞋次數。</p><div class="shoes-grid">' + opt.previews.map(function (v) {
+        var ok = v.steps <= opt.max;
+        return '<button type="button" class="shoes-opt" data-steps="' + v.steps + '"' + (ok ? '' : ' disabled') + '><b>' + v.steps + ' 步</b><small>' +
+          (ok ? '第 ' + v.n + ' 格<br>' + (SHOE_TILE[v.type] || '一般格') : '走不到') + '</small></button>';
+      }).join('') + '</div>' + (opt.max < 6 && opt.reason ? '<p class="muted small">最多 ' + opt.max + ' 步：' + h(opt.reason) + '</p>' : '') +
+      '<div class="modal-actions"><button type="button" class="btn" data-no>先不用</button></div></div>';
+    confirmEl.querySelector('[data-no]').onclick = function () { confirmEl.close(); };
+    confirmEl.querySelectorAll('[data-steps]').forEach(function (b) {
+      b.onclick = function () { confirmEl.close(); playMove(childId, 'magicShoes', Number(b.getAttribute('data-steps'))); };
+    });
+    if (!confirmEl.open) confirmEl.showModal();
+  }
 
   /** 冒險寶物商店：用生活點數兌換冒險寶物（每週 3 件、同款持有 2 件） */
   function treasurePanel(child) {
@@ -3598,6 +3618,7 @@
     skates: { name: '溜冰鞋', img: 'images/items/roller_skate.webp', note: '地圖上使用' },
     shield: { name: '防護罩', img: 'images/items/shield.webp', note: '自動抵擋' },
     magicDice: { name: '神奇骰子', img: 'images/items/magic_dice.webp', note: '地圖上使用' },
+    magicShoes: { name: '魔法鞋', img: 'images/items/magic_shoes.webp', note: '地圖上使用' },
     luckyMedal: { name: '好運金牌', img: 'images/items/lucky_medal.webp', note: '地圖上啟用' },
     wings: { name: '飛行翼', img: 'images/items/flying_wings.webp', note: '地圖上使用' },
     door: { name: '傳送門', img: 'images/items/magic_door.webp', note: '地圖上使用（水島不能用）' },
@@ -4002,7 +4023,8 @@
     ['starCall', '🌠 星星呼喚', ''],
     ['pineHide', '🌰 松果躲躲', ''],
     ['beluga', '🐳 小白鯨載著前進（水島）', '餵過小白鯨後才有，不用骰子、不算擲骰次數'],
-    ['sub', '🚤 潛水艇（水島）', '']
+    ['sub', '🚤 潛水艇（水島）', ''],
+    ['shoes', '👟 魔法鞋（自選 1～6 步）', '不占擲骰和前進道具次數']
   ];
   function settingsLimits() {
     var L = store.getLimits(), D = window.CGP.DEFAULT_LIMITS, max = window.CGP.LIMIT_MAX;
@@ -4741,6 +4763,7 @@
           break;
         }
         case 'pick-door': ui.doorPick = childId; ui.pickKind = 'door'; render(); break;
+        case 'pick-shoes': pickShoes(childId); break;
         case 'pick-sub': ui.doorPick = childId; ui.pickKind = 'sub'; render(); break;
         case 'cancel-door': ui.doorPick = null; ui.pickKind = null; render(); break;
         case 'beluga-ride': playMove(childId, 'beluga'); break;

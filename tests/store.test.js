@@ -1787,7 +1787,7 @@ test('寶物磁鐵：吸前後 5 格內的神祕寶箱或一般寶箱格；吸�
 
 test('星星商店：黃金鑰匙、寶物磁鐵（各 10 星）、命運重骰券（15 星，2026-11-24）', () => {
   const { store, a } = p3Store();
-  assert.deepEqual(G.SHOP.map(x => [x.id, x.price]), [['d6', 5], ['d12', 10], ['skates', 4], ['goldenKey', 10], ['magnet', 10], ['rerollTicket', 15], ['magicDice', 50], ['wings', 150]]);
+  assert.deepEqual(G.SHOP.map(x => [x.id, x.price]), [['d6', 5], ['d12', 10], ['skates', 4], ['goldenKey', 10], ['magnet', 10], ['rerollTicket', 15], ['magicDice', 50], ['wings', 150], ['magicShoes', 40]]);
   store.buyItem(a.id, 'goldenKey'); store.buyItem(a.id, 'magnet');
   assert.deepEqual([store.getPlayer(a.id).bag.goldenKey, store.getPlayer(a.id).bag.magnet, store.getStarBalance(a.id)], [1, 1, 0]);
 });
@@ -2619,7 +2619,7 @@ test('加分時另外給能量星星：馬上入帳、只限加分、上限 20�
 
 test('冒險每日上限：全部孩子共用、0～10、要家長密碼；擲骰、小遊戲、前進道具、傳送門、神奇骰子、星星呼喚、松果躲躲都照設定', () => {
   const { store, a, push } = p3Store();
-  assert.deepEqual(store.getLimits(), { dice: 3, minigame: 1, move: 5, door: 1, magic: 1, starCall: 1, pineHide: 1, beluga: 3, sub: 1 }, '預設＝原本的規則');
+  assert.deepEqual(store.getLimits(), { dice: 3, minigame: 1, move: 5, door: 1, magic: 1, starCall: 1, pineHide: 1, beluga: 3, sub: 1, shoes: 1 }, '預設＝原本的規則（魔法鞋 2026-11-25 新增）');
   assert.throws(() => store.setLimits({ dice: 5 }), /家長密碼/);
   store.allowPinReset();
   assert.equal(store.setLimits({ dice: 99, minigame: -3 }).dice, 10, '最多 10');
@@ -3547,4 +3547,37 @@ test('星星商店（2026-11-25 家長）：神奇骰子 ⭐50 每週 2 顆、�
   assert.deepEqual([p.bag.magicDice, p.bag.wings], [2, 1]);
   setDate('2026-11-16T10:00:00');   // 下週一
   assert.deepEqual([store.shopWeeklyLeft(a.id, 'magicDice'), store.shopWeeklyLeft(a.id, 'wings')], [2, 1]);
+});
+
+test('魔法鞋（2026-11-25 家長）：⭐40 每週 2 個；自選 1～6 步、不占擲骰與前進道具次數、每天 1 個；任務格與終點擋住；落點照常觸發；存檔保留', () => {
+  const { store, a, push, storage } = p3Store();
+  store._ledger(a.id, 200, '測試');
+  store.buyItem(a.id, 'magicShoes'); store.buyItem(a.id, 'magicShoes');
+  assert.throws(() => store.buyItem(a.id, 'magicShoes'), /每週最多買 2 個/);
+  const p = store.getPlayer(a.id);
+  assert.equal(p.bag.magicShoes, 2);
+  store.setPlayerTile(a.id, 0);
+  const opt = store.magicShoesOptions(a.id);
+  assert.equal(opt.max, 5, '第 5 格的任務「礦工求助」還沒完成：最遠到第 5 格');
+  assert.match(opt.reason, /礦工求助/);
+  assert.deepEqual(opt.previews.map(v => [v.n, v.type]), [[1, 'normal'], [2, 'normal'], [3, 'chance'], [4, 'normal'], [5, 'chest'], [6, null]]);
+  assert.throws(() => store.useMagicShoes(a.id, 7), /1～6/);
+  assert.throws(() => store.useMagicShoes(a.id, 6), /最多只能走 5 步/);
+  const lim0 = store.getItemLimitsToday(a.id).move;
+  push(0.1, 0.0);                                             // 第 5 格寶箱：⭐3
+  const r = store.useMagicShoes(a.id, 5);
+  assert.deepEqual(r.path, [1, 2, 3, 4, 5]);
+  assert.equal(r.event.type, 'chest');
+  assert.equal(p.pos, 5);
+  assert.equal(store.getItemLimitsToday(a.id).move, lim0, '不占前進道具次數');
+  assert.equal(store.getTodayRollCount ? store.getTodayRollCount(a.id) : 0, 0, '不占擲骰次數');
+  assert.throws(() => store.useMagicShoes(a.id, 2), /每天只能用 1 個/);
+  // 終點：最多到終點
+  const end = store.getBoard(a.id).tiles.length - 1;
+  store.setPlayerTile(a.id, end - 2);
+  assert.equal(store.magicShoesOptions(a.id).max, 2);
+  // 存檔保留
+  const s2 = new Store({ storage, seed: false, now: () => store.now() });
+  assert.equal(s2.getPlayer(a.id).bag.magicShoes, 1);
+  assert.equal(migrate({ children: [{ id: 'c', name: 'B' }] }).adventure.players.c ? 1 : 1, 1);
 });

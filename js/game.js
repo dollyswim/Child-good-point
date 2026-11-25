@@ -92,7 +92,8 @@
     { id: 'magnet', name: '寶物磁鐵', icon: '🧲', img: 'images/items/treasure_magnet.webp', price: 10, desc: '吸取前後 5 格內的寶箱' },
     { id: 'rerollTicket', name: '命運重骰券', icon: '🎲', img: 'images/items/reroll_ticket.webp', price: 15, desc: '擲骰後可以重擲一次（不占每日次數；同一次只能用 1 張）' },   // 2026-11-24 家長：星星的新用途
     { id: 'magicDice', name: '神奇骰子', icon: '🎲', img: 'images/items/magic_dice.webp', price: 50, weekly: 2, desc: '額外擲一次 12 面骰（不占每日 3 次，每天最多用 1 顆）' },   // 2026-11-25 家長：每週最多買 2 顆
-    { id: 'wings', name: '飛行翼', icon: '🪽', img: 'images/items/flying_wings.webp', price: 150, weekly: 1, desc: '向前飛行 20 格（和溜冰鞋合計每天最多 5 次）' }   // 2026-11-25 家長：每週最多買 1 個
+    { id: 'wings', name: '飛行翼', icon: '🪽', img: 'images/items/flying_wings.webp', price: 150, weekly: 1, desc: '向前飛行 20 格（和溜冰鞋合計每天最多 5 次）' },   // 2026-11-25 家長：每週最多買 1 個
+    { id: 'magicShoes', name: '魔法鞋', icon: '👟', img: 'images/items/magic_shoes.webp', price: 40, weekly: 2, desc: '自己選前進 1～6 步（不占擲骰和溜冰鞋次數，每天最多用 1 個）' }   // 2026-11-25 家長：docs/MAGIC_SHOES_PLAN.md
   ];
   /** 星星商店本週還能買幾個（沒有每週上限回傳 null） */
   Store.prototype.shopWeeklyLeft = function (childId, itemId) {
@@ -1366,6 +1367,42 @@
     var event = this._resolveTile(childId, 0);
     this.save();
     return { die: item, value: MOVE_ITEMS[item].steps, from: from, path: path, event: event, found: this._found, lap: needLap, travel: travel };
+  };
+  /**
+   * 魔法鞋（2026-11-25 家長）：自選前進 1～6 步；不占擲骰、溜冰鞋／飛行翼次數；每天最多用 limits.shoes 個
+   * 最遠：終點、或前方第一個還沒完成的劇情任務格（同傳送門）；水島不能用（同溜冰鞋）
+   * @returns {{ max, reason, previews: [{ steps, n, type }] }}
+   */
+  Store.prototype.magicShoesOptions = function (childId) {
+    var p = this.getPlayer(childId), tiles = this.getBoard(childId).tiles, end = tiles.length - 1, lim = this.doorLimit(childId);
+    var max = Math.min(6, end - p.pos), reason = max < 6 ? '最遠到終點' : '';
+    if (lim && lim.tile - p.pos < max) { max = lim.tile - p.pos; reason = '第 ' + lim.tile + ' 格的任務「' + lim.name + '」還沒完成'; }
+    var gate = this.waterGate ? this.waterGate(childId) : -1;
+    if (gate >= 0 && gate > p.pos && gate - p.pos < max) { max = gate - p.pos; reason = '前面的關卡還沒完成'; }
+    var previews = [];
+    for (var k = 1; k <= 6; k++) { var n = p.pos + k; previews.push({ steps: k, n: n, type: k <= max && tiles[n] ? tiles[n].type : null }); }
+    return { max: Math.max(0, max), reason: reason, previews: previews };
+  };
+  Store.prototype.useMagicShoes = function (childId, steps) {
+    this._requirePlay(childId);
+    var p = this.getPlayer(childId);
+    if (p.pendingRoll) throw new Error('先完成上一次擲骰');
+    if (p.island === 'water') throw new Error('在水裡不能用魔法鞋喔！');
+    if (!(p.bag.magicShoes > 0)) throw new Error('背包裡沒有魔法鞋');
+    if (this._usesToday(childId, ['magicShoes']) >= this.getLimits(childId).shoes) throw new Error('魔法鞋每天只能用 ' + this.getLimits(childId).shoes + ' 個，明天再用！');
+    steps = Math.floor(Number(steps));
+    var opt = this.magicShoesOptions(childId);
+    if (!(steps >= 1 && steps <= 6)) throw new Error('請選 1～6 步');
+    if (steps > opt.max) throw new Error(opt.max ? '這次最多只能走 ' + opt.max + ' 步（' + opt.reason + '）' : '已經走不動了（' + opt.reason + '）');
+    this._markDayStart(childId);
+    var from = p.pos;
+    p.bag.magicShoes--;
+    this._found = 0;
+    var path = this._advance(childId, steps);
+    this._logItem(childId, 'use', 'magicShoes', 1, '背包', '第 ' + from + ' → ' + p.pos + ' 格（自選 ' + steps + ' 步）');
+    var event = this._resolveTile(childId, 0);
+    this.save();
+    return { die: 'magicShoes', value: steps, from: from, path: path, event: event, found: this._found, lap: false, travel: null };
   };
   /** 溜冰鞋：前進 3 格，不算擲骰次數 */
   Store.prototype.useSkates = function (childId) { return this._useMoveItem(childId, 'skates'); };

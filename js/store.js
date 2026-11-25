@@ -46,7 +46,7 @@
   var ITEM_KINDS = ['bonus', 'penalty', 'task'];
   var SCORE_TYPES = ['bonus', 'penalty', 'task']; // 計入今日淨得分的紀錄類型
   // 2026-11-09 家長決定：冒險世界每日使用上限的預設值（設定裡可調 0～LIMIT_MAX）
-  var DEFAULT_LIMITS = { dice: 3, minigame: 1, move: 5, door: 1, magic: 1, starCall: 1, pineHide: 1, beluga: 3, sub: 1 };   // beluga／sub：水島小白鯨、潛水艇（2026-11-16）
+  var DEFAULT_LIMITS = { dice: 3, minigame: 1, move: 5, door: 1, magic: 1, starCall: 1, pineHide: 1, beluga: 3, sub: 1, shoes: 1 };   // shoes：魔法鞋（2026-11-25）   // beluga／sub：水島小白鯨、潛水艇（2026-11-16）
   var LIMIT_MAX = 10;
   // 2026-11-24 家長：家庭點數尺度。typicalDay＝「表現不錯的一天大約拿幾分」，倍率 scale＝typicalDay / 200（我們家 200＝倍率 1，行為完全不變）
   var TYPICAL_DAY_DEFAULT = 200, TYPICAL_DAY_MIN = 1, TYPICAL_DAY_MAX = 100000;
@@ -66,7 +66,7 @@
   };
   var SPECIAL_TASK_POINTS = 20;
   /** 冒險背包的道具代號（穩定、唯一；不以中文名稱判斷） */
-  var BAG_KEYS = ['d6', 'd12', 'skates', 'shield', 'magicDice', 'luckyMedal', 'wings', 'door', 'airplane', 'goldenKey', 'magnet', 'rerollTicket', 'bonusPlay', 'starCall', 'pineHide', 'submarine',
+  var BAG_KEYS = ['d6', 'd12', 'skates', 'shield', 'magicDice', 'luckyMedal', 'wings', 'door', 'airplane', 'goldenKey', 'magnet', 'rerollTicket', 'bonusPlay', 'starCall', 'pineHide', 'submarine', 'magicShoes',
     'chest', 'giftMysteryChest', 'mysteryChest']; // 寶箱庫存：一般寶箱、神諭祝福的神祕寶箱（免鑰匙）、地圖撿到的神祕寶箱（要鑰匙）
   function emptyBag() { var b = {}; BAG_KEYS.forEach(function (k) { b[k] = 0; }); return b; }
   var SPECIAL_TASK_DAYS = 3;
